@@ -18,46 +18,30 @@ Starter project for a garden cooperative electricity reporting system.
 - Admin view for all readings
 - Admin API endpoint to promote users
 
-## Run locally
+## Quick start (single command)
 
-### 1) Start Postgres
-
-```bash
-docker compose up -d
-```
-
-### 2) Install all dependencies from project root
+First time only:
 
 ```bash
 make install
 ```
 
-If you want to force a specific Python binary (for example Python 3.14.2):
+Then every time you want to run development environment:
 
 ```bash
-make install PYTHON=python3.14
+make dev
 ```
 
-### 3) Configure env files
+This command will:
+- start Postgres (`docker compose up -d postgres`)
+- create `backend/.env` and `frontend/.env` from examples if missing
+- run backend on `http://localhost:8000`
+- run frontend on `http://localhost:5173`
 
-```bash
-cp backend/.env.example backend/.env
-cp frontend/.env.example frontend/.env
-```
+Stop everything started by `make dev` with `Ctrl+C`.
 
-### 4) Run backend (from project root)
+## App URLs
 
-```bash
-backend/.venv/bin/uvicorn app.main:app --reload --port 8000 --app-dir backend
-```
-
-### 5) Run frontend (from project root)
-
-```bash
-npm --prefix frontend run dev
-```
-
-App URLs:
 - Frontend: `http://localhost:5173`
 - Backend API docs: `http://localhost:8000/docs`
 

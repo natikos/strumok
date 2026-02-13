@@ -1,7 +1,7 @@
 PYTHON ?= python3.14
 VENV_PYTHON := backend/.venv/bin/python
 
-.PHONY: install install-backend install-frontend
+.PHONY: install install-backend install-frontend dev
 
 install: install-backend install-frontend
 
@@ -11,3 +11,6 @@ install-backend:
 
 install-frontend:
 	npm --prefix frontend install
+
+dev:
+	./scripts/dev.sh

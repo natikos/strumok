@@ -3,12 +3,17 @@ __pycache__/
 *.pyc
 .venv/
 backend/.env
-backend/app.db
 
 # Node
 node_modules/
 frontend/dist/
 frontend/.env
+
+# Local database artifacts
+pg_data/
+postgres-data/
+*.sql
+*.dump
 
 # OS
 .DS_Store
