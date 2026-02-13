@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import datetime
 from decimal import Decimal
 from enum import StrEnum
 from typing import Optional
@@ -6,9 +6,7 @@ from typing import Optional
 from sqlalchemy import UniqueConstraint
 from sqlmodel import Field, SQLModel
 
-
-def utcnow() -> datetime:
-    return datetime.now(timezone.utc)
+from app.core.time import utc_now
 
 
 class HouseholdUserRole(StrEnum):
@@ -33,14 +31,16 @@ class User(SQLModel, table=True):
 
     __tablename__ = "users"  # type: ignore
 
-    id: Optional[int] = Field(default=None, primary_key=True)
+    id: int = Field(default=None, primary_key=True)
     email: str = Field(unique=True)
     full_name: str
     password_hash: str
     is_admin: bool = Field(default=False)
     is_active: bool = Field(default=True)
-    created_at: datetime = Field(default_factory=utcnow)
-    updated_at: datetime = Field(default_factory=utcnow, sa_column_kwargs={"onupdate": utcnow})
+    created_at: datetime = Field(default_factory=utc_now)
+    updated_at: datetime = Field(
+        default_factory=utc_now, sa_column_kwargs={"onupdate": utc_now}
+    )
 
 
 class Household(SQLModel, table=True):
@@ -48,12 +48,14 @@ class Household(SQLModel, table=True):
 
     __tablename__ = "households"  # type: ignore
 
-    id: Optional[int] = Field(default=None, primary_key=True)
+    id: int = Field(default=None, primary_key=True)
     code: str = Field(unique=True)
     name: str
     is_active: bool = Field(default=True)
-    created_at: datetime = Field(default_factory=utcnow)
-    updated_at: datetime = Field(default_factory=utcnow, sa_column_kwargs={"onupdate": utcnow})
+    created_at: datetime = Field(default_factory=utc_now)
+    updated_at: datetime = Field(
+        default_factory=utc_now, sa_column_kwargs={"onupdate": utc_now}
+    )
 
 
 class HouseholdUser(SQLModel, table=True):
@@ -64,12 +66,14 @@ class HouseholdUser(SQLModel, table=True):
         UniqueConstraint("household_id", "user_id", name="uq_household_user"),
     )
 
-    id: Optional[int] = Field(default=None, primary_key=True)
+    id: int = Field(default=None, primary_key=True)
     household_id: int = Field(foreign_key="households.id", index=True)
     user_id: int = Field(foreign_key="users.id", index=True)
     role: HouseholdUserRole = Field(default=HouseholdUserRole.MEMBER)
-    created_at: datetime = Field(default_factory=utcnow)
-    updated_at: datetime = Field(default_factory=utcnow, sa_column_kwargs={"onupdate": utcnow})
+    created_at: datetime = Field(default_factory=utc_now)
+    updated_at: datetime = Field(
+        default_factory=utc_now, sa_column_kwargs={"onupdate": utc_now}
+    )
 
 
 class MeterReading(SQLModel, table=True):
@@ -80,13 +84,13 @@ class MeterReading(SQLModel, table=True):
         UniqueConstraint("household_id", "period", name="uq_household_period"),
     )
 
-    id: Optional[int] = Field(default=None, primary_key=True)
+    id: int = Field(default=None, primary_key=True)
     household_id: int = Field(foreign_key="households.id", index=True)
     submitted_by_user_id: int = Field(foreign_key="users.id", index=True)
     period: str = Field(index=True)  # YYYY-MM
     meter_value: Decimal = Field(default=Decimal("0"), decimal_places=2, max_digits=7)
     usage_kwh: Decimal = Field(default=Decimal("0"), decimal_places=2, max_digits=7)
-    submitted_at: datetime = Field(default_factory=utcnow)
+    submitted_at: datetime = Field(default_factory=utc_now)
 
 
 class BillingCharge(SQLModel, table=True):
@@ -97,7 +101,7 @@ class BillingCharge(SQLModel, table=True):
         UniqueConstraint("household_id", "period", name="uq_charge_household_period"),
     )
 
-    id: Optional[int] = Field(default=None, primary_key=True)
+    id: int = Field(default=None, primary_key=True)
     household_id: int = Field(foreign_key="households.id", index=True)
     period: str = Field(index=True)  # YYYY-MM
     energy_amount_uah: Decimal = Field(
@@ -106,12 +110,12 @@ class BillingCharge(SQLModel, table=True):
     reserve_fee_uah: Decimal = Field(
         default=Decimal("100"), decimal_places=2, max_digits=7
     )
-    total_due_uah: Decimal = Field(
-        default=Decimal("0"), decimal_places=2, max_digits=7
-    )
+    total_due_uah: Decimal = Field(default=Decimal("0"), decimal_places=2, max_digits=7)
     status: ChargeStatus = Field(default=ChargeStatus.UNPAID, index=True)
-    created_at: datetime = Field(default_factory=utcnow)
-    updated_at: datetime = Field(default_factory=utcnow, sa_column_kwargs={"onupdate": utcnow})
+    created_at: datetime = Field(default_factory=utc_now)
+    updated_at: datetime = Field(
+        default_factory=utc_now, sa_column_kwargs={"onupdate": utc_now}
+    )
 
 
 class Payment(SQLModel, table=True):
@@ -119,15 +123,17 @@ class Payment(SQLModel, table=True):
 
     __tablename__ = "payments"  # type: ignore
 
-    id: Optional[int] = Field(default=None, primary_key=True)
+    id: int = Field(default=None, primary_key=True)
     household_id: int = Field(foreign_key="households.id", index=True)
     period: Optional[str] = Field(
         default=None, index=True
     )  # optional allocation to YYYY-MM
     amount_uah: Decimal = Field(decimal_places=2, max_digits=7)
-    paid_at: datetime = Field(default_factory=utcnow, index=True)
+    paid_at: datetime = Field(default_factory=utc_now, index=True)
     note: Optional[str] = None
-    updated_at: datetime = Field(default_factory=utcnow, sa_column_kwargs={"onupdate": utcnow})
+    updated_at: datetime = Field(
+        default_factory=utc_now, sa_column_kwargs={"onupdate": utc_now}
+    )
 
 
 class CooperativeFundLedger(SQLModel, table=True):
@@ -135,14 +141,14 @@ class CooperativeFundLedger(SQLModel, table=True):
 
     __tablename__ = "cooperative_fund_ledger_entries"  # type: ignore
 
-    id: Optional[int] = Field(default=None, primary_key=True)
+    id: int = Field(default=None, primary_key=True)
     entry_type: FundEntryType = Field(index=True)
     amount_uah: Decimal = Field(decimal_places=2, max_digits=7)
     household_id: Optional[int] = Field(
         default=None, foreign_key="households.id", index=True
     )
     comment: Optional[str] = None
-    created_at: datetime = Field(default_factory=utcnow, index=True)
+    created_at: datetime = Field(default_factory=utc_now, index=True)
 
 
 class TariffPeriod(SQLModel, table=True):
@@ -150,9 +156,11 @@ class TariffPeriod(SQLModel, table=True):
 
     __tablename__ = "tariff_periods"  # type: ignore
 
-    id: Optional[int] = Field(default=None, primary_key=True)
+    id: int = Field(default=None, primary_key=True)
     valid_from: datetime = Field(index=True)
     price_per_kwh: Decimal = Field(decimal_places=2, max_digits=7)
     is_active: bool = Field(default=True)
-    created_at: datetime = Field(default_factory=utcnow)
-    updated_at: datetime = Field(default_factory=utcnow, sa_column_kwargs={"onupdate": utcnow})
+    created_at: datetime = Field(default_factory=utc_now)
+    updated_at: datetime = Field(
+        default_factory=utc_now, sa_column_kwargs={"onupdate": utc_now}
+    )
