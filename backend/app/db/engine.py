@@ -1,6 +1,7 @@
+from sqlmodel import Session, SQLModel, create_engine
+
 from app.core.config import settings
 from app.db import models  # noqa: F401  # ensure model metadata is registered
-from sqlmodel import Session, SQLModel, create_engine
 
 engine = create_engine(settings.db.url)
 
