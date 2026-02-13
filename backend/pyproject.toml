@@ -1,0 +1,16 @@
+[build-system]
+requires = ["hatchling >= 1.26"]
+build-backend = "hatchling.build"
+
+[project]
+name = "strumok"
+version = "0.1.0"
+description = "Co-op electricity meter reporting app"
+requires-python = ">=3.14"
+authors = [{ name = "natikos" }]
+dependencies = [
+  "pydantic-settings==2.10.1"
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["app"]
