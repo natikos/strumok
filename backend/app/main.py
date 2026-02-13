@@ -3,7 +3,7 @@ from contextlib import asynccontextmanager
 import uvicorn
 from fastapi import FastAPI
 
-from app.api.auth import router as auth_router
+from app.api import auth_router
 from app.core.config import settings
 from app.db.engine import init_db
 

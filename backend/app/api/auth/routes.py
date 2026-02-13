@@ -8,7 +8,9 @@ from app.api.auth.service import (
     login_user,
     register_user,
 )
-from app.db.engine import get_session
+from app.api.deps import get_current_user
+from app.db import get_session
+from app.db.models import User
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -49,3 +51,14 @@ def login(payload: LoginIn, session: Session = Depends(get_session)) -> TokenOut
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid email or password",
         ) from exc
+
+
+@router.get("/me", response_model=UserOut)
+def me(current_user: User = Depends(get_current_user)) -> UserOut:
+    return UserOut(
+        id=current_user.id,
+        email=current_user.email,
+        full_name=current_user.full_name,
+        is_admin=current_user.is_admin,
+        is_active=current_user.is_active,
+    )
