@@ -2,15 +2,18 @@
 requires = ["hatchling >= 1.26"]
 build-backend = "hatchling.build"
 
+# Build tool configuration
+[tool.hatch.build.targets.wheel]
+packages = ["."]
+
+# Project metadata
 [project]
 name = "strumok"
 version = "0.1.0"
 description = "Co-op electricity meter reporting app"
 requires-python = ">=3.14"
 authors = [{ name = "natikos" }]
-dependencies = [
-  "pydantic-settings==2.10.1"
-]
+dependencies = ["pydantic-settings>=2.12"]
 
-[tool.hatch.build.targets.wheel]
-packages = ["app"]
+[project.optional-dependencies]
+dev = ["ruff>=0.15.1"]
