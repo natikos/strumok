@@ -16,3 +16,9 @@ uv venv
 source .venv/bin/activate
 uv sync --extra dev
 ```
+
+## Run
+
+```bash
+python -m app.main
+```
