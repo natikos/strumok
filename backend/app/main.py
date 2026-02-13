@@ -3,6 +3,7 @@ from contextlib import asynccontextmanager
 import uvicorn
 from fastapi import FastAPI
 
+from app.api.auth import router as auth_router
 from app.core.config import settings
 from app.db.engine import init_db
 
@@ -15,6 +16,7 @@ async def lifespan(_: FastAPI):
 
 
 app = FastAPI(title=settings.app_name, lifespan=lifespan)
+app.include_router(auth_router)
 
 
 @app.get("/health")
