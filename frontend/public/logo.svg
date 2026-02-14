@@ -1,0 +1,55 @@
+<svg width="1080" height="320" viewBox="24 24 930 272" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Strumok full logo dark v2">
+  <defs>
+    <linearGradient id="bg" x1="40" y1="20" x2="300" y2="300" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#0B1224"/>
+      <stop offset="0.6" stop-color="#0F1E45"/>
+      <stop offset="1" stop-color="#1E40AF"/>
+    </linearGradient>
+
+    <linearGradient id="ring" x1="60" y1="60" x2="260" y2="260" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#E0F2FE"/>
+      <stop offset="1" stop-color="#60A5FA"/>
+    </linearGradient>
+
+    <linearGradient id="bolt" x1="140" y1="90" x2="190" y2="210" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FFFFFF"/>
+      <stop offset="1" stop-color="#BFDBFE"/>
+    </linearGradient>
+
+    <linearGradient id="pin" x1="120" y1="100" x2="220" y2="240" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#93C5FD"/>
+      <stop offset="1" stop-color="#2563EB"/>
+    </linearGradient>
+
+    <linearGradient id="word" x1="360" y1="90" x2="1020" y2="250" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#E2E8F0"/>
+      <stop offset="0.45" stop-color="#93C5FD"/>
+      <stop offset="1" stop-color="#60A5FA"/>
+    </linearGradient>
+  </defs>
+
+  <g clip-path="url(#circleFrame)" transform="translate(160 160) scale(1.1) translate(-160 -160)">
+    <!-- Filled circular background replacing the old rounded rect -->
+    <circle cx="160" cy="160" r="114" fill="url(#bg)"/>
+
+    <!-- Outer community ring -->
+    <circle cx="160" cy="160" r="96" stroke="url(#ring)" stroke-width="10" opacity="0.9"/>
+
+    <!-- Location pin shape -->
+    <path d="M160 95
+             C120 95 110 130 110 150
+             C110 185 160 235 160 235
+             C160 235 210 185 210 150
+             C210 130 200 95 160 95Z"
+          fill="url(#pin)" opacity="0.9"/>
+
+    <!-- Lightning bolt inside -->
+    <path d="M170 115L145 160H170L150 205"
+          stroke="url(#bolt)" stroke-width="10"
+          stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+  <!-- Wordmark -->
+  <text x="352" y="207" fill="url(#word)" font-size="132"
+        font-family="'Avenir Next', 'Nunito Sans', 'Segoe UI', sans-serif"
+        font-weight="700" letter-spacing="1.2">Strumok</text>
+</svg>
