@@ -17,21 +17,16 @@
         <template #content>
           <div class="form-grid">
             <label for="email">Email</label>
-            <InputText
-              id="email"
-              v-model="email"
-              type="email"
-              placeholder="you@example.com"
-            />
+            <InputText id="email" v-model="email" type="email" placeholder="you@example.com" />
 
             <label for="password">Password</label>
             <Password
               id="password"
               v-model="password"
               :feedback="false"
-              toggleMask
+              toggle-mask
               placeholder="Your password"
-              :inputStyle="{ width: '100%' }"
+              :input-style="{ width: '100%' }"
               fluid
             />
 
@@ -44,20 +39,20 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from "vue";
-import Button from "primevue/button";
-import Card from "primevue/card";
-import InputText from "primevue/inputtext";
-import Password from "primevue/password";
+  import Button from "primevue/button";
+  import Card from "primevue/card";
+  import InputText from "primevue/inputtext";
+  import Password from "primevue/password";
+  import { computed, ref } from "vue";
 
-const email = ref("");
-const password = ref("");
-const theme = ref(localStorage.getItem("theme") || "light");
+  const email = ref("");
+  const password = ref("");
+  const theme = ref(localStorage.getItem("theme") || "light");
 
-const isDark = computed(() => theme.value === "dark");
+  const isDark = computed(() => theme.value === "dark");
 
-const toggleTheme = () => {
-  theme.value = isDark.value ? "light" : "dark";
-  localStorage.setItem("theme", theme.value);
-};
+  const toggleTheme = () => {
+    theme.value = isDark.value ? "light" : "dark";
+    localStorage.setItem("theme", theme.value);
+  };
 </script>
