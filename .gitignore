@@ -7,6 +7,7 @@ backend/.env
 # Node
 node_modules/
 frontend/dist/
+frontend/dist-ssr/
 frontend/.env
 
 # Local database artifacts
