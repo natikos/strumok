@@ -1,24 +1,26 @@
 <svg width="320" height="320" viewBox="28 28 264 264" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Strumok emblem">
   <defs>
-    <linearGradient id="bg" x1="40" y1="20" x2="300" y2="300" gradientUnits="userSpaceOnUse">
-      <stop stop-color="#0B1224"/>
-      <stop offset="0.6" stop-color="#0F1E45"/>
-      <stop offset="1" stop-color="#1E40AF"/>
+     <linearGradient id="bg" x1="40" y1="20" x2="300" y2="300" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#16213E"/>
+      <stop offset="0.52" stop-color="#1F4FA3"/>
+      <stop offset="1" stop-color="#66A3FF"/>
     </linearGradient>
 
-    <linearGradient id="ring" x1="50" y1="50" x2="270" y2="270" gradientUnits="userSpaceOnUse">
-      <stop stop-color="#E0F2FE"/>
-      <stop offset="1" stop-color="#60A5FA"/>
+    <linearGradient id="ring" x1="60" y1="60" x2="260" y2="260" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#ffffff"/>
+      <stop offset="0.3" stop-color="#c0e6ff"/>
+      <stop offset="1" stop-color="#3f89e3"/>
     </linearGradient>
 
     <linearGradient id="bolt" x1="140" y1="90" x2="190" y2="210" gradientUnits="userSpaceOnUse">
       <stop stop-color="#FFFFFF"/>
-      <stop offset="1" stop-color="#BFDBFE"/>
+      <stop offset="0.7" stop-color="#fff09c"/>
+      <stop offset="1" stop-color="#FFD700"/>
     </linearGradient>
 
     <linearGradient id="pin" x1="120" y1="100" x2="220" y2="240" gradientUnits="userSpaceOnUse">
-      <stop stop-color="#93C5FD"/>
-      <stop offset="1" stop-color="#2563EB"/>
+      <stop stop-color="#16a927"/>
+      <stop offset="1" stop-color="#00a87b"/>
     </linearGradient>
 
     <!-- Circular frame that is slightly larger than the outer ring -->
