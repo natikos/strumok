@@ -30,5 +30,5 @@
     "noUncheckedIndexedAccess": true
   },
   "extends": "@vue/tsconfig/tsconfig.dom.json",
-  "include": ["src/**/*.ts", "src/**/*.vue", "vite.config.ts"]
+  "include": ["src/**/*.ts", "src/**/*.vue", "vite.config.ts", "components.d.ts"]
 }
