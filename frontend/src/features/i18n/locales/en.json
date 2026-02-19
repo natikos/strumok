@@ -1,6 +1,5 @@
 {
   "auth": {
-    "eyebrow": "Secure Access",
     "login": "Login",
     "loginSubmit": "Submit",
     "loginSubtitle": "Sign in to continue your secure session.",
