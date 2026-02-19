@@ -17,7 +17,6 @@ declare module 'vue' {
     Button: typeof import('primevue/button')['default']
     Card: typeof import('primevue/card')['default']
     DemoPage: typeof import('./src/pages/demo/DemoPage.vue')['default']
-    FormField: typeof import('./src/shared/FormField.vue')['default']
     InputText: typeof import('primevue/inputtext')['default']
     Password: typeof import('primevue/password')['default']
     RouterLink: typeof import('vue-router')['RouterLink']
