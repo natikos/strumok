@@ -2,12 +2,67 @@ import { definePreset } from "@primeuix/themes";
 import Aura from "@primeuix/themes/aura";
 
 const AppPreset = definePreset(Aura, {
+  components: {
+    button: {
+      root: {
+        borderRadius: "{form.field.border.radius}",
+      },
+    },
+    card: {
+      body: {
+        padding: "{app.space.6}",
+      },
+      css: () => `
+        .p-card {
+          border: 1px solid var(--s-content-border-color);
+        }
+      `,
+      root: {
+        background: "{content.background}",
+        borderRadius: "{border.radius.xl}",
+      },
+    },
+  },
+  primitive: {
+    borderRadius: {
+      lg: "1rem",
+      md: "0.75rem",
+      sm: "0.5rem",
+      xl: "1.25rem",
+    },
+  },
   semantic: {
+    app: {
+      fontSize: {
+        lg: "clamp(1.125rem, 1rem + 0.5vw, 1.25rem)",
+        md: "1rem",
+        sm: "0.875rem",
+        xl: "clamp(1.375rem, 1.1rem + 1vw, 1.75rem)",
+        xs: "0.75rem",
+      },
+      radius: {
+        lg: "{border.radius.lg}",
+        md: "{border.radius.md}",
+        sm: "{border.radius.sm}",
+        xl: "{border.radius.xl}",
+      },
+      space: {
+        1: "0.25rem",
+        2: "0.5rem",
+        3: "0.75rem",
+        4: "1rem",
+        5: "1.25rem",
+        6: "1.5rem",
+        8: "2rem",
+        10: "2.5rem",
+        12: "3rem",
+      },
+    },
     colorScheme: {
       dark: {
         content: {
-          background: "#0f172a",
-          borderColor: "#26324a",
+          background: "{surface.100}",
+          borderColor: "{surface.300}",
           color: "#d7e5ff",
           hoverBackground: "#17213a",
           hoverColor: "#f1f6ff",
