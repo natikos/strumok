@@ -3,6 +3,13 @@ import Aura from "@primeuix/themes/aura";
 
 const AppPreset = definePreset(Aura, {
   components: {
+    selectbutton: {
+      css: () => `
+        button {
+          width: 100%;
+        }
+      `,
+    },
     card: {
       css: () => `
         .p-card {

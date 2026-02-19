@@ -6,6 +6,13 @@ import { defineConfig } from "vite";
 
 // https://vite.dev/config/
 export default defineConfig({
+  css: {
+    preprocessorOptions: {
+      scss: {
+        additionalData: '@use "@shared/styles/layout" as layout;',
+      },
+    },
+  },
   plugins: [
     vue(),
     Components({
