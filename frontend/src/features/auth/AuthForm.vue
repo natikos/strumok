@@ -5,7 +5,7 @@
       <Form v-slot="$form">
         <InputText type="email" name="email" placeholder="placeholder@gmail.com" />
         <InputText type="password" name="password" placeholder="Password" />
-        <Button type="submit" :label="t('submit')" :disabled="!$form.valid" />
+        <Button type="submit" :label="t('auth.submit')" :disabled="!$form.valid" />
       </Form>
     </template>
   </Card>

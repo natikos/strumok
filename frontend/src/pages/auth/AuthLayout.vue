@@ -32,7 +32,6 @@
 <script setup lang="ts">
   import { useLocale } from "@/features/i18n/composables/useLocale";
   import { useTheme } from "@/features/theme/composables/useTheme";
-  import Button from "primevue/button";
   import { computed } from "vue";
   import { useI18n } from "vue-i18n";
 

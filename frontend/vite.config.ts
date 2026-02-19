@@ -9,6 +9,7 @@ export default defineConfig({
   plugins: [
     vue(),
     Components({
+      dirs: ["src/shared", "src/features", "src/pages"],
       resolvers: [PrimeVueResolver()],
     }),
   ],
