@@ -97,13 +97,6 @@ export default defineConfigWithVueTs(
           type: "natural",
         },
       ],
-      "perfectionist/sort-objects": [
-        "error",
-        {
-          order: "asc",
-          type: "natural",
-        },
-      ],
     },
   },
   eslintConfigPrettier
