@@ -1,7 +1,20 @@
 {
   "auth": {
-    "submit": "Submit",
-    "title": "Welcome back!"
+    "eyebrow": "Secure Access",
+    "login": "Login",
+    "loginSubmit": "Submit",
+    "loginSubtitle": "Sign in to continue your secure session.",
+    "loginTitle": "Welcome back!",
+    "register": "Register",
+    "registerSubtitle": "Create your secure account to get started.",
+    "registerSubmit": "Create account",
+    "registerTitle": "Create your account",
+    "firstName": "First name",
+    "lastName": "Last name",
+    "email": "Email",
+    "emailPlaceholder": "placeholder{'@'}mail.com",
+    "password": "Password",
+    "confirmPassword": "Confirm password"
   },
   "layout": {
     "switchToEnglish": "Switch to English",

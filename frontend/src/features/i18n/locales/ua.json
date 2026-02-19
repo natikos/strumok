@@ -1,12 +1,25 @@
 {
   "auth": {
-    "submit": "Вперед",
-    "title": "З поверненням!"
+    "eyebrow": "Безпечний вхід",
+    "login": "Вхід",
+    "loginSubmit": "Увійти",
+    "loginSubtitle": "Увійдіть, щоб продовжити роботу в захищеному середовищі.",
+    "loginTitle": "З поверненням!",
+    "register": "Реєстрація",
+    "registerSubtitle": "Створіть захищений обліковий запис, щоб розпочати.",
+    "registerSubmit": "Зареєструватися",
+    "registerTitle": "Створіть обліковий запис",
+    "firstName": "Ім'я",
+    "lastName": "Прізвище",
+    "email": "Електронна скринька",
+    "emailPlaceholder": "glory.to.ukraine{'@'}mail.com",
+    "password": "Пароль",
+    "confirmPassword": "Підтвердіть пароль"
   },
   "layout": {
-    "switchToEnglish": "Перемкнути на англійську",
-    "switchToUkrainian": "Перемкнути на українську",
-    "switchToLightTheme": "Перемкнути на світлу тему",
-    "switchToDarkTheme": "Перемкнути на темну тему"
+    "switchToEnglish": "Перемкнути мову на англійську",
+    "switchToUkrainian": "Перемкнути мову на українську",
+    "switchToLightTheme": "Увімкнути світлу тему",
+    "switchToDarkTheme": "Увімкнути темну тему"
   }
 }
