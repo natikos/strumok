@@ -1,66 +1,37 @@
-<svg width="860" height="220" viewBox="60 58 820 205" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Strumok full logo dark v2">
+<svg width="700" height="220" viewBox="0 0 700 220" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Strumok full logo">
   <defs>
- <linearGradient id="bg" x1="40" y1="20" x2="300" y2="300" gradientUnits="userSpaceOnUse">
-      <stop stop-color="#16213E"/>
-      <stop offset="0.52" stop-color="#1F4FA3"/>
-      <stop offset="1" stop-color="#66A3FF"/>
+    <linearGradient id="bulbFill" x1="90" y1="72" x2="236" y2="248" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#dbeafe"/>
+      <stop offset="1" stop-color="#93c5fd"/>
     </linearGradient>
-
-    <linearGradient id="ring" x1="60" y1="60" x2="260" y2="260" gradientUnits="userSpaceOnUse">
-      <stop stop-color="#ffffff"/>
-      <stop offset="0.3" stop-color="#c0e6ff"/>
-      <stop offset="1" stop-color="#3f89e3"/>
-    </linearGradient>
-
-    <linearGradient id="bolt" x1="140" y1="90" x2="190" y2="210" gradientUnits="userSpaceOnUse">
-      <stop stop-color="#FFFFFF"/>
-      <stop offset="0.7" stop-color="#fff09c"/>
-      <stop offset="1" stop-color="#FFD700"/>
-    </linearGradient>
-
-    <linearGradient id="pin" x1="120" y1="100" x2="220" y2="240" gradientUnits="userSpaceOnUse">
-      <stop stop-color="#16a927"/>
-      <stop offset="1" stop-color="#00a87b"/>
-    </linearGradient>
-
-    <!-- Circular frame that is slightly larger than the outer ring -->
-    <clipPath id="circleFrame">
-      <circle cx="160" cy="160" r="114"/>
-    </clipPath>
-
-    <linearGradient id="word" x1="360" y1="90" x2="1020" y2="250" gradientUnits="userSpaceOnUse">
-      <stop stop-color="#228830"/>
-      <stop offset="0.4" stop-color="#ffee00"/>
-      <!-- <stop offset="0.32" stop-color="#daff22"/> -->
-      <stop offset="0.55" stop-color="#59c2ff"/>
-      <stop offset="1" stop-color="#0e4f9e"/>
+    <linearGradient id="word" x1="260" y1="72" x2="780" y2="180" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#1d4ed8"/>
+      <stop offset="1" stop-color="#60a5fa"/>
     </linearGradient>
   </defs>
 
-  <g clip-path="url(#circleFrame)" transform="translate(160 160) scale(0.75) translate(-160 -160)">
-    <!-- Filled circular background replacing the old rounded rect -->
-    <circle cx="160" cy="160" r="114" fill="url(#bg)"/>
+  <g transform="translate(8 8) scale(0.63)">
+    <path d="M160 52C110 52 70 92 70 142C70 176 88 205 112 232C128 250 138 270 138 288H182C182 270 192 250 208 232C232 205 250 176 250 142C250 92 210 52 160 52Z" fill="url(#bulbFill)" stroke="#1d4ed8" stroke-width="14" stroke-linejoin="round"/>
 
-    <!-- Outer community ring -->
-    <circle cx="160" cy="160" r="96" stroke="url(#ring)" stroke-width="10" opacity="0.9"/>
+    <rect x="132" y="282" width="56" height="22" rx="9" fill="#93c5fd" stroke="#1d4ed8" stroke-width="12"/>
+    <rect x="138" y="302" width="44" height="18" rx="8" fill="#dbeafe" stroke="#1d4ed8" stroke-width="10"/>
 
-    <!-- Location pin shape -->
-    <path d="M160 95
-             C120 95 110 130 110 150
-             C110 185 160 235 160 235
-             C160 235 210 185 210 150
-             C210 130 200 95 160 95Z"
-          fill="url(#pin)" opacity="0.9"/>
+    <path d="M172 320V304C172 292 182 284 194 284H236C248 284 256 276 256 264V256" stroke="#1d4ed8" stroke-width="12" stroke-linecap="round" stroke-linejoin="round"/>
 
-    <!-- Lightning bolt inside -->
-    <path d="M170 115L145 160H170L150 205"
-          stroke="url(#bolt)" stroke-width="10"
-          stroke-linecap="round" stroke-linejoin="round"/>
+    <rect x="228" y="236" width="52" height="40" rx="20" fill="#60a5fa" stroke="#1d4ed8" stroke-width="12"/>
+    <line x1="280" y1="248" x2="294" y2="248" stroke="#1d4ed8" stroke-width="12" stroke-linecap="round"/>
+    <line x1="280" y1="264" x2="294" y2="264" stroke="#1d4ed8" stroke-width="12" stroke-linecap="round"/>
+
+    <path d="M176 108L132 164H166L146 222L194 162H162L176 108Z" fill="#2563eb" stroke="#1d4ed8" stroke-width="8" stroke-linejoin="round"/>
+
+    <path d="M98 160C98 129 121 101 149 90" stroke="#1d4ed8" stroke-width="10" stroke-linecap="round"/>
+
+    <line x1="160" y1="24" x2="160" y2="8" stroke="#1d4ed8" stroke-width="10" stroke-linecap="round"/>
+    <line x1="108" y1="37" x2="99" y2="23" stroke="#1d4ed8" stroke-width="10" stroke-linecap="round"/>
+    <line x1="212" y1="37" x2="221" y2="23" stroke="#1d4ed8" stroke-width="10" stroke-linecap="round"/>
+    <line x1="76" y1="78" x2="62" y2="70" stroke="#1d4ed8" stroke-width="10" stroke-linecap="round"/>
+    <line x1="244" y1="78" x2="258" y2="70" stroke="#1d4ed8" stroke-width="10" stroke-linecap="round"/>
   </g>
- 
-  <!-- Wordmark -->
-  <text x="300" y="207" fill="url(#word)" font-size="126"
-        font-family="'Avenir Next', 'Nunito Sans', 'Segoe UI', sans-serif"
-        font-weight="700" letter-spacing="1.2"
-        paint-order="stroke fill">Strumok</text>
+
+  <text x="210" y="147" fill="url(#word)" font-size="104" font-family="'Avenir Next', 'Nunito Sans', 'Segoe UI', sans-serif" font-weight="700" letter-spacing="1.1">Strumok</text>
 </svg>
