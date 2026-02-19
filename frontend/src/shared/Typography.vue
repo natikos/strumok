@@ -67,7 +67,7 @@
     line-height: 1.6;
   }
   .typography--caption {
-    font-size: 0.875rem;
+    font-size: 0.75rem;
     font-weight: 400;
     line-height: 1.4;
   }
