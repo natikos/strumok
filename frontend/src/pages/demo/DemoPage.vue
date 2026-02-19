@@ -1,127 +1,101 @@
 <template>
   <div class="demo-page">
-    <header class="demo-page__header">
-      <img class="demo-page__logo" src="/logo.svg" alt="Strumok Logo" />
+    <aside class="demo-sidebar">
+      <img class="demo-sidebar__logo" src="/logo.svg" alt="Strumok Logo" />
+      <nav class="demo-sidebar__menu" aria-label="Main">
+        <button v-for="item in sidebarItems" :key="item.icon" class="demo-sidebar__item" type="button">
+          <i :class="item.icon"></i>
+        </button>
+      </nav>
+    </aside>
 
-      <div class="demo-page__controls">
-        <Button
-          :label="languageLabel"
-          variant="text"
-          rounded
-          :aria-label="languageAriaLabel"
-          :title="languageAriaLabel"
-          @click="toggleLocale"
-        />
-        <Button
-          :icon="themeIcon"
-          variant="text"
-          rounded
-          :aria-label="themeAriaLabel"
-          :title="themeAriaLabel"
-          @click="toggleTheme"
-        />
-      </div>
-    </header>
-
-    <main class="demo-page__content">
-      <h1>PrimeVue Theme Demo</h1>
-      <p>Toggle theme and locale to preview component tokens in light and dark modes.</p>
-
-      <section class="demo-grid">
-        <Card>
-          <template #title>Inputs</template>
-          <template #content>
-            <div class="demo-stack">
-              <InputText v-model="form.email" placeholder="Email" type="email" />
-              <Password
-                v-model="form.password"
-                input-class="w-full"
-                placeholder="Password"
-                toggle-mask
-                :feedback="false"
-              />
-              <Textarea v-model="form.notes" rows="3" placeholder="Notes" />
-              <Select
-                v-model="form.role"
-                :options="roleOptions"
-                option-label="label"
-                option-value="value"
-                placeholder="Select role"
-              />
-              <div class="demo-row">
-                <Checkbox v-model="form.active" binary input-id="active" />
-                <label for="active">Active account</label>
-              </div>
-              <div class="demo-row">
-                <RadioButton v-model="form.plan" input-id="starter" value="starter" />
-                <label for="starter">Starter</label>
-                <RadioButton v-model="form.plan" input-id="pro" value="pro" />
-                <label for="pro">Pro</label>
-              </div>
-              <Slider v-model="form.quota" :max="100" />
+    <div class="demo-main">
+      <header class="demo-topbar">
+        <p class="demo-topbar__hint">Use (cmd + click) on a menu item to open a tab</p>
+        <div class="demo-topbar__actions">
+          <Button
+            :label="languageLabel"
+            variant="text"
+            rounded
+            :aria-label="languageAriaLabel"
+            :title="languageAriaLabel"
+            @click="toggleLocale"
+          />
+          <Button
+            :icon="themeIcon"
+            variant="text"
+            rounded
+            :aria-label="themeAriaLabel"
+            :title="themeAriaLabel"
+            @click="toggleTheme"
+          />
+          <div class="demo-profile">
+            <div class="demo-profile__avatar">GR</div>
+            <div class="demo-profile__meta">
+              <strong>Gene Russell</strong>
+              <span>Developer</span>
             </div>
-          </template>
-        </Card>
+          </div>
+        </div>
+      </header>
 
-        <Card>
-          <template #title>Actions & Status</template>
-          <template #content>
-            <div class="demo-stack">
-              <div class="demo-actions">
-                <Button label="Primary" />
-                <Button label="Secondary" severity="secondary" />
-                <Button label="Success" severity="success" />
-                <Button label="Danger" severity="danger" />
+      <main class="demo-content">
+        <div class="demo-breadcrumb"><i class="pi pi-home"></i><span>/</span><span>SaaS Dashboard</span></div>
+
+        <section class="demo-kpis">
+          <article v-for="kpi in kpis" :key="kpi.label" class="demo-kpi" :style="{ '--kpi-color': kpi.color }">
+            <i :class="kpi.icon"></i>
+            <p>{{ kpi.label }}</p>
+            <strong>{{ kpi.value }}</strong>
+            <div class="demo-kpi__wave"></div>
+          </article>
+        </section>
+
+        <section class="demo-panels">
+          <article class="demo-panel demo-panel--chart">
+            <header>
+              <h2>Acquisition Overview</h2>
+              <button type="button">Last Week</button>
+            </header>
+            <div class="demo-chart">
+              <div v-for="(item, idx) in chartBars" :key="idx" class="demo-chart__item">
+                <div class="demo-chart__bar" :style="{ height: item + '%' }"></div>
               </div>
-              <div class="demo-actions">
-                <Tag value="New" />
-                <Tag value="In review" severity="warn" />
-                <Tag value="Done" severity="success" />
-              </div>
-              <div class="demo-actions">
-                <Chip label="Design" />
-                <Chip label="Frontend" />
-                <Chip label="Backend" />
-              </div>
-              <Button label="Open dialog" variant="outlined" @click="isDialogVisible = true" />
+              <svg class="demo-chart__line" viewBox="0 0 100 35" preserveAspectRatio="none" aria-hidden="true">
+                <polyline points="0,10 15,18 30,22 45,20 60,21 75,13 90,15 100,16" />
+              </svg>
             </div>
-          </template>
-        </Card>
+          </article>
 
-        <Card>
-          <template #title>Feedback</template>
-          <template #content>
-            <div class="demo-stack">
-              <Message severity="info">Informational message example.</Message>
-              <Message severity="warn">Warning message example.</Message>
-              <ProgressBar :value="68" />
+          <article class="demo-panel">
+            <h2>Latest Customers</h2>
+            <ul class="demo-customers">
+              <li v-for="customer in customers" :key="customer.name">
+                <span class="demo-customers__avatar">{{ customer.initials }}</span>
+                <div>
+                  <strong>{{ customer.name }}</strong>
+                  <p>{{ customer.role }}</p>
+                </div>
+              </li>
+            </ul>
+            <Button class="demo-customers__cta" label="View All" />
+          </article>
+
+          <article class="demo-panel demo-panel--gauge">
+            <div class="demo-gauge">
+              <div class="demo-gauge__arc"></div>
+              <div class="demo-gauge__value">32.79%</div>
             </div>
-          </template>
-        </Card>
-
-        <Card>
-          <template #title>Data Table</template>
-          <template #content>
-            <DataTable :value="users" table-style="min-width: 24rem">
-              <Column field="name" header="Name"></Column>
-              <Column field="role" header="Role"></Column>
-              <Column field="status" header="Status"></Column>
-            </DataTable>
-          </template>
-        </Card>
-      </section>
-    </main>
-
-    <Dialog v-model:visible="isDialogVisible" header="Preview Dialog" modal :style="{ width: '28rem' }">
-      <p>
-        This dialog uses your current semantic tokens. Switch themes to compare surfaces, text, borders, and
-        focus states.
-      </p>
-      <template #footer>
-        <Button label="Close" variant="text" @click="isDialogVisible = false" />
-        <Button label="Confirm" />
-      </template>
-    </Dialog>
+            <ul class="demo-tasks">
+              <li v-for="task in tasks" :key="task.title">
+                <strong>{{ task.title }}</strong>
+                <p>{{ task.action }}</p>
+              </li>
+            </ul>
+          </article>
+        </section>
+      </main>
+    </div>
   </div>
 </template>
 
@@ -129,67 +103,49 @@
   import { useLocale } from "@/features/i18n/composables/useLocale";
   import { useTheme } from "@/features/theme/composables/useTheme";
   import Button from "primevue/button";
-  import Card from "primevue/card";
-  import Checkbox from "primevue/checkbox";
-  import Chip from "primevue/chip";
-  import Column from "primevue/column";
-  import DataTable from "primevue/datatable";
-  import Dialog from "primevue/dialog";
-  import InputText from "primevue/inputtext";
-  import Message from "primevue/message";
-  import Password from "primevue/password";
-  import ProgressBar from "primevue/progressbar";
-  import RadioButton from "primevue/radiobutton";
-  import Select from "primevue/select";
-  import Slider from "primevue/slider";
-  import Tag from "primevue/tag";
-  import Textarea from "primevue/textarea";
-  import { computed, ref } from "vue";
+  import { computed } from "vue";
   import { useI18n } from "vue-i18n";
-
-  interface DemoUser {
-    name: string;
-    role: string;
-    status: string;
-  }
-
-  interface DemoFormState {
-    active: boolean;
-    email: string;
-    notes: string;
-    password: string;
-    plan: "starter" | "pro";
-    quota: number;
-    role: string | null;
-  }
 
   const { t } = useI18n();
   const { currentLocale, toggleLocale } = useLocale();
   const { theme, toggleTheme } = useTheme();
 
-  const isDialogVisible = ref(false);
-
-  const roleOptions = [
-    { label: "Viewer", value: "viewer" },
-    { label: "Editor", value: "editor" },
-    { label: "Admin", value: "admin" },
+  const sidebarItems = [
+    { icon: "pi pi-home" },
+    { icon: "pi pi-th-large" },
+    { icon: "pi pi-star" },
+    { icon: "pi pi-compass" },
+    { icon: "pi pi-briefcase" },
+    { icon: "pi pi-wallet" },
+    { icon: "pi pi-user" },
+    { icon: "pi pi-bars" },
+    { icon: "pi pi-download" },
   ];
 
-  const users = ref<DemoUser[]>([
-    { name: "Olivia Reed", role: "Admin", status: "Active" },
-    { name: "Ethan Cole", role: "Editor", status: "Invited" },
-    { name: "Mila Hart", role: "Viewer", status: "Suspended" },
-  ]);
+  const kpis = [
+    { color: "#2eb9ff", icon: "pi pi-users", label: "USERS SIGNED UP", value: "3882" },
+    { color: "#f9ae3e", icon: "pi pi-map", label: "LIFETIME VALUE", value: "532" },
+    { color: "#29dc96", icon: "pi pi-percentage", label: "CONVERSION RATE", value: "12.6%" },
+    { color: "#aa60ff", icon: "pi pi-comment", label: "ACTIVE TRIALS", value: "440" },
+  ];
 
-  const form = ref<DemoFormState>({
-    active: true,
-    email: "",
-    notes: "",
-    password: "",
-    plan: "starter",
-    quota: 42,
-    role: null,
-  });
+  const chartBars = [62, 38, 80, 56, 30, 65, 52];
+
+  const customers = [
+    { initials: "BS", name: "Brooklyn Simmons", role: "Manager at Mitsubishi" },
+    { initials: "LA", name: "Leslie Alexander", role: "Customer Success at General Electric" },
+    { initials: "JB", name: "Jerome Bell", role: "Mario Carrier at Nintendo" },
+    { initials: "JJ", name: "Jim Jones", role: "Reliability Engineer at eBay" },
+    { initials: "AB", name: "Annette Black", role: "Delivery Woman at Pizza Hut" },
+    { initials: "AF", name: "Albert Flores", role: "Team Leader at Insomniac Games" },
+  ];
+
+  const tasks = [
+    { action: "Go Profile Edit", title: "Add your personal information" },
+    { action: "Send Verification SMS", title: "Verify your phone" },
+    { action: "Upload Pictures", title: "Verify your Face ID" },
+    { action: "View Agreement", title: "Give permissions for personal data" },
+  ];
 
   const themeIcon = computed(() => (theme.value === "dark" ? "pi pi-moon" : "pi pi-sun"));
 
@@ -206,75 +162,361 @@
 
 <style scoped lang="scss">
   .demo-page {
-    background:
-      radial-gradient(
-        circle at top right,
-        color-mix(in srgb, var(--s-primary-color), transparent 92%),
-        transparent 45%
-      ),
-      var(--s-surface-100);
+    background: linear-gradient(180deg, #131a2b 0%, #0e1422 100%);
     color: var(--s-text-color);
+    display: grid;
+    grid-template-columns: 4.75rem 1fr;
     min-height: 100vh;
-    padding: var(--space-4);
   }
 
-  .demo-page__header {
+  .demo-sidebar {
+    background: color-mix(in srgb, var(--s-surface-0), #122033 25%);
+    border-right: 1px solid color-mix(in srgb, var(--s-surface-300), transparent 40%);
+    padding: var(--space-4) var(--space-3);
+  }
+
+  .demo-sidebar__logo {
+    aspect-ratio: 1;
+    border: 2px solid color-mix(in srgb, var(--s-surface-800), #fff 40%);
+    border-radius: 50%;
+    display: block;
+    margin: 0 auto var(--space-6);
+    max-width: 2.9rem;
+    object-fit: cover;
+  }
+
+  .demo-sidebar__menu {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+  }
+
+  .demo-sidebar__item {
+    align-items: center;
+    background: transparent;
+    border: 0;
+    border-radius: var(--radius-md);
+    color: color-mix(in srgb, var(--s-text-color), white 25%);
+    cursor: pointer;
+    display: grid;
+    height: 2.5rem;
+    place-items: center;
+    transition: background-color 180ms ease;
+    width: 2.5rem;
+  }
+
+  .demo-sidebar__item:hover {
+    background: color-mix(in srgb, var(--s-primary-color), transparent 78%);
+  }
+
+  .demo-main {
+    display: grid;
+    grid-template-rows: auto 1fr;
+    min-width: 0;
+  }
+
+  .demo-topbar {
     align-items: center;
     display: flex;
     justify-content: space-between;
-    margin: 0 auto;
-    max-width: 72rem;
+    padding: var(--space-4) var(--space-6);
   }
 
-  .demo-page__logo {
-    display: block;
-    height: auto;
-    max-width: clamp(8rem, 7rem + 6vw, 11rem);
-    width: 100%;
-  }
-
-  .demo-page__controls {
-    align-items: center;
-    display: flex;
-    gap: var(--space-2);
-  }
-
-  .demo-page__content {
-    margin: var(--space-8) auto 0;
-    max-width: 72rem;
-  }
-
-  .demo-page__content > h1 {
-    font-size: var(--font-size-xl);
+  .demo-topbar__hint {
+    color: color-mix(in srgb, var(--s-text-color), white 20%);
+    font-size: var(--font-size-sm);
     margin: 0;
   }
 
-  .demo-page__content > p {
-    color: var(--s-text-muted-color);
-    margin: var(--space-2) 0 var(--space-6);
-  }
-
-  .demo-grid {
-    display: grid;
-    gap: var(--space-4);
-    grid-template-columns: repeat(auto-fit, minmax(18rem, 1fr));
-  }
-
-  .demo-stack {
-    display: grid;
+  .demo-topbar__actions {
+    align-items: center;
+    display: flex;
     gap: var(--space-3);
   }
 
-  .demo-actions {
-    display: flex;
-    flex-wrap: wrap;
-    gap: var(--space-2);
-  }
-
-  .demo-row {
+  .demo-profile {
     align-items: center;
     display: flex;
     gap: var(--space-2);
   }
 
+  .demo-profile__avatar {
+    align-items: center;
+    background: linear-gradient(135deg, #6bd0ff, #2b5cc8);
+    border-radius: 50%;
+    color: #f8fdff;
+    display: grid;
+    font-size: var(--font-size-sm);
+    font-weight: 700;
+    height: 2.25rem;
+    justify-content: center;
+    width: 2.25rem;
+  }
+
+  .demo-profile__meta {
+    display: grid;
+    line-height: 1.25;
+  }
+
+  .demo-profile__meta strong {
+    font-size: var(--font-size-sm);
+  }
+
+  .demo-profile__meta span {
+    color: var(--s-text-muted-color);
+    font-size: var(--font-size-xs);
+  }
+
+  .demo-content {
+    background: color-mix(in srgb, var(--s-surface-0), #122033 22%);
+    border-radius: var(--radius-lg);
+    margin: 0 var(--space-4) var(--space-4);
+    padding: var(--space-5);
+  }
+
+  .demo-breadcrumb {
+    align-items: center;
+    color: var(--s-text-muted-color);
+    display: flex;
+    gap: var(--space-2);
+    margin-bottom: var(--space-4);
+  }
+
+  .demo-kpis {
+    display: grid;
+    gap: var(--space-4);
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    margin-bottom: var(--space-4);
+  }
+
+  .demo-kpi {
+    background: color-mix(in srgb, var(--s-surface-100), #1b2537 30%);
+    border-radius: var(--radius-md);
+    overflow: hidden;
+    padding: var(--space-4);
+    position: relative;
+  }
+
+  .demo-kpi i,
+  .demo-kpi p,
+  .demo-kpi strong {
+    color: var(--kpi-color);
+    position: relative;
+    z-index: 1;
+  }
+
+  .demo-kpi i {
+    font-size: 1.75rem;
+  }
+
+  .demo-kpi p {
+    font-size: var(--font-size-sm);
+    margin: var(--space-2) 0 var(--space-1);
+  }
+
+  .demo-kpi strong {
+    font-size: 2rem;
+    line-height: 1;
+  }
+
+  .demo-kpi__wave {
+    background: linear-gradient(90deg, color-mix(in srgb, var(--kpi-color), transparent 76%), transparent);
+    border-radius: 999px;
+    bottom: -1.5rem;
+    height: 3.5rem;
+    left: -10%;
+    position: absolute;
+    width: 120%;
+  }
+
+  .demo-panels {
+    display: grid;
+    gap: var(--space-4);
+    grid-template-columns: minmax(0, 2fr) minmax(0, 1fr) minmax(16rem, 0.95fr);
+  }
+
+  .demo-panel {
+    background: color-mix(in srgb, var(--s-surface-100), #1b2537 28%);
+    border-radius: var(--radius-md);
+    padding: var(--space-4);
+  }
+
+  .demo-panel h2 {
+    font-size: var(--font-size-lg);
+    margin: 0 0 var(--space-4);
+  }
+
+  .demo-panel--chart header {
+    align-items: center;
+    display: grid;
+    gap: var(--space-3);
+    grid-template-columns: 1fr auto;
+  }
+
+  .demo-panel--chart button {
+    background: transparent;
+    border: 1px solid var(--s-content-border-color);
+    border-radius: var(--radius-sm);
+    color: var(--s-text-color);
+    font: inherit;
+    padding: 0.45rem 0.75rem;
+  }
+
+  .demo-chart {
+    align-items: end;
+    display: grid;
+    gap: var(--space-4);
+    grid-template-columns: repeat(7, 1fr);
+    height: 18rem;
+    margin-top: var(--space-4);
+    padding: 0 var(--space-3) var(--space-2);
+    position: relative;
+  }
+
+  .demo-chart__item {
+    align-items: end;
+    display: grid;
+    height: 100%;
+  }
+
+  .demo-chart__bar {
+    background: color-mix(in srgb, var(--s-surface-800), #e5eef8 22%);
+    border-radius: 999px;
+    opacity: 0.9;
+  }
+
+  .demo-chart__line {
+    bottom: var(--space-2);
+    height: 5.5rem;
+    left: var(--space-3);
+    position: absolute;
+    width: calc(100% - 1.5rem);
+  }
+
+  .demo-chart__line polyline {
+    fill: none;
+    stroke: color-mix(in srgb, var(--s-primary-color), #9ed7ee 30%);
+    stroke-width: 2;
+  }
+
+  .demo-customers {
+    display: grid;
+    gap: var(--space-3);
+    list-style: none;
+    margin: 0 0 var(--space-4);
+    padding: 0;
+  }
+
+  .demo-customers li {
+    align-items: center;
+    display: flex;
+    gap: var(--space-2);
+  }
+
+  .demo-customers__avatar {
+    align-items: center;
+    border: 1px solid color-mix(in srgb, var(--s-primary-color), transparent 35%);
+    border-radius: 50%;
+    color: var(--s-primary-color);
+    display: grid;
+    font-size: var(--font-size-sm);
+    height: 2.4rem;
+    justify-content: center;
+    width: 2.4rem;
+  }
+
+  .demo-customers strong {
+    font-size: var(--font-size-sm);
+  }
+
+  .demo-customers p {
+    color: var(--s-text-muted-color);
+    font-size: var(--font-size-xs);
+    margin: 0.2rem 0 0;
+  }
+
+  .demo-customers__cta {
+    width: 100%;
+  }
+
+  .demo-gauge {
+    margin: 0 auto var(--space-4);
+    max-width: 13rem;
+    position: relative;
+  }
+
+  .demo-gauge__arc {
+    background: conic-gradient(from 180deg, #79ccb0 32.79%, #7f8ea3 0);
+    border-radius: 13rem 13rem 0 0;
+    height: 6.2rem;
+    overflow: hidden;
+    position: relative;
+  }
+
+  .demo-gauge__arc::after {
+    background: color-mix(in srgb, var(--s-surface-100), #1b2537 28%);
+    border-radius: 10rem 10rem 0 0;
+    content: "";
+    height: 4.6rem;
+    inset: 1.15rem 1.15rem 0;
+    position: absolute;
+  }
+
+  .demo-gauge__value {
+    font-size: 2rem;
+    font-weight: 600;
+    left: 50%;
+    position: absolute;
+    top: 55%;
+    transform: translate(-50%, -50%);
+  }
+
+  .demo-tasks {
+    display: grid;
+    gap: var(--space-3);
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+
+  .demo-tasks p {
+    color: var(--s-primary-color);
+    font-size: var(--font-size-sm);
+    margin: var(--space-1) 0 0;
+  }
+
+  @media (max-width: 1100px) {
+    .demo-kpis {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .demo-panels {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  @media (max-width: 760px) {
+    .demo-page {
+      grid-template-columns: 1fr;
+    }
+
+    .demo-sidebar {
+      border-bottom: 1px solid color-mix(in srgb, var(--s-surface-300), transparent 40%);
+      border-right: 0;
+      padding-bottom: var(--space-3);
+    }
+
+    .demo-sidebar__menu {
+      flex-direction: row;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+
+    .demo-topbar {
+      align-items: flex-start;
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-3);
+    }
+  }
 </style>
