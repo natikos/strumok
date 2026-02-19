@@ -1,0 +1,12 @@
+{
+  "auth": {
+    "submit": "Submit",
+    "title": "Welcome back!"
+  },
+  "layout": {
+    "switchToEnglish": "Switch to English",
+    "switchToUkrainian": "Switch to Ukrainian",
+    "switchToLightTheme": "Switch to light theme",
+    "switchToDarkTheme": "Switch to dark theme"
+  }
+}

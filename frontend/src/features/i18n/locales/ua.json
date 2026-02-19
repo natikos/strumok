@@ -1,0 +1,12 @@
+{
+  "auth": {
+    "submit": "Вперед",
+    "title": "З поверненням!"
+  },
+  "layout": {
+    "switchToEnglish": "Перемкнути на англійську",
+    "switchToUkrainian": "Перемкнути на українську",
+    "switchToLightTheme": "Перемкнути на світлу тему",
+    "switchToDarkTheme": "Перемкнути на темну тему"
+  }
+}
