@@ -3,24 +3,40 @@ import Aura from "@primeuix/themes/aura";
 
 const AppPreset = definePreset(Aura, {
   components: {
-    button: {
-      root: {
-        borderRadius: "{form.field.border.radius}",
-      },
-    },
     card: {
-      body: {
-        padding: "{app.space.6}",
-      },
       css: () => `
         .p-card {
           border: 1px solid var(--s-content-border-color);
         }
       `,
-      root: {
-        background: "{content.background}",
-        borderRadius: "{border.radius.xl}",
-      },
+    },
+    formfield: {
+      css: () => `
+        .p-formfield {
+          display: flex;
+          flex-direction: column;
+          gap: var(--s-app-space-2);
+        }
+      `,
+    },
+    inputtext: {
+      css: () => `
+        .p-inputtext:autofill,
+        .p-password-input:autofill,
+        .p-inputtext:-webkit-autofill,
+        .p-inputtext:-webkit-autofill:hover,
+        .p-inputtext:-webkit-autofill:focus,
+        .p-inputtext:-webkit-autofill:active,
+        .p-password-input:-webkit-autofill,
+        .p-password-input:-webkit-autofill:hover,
+        .p-password-input:-webkit-autofill:focus,
+        .p-password-input:-webkit-autofill:active {
+          -webkit-text-fill-color: var(--s-form-field-color);
+          caret-color: var(--s-form-field-color);
+          box-shadow: 0 0 0 2rem var(--s-form-field-background) inset;
+          -webkit-box-shadow: 0 0 0 2rem var(--s-form-field-background) inset;
+        }
+      `,
     },
   },
   primitive: {
@@ -33,13 +49,6 @@ const AppPreset = definePreset(Aura, {
   },
   semantic: {
     app: {
-      fontSize: {
-        lg: "clamp(1.125rem, 1rem + 0.5vw, 1.25rem)",
-        md: "1rem",
-        sm: "0.875rem",
-        xl: "clamp(1.375rem, 1.1rem + 1vw, 1.75rem)",
-        xs: "0.75rem",
-      },
       radius: {
         lg: "{border.radius.lg}",
         md: "{border.radius.md}",
@@ -60,11 +69,14 @@ const AppPreset = definePreset(Aura, {
     },
     colorScheme: {
       dark: {
+        app: {
+          background: "{surface.950}",
+        },
         content: {
-          background: "{surface.100}",
-          borderColor: "{surface.300}",
+          background: "{surface.900}",
+          borderColor: "{surface.700}",
           color: "#d7e5ff",
-          hoverBackground: "#17213a",
+          hoverBackground: "{surface.800}",
           hoverColor: "#f1f6ff",
         },
         highlight: {
@@ -80,21 +92,24 @@ const AppPreset = definePreset(Aura, {
           inverseColor: "#ffffff",
         },
         surface: {
-          0: "#020617",
-          50: "#0b1020",
-          100: "#0f172a",
-          200: "#1a2438",
-          300: "#26324a",
-          400: "#394864",
-          500: "#52627f",
-          600: "#7584a1",
-          700: "#9eaac1",
-          800: "#c5ccda",
-          900: "#e1e5ee",
-          950: "#f3f5f9",
+          0: "#f3f5f9",
+          50: "#e1e5ee",
+          100: "#c5ccda",
+          200: "#9eaac1",
+          300: "#7584a1",
+          400: "#52627f",
+          500: "#394864",
+          600: "#26324a",
+          700: "#1a2438",
+          800: "#0f172a",
+          900: "#0b1020",
+          950: "#020617",
         },
       },
       light: {
+        app: {
+          background: "{surface.50}",
+        },
         content: {
           background: "#ffffff",
           borderColor: "#d5e0ea",
@@ -129,19 +144,6 @@ const AppPreset = definePreset(Aura, {
           950: "#151f28",
         },
       },
-    },
-    formField: {
-      borderRadius: "{border.radius.md}",
-      focusRing: {
-        color: "{primary.color}",
-        offset: "-1px",
-        shadow: "none",
-        style: "solid",
-        width: "2px",
-      },
-      paddingX: "0.75rem",
-      paddingY: "0.625rem",
-      transitionDuration: "{transition.duration}",
     },
     primary: {
       50: "#eff6ff",
