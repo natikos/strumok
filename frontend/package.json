@@ -8,7 +8,8 @@
     "build": "vue-tsc --noEmit && bunx --bun vite build",
     "preview": "bunx --bun vite preview",
     "lint": "eslint --fix .",
-    "format": "prettier --write ."
+    "format": "prettier --write .",
+    "api:types": "bunx openapi-typescript \"${OPENAPI_URL:-http://localhost:8000/openapi.json}\" -o src/shared/api/generated/openapi.ts"
   },
   "dependencies": {
     "@primeuix/themes": "^2.0.3",
@@ -37,6 +38,7 @@
     "typescript": "~5.9.3",
     "unplugin-vue-components": "^31.0.0",
     "vite": "^7.3.1",
-    "vue-tsc": "^3.2.4"
+    "vue-tsc": "^3.2.4",
+    "openapi-typescript": "^7.13.0"
   }
 }
