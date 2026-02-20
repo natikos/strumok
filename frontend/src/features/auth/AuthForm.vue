@@ -25,8 +25,8 @@
         />
 
         <Form v-slot="$form" class="auth-form__fields">
-          <Transition name="auth-form-expand">
-            <div v-if="mode === 'register'" class="auth-form__extra">
+          <div class="auth-form__expand" :class="{ 'auth-form__expand--open': mode === 'register' }">
+            <div class="auth-form__extra">
               <FormField name="firstName" class="auth-form__field">
                 <Typography variant="label" class="auth-form__label" for="auth-first-name">
                   {{ $t("auth.firstName") }}
@@ -52,7 +52,7 @@
                 />
               </FormField>
             </div>
-          </Transition>
+          </div>
 
           <FormField name="email" class="auth-form__field">
             <Typography variant="label" class="auth-form__label" for="auth-email">
@@ -80,8 +80,8 @@
             />
           </FormField>
 
-          <Transition name="auth-form-expand">
-            <div v-if="mode === 'register'" class="auth-form__extra auth-form__extra--compact">
+          <div class="auth-form__expand" :class="{ 'auth-form__expand--open': mode === 'register' }">
+            <div class="auth-form__extra">
               <FormField name="confirmPassword" class="auth-form__field">
                 <Typography variant="label" class="auth-form__label" for="auth-confirm-password">
                   {{ $t("auth.confirmPassword") }}
@@ -96,7 +96,7 @@
                 />
               </FormField>
             </div>
-          </Transition>
+          </div>
 
           <Button
             fluid
@@ -131,6 +131,7 @@
 
   .auth-form__mode {
     margin-bottom: var(--s-app-space-2);
+    margin-top: var(--s-app-space-2);
     width: 100%;
   }
 
@@ -138,5 +139,26 @@
   .auth-form__fields,
   .auth-form__extra {
     @include layout.stack(var(--s-app-space-4));
+  }
+
+  .auth-form__expand {
+    display: grid;
+    grid-template-rows: 0fr;
+    overflow: hidden;
+    transition: grid-template-rows 240ms ease, opacity 240ms ease;
+  }
+
+  .auth-form__expand > .auth-form__extra {
+    min-height: 0;
+    opacity: 0;
+    transition: opacity 180ms ease;
+  }
+
+  .auth-form__expand--open {
+    grid-template-rows: 1fr;
+  }
+
+  .auth-form__expand--open > .auth-form__extra {
+    opacity: 1;
   }
 </style>
