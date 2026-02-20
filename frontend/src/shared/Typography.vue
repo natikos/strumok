@@ -72,9 +72,10 @@
     line-height: 1.4;
   }
   .typography--label {
-    font-size: 0.875rem;
+    font-size: 0.75rem;
     font-weight: 600;
     letter-spacing: 0.01em;
     line-height: 1.4;
+    text-transform: uppercase;
   }
 </style>

@@ -58,7 +58,7 @@
 <style lang="scss" scoped>
   .auth-layout {
     @include layout.stack(0);
-    height: 100vh;
+    height: 100dvh;
     width: 100%;
 
     &__header {
@@ -87,6 +87,7 @@
       @include layout.stack(0);
       align-items: start;
       flex: 1;
+      justify-content: center;
       margin: 0 auto;
       max-width: 36rem;
       padding: var(--s-app-space-3) var(--s-app-space-3) var(--s-app-space-4);
@@ -105,7 +106,16 @@
 
       &__main {
         align-items: center;
-        padding: var(--s-app-space-10) var(--s-app-space-6) var(--s-app-space-12);
+        justify-content: center;
+        padding: var(--s-app-space-6) var(--s-app-space-6) var(--s-app-space-8);
+      }
+    }
+
+    @media (min-width: 48rem) and (max-height: 56.25rem) {
+      &__main {
+        align-items: center;
+        justify-content: center;
+        padding: var(--s-app-space-3) var(--s-app-space-6) var(--s-app-space-4);
       }
     }
   }

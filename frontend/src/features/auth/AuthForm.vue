@@ -138,7 +138,7 @@
   }
 
   .auth-form__mode {
-    margin-bottom: var(--s-app-space-2);
+    margin-bottom: var(--s-app-space-3);
     margin-top: var(--s-app-space-2);
     width: 100%;
   }
@@ -147,6 +147,15 @@
   .auth-form__fields,
   .auth-form__extra {
     @include layout.stack(var(--s-app-space-4));
+  }
+
+  .auth-form__fields {
+    gap: var(--s-app-space-4);
+  }
+
+  .auth-form__submit {
+    margin-top: var(--s-app-space-2);
+    transition: transform 180ms ease;
   }
 
   .auth-form__expand {
