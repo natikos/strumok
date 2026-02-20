@@ -5,8 +5,12 @@ const AppPreset = definePreset(Aura, {
   components: {
     selectbutton: {
       css: () => `
-        button {
+        .p-selectbutton button {
           width: 100%;
+        }
+
+        .p-selectbutton .p-togglebutton:is(.p-highlight, .p-togglebutton-checked) .p-togglebutton-content {
+          border-radius: var(--s-app-radius-sm);
         }
       `,
     },
