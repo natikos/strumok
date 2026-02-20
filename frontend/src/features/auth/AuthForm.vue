@@ -25,7 +25,10 @@
         />
 
         <Form v-slot="$form" class="auth-form__fields">
-          <div class="auth-form__expand" :class="{ 'auth-form__expand--open': mode === 'register' }">
+          <div
+            class="auth-form__expand"
+            :class="{ 'auth-form__expand--open': mode === 'register' }"
+          >
             <div class="auth-form__extra">
               <FormField name="firstName" class="auth-form__field">
                 <Typography variant="label" class="auth-form__label" for="auth-first-name">
@@ -76,11 +79,15 @@
               name="password"
               :feedback="false"
               fluid
+              toggle-mask
               :placeholder="$t('auth.password')"
             />
           </FormField>
 
-          <div class="auth-form__expand" :class="{ 'auth-form__expand--open': mode === 'register' }">
+          <div
+            class="auth-form__expand"
+            :class="{ 'auth-form__expand--open': mode === 'register' }"
+          >
             <div class="auth-form__extra">
               <FormField name="confirmPassword" class="auth-form__field">
                 <Typography variant="label" class="auth-form__label" for="auth-confirm-password">
@@ -92,6 +99,7 @@
                   name="confirmPassword"
                   :feedback="false"
                   fluid
+                  toggle-mask
                   :placeholder="$t('auth.confirmPassword')"
                 />
               </FormField>
@@ -145,7 +153,9 @@
     display: grid;
     grid-template-rows: 0fr;
     overflow: hidden;
-    transition: grid-template-rows 240ms ease, opacity 240ms ease;
+    transition:
+      grid-template-rows 240ms ease,
+      opacity 240ms ease;
   }
 
   .auth-form__expand > .auth-form__extra {
