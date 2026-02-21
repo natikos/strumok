@@ -37,6 +37,11 @@ Primary outcome: reduce manual operations and provide clear, trustworthy billing
 - Backend setup and run guide: [backend/README.md](backend/README.md)
 - Frontend setup and run guide: [frontend/README.md](frontend/README.md)
 
+## API contract
+
+- Backend errors use `HTTPException.detail` as a stable camelCase error code (for example: `invalidCredentials`, `emailAlreadyRegistered`), not user-facing text.
+- Frontend API contract/types are generated automatically from OpenAPI (`frontend/src/shared/api/generated/openapi.ts`) and should be treated as the source of truth for request/response typing.
+
 ## Local infrastructure
 
 Start PostgreSQL from repo root:
