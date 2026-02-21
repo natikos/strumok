@@ -22,6 +22,10 @@ function getStatusMessageKey(status: number): string {
   }
 }
 
+function toErrorMessageKey(detail: string, fallbackMessageKey: string): string {
+  return detail ? `errors.${detail}` : fallbackMessageKey;
+}
+
 export function registerToastPresenter(presenter: ToastPresenter): () => void {
   toastPresenter = presenter;
 
@@ -43,7 +47,7 @@ export function showApiErrorToast(status: number, body: Record<"detail", string>
   toastPresenter({
     fallbackMessageKey,
     life: DEFAULT_TOAST_LIFE_MS,
-    messageKey: body.detail ? `errors.${body.detail}` : fallbackMessageKey,
+    messageKey: toErrorMessageKey(body.detail, fallbackMessageKey),
     severity: "error",
   });
 }
