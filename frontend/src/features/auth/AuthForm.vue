@@ -16,6 +16,7 @@
         <Form v-slot="$form" class="auth-form__fields" :resolver="resolver" @submit="handleSubmit">
           <SelectButton
             v-model="mode"
+            :allow-empty="false"
             :options="[
               { label: $t('auth.login'), value: 'login' },
               { label: $t('auth.register'), value: 'register' },
