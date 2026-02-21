@@ -161,7 +161,7 @@
 
 <style scoped lang="scss">
   .dashboard-page {
-    background: var(--s-app-background);
+    background: var(--s-content-background);
     color: var(--s-content-color);
     display: grid;
     grid-template-columns: 1fr;
