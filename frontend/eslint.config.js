@@ -58,12 +58,14 @@ export default defineConfigWithVueTs(
           ],
           groups: [
             [
-              "type-import",
               "external-style",
               "side-effect-builtin",
               "side-effect-external",
               "value-builtin",
-              "value-external",
+              "value-external"
+            ],
+            [
+              "type-import",
               "type-internal",
               "value-internal",
               "side-effect-internal",

@@ -11,11 +11,17 @@
   },
   "[vue]": {
     "editor.defaultFormatter": "esbenp.prettier-vscode",
-    "editor.formatOnSave": true
+    "editor.formatOnSave": true,
+    "editor.codeActionsOnSave": {
+      "source.fixAll.eslint": "always"
+    }
   },
   "[typescript]": {
     "editor.defaultFormatter": "esbenp.prettier-vscode",
-    "editor.formatOnSave": true
+    "editor.formatOnSave": true,
+    "editor.codeActionsOnSave": {
+      "source.fixAll.eslint": "always"
+    }
   },
   "eslint.validate": ["javascript", "typescript", "vue"],
   "explorer.fileNesting.enabled": true,
@@ -23,11 +29,6 @@
     "tsconfig.json": "tsconfig.*.json, env.d.ts",
     "vite.config.*": "jsconfig*, vitest.config.*, cypress.config.*, playwright.config.*",
     "package.json": "package-lock.json, pnpm*, .yarnrc*, yarn*, .eslint*, eslint*, .oxlint*, oxlint*, .oxfmt*, .prettier*, prettier*, .editorconfig"
-  },
-  "editor.codeActionsOnSave": {
-    "source.fixAll": "never",
-    "source.fixAll.ruff": "explicit",
-    "source.organizeImports": "explicit"
   },
   "eslint.workingDirectories": ["frontend"],
   "editor.formatOnSave": true,
