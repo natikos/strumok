@@ -34,3 +34,13 @@ export async function registerUser(payload: RegisterIn): Promise<UserOut> {
   markAuthenticatedInCache();
   return data;
 }
+
+export async function getMe(): Promise<UserOut> {
+  const { data, error, response } = await appApiClient.GET("/auth/me");
+
+  if (error) {
+    throw buildApiError(response.status, error);
+  }
+
+  return data;
+}

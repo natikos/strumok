@@ -48,11 +48,7 @@
                 />
                 <div class="auth-form__field-message">
                   <Transition name="field-error">
-                    <Typography
-                      v-if="$field.invalid && $field.error?.message"
-                      variant="caption"
-                      class="auth-form__field-error"
-                    >
+                    <Typography v-if="$field.invalid && $field.error?.message" variant="caption" class="auth-form__field-error">
                       {{ $t($field.error.message) }}
                     </Typography>
                   </Transition>
@@ -73,11 +69,7 @@
                 />
                 <div class="auth-form__field-message">
                   <Transition name="field-error">
-                    <Typography
-                      v-if="$field.invalid && $field.error?.message"
-                      variant="caption"
-                      class="auth-form__field-error"
-                    >
+                    <Typography v-if="$field.invalid && $field.error?.message" variant="caption" class="auth-form__field-error">
                       {{ $t($field.error.message) }}
                     </Typography>
                   </Transition>
@@ -101,11 +93,7 @@
             />
             <div class="auth-form__field-message">
               <Transition name="field-error">
-                <Typography
-                  v-if="$field.invalid && $field.error?.message"
-                  variant="caption"
-                  class="auth-form__field-error"
-                >
+                <Typography v-if="$field.invalid && $field.error?.message" variant="caption" class="auth-form__field-error">
                   {{ $t($field.error.message) }}
                 </Typography>
               </Transition>
@@ -128,11 +116,7 @@
             />
             <div class="auth-form__field-message">
               <Transition name="field-error">
-                <Typography
-                  v-if="$field.invalid && $field.error?.message"
-                  variant="caption"
-                  class="auth-form__field-error"
-                >
+                <Typography v-if="$field.invalid && $field.error?.message" variant="caption" class="auth-form__field-error">
                   {{ $t($field.error.message) }}
                 </Typography>
               </Transition>
@@ -161,11 +145,7 @@
                 />
                 <div class="auth-form__field-message">
                   <Transition name="field-error">
-                    <Typography
-                      v-if="$field.invalid && $field.error?.message"
-                      variant="caption"
-                      class="auth-form__field-error"
-                    >
+                    <Typography v-if="$field.invalid && $field.error?.message" variant="caption" class="auth-form__field-error">
                       {{ $t($field.error.message) }}
                     </Typography>
                   </Transition>
@@ -292,20 +272,24 @@
     width: 100%;
   }
 
+  .auth-form :deep(.p-card-body) {
+    padding: var(--s-app-space-2);
+  }
+
   .auth-form__header {
-    @include layout.stack(var(--s-app-space-3));
+    @include layout.stack(var(--s-app-space-2));
   }
 
   .auth-form__mode {
-    margin-bottom: var(--s-app-space-2);
-    margin-top: var(--s-app-space-1);
+    margin-bottom: var(--s-app-space-1);
+    margin-top: 0;
     width: 100%;
   }
 
   .auth-form__content,
   .auth-form__fields,
   .auth-form__extra {
-    @include layout.stack(var(--s-app-space-4));
+    @include layout.stack(var(--s-app-space-3));
   }
 
   .auth-form__fields {
@@ -380,6 +364,37 @@
 
   .auth-form__expand--open > .auth-form__extra {
     opacity: 1;
+  }
+
+  @media (min-width: 21.25rem) {
+    .auth-form :deep(.p-card-body) {
+      padding: var(--s-app-space-3);
+    }
+
+    .auth-form__header {
+      gap: var(--s-app-space-3);
+    }
+
+    .auth-form__mode {
+      margin-bottom: var(--s-app-space-2);
+      margin-top: var(--s-app-space-1);
+    }
+
+    .auth-form__content,
+    .auth-form__fields,
+    .auth-form__extra {
+      gap: var(--s-app-space-4);
+    }
+  }
+
+  @media (min-width: 30rem) {
+    .auth-form :deep(.p-card-body) {
+      padding: var(--s-app-space-4);
+    }
+
+    .auth-form__fields {
+      gap: var(--s-app-space-3);
+    }
   }
 
   @media (min-width: 42rem) {

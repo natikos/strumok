@@ -60,27 +60,28 @@
   .auth-layout {
     @include layout.stack(0);
     height: 100dvh;
+    min-width: 20rem;
     width: 100%;
 
     &__header {
       align-items: center;
       display: flex;
-      gap: var(--s-app-space-3);
+      gap: var(--s-app-space-2);
       justify-content: space-between;
-      height: 3.5rem;
-      padding: var(--s-app-space-2) var(--s-app-space-3) 0;
+      height: auto;
+      padding: var(--s-app-space-2) var(--s-app-space-2) 0;
     }
 
     &__logo {
       display: block;
-      max-width: 9.5rem;
+      max-width: 7.75rem;
       width: 100%;
     }
 
     &__controls {
       align-items: center;
       display: flex;
-      gap: var(--s-app-space-2);
+      gap: var(--s-app-space-1);
       justify-content: flex-end;
     }
 
@@ -91,18 +92,43 @@
       justify-content: center;
       margin: 0 auto;
       max-width: 36rem;
-      padding: var(--s-app-space-3) var(--s-app-space-3) var(--s-app-space-4);
+      padding: var(--s-app-space-2) var(--s-app-space-2) var(--s-app-space-3);
       width: 100%;
+    }
+
+    @media (min-width: 21.25rem) {
+      &__logo {
+        max-width: 9.5rem;
+      }
+
+      &__main {
+        padding: var(--s-app-space-3) var(--s-app-space-3) var(--s-app-space-4);
+      }
+    }
+
+    @media (min-width: 23.125rem) {
+      &__header {
+        gap: var(--s-app-space-3);
+      }
+
+      &__controls {
+        gap: var(--s-app-space-2);
+      }
     }
 
     @media (min-width: 48rem) {
       &__header {
+        gap: var(--s-app-space-3);
         min-height: 4.5rem;
         padding: var(--s-app-space-4) var(--s-app-space-8) 0;
       }
 
       &__logo {
         max-width: 12rem;
+      }
+
+      &__controls {
+        gap: var(--s-app-space-2);
       }
 
       &__main {
