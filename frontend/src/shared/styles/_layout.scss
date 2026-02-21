@@ -3,3 +3,19 @@
   flex-direction: column;
   gap: $gap;
 }
+
+@mixin row($gap, $align: center, $justify: flex-start) {
+  align-items: $align;
+  display: flex;
+  flex-direction: row;
+  gap: $gap;
+  justify-content: $justify;
+}
+
+@mixin center-square($size) {
+  align-items: center;
+  display: flex;
+  height: $size;
+  justify-content: center;
+  width: $size;
+}

@@ -16,8 +16,6 @@
 
     <div class="dashboard-main">
       <header class="dashboard-topbar">
-        <p class="dashboard-topbar__hint">Use (cmd + click) on a menu item to open a tab</p>
-
         <div class="dashboard-topbar__actions">
           <Button
             :label="languageLabel"
@@ -178,9 +176,7 @@
     }
 
     &__menu {
-      display: flex;
-      flex-direction: column;
-      gap: var(--s-app-space-2);
+      @include layout.stack(var(--s-app-space-2));
       width: 100%;
     }
 
@@ -211,11 +207,9 @@
   }
 
   .dashboard-topbar {
+    @include layout.stack(var(--s-app-space-3));
     align-items: flex-start;
     background: var(--s-content-background);
-    display: flex;
-    flex-direction: column;
-    gap: var(--s-app-space-3);
     min-height: 4rem;
     justify-content: center;
     padding: var(--s-app-space-4);
@@ -227,34 +221,26 @@
     }
 
     &__actions {
-      align-items: center;
-      display: flex;
-      gap: var(--s-app-space-2);
+      @include layout.row(var(--s-app-space-2));
       width: 100%;
     }
   }
 
   .dashboard-profile {
-    align-items: center;
-    display: flex;
-    gap: var(--s-app-space-2);
+    @include layout.row(var(--s-app-space-2));
     margin-left: var(--s-app-space-1);
+
     &__avatar {
-      align-items: center;
       background: var(--s-content-hover-background);
       border-radius: 999px;
       color: var(--s-content-color);
-      display: flex;
       font-size: 0.85rem;
       font-weight: 700;
-      height: 2.25rem;
-      justify-content: center;
-      width: 2.25rem;
+      @include layout.center-square(2.25rem);
     }
 
     &__meta {
-      display: flex;
-      flex-direction: column;
+      @include layout.stack(0);
       line-height: 1.15;
 
       strong {
@@ -275,11 +261,9 @@
   }
 
   .dashboard-breadcrumb {
-    align-items: center;
+    @include layout.row(var(--s-app-space-2));
     color: color-mix(in srgb, var(--s-content-color), transparent 30%);
-    display: flex;
     font-size: 0.9rem;
-    gap: var(--s-app-space-2);
     margin-bottom: var(--s-app-space-4);
   }
 
@@ -322,18 +306,14 @@
     }
 
     .dashboard-sidebar {
+      @include layout.stack(var(--s-app-space-4));
       align-items: center;
       background: var(--s-content-background);
-      display: flex;
-      flex-direction: column;
-      gap: var(--s-app-space-4);
       padding: var(--s-app-space-3) var(--s-app-space-2);
     }
 
     .dashboard-topbar {
-      align-items: center;
-      flex-direction: row;
-      justify-content: space-between;
+      @include layout.row(var(--s-app-space-3), center, flex-end);
       min-height: 4.1rem;
       padding: 0 var(--s-app-space-5);
     }
