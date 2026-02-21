@@ -16,7 +16,7 @@ declare module 'vue' {
     AuthPage: typeof import('./src/pages/auth/AuthPage.vue')['default']
     Button: typeof import('primevue/button')['default']
     Card: typeof import('primevue/card')['default']
-    DashboardPage: typeof import('./src/pages/demo/DashboardPage.vue')['default']
+    DashboardPage: typeof import('./src/pages/dashboard/DashboardPage.vue')['default']
     FormFieldControl: typeof import('./src/shared/FormFieldControl.vue')['default']
     InputText: typeof import('primevue/inputtext')['default']
     Password: typeof import('primevue/password')['default']
