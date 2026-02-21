@@ -20,8 +20,3 @@ class UserOut(BaseModel):
     last_name: str
     is_admin: bool
     is_active: bool
-
-
-class TokenOut(BaseModel):
-    access_token: str
-    token_type: str = "bearer"

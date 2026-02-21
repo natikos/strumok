@@ -1,14 +1,15 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Response, status
 from sqlmodel import Session
 
-from app.api.auth.schemas import LoginIn, RegisterIn, TokenOut, UserOut
+from app.api.auth.schemas import LoginIn, RegisterIn, UserOut
 from app.api.auth.service import (
     EmailAlreadyRegisteredError,
     InvalidCredentialsError,
     login_user,
     register_user,
 )
-from app.api.deps import get_current_user
+from app.api.deps import get_current_user, get_current_user_from_token
+from app.core.config import settings
 from app.db import get_session
 from app.db.models import User
 
@@ -41,18 +42,47 @@ def register(payload: RegisterIn, session: Session = Depends(get_session)) -> Us
         ) from exc
 
 
-@router.post("/login", response_model=TokenOut)
-def login(payload: LoginIn, session: Session = Depends(get_session)) -> TokenOut:
+@router.post("/login", response_model=UserOut)
+def login(
+    payload: LoginIn,
+    response: Response,
+    session: Session = Depends(get_session),
+) -> UserOut:
     try:
         token = login_user(
             session=session, email=payload.email, password=payload.password
         )
-        return TokenOut(access_token=token)
+        user = get_current_user_from_token(session=session, token=token)
+        token_ttl_seconds = settings.auth.access_token_expiration * 60
+
+        response.set_cookie(
+            key=settings.auth.auth_cookie_name,
+            value=token,
+            httponly=True,
+            max_age=token_ttl_seconds,
+            samesite="lax",
+            secure=settings.environment != "development",
+        )
+
+        return UserOut(
+            id=user.id,
+            email=user.email,
+            first_name=user.first_name,
+            last_name=user.last_name,
+            is_admin=user.is_admin,
+            is_active=user.is_active,
+        )
     except InvalidCredentialsError as exc:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid email or password",
+            detail="Invalid credentials",
         ) from exc
+
+
+@router.post("/logout", status_code=status.HTTP_204_NO_CONTENT)
+def logout(response: Response) -> Response:
+    response.delete_cookie(key=settings.auth.auth_cookie_name, samesite="lax")
+    return response
 
 
 @router.get("/me", response_model=UserOut)

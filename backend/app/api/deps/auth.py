@@ -1,4 +1,4 @@
-from fastapi import Depends, HTTPException, status
+from fastapi import Cookie, Depends, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from jose import JWTError, jwt
 from sqlmodel import Session
@@ -9,8 +9,10 @@ from app.db.models import User
 
 http_bearer = HTTPBearer(auto_error=False)
 
+AUTH_CHALLENGE_HEADERS = {"WWW-Authenticate": "Bearer"}
 
-def _resolve_user_from_token(*, session: Session, token: str) -> User:
+
+def get_current_user_from_token(*, session: Session, token: str) -> User:
     try:
         payload = jwt.decode(
             token,
@@ -28,7 +30,7 @@ def _resolve_user_from_token(*, session: Session, token: str) -> User:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid or expired token",
-            headers={"WWW-Authenticate": "Bearer"},
+            headers=AUTH_CHALLENGE_HEADERS,
         ) from exc
 
     user = session.get(User, user_id)
@@ -37,7 +39,7 @@ def _resolve_user_from_token(*, session: Session, token: str) -> User:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid or expired token",
-            headers={"WWW-Authenticate": "Bearer"},
+            headers=AUTH_CHALLENGE_HEADERS,
         )
 
     return user
@@ -45,13 +47,18 @@ def _resolve_user_from_token(*, session: Session, token: str) -> User:
 
 def get_current_user(
     credentials: HTTPAuthorizationCredentials | None = Depends(http_bearer),
+    access_token: str | None = Cookie(
+        default=None, alias=settings.auth.auth_cookie_name
+    ),
     session: Session = Depends(get_session),
 ) -> User:
-    if credentials is None:
+    token = credentials.credentials if credentials is not None else access_token
+
+    if token is None:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Missing bearer token",
-            headers={"WWW-Authenticate": "Bearer"},
+            detail="Missing authentication token",
+            headers=AUTH_CHALLENGE_HEADERS,
         )
 
-    return _resolve_user_from_token(session=session, token=credentials.credentials)
+    return get_current_user_from_token(session=session, token=token)

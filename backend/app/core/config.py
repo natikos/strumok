@@ -24,6 +24,7 @@ class AuthSettings(BaseSettings):
     secret_key: str
     algorithm: str = "HS256"
     access_token_expiration: int = 1440  # (min) 24 hours
+    auth_cookie_name: str = "access_token"
 
 
 class Settings(BaseSettings):
