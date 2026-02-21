@@ -109,7 +109,10 @@
     await savePreferences({ language: currentLocale.value, theme: nextTheme });
   }
 
-  async function savePreferences(payload: { language: LanguageCode; theme: ThemeMode }): Promise<void> {
+  async function savePreferences(payload: {
+    language: LanguageCode;
+    theme: ThemeMode;
+  }): Promise<void> {
     try {
       me.value = await updateMyPreferences(payload);
     } catch {
@@ -214,7 +217,6 @@
   .dashboard-topbar {
     align-items: flex-start;
     background: var(--s-content-background);
-    border-bottom: 1px solid var(--s-content-border-color);
     display: flex;
     flex-direction: column;
     gap: var(--s-app-space-3);
@@ -328,7 +330,6 @@
     .dashboard-sidebar {
       align-items: center;
       background: var(--s-content-background);
-      border-right: 1px solid var(--s-content-border-color);
       display: flex;
       flex-direction: column;
       gap: var(--s-app-space-4);
@@ -348,6 +349,9 @@
     }
 
     .dashboard-content {
+      background: var(--s-app-background);
+      border-radius: var(--s-app-radius-lg) 0 0 0;
+      box-shadow: inset 0.5px 0.5px 3px 0.5px var(--s-primary-900);
       padding: var(--s-app-space-5);
     }
   }
