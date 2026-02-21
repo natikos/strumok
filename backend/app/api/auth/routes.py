@@ -1,7 +1,9 @@
+from typing import Any
+
 from fastapi import APIRouter, Depends, HTTPException, Response, status
 from sqlmodel import Session
 
-from app.api.auth.schemas import LoginIn, RegisterIn, UserOut
+from app.api.auth.schemas import ErrorOut, LoginIn, RegisterIn, UserOut
 from app.api.auth.service import (
     EmailAlreadyRegisteredError,
     InvalidCredentialsError,
@@ -15,8 +17,57 @@ from app.db.models import User
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
+REGISTER_RESPONSES: dict[int | str, dict[str, Any]] = {
+    status.HTTP_409_CONFLICT: {
+        "description": "Email is already registered",
+        "model": ErrorOut,
+        "content": {
+            "application/json": {
+                "example": {"detail": "emailAlreadyRegistered"},
+            }
+        },
+    }
+}
 
-@router.post("/register", response_model=UserOut, status_code=status.HTTP_201_CREATED)
+LOGIN_RESPONSES: dict[int | str, dict[str, Any]] = {
+    status.HTTP_401_UNAUTHORIZED: {
+        "description": "Invalid credentials",
+        "model": ErrorOut,
+        "content": {
+            "application/json": {
+                "example": {"detail": "invalidCredentials"},
+            }
+        },
+    }
+}
+
+ME_RESPONSES: dict[int | str, dict[str, Any]] = {
+    status.HTTP_401_UNAUTHORIZED: {
+        "description": "Authentication failed",
+        "model": ErrorOut,
+        "content": {
+            "application/json": {
+                "examples": {
+                    "missingAuthenticationToken": {
+                        "summary": "No auth token provided",
+                        "value": {"detail": "missingAuthenticationToken"},
+                    },
+                    "invalidOrExpiredToken": {
+                        "summary": "Token is invalid or expired",
+                        "value": {"detail": "invalidOrExpiredToken"},
+                    },
+                },
+            }
+        },
+    }
+}
+
+@router.post(
+    "/register",
+    response_model=UserOut,
+    responses=REGISTER_RESPONSES,
+    status_code=status.HTTP_201_CREATED,
+)
 def register(
     payload: RegisterIn,
     response: Response,
@@ -59,7 +110,7 @@ def register(
         ) from exc
 
 
-@router.post("/login", response_model=UserOut)
+@router.post("/login", response_model=UserOut, responses=LOGIN_RESPONSES)
 def login(
     payload: LoginIn,
     response: Response,
@@ -100,7 +151,7 @@ def logout(response: Response) -> Response:
     return response
 
 
-@router.get("/me", response_model=UserOut)
+@router.get("/me", response_model=UserOut, responses=ME_RESPONSES)
 def me(current_user: User = Depends(get_current_user)) -> UserOut:
     return UserOut(
         id=current_user.id,

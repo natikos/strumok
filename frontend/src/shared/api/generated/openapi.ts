@@ -93,6 +93,11 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /** ErrorOut */
+        ErrorOut: {
+            /** Detail */
+            detail: string;
+        };
         /** HTTPValidationError */
         HTTPValidationError: {
             /** Detail */
@@ -175,6 +180,20 @@ export interface operations {
                     "application/json": components["schemas"]["UserOut"];
                 };
             };
+            /** @description Email is already registered */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "detail": "emailAlreadyRegistered"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
             /** @description Validation Error */
             422: {
                 headers: {
@@ -206,6 +225,20 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["UserOut"];
+                };
+            };
+            /** @description Invalid credentials */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "detail": "invalidCredentials"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorOut"];
                 };
             };
             /** @description Validation Error */
@@ -255,6 +288,15 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["UserOut"];
+                };
+            };
+            /** @description Authentication failed */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
                 };
             };
             /** @description Validation Error */
