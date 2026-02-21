@@ -17,7 +17,11 @@ router = APIRouter(prefix="/auth", tags=["auth"])
 
 
 @router.post("/register", response_model=UserOut, status_code=status.HTTP_201_CREATED)
-def register(payload: RegisterIn, session: Session = Depends(get_session)) -> UserOut:
+def register(
+    payload: RegisterIn,
+    response: Response,
+    session: Session = Depends(get_session),
+) -> UserOut:
     try:
         user = register_user(
             session=session,
@@ -25,6 +29,19 @@ def register(payload: RegisterIn, session: Session = Depends(get_session)) -> Us
             first_name=payload.first_name,
             last_name=payload.last_name,
             password=payload.password,
+        )
+        token = login_user(
+            session=session,
+            email=payload.email,
+            password=payload.password,
+        )
+        response.set_cookie(
+            key=settings.auth.auth_cookie_name,
+            value=token,
+            httponly=True,
+            max_age=settings.auth_token_ttl_seconds,
+            samesite="lax",
+            secure=settings.auth_cookie_secure,
         )
 
         return UserOut(
@@ -53,15 +70,13 @@ def login(
             session=session, email=payload.email, password=payload.password
         )
         user = get_current_user_from_token(session=session, token=token)
-        token_ttl_seconds = settings.auth.access_token_expiration * 60
-
         response.set_cookie(
             key=settings.auth.auth_cookie_name,
             value=token,
             httponly=True,
-            max_age=token_ttl_seconds,
+            max_age=settings.auth_token_ttl_seconds,
             samesite="lax",
-            secure=settings.environment != "development",
+            secure=settings.auth_cookie_secure,
         )
 
         return UserOut(

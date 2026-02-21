@@ -51,6 +51,14 @@ class Settings(BaseSettings):
     db: DbSettings = DbSettings()  # type: ignore
     auth: AuthSettings = AuthSettings()  # type: ignore
 
+    @property
+    def auth_cookie_secure(self) -> bool:
+        return self.environment != "development"
+
+    @property
+    def auth_token_ttl_seconds(self) -> int:
+        return self.auth.access_token_expiration * 60
+
 
 @lru_cache
 def get_settings() -> Settings:
