@@ -17,9 +17,6 @@
     "passwordMismatch": "Passwords do not match",
     "requiredFields": "Please fill in all required fields",
     "unexpectedError": "Something went wrong. Please try again",
-    "invalidCredentials": "Invalid email or password",
-    "emailAlreadyRegistered": "Email is already registered",
-    "validationError": "Please check the form fields and try again",
     "requiredField": "This field is required",
     "invalidEmail": "Please enter a valid email address",
     "nameMinLength": "Must be at least 2 characters",
@@ -34,11 +31,12 @@
   "errors": {
     "emailAlreadyRegistered": "Email is already registered",
     "invalidCredentials": "Invalid email or password",
-    "invalidOrExpiredToken": "Invalid or expired token",
-    "missingAuthenticationToken": "Missing authentication token",
-    "requestFailed": "Request failed",
-    "serverError": "Server error. Please try again later",
+    "invalidOrExpiredToken": "Please sign in and try again",
+    "missingAuthenticationToken": "Please sign in and try again",
+    "requestFailed": "Something went wrong. Please try again",
+    "serverError": "Something went wrong. Please try again",
     "tooManyRequests": "Too many requests. Please wait and try again",
-    "unauthorized": "Unauthorized. Check your credentials and try again"
+    "unauthorized": "Please sign in and try again",
+    "validationError": "Please check your data and try again"
   }
 }

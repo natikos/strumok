@@ -22,6 +22,7 @@ dependencies = [
   "bcrypt==4.0.1",
   "python-jose[cryptography]>=3.5.0",
   "psycopg[binary]>=3.3.2",
+  "email-validator>=2.2.0",
 ]
 
 [project.optional-dependencies]

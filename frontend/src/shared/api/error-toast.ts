@@ -13,6 +13,8 @@ function getStatusMessageKey(status: number): string {
   switch (status) {
     case 401:
       return "errors.unauthorized";
+    case 422:
+      return "errors.validationError";
     case 429:
       return "errors.tooManyRequests";
     case 500:
@@ -22,8 +24,16 @@ function getStatusMessageKey(status: number): string {
   }
 }
 
-function toErrorMessageKey(detail: string, fallbackMessageKey: string): string {
-  return detail ? `errors.${detail}` : fallbackMessageKey;
+function toErrorMessageKey(body: unknown, fallbackMessageKey: string): string {
+  if (!body || typeof body !== "object" || !("detail" in body)) {
+    return fallbackMessageKey;
+  }
+
+  if (typeof body.detail !== "string") {
+    return fallbackMessageKey;
+  }
+
+  return `errors.${body.detail}`;
 }
 
 export function registerToastPresenter(presenter: ToastPresenter): () => void {
@@ -36,7 +46,7 @@ export function registerToastPresenter(presenter: ToastPresenter): () => void {
   };
 }
 
-export function showApiErrorToast(status: number, body: Record<"detail", string>): void {
+export function showApiErrorToast(status: number, body: unknown): void {
   if (!toastPresenter) {
     return;
   }
@@ -47,7 +57,7 @@ export function showApiErrorToast(status: number, body: Record<"detail", string>
   toastPresenter({
     fallbackMessageKey,
     life: DEFAULT_TOAST_LIFE_MS,
-    messageKey: toErrorMessageKey(body.detail, fallbackMessageKey),
+    messageKey: toErrorMessageKey(body, fallbackMessageKey),
     severity: "error",
   });
 }

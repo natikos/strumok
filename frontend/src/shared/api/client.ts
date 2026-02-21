@@ -29,12 +29,12 @@ apiClient.use({
       return response;
     }
 
-    let body: Record<"detail", string>;
+    let body: unknown;
 
     try {
       body = await response.clone().json();
     } catch {
-      body = { detail: "" }; // Fallback
+      body = undefined;
     }
 
     showApiErrorToast(response.status, body);
