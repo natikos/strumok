@@ -1,7 +1,7 @@
 <template>
   <div class="dashboard-page">
     <aside class="dashboard-sidebar">
-      <img class="dashboard-sidebar__logo" src="/logo.svg" alt="Strumok Logo" />
+      <img class="dashboard-sidebar__logo" src="/icon.svg" alt="Strumok Icon" />
       <nav class="dashboard-sidebar__menu" aria-label="Main">
         <button
           v-for="item in sidebarItems"
@@ -170,42 +170,38 @@
 
   .dashboard-sidebar {
     display: none;
-  }
 
-  .dashboard-sidebar__logo {
-    aspect-ratio: 1;
-    border: 1px solid var(--s-content-border-color);
-    border-radius: 999px;
-    display: block;
-    height: 3rem;
-    object-fit: cover;
-    width: 3rem;
-  }
+    &__logo {
+      display: block;
+      height: 3rem;
+      width: 3rem;
+    }
 
-  .dashboard-sidebar__menu {
-    display: flex;
-    flex-direction: column;
-    gap: var(--s-app-space-2);
-    width: 100%;
-  }
+    &__menu {
+      display: flex;
+      flex-direction: column;
+      gap: var(--s-app-space-2);
+      width: 100%;
+    }
 
-  .dashboard-sidebar__item {
-    align-items: center;
-    background: transparent;
-    border: 0;
-    border-radius: var(--s-app-radius-sm);
-    color: color-mix(in srgb, var(--s-content-color), transparent 22%);
-    cursor: pointer;
-    display: grid;
-    font-size: 1.2rem;
-    height: 2.5rem;
-    place-items: center;
-    transition: background-color 160ms ease;
-    width: 100%;
-  }
+    &__item {
+      align-items: center;
+      background: transparent;
+      border: 0;
+      border-radius: var(--s-app-radius-sm);
+      color: color-mix(in srgb, var(--s-content-color), transparent 22%);
+      cursor: pointer;
+      display: grid;
+      font-size: 1.2rem;
+      height: 2.5rem;
+      place-items: center;
+      transition: background-color 160ms ease;
+      width: 100%;
 
-  .dashboard-sidebar__item:hover {
-    background: var(--s-content-hover-background);
+      &:hover {
+        background: var(--s-content-hover-background);
+      }
+    }
   }
 
   .dashboard-main {
@@ -223,19 +219,19 @@
     min-height: 4rem;
     justify-content: center;
     padding: var(--s-app-space-4);
-  }
 
-  .dashboard-topbar__hint {
-    color: color-mix(in srgb, var(--s-content-color), transparent 35%);
-    font-size: var(--s-app-font-size-sm);
-    margin: 0;
-  }
+    &__hint {
+      color: color-mix(in srgb, var(--s-content-color), transparent 35%);
+      font-size: var(--s-app-font-size-sm);
+      margin: 0;
+    }
 
-  .dashboard-topbar__actions {
-    align-items: center;
-    display: flex;
-    gap: var(--s-app-space-2);
-    width: 100%;
+    &__actions {
+      align-items: center;
+      display: flex;
+      gap: var(--s-app-space-2);
+      width: 100%;
+    }
   }
 
   .dashboard-profile {
@@ -243,36 +239,35 @@
     display: flex;
     gap: var(--s-app-space-2);
     margin-left: var(--s-app-space-1);
-  }
+    &__avatar {
+      align-items: center;
+      background: var(--s-content-hover-background);
+      border-radius: 999px;
+      color: var(--s-content-color);
+      display: flex;
+      font-size: 0.85rem;
+      font-weight: 700;
+      height: 2.25rem;
+      justify-content: center;
+      width: 2.25rem;
+    }
 
-  .dashboard-profile__avatar {
-    align-items: center;
-    background: var(--s-content-hover-background);
-    border-radius: 999px;
-    color: var(--s-content-color);
-    display: flex;
-    font-size: 0.85rem;
-    font-weight: 700;
-    height: 2.25rem;
-    justify-content: center;
-    width: 2.25rem;
-  }
+    &__meta {
+      display: flex;
+      flex-direction: column;
+      line-height: 1.15;
 
-  .dashboard-profile__meta {
-    display: flex;
-    flex-direction: column;
-    line-height: 1.15;
-  }
+      strong {
+        color: var(--s-content-color);
+        font-size: 0.95rem;
+        font-weight: 600;
+      }
 
-  .dashboard-profile__meta strong {
-    color: var(--s-content-color);
-    font-size: 0.95rem;
-    font-weight: 600;
-  }
-
-  .dashboard-profile__meta span {
-    color: color-mix(in srgb, var(--s-content-color), transparent 35%);
-    font-size: 0.8rem;
+      span {
+        color: color-mix(in srgb, var(--s-content-color), transparent 35%);
+        font-size: 0.8rem;
+      }
+    }
   }
 
   .dashboard-content {
@@ -294,18 +289,17 @@
     border-radius: var(--s-app-radius-lg);
     min-height: 14rem;
     padding: var(--s-app-space-6);
-  }
+    h1 {
+      color: var(--s-content-color);
+      font-size: 1.7rem;
+      margin: 0 0 var(--s-app-space-2);
+    }
 
-  .dashboard-empty-card h1 {
-    color: var(--s-content-color);
-    font-size: 1.7rem;
-    margin: 0 0 var(--s-app-space-2);
-  }
-
-  .dashboard-empty-card p {
-    color: color-mix(in srgb, var(--s-content-color), transparent 35%);
-    font-size: 1rem;
-    margin: 0;
+    p {
+      color: color-mix(in srgb, var(--s-content-color), transparent 35%);
+      font-size: 1rem;
+      margin: 0;
+    }
   }
 
   @media (min-width: 21.25rem) {
@@ -344,8 +338,10 @@
       padding: 0 var(--s-app-space-5);
     }
 
-    .dashboard-topbar__actions {
-      width: auto;
+    .dashboard-topbar {
+      &__actions {
+        width: auto;
+      }
     }
 
     .dashboard-content {
