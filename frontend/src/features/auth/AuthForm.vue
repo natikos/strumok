@@ -33,124 +33,53 @@
             :class="{ 'auth-form__expand--open': mode === 'register' }"
           >
             <div class="auth-form__extra auth-form__extra--names">
-              <FormField v-slot="$field" name="firstName" class="auth-form__field">
-                <Typography variant="label" class="auth-form__label" for="auth-first-name">
-                  {{ $t("auth.firstName") }}
-                </Typography>
-                <InputText
-                  id="auth-first-name"
-                  class="auth-form__control"
-                  type="text"
-                  name="firstName"
-                  :placeholder="$t('auth.firstName')"
-                  :disabled="isSubmitting"
-                  :invalid="$field.invalid"
-                />
-                <div class="auth-form__field-message">
-                  <Transition name="field-error">
-                    <Typography v-if="$field.invalid && $field.error?.message" variant="caption" class="auth-form__field-error">
-                      {{ $t($field.error.message) }}
-                    </Typography>
-                  </Transition>
-                </div>
-              </FormField>
-              <FormField v-slot="$field" name="lastName" class="auth-form__field">
-                <Typography variant="label" class="auth-form__label" for="auth-last-name">
-                  {{ $t("auth.lastName") }}
-                </Typography>
-                <InputText
-                  id="auth-last-name"
-                  class="auth-form__control"
-                  type="text"
-                  name="lastName"
-                  :placeholder="$t('auth.lastName')"
-                  :disabled="isSubmitting"
-                  :invalid="$field.invalid"
-                />
-                <div class="auth-form__field-message">
-                  <Transition name="field-error">
-                    <Typography v-if="$field.invalid && $field.error?.message" variant="caption" class="auth-form__field-error">
-                      {{ $t($field.error.message) }}
-                    </Typography>
-                  </Transition>
-                </div>
-              </FormField>
+              <FormFieldControl
+                id="auth-first-name"
+                name="firstName"
+                label-key="auth.firstName"
+                placeholder-key="auth.firstName"
+                :disabled="isSubmitting"
+              />
+              <FormFieldControl
+                id="auth-last-name"
+                name="lastName"
+                label-key="auth.lastName"
+                placeholder-key="auth.lastName"
+                :disabled="isSubmitting"
+              />
             </div>
           </div>
 
-          <FormField v-slot="$field" name="email" class="auth-form__field">
-            <Typography variant="label" class="auth-form__label" for="auth-email">
-              {{ $t("auth.email") }}
-            </Typography>
-            <InputText
-              id="auth-email"
-              class="auth-form__control"
-              type="email"
-              name="email"
-              :placeholder="$t('auth.emailPlaceholder')"
-              :disabled="isSubmitting"
-              :invalid="$field.invalid"
-            />
-            <div class="auth-form__field-message">
-              <Transition name="field-error">
-                <Typography v-if="$field.invalid && $field.error?.message" variant="caption" class="auth-form__field-error">
-                  {{ $t($field.error.message) }}
-                </Typography>
-              </Transition>
-            </div>
-          </FormField>
-          <FormField v-slot="$field" name="password" class="auth-form__field">
-            <Typography variant="label" class="auth-form__label" for="auth-password">
-              {{ $t("auth.password") }}
-            </Typography>
-            <Password
-              id="auth-password"
-              class="auth-form__control"
-              name="password"
-              :feedback="false"
-              fluid
-              toggle-mask
-              :placeholder="$t('auth.password')"
-              :disabled="isSubmitting"
-              :invalid="$field.invalid"
-            />
-            <div class="auth-form__field-message">
-              <Transition name="field-error">
-                <Typography v-if="$field.invalid && $field.error?.message" variant="caption" class="auth-form__field-error">
-                  {{ $t($field.error.message) }}
-                </Typography>
-              </Transition>
-            </div>
-          </FormField>
+          <FormFieldControl
+            id="auth-email"
+            name="email"
+            type="email"
+            label-key="auth.email"
+            placeholder-key="auth.emailPlaceholder"
+            :disabled="isSubmitting"
+          />
+          <FormFieldControl
+            id="auth-password"
+            name="password"
+            type="password"
+            label-key="auth.password"
+            placeholder-key="auth.password"
+            :disabled="isSubmitting"
+          />
 
           <div
             class="auth-form__expand"
             :class="{ 'auth-form__expand--open': mode === 'register' }"
           >
             <div class="auth-form__extra">
-              <FormField v-slot="$field" name="confirmPassword" class="auth-form__field">
-                <Typography variant="label" class="auth-form__label" for="auth-confirm-password">
-                  {{ $t("auth.confirmPassword") }}
-                </Typography>
-                <Password
-                  id="auth-confirm-password"
-                  class="auth-form__control"
-                  name="confirmPassword"
-                  :feedback="false"
-                  fluid
-                  toggle-mask
-                  :placeholder="$t('auth.confirmPassword')"
-                  :disabled="isSubmitting"
-                  :invalid="$field.invalid"
-                />
-                <div class="auth-form__field-message">
-                  <Transition name="field-error">
-                    <Typography v-if="$field.invalid && $field.error?.message" variant="caption" class="auth-form__field-error">
-                      {{ $t($field.error.message) }}
-                    </Typography>
-                  </Transition>
-                </div>
-              </FormField>
+              <FormFieldControl
+                id="auth-confirm-password"
+                name="confirmPassword"
+                type="password"
+                label-key="auth.confirmPassword"
+                placeholder-key="auth.confirmPassword"
+                :disabled="isSubmitting"
+              />
             </div>
           </div>
 
@@ -169,7 +98,7 @@
 </template>
 
 <script setup lang="ts">
-  import { Form, FormField } from "@primevue/forms";
+  import { Form } from "@primevue/forms";
   import { zodResolver } from "@primevue/forms/resolvers/zod";
   import { computed, ref } from "vue";
   import { useRouter } from "vue-router";
@@ -177,6 +106,7 @@
 
   import type { FormSubmitEvent } from "@primevue/forms/form";
   import { ApiError, loginUser, registerUser } from "@shared/api/auth";
+  import FormFieldControl from "@shared/FormFieldControl.vue";
 
   type AuthMode = "login" | "register";
 
@@ -296,51 +226,9 @@
     gap: var(--s-app-space-3);
   }
 
-  .auth-form__field {
-    min-width: 0;
-  }
-
-  .auth-form__control {
-    width: 100%;
-  }
-
-  .auth-form :deep(.p-password-toggle-mask-icon) {
-    cursor: pointer;
-  }
-
   .auth-form__submit {
     margin-top: var(--s-app-space-1);
     transition: transform 180ms ease;
-  }
-
-  .auth-form__field-error {
-    color: var(--s-red-500);
-  }
-
-  .field-error-enter-active,
-  .field-error-leave-active {
-    transition:
-      max-height 180ms ease,
-      opacity 180ms ease,
-      transform 180ms ease;
-  }
-
-  .field-error-enter-from,
-  .field-error-leave-to {
-    max-height: 0;
-    opacity: 0;
-    transform: translateY(-0.2rem);
-  }
-
-  .field-error-enter-to,
-  .field-error-leave-from {
-    max-height: 1.2rem;
-    opacity: 1;
-    transform: translateY(0);
-  }
-
-  .auth-form__field-error {
-    display: block;
   }
 
   .auth-form__expand {
