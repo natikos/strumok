@@ -6,8 +6,9 @@ import { createRouter, createWebHistory } from "vue-router";
 
 import { i18n } from "@features/i18n";
 import AuthPage from "@pages/auth/AuthPage.vue";
-import DemoPage from "@pages/demo/DemoPage.vue";
+import DashboardPage from "@pages/demo/DashboardPage.vue";
 import { isAuthenticated } from "@shared/api/auth-session";
+import { ROUTES } from "@shared/routing/routes";
 
 import App from "./App.vue";
 import AppPreset from "./preset";
@@ -16,8 +17,8 @@ import "./style.scss";
 const app = createApp(App);
 
 const routes = [
-  { component: AuthPage, meta: { guestOnly: true }, path: "/" },
-  { component: DemoPage, meta: { authRequired: true }, path: "/demo" },
+  { component: DashboardPage, meta: { authRequired: true }, path: ROUTES.dashboard },
+  { component: AuthPage, meta: { guestOnly: true }, path: ROUTES.auth },
 ];
 
 export const router = createRouter({
@@ -27,11 +28,11 @@ export const router = createRouter({
 
 router.beforeEach(async (to) => {
   if (to.meta["guestOnly"]) {
-    return (await isAuthenticated()) ? "/demo" : true;
+    return (await isAuthenticated()) ? ROUTES.dashboard : true;
   }
 
   if (to.meta["authRequired"]) {
-    return (await isAuthenticated()) ? true : "/";
+    return (await isAuthenticated()) ? true : ROUTES.auth;
   }
 
   return true;

@@ -1,4 +1,7 @@
-from pydantic import BaseModel, EmailStr, Field
+from typing import Literal
+
+from pydantic import BaseModel, ConfigDict, EmailStr, Field
+from app.db.models import User
 
 
 class RegisterIn(BaseModel):
@@ -14,12 +17,25 @@ class LoginIn(BaseModel):
 
 
 class UserOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
     id: int
     email: str
     first_name: str
     last_name: str
     is_admin: bool
     is_active: bool
+    theme: Literal["light", "dark"] = "light"
+    language: Literal["en", "ua"] = "ua"
+
+    @classmethod
+    def from_user(cls, user: User) -> "UserOut":
+        return cls.model_validate(user)
+
+
+class UserPreferencesIn(BaseModel):
+    theme: Literal["light", "dark"]
+    language: Literal["en", "ua"]
 
 
 class ErrorOut(BaseModel):

@@ -3,7 +3,13 @@ from typing import Any
 from fastapi import APIRouter, Cookie, Depends, HTTPException, Response, status
 from sqlmodel import Session
 
-from app.api.auth.schemas import ErrorOut, LoginIn, RegisterIn, UserOut
+from app.api.auth.schemas import (
+    ErrorOut,
+    LoginIn,
+    RegisterIn,
+    UserOut,
+    UserPreferencesIn,
+)
 from app.api.auth.service import (
     InvalidOrExpiredTokenError,
     EmailAlreadyRegisteredError,
@@ -97,14 +103,7 @@ def register(
         )
         set_auth_cookie(response, user=user)
 
-        return UserOut(
-            id=user.id,
-            email=user.email,
-            first_name=user.first_name,
-            last_name=user.last_name,
-            is_admin=user.is_admin,
-            is_active=user.is_active,
-        )
+        return UserOut.from_user(user)
     except EmailAlreadyRegisteredError as exc:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
@@ -122,14 +121,7 @@ def login(
         user = authenticate_user(session=session, email=payload.email, password=payload.password)
         set_auth_cookie(response, user=user)
 
-        return UserOut(
-            id=user.id,
-            email=user.email,
-            first_name=user.first_name,
-            last_name=user.last_name,
-            is_admin=user.is_admin,
-            is_active=user.is_active,
-        )
+        return UserOut.from_user(user)
     except InvalidCredentialsError as exc:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -175,11 +167,20 @@ def logout(response: Response) -> Response:
 
 @router.get("/me", response_model=UserOut, responses=ME_RESPONSES)
 def me(current_user: User = Depends(get_current_user)) -> UserOut:
-    return UserOut(
-        id=current_user.id,
-        email=current_user.email,
-        first_name=current_user.first_name,
-        last_name=current_user.last_name,
-        is_admin=current_user.is_admin,
-        is_active=current_user.is_active,
-    )
+    return UserOut.from_user(current_user)
+
+
+@router.patch("/preferences", response_model=UserOut)
+def update_preferences(
+    payload: UserPreferencesIn,
+    current_user: User = Depends(get_current_user),
+    session: Session = Depends(get_session),
+) -> UserOut:
+    current_user.theme = payload.theme
+    current_user.language = payload.language
+
+    session.add(current_user)
+    session.commit()
+    session.refresh(current_user)
+
+    return UserOut.from_user(current_user)

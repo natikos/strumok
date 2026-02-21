@@ -38,5 +38,13 @@
     "tooManyRequests": "Too many requests. Please wait and try again",
     "unauthorized": "Please sign in and try again",
     "validationError": "Please check your data and try again"
+  },
+  "dashboard": {
+    "title": "SaaS Dashboard",
+    "role": "Developer",
+    "loadingUser": "Loading user",
+    "loadingTitle": "Loading dashboard...",
+    "welcomeTitle": "Welcome back, {name}!",
+    "emptyMessage": "Your dashboard layout is ready. Page widgets and content will be added next."
   }
 }

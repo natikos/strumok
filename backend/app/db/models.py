@@ -38,6 +38,8 @@ class User(SQLModel, table=True):
     password_hash: str
     is_admin: bool = Field(default=False)
     is_active: bool = Field(default=True)
+    theme: str = Field(default="light", max_length=16)
+    language: str = Field(default="ua", max_length=16)
     created_at: datetime = Field(default_factory=utc_now)
     updated_at: datetime = Field(
         default_factory=utc_now, sa_column_kwargs={"onupdate": utc_now}

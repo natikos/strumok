@@ -89,6 +89,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/auth/preferences": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Update Preferences */
+        patch: operations["update_preferences_auth_preferences_patch"];
+        trace?: never;
+    };
     "/health": {
         parameters: {
             query?: never;
@@ -158,6 +175,17 @@ export interface components {
             is_admin: boolean;
             /** Is Active */
             is_active: boolean;
+            /** Theme */
+            theme?: "light" | "dark" | null;
+            /** Language */
+            language?: "en" | "ua" | null;
+        };
+        /** UserPreferencesIn */
+        UserPreferencesIn: {
+            /** Theme */
+            theme: "light" | "dark";
+            /** Language */
+            language: "en" | "ua";
         };
         /** ValidationError */
         ValidationError: {
@@ -349,6 +377,41 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_preferences_auth_preferences_patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: {
+                access_token?: string | null;
+            };
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UserPreferencesIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UserOut"];
                 };
             };
             /** @description Validation Error */

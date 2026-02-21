@@ -6,6 +6,7 @@ import { appApiClient, buildApiError } from "./client";
 type LoginIn = components["schemas"]["LoginIn"];
 type RegisterIn = components["schemas"]["RegisterIn"];
 type UserOut = components["schemas"]["UserOut"];
+type UserPreferencesIn = components["schemas"]["UserPreferencesIn"];
 
 export { ApiError } from "./client";
 
@@ -37,6 +38,18 @@ export async function registerUser(payload: RegisterIn): Promise<UserOut> {
 
 export async function getMe(): Promise<UserOut> {
   const { data, error, response } = await appApiClient.GET("/auth/me");
+
+  if (error) {
+    throw buildApiError(response.status, error);
+  }
+
+  return data;
+}
+
+export async function updateMyPreferences(payload: UserPreferencesIn): Promise<UserOut> {
+  const { data, error, response } = await appApiClient.PATCH("/auth/preferences", {
+    body: payload,
+  });
 
   if (error) {
     throw buildApiError(response.status, error);

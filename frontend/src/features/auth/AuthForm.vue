@@ -107,6 +107,7 @@
   import type { FormSubmitEvent } from "@primevue/forms/form";
   import { ApiError, loginUser, registerUser } from "@shared/api/auth";
   import FormFieldControl from "@shared/FormFieldControl.vue";
+  import { ROUTES } from "@shared/routing/routes";
 
   type AuthMode = "login" | "register";
 
@@ -185,7 +186,7 @@
         });
       }
 
-      await router.push("/demo");
+      await router.push(ROUTES.dashboard);
     } catch (error: unknown) {
       // API errors are handled globally through client middleware + toast presenter.
       if (!(error instanceof ApiError) && error instanceof Error) {
