@@ -21,14 +21,16 @@ def register(payload: RegisterIn, session: Session = Depends(get_session)) -> Us
         user = register_user(
             session=session,
             email=payload.email,
-            full_name=payload.full_name,
+            first_name=payload.first_name,
+            last_name=payload.last_name,
             password=payload.password,
         )
 
         return UserOut(
             id=user.id,
             email=user.email,
-            full_name=user.full_name,
+            first_name=user.first_name,
+            last_name=user.last_name,
             is_admin=user.is_admin,
             is_active=user.is_active,
         )
@@ -58,7 +60,8 @@ def me(current_user: User = Depends(get_current_user)) -> UserOut:
     return UserOut(
         id=current_user.id,
         email=current_user.email,
-        full_name=current_user.full_name,
+        first_name=current_user.first_name,
+        last_name=current_user.last_name,
         is_admin=current_user.is_admin,
         is_active=current_user.is_active,
     )

@@ -21,11 +21,17 @@ class InvalidCredentialsError(Exception):
 
 
 def register_user(
-    *, session: Session, email: str, full_name: str, password: str
+    *,
+    session: Session,
+    email: str,
+    first_name: str,
+    last_name: str,
+    password: str,
 ) -> User:
     user = User(
         email=email.strip().lower(),
-        full_name=full_name.strip(),
+        first_name=first_name.strip(),
+        last_name=last_name.strip(),
         password_hash=pwd_context.hash(password),
     )
 

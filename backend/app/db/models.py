@@ -33,7 +33,8 @@ class User(SQLModel, table=True):
 
     id: int = Field(default=None, primary_key=True)
     email: str = Field(unique=True)
-    full_name: str
+    first_name: str
+    last_name: str
     password_hash: str
     is_admin: bool = Field(default=False)
     is_active: bool = Field(default=True)
