@@ -33,10 +33,11 @@
 </template>
 
 <script setup lang="ts">
-  import { useLocale } from "@features/i18n/composables/useLocale";
-  import { useTheme } from "@features/theme/composables/useTheme";
   import { computed } from "vue";
   import { useI18n } from "vue-i18n";
+
+  import { useLocale } from "@features/i18n/composables/useLocale";
+  import { useTheme } from "@features/theme/composables/useTheme";
 
   const { t } = useI18n();
   const { currentLocale, toggleLocale } = useLocale();

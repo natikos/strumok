@@ -1,9 +1,10 @@
+import { ref } from "vue";
+
 import {
   getThemePreference,
   setThemePreference,
   type ThemeMode,
 } from "@/features/preferences/preferences.storage";
-import { ref } from "vue";
 
 const theme = ref<ThemeMode>("light");
 

@@ -3,7 +3,12 @@
     <aside class="demo-sidebar">
       <img class="demo-sidebar__logo" src="/logo.svg" alt="Strumok Logo" />
       <nav class="demo-sidebar__menu" aria-label="Main">
-        <button v-for="item in sidebarItems" :key="item.icon" class="demo-sidebar__item" type="button">
+        <button
+          v-for="item in sidebarItems"
+          :key="item.icon"
+          class="demo-sidebar__item"
+          type="button"
+        >
           <i :class="item.icon"></i>
         </button>
       </nav>
@@ -40,10 +45,17 @@
       </header>
 
       <main class="demo-content">
-        <div class="demo-breadcrumb"><i class="pi pi-home"></i><span>/</span><span>SaaS Dashboard</span></div>
+        <div class="demo-breadcrumb">
+          <i class="pi pi-home"></i><span>/</span><span>SaaS Dashboard</span>
+        </div>
 
         <section class="demo-kpis">
-          <article v-for="kpi in kpis" :key="kpi.label" class="demo-kpi" :style="{ '--kpi-color': kpi.color }">
+          <article
+            v-for="kpi in kpis"
+            :key="kpi.label"
+            class="demo-kpi"
+            :style="{ '--kpi-color': kpi.color }"
+          >
             <i :class="kpi.icon"></i>
             <p>{{ kpi.label }}</p>
             <strong>{{ kpi.value }}</strong>
@@ -61,7 +73,12 @@
               <div v-for="(item, idx) in chartBars" :key="idx" class="demo-chart__item">
                 <div class="demo-chart__bar" :style="{ height: item + '%' }"></div>
               </div>
-              <svg class="demo-chart__line" viewBox="0 0 100 35" preserveAspectRatio="none" aria-hidden="true">
+              <svg
+                class="demo-chart__line"
+                viewBox="0 0 100 35"
+                preserveAspectRatio="none"
+                aria-hidden="true"
+              >
                 <polyline points="0,10 15,18 30,22 45,20 60,21 75,13 90,15 100,16" />
               </svg>
             </div>
@@ -100,11 +117,12 @@
 </template>
 
 <script setup lang="ts">
-  import { useLocale } from "@/features/i18n/composables/useLocale";
-  import { useTheme } from "@/features/theme/composables/useTheme";
   import Button from "primevue/button";
   import { computed } from "vue";
   import { useI18n } from "vue-i18n";
+
+  import { useLocale } from "@features/i18n/composables/useLocale";
+  import { useTheme } from "@features/theme/composables/useTheme";
 
   const { t } = useI18n();
   const { currentLocale, toggleLocale } = useLocale();
@@ -320,7 +338,11 @@
   }
 
   .demo-kpi__wave {
-    background: linear-gradient(90deg, color-mix(in srgb, var(--kpi-color), transparent 76%), transparent);
+    background: linear-gradient(
+      90deg,
+      color-mix(in srgb, var(--kpi-color), transparent 76%),
+      transparent
+    );
     border-radius: 999px;
     bottom: -1.5rem;
     height: 3.5rem;

@@ -189,12 +189,13 @@
 
 <script setup lang="ts">
   import { Form, FormField } from "@primevue/forms";
-  import type { FormSubmitEvent } from "@primevue/forms/form";
   import { zodResolver } from "@primevue/forms/resolvers/zod";
-  import { ApiError, loginUser, registerUser } from "@shared/api/auth";
   import { computed, ref } from "vue";
   import { useRouter } from "vue-router";
   import { z } from "zod";
+
+  import type { FormSubmitEvent } from "@primevue/forms/form";
+  import { ApiError, loginUser, registerUser } from "@shared/api/auth";
 
   type AuthMode = "login" | "register";
 

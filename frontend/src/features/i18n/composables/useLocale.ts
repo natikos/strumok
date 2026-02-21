@@ -1,10 +1,11 @@
+import { computed } from "vue";
+import { useI18n } from "vue-i18n";
+
 import {
   getLanguagePreference,
   type LanguageCode,
   setLanguagePreference,
 } from "@/features/preferences/preferences.storage";
-import { computed } from "vue";
-import { useI18n } from "vue-i18n";
 
 const SUPPORTED_LOCALES: readonly LanguageCode[] = ["en", "ua"];
 

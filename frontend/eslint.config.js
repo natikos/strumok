@@ -86,6 +86,12 @@ export default defineConfigWithVueTs(
               "relative-style",
             ],
           ],
+          internalPattern: [
+            "^@/.+",
+            "^@features/.+",
+            "^@pages/.+",
+            "^@shared/.+",
+          ],
           newlinesBetween: 1,
           order: "asc",
           sortSideEffects: true,
