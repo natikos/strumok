@@ -1,6 +1,6 @@
 import type { components } from "./generated/openapi.ts";
 
-import { apiClient, buildApiError } from "./client";
+import { appApiClient, buildApiError } from "./client";
 
 type LoginIn = components["schemas"]["LoginIn"];
 type RegisterIn = components["schemas"]["RegisterIn"];
@@ -9,7 +9,7 @@ type UserOut = components["schemas"]["UserOut"];
 export { ApiError } from "./client";
 
 export async function loginUser(payload: LoginIn): Promise<UserOut> {
-  const { data, error, response } = await apiClient.POST("/auth/login", {
+  const { data, error, response } = await appApiClient.POST("/auth/login", {
     body: payload,
   });
 
@@ -21,7 +21,7 @@ export async function loginUser(payload: LoginIn): Promise<UserOut> {
 }
 
 export async function registerUser(payload: RegisterIn): Promise<UserOut> {
-  const { data, error, response } = await apiClient.POST("/auth/register", {
+  const { data, error, response } = await appApiClient.POST("/auth/register", {
     body: payload,
   });
 

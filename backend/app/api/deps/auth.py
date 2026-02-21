@@ -1,8 +1,8 @@
 from fastapi import Cookie, Depends, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
-from jose import JWTError, jwt
 from sqlmodel import Session
 
+from app.api.auth.service import InvalidOrExpiredTokenError, get_user_from_token
 from app.core.config import settings
 from app.db.engine import get_session
 from app.db.models import User
@@ -16,35 +16,13 @@ MISSING_AUTHENTICATION_TOKEN_ERROR_CODE = "missingAuthenticationToken"
 
 def get_current_user_from_token(*, session: Session, token: str) -> User:
     try:
-        payload = jwt.decode(
-            token,
-            settings.auth.secret_key,
-            algorithms=[settings.auth.algorithm],
-        )
-
-        subject = payload.get("sub")
-
-        if subject is None:
-            raise ValueError("Token subject is missing")
-
-        user_id = int(subject)
-    except (JWTError, ValueError, TypeError) as exc:
+        return get_user_from_token(session=session, token=token)
+    except InvalidOrExpiredTokenError as exc:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail=INVALID_OR_EXPIRED_TOKEN_ERROR_CODE,
             headers=AUTH_CHALLENGE_HEADERS,
         ) from exc
-
-    user = session.get(User, user_id)
-
-    if user is None or not user.is_active:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail=INVALID_OR_EXPIRED_TOKEN_ERROR_CODE,
-            headers=AUTH_CHALLENGE_HEADERS,
-        )
-
-    return user
 
 
 def get_current_user(

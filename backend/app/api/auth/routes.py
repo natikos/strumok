@@ -1,16 +1,20 @@
 from typing import Any
 
-from fastapi import APIRouter, Depends, HTTPException, Response, status
+from fastapi import APIRouter, Cookie, Depends, HTTPException, Response, status
 from sqlmodel import Session
 
 from app.api.auth.schemas import ErrorOut, LoginIn, RegisterIn, UserOut
 from app.api.auth.service import (
+    InvalidOrExpiredTokenError,
     EmailAlreadyRegisteredError,
     InvalidCredentialsError,
-    login_user,
+    authenticate_user,
+    create_access_token,
+    get_user_from_token,
     register_user,
 )
-from app.api.deps import get_current_user, get_current_user_from_token
+from app.api.deps import get_current_user
+from app.api.deps.auth import AUTH_CHALLENGE_HEADERS
 from app.core.config import settings
 from app.db import get_session
 from app.db.models import User
@@ -62,6 +66,16 @@ ME_RESPONSES: dict[int | str, dict[str, Any]] = {
     }
 }
 
+def set_auth_cookie(response: Response, *, user: User) -> None:
+    response.set_cookie(
+        key=settings.auth.auth_cookie_name,
+        value=create_access_token(user),
+        httponly=True,
+        max_age=settings.auth_token_ttl_seconds,
+        samesite="lax",
+        secure=settings.auth_cookie_secure,
+    )
+
 @router.post(
     "/register",
     response_model=UserOut,
@@ -81,19 +95,7 @@ def register(
             last_name=payload.last_name,
             password=payload.password,
         )
-        token = login_user(
-            session=session,
-            email=payload.email,
-            password=payload.password,
-        )
-        response.set_cookie(
-            key=settings.auth.auth_cookie_name,
-            value=token,
-            httponly=True,
-            max_age=settings.auth_token_ttl_seconds,
-            samesite="lax",
-            secure=settings.auth_cookie_secure,
-        )
+        set_auth_cookie(response, user=user)
 
         return UserOut(
             id=user.id,
@@ -117,18 +119,8 @@ def login(
     session: Session = Depends(get_session),
 ) -> UserOut:
     try:
-        token = login_user(
-            session=session, email=payload.email, password=payload.password
-        )
-        user = get_current_user_from_token(session=session, token=token)
-        response.set_cookie(
-            key=settings.auth.auth_cookie_name,
-            value=token,
-            httponly=True,
-            max_age=settings.auth_token_ttl_seconds,
-            samesite="lax",
-            secure=settings.auth_cookie_secure,
-        )
+        user = authenticate_user(session=session, email=payload.email, password=payload.password)
+        set_auth_cookie(response, user=user)
 
         return UserOut(
             id=user.id,
@@ -143,6 +135,36 @@ def login(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="invalidCredentials",
         ) from exc
+
+
+@router.post("/refresh", status_code=status.HTTP_204_NO_CONTENT)
+def refresh(
+    response: Response,
+    access_token: str | None = Cookie(default=None, alias=settings.auth.auth_cookie_name),
+    session: Session = Depends(get_session),
+) -> Response:
+    if access_token is None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="missingAuthenticationToken",
+            headers=AUTH_CHALLENGE_HEADERS,
+        )
+
+    try:
+        user = get_user_from_token(
+            session=session,
+            token=access_token,
+            verify_expiration=False,
+        )
+    except InvalidOrExpiredTokenError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="invalidOrExpiredToken",
+            headers=AUTH_CHALLENGE_HEADERS,
+        ) from exc
+
+    set_auth_cookie(response, user=user)
+    return response
 
 
 @router.post("/logout", status_code=status.HTTP_204_NO_CONTENT)
