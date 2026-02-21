@@ -105,14 +105,20 @@ export interface components {
         };
         /** LoginIn */
         LoginIn: {
-            /** Email */
+            /**
+             * Email
+             * Format: email
+             */
             email: string;
             /** Password */
             password: string;
         };
         /** RegisterIn */
         RegisterIn: {
-            /** Email */
+            /**
+             * Email
+             * Format: email
+             */
             email: string;
             /** First Name */
             first_name: string;
