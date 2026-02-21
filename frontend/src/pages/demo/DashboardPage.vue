@@ -95,13 +95,8 @@
   onMounted(async () => {
     me.value = await getMe();
 
-    if (me.value.language) {
-      setLocale(me.value.language);
-    }
-
-    if (me.value.theme) {
-      setTheme(me.value.theme);
-    }
+    setLocale(me.value.language ?? "ua");
+    setTheme(me.value.theme ?? "light");
   });
 
   async function handleLocaleToggle(): Promise<void> {
@@ -163,8 +158,8 @@
 
 <style scoped lang="scss">
   .dashboard-page {
-    background: #edf3f8;
-    color: #223142;
+    background: var(--s-app-background);
+    color: var(--s-content-color);
     display: grid;
     grid-template-columns: 1fr;
     min-height: 100vh;
@@ -176,7 +171,7 @@
 
   .dashboard-sidebar__logo {
     aspect-ratio: 1;
-    border: 1px solid #d9e3ec;
+    border: 1px solid var(--s-content-border-color);
     border-radius: 999px;
     display: block;
     height: 3rem;
@@ -196,7 +191,7 @@
     background: transparent;
     border: 0;
     border-radius: var(--s-app-radius-sm);
-    color: #4b6176;
+    color: color-mix(in srgb, var(--s-content-color), transparent 22%);
     cursor: pointer;
     display: grid;
     font-size: 1.2rem;
@@ -207,7 +202,7 @@
   }
 
   .dashboard-sidebar__item:hover {
-    background: #f2f7fb;
+    background: var(--s-content-hover-background);
   }
 
   .dashboard-main {
@@ -218,8 +213,8 @@
 
   .dashboard-topbar {
     align-items: flex-start;
-    background: #ffffff;
-    border-bottom: 1px solid #d9e3ec;
+    background: var(--s-content-background);
+    border-bottom: 1px solid var(--s-content-border-color);
     display: flex;
     flex-direction: column;
     gap: var(--s-app-space-3);
@@ -229,7 +224,7 @@
   }
 
   .dashboard-topbar__hint {
-    color: #627991;
+    color: color-mix(in srgb, var(--s-content-color), transparent 35%);
     font-size: var(--s-app-font-size-sm);
     margin: 0;
   }
@@ -250,9 +245,9 @@
 
   .dashboard-profile__avatar {
     align-items: center;
-    background: #edf3f8;
+    background: var(--s-content-hover-background);
     border-radius: 999px;
-    color: #31475b;
+    color: var(--s-content-color);
     display: flex;
     font-size: 0.85rem;
     font-weight: 700;
@@ -268,13 +263,13 @@
   }
 
   .dashboard-profile__meta strong {
-    color: #25384a;
+    color: var(--s-content-color);
     font-size: 0.95rem;
     font-weight: 600;
   }
 
   .dashboard-profile__meta span {
-    color: #6f8397;
+    color: color-mix(in srgb, var(--s-content-color), transparent 35%);
     font-size: 0.8rem;
   }
 
@@ -284,7 +279,7 @@
 
   .dashboard-breadcrumb {
     align-items: center;
-    color: #6b8096;
+    color: color-mix(in srgb, var(--s-content-color), transparent 30%);
     display: flex;
     font-size: 0.9rem;
     gap: var(--s-app-space-2);
@@ -292,21 +287,21 @@
   }
 
   .dashboard-empty-card {
-    background: #ffffff;
-    border: 1px solid #d9e3ec;
+    background: var(--s-content-background);
+    border: 1px solid var(--s-content-border-color);
     border-radius: var(--s-app-radius-lg);
     min-height: 14rem;
     padding: var(--s-app-space-6);
   }
 
   .dashboard-empty-card h1 {
-    color: #24374a;
+    color: var(--s-content-color);
     font-size: 1.7rem;
     margin: 0 0 var(--s-app-space-2);
   }
 
   .dashboard-empty-card p {
-    color: #627991;
+    color: color-mix(in srgb, var(--s-content-color), transparent 35%);
     font-size: 1rem;
     margin: 0;
   }
@@ -332,8 +327,8 @@
 
     .dashboard-sidebar {
       align-items: center;
-      background: #ffffff;
-      border-right: 1px solid #d9e3ec;
+      background: var(--s-content-background);
+      border-right: 1px solid var(--s-content-border-color);
       display: flex;
       flex-direction: column;
       gap: var(--s-app-space-4);
