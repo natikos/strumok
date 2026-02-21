@@ -1,8 +1,6 @@
 {
   "python.defaultInterpreterPath": "${workspaceFolder}/backend/.venv/bin/python",
   "python.terminal.activateEnvironment": true,
-  "python.analysis.extraPaths": ["${workspaceFolder}/backend"],
-  "python.analysis.typeCheckingMode": "basic",
   "[python]": {
     "editor.defaultFormatter": "charliermarsh.ruff",
     "editor.formatOnSave": true,
@@ -27,7 +25,9 @@
     "package.json": "package-lock.json, pnpm*, .yarnrc*, yarn*, .eslint*, eslint*, .oxlint*, oxlint*, .oxfmt*, .prettier*, prettier*, .editorconfig"
   },
   "editor.codeActionsOnSave": {
-    "source.fixAll": "always"
+    "source.fixAll": "never",
+    "source.fixAll.ruff": "explicit",
+    "source.organizeImports": "explicit"
   },
   "eslint.workingDirectories": ["frontend"],
   "editor.formatOnSave": true,
