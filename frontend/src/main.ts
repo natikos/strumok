@@ -6,7 +6,7 @@ import { createRouter, createWebHistory } from "vue-router";
 
 import { i18n } from "@features/i18n";
 import AuthPage from "@pages/auth/AuthPage.vue";
-import DashboardPage from "@pages/demo/DashboardPage.vue";
+import DashboardPage from "@pages/dashboard/DashboardPage.vue";
 import { isAuthenticated } from "@shared/api/auth-session";
 import { ROUTES } from "@shared/routing/routes";
 
