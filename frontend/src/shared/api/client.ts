@@ -2,6 +2,8 @@ import createClient from "openapi-fetch";
 
 import type { paths } from "./generated/openapi.ts";
 
+import { showApiErrorToast } from "./error-toast";
+
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8000";
 
 export class ApiError extends Error {
@@ -21,6 +23,23 @@ export const apiClient = createClient<paths>({
 apiClient.use({
   onRequest({ request }) {
     return new Request(request, { credentials: "include" });
+  },
+  async onResponse({ response }) {
+    if (response.ok) {
+      return response;
+    }
+
+    let body: Record<"detail", string>;
+
+    try {
+      body = await response.clone().json();
+    } catch {
+      body = { detail: "" }; // Fallback
+    }
+
+    showApiErrorToast(response.status, body);
+
+    return response;
   },
 });
 

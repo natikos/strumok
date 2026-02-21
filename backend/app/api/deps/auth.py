@@ -10,6 +10,8 @@ from app.db.models import User
 http_bearer = HTTPBearer(auto_error=False)
 
 AUTH_CHALLENGE_HEADERS = {"WWW-Authenticate": "Bearer"}
+INVALID_OR_EXPIRED_TOKEN_ERROR_CODE = "invalidOrExpiredToken"
+MISSING_AUTHENTICATION_TOKEN_ERROR_CODE = "missingAuthenticationToken"
 
 
 def get_current_user_from_token(*, session: Session, token: str) -> User:
@@ -29,7 +31,7 @@ def get_current_user_from_token(*, session: Session, token: str) -> User:
     except (JWTError, ValueError, TypeError) as exc:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid or expired token",
+            detail=INVALID_OR_EXPIRED_TOKEN_ERROR_CODE,
             headers=AUTH_CHALLENGE_HEADERS,
         ) from exc
 
@@ -38,7 +40,7 @@ def get_current_user_from_token(*, session: Session, token: str) -> User:
     if user is None or not user.is_active:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid or expired token",
+            detail=INVALID_OR_EXPIRED_TOKEN_ERROR_CODE,
             headers=AUTH_CHALLENGE_HEADERS,
         )
 
@@ -57,7 +59,7 @@ def get_current_user(
     if token is None:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Missing authentication token",
+            detail=MISSING_AUTHENTICATION_TOKEN_ERROR_CODE,
             headers=AUTH_CHALLENGE_HEADERS,
         )
 

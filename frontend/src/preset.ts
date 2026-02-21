@@ -49,6 +49,30 @@ const AppPreset = definePreset(Aura, {
         }
       `,
     },
+    toast: {
+      css: () => `
+        .p-toast .p-toast-message .p-toast-message-content {
+          align-items: center;
+        }
+
+        .p-toast .p-toast-message .p-toast-message-text {
+          display: flex;
+          flex: 1;
+          justify-content: center;
+          margin: 0;
+          min-height: 2rem;
+        }
+
+        .p-toast .p-toast-message .p-toast-summary {
+          line-height: 1.2;
+          margin: 0;
+        }
+
+        .p-toast .p-toast-message .p-toast-close-button {
+          align-self: center;
+        }
+      `,
+    },
   },
   primitive: {
     borderRadius: {

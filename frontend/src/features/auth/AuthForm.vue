@@ -277,8 +277,8 @@
 
       await router.push("/demo");
     } catch (error: unknown) {
-      if (!(error instanceof ApiError)) {
-        // Keep noisy logs for unexpected exceptions while showing no global form error by design.
+      // API errors are handled globally through client middleware + toast presenter.
+      if (!(error instanceof ApiError) && error instanceof Error) {
         console.error(error);
       }
     } finally {

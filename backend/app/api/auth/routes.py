@@ -55,7 +55,7 @@ def register(
     except EmailAlreadyRegisteredError as exc:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
-            detail="Email is already registered",
+            detail="emailAlreadyRegistered",
         ) from exc
 
 
@@ -90,7 +90,7 @@ def login(
     except InvalidCredentialsError as exc:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid credentials",
+            detail="invalidCredentials",
         ) from exc
 
 

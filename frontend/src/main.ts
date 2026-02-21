@@ -1,5 +1,6 @@
 import "primeicons/primeicons.css";
 import PrimeVue from "primevue/config";
+import ToastService from "primevue/toastservice";
 import { createApp } from "vue";
 import { createRouter, createWebHistory } from "vue-router";
 
@@ -13,16 +14,6 @@ import "./style.scss";
 
 const app = createApp(App);
 
-app.use(PrimeVue, {
-  theme: {
-    options: {
-      darkModeSelector: ".dark",
-      prefix: "s",
-    },
-    preset: AppPreset,
-  },
-});
-
 const routes = [
   { component: AuthPage, path: "/" },
   { component: DemoPage, path: "/demo" },
@@ -33,6 +24,18 @@ export const router = createRouter({
   routes,
 });
 
-app.use(i18n).use(router);
+app
+  .use(i18n)
+  .use(router)
+  .use(PrimeVue, {
+    theme: {
+      options: {
+        darkModeSelector: ".dark",
+        prefix: "s",
+      },
+      preset: AppPreset,
+    },
+  })
+  .use(ToastService);
 
 app.mount("#app");

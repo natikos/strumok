@@ -30,5 +30,15 @@
     "switchToUkrainian": "Перемкнути мову на українську",
     "switchToLightTheme": "Увімкнути світлу тему",
     "switchToDarkTheme": "Увімкнути темну тему"
+  },
+  "errors": {
+    "emailAlreadyRegistered": "Ця електронна скринька вже зареєстрована",
+    "invalidCredentials": "Невірна електронна скринька або пароль",
+    "invalidOrExpiredToken": "Недійсний або прострочений токен",
+    "missingAuthenticationToken": "Відсутній токен автентифікації",
+    "requestFailed": "Помилка запиту",
+    "serverError": "Помилка сервера. Спробуйте пізніше",
+    "tooManyRequests": "Забагато запитів. Зачекайте та спробуйте ще раз",
+    "unauthorized": "Неавторизовано. Перевірте дані та спробуйте ще раз"
   }
 }

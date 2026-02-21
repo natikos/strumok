@@ -30,5 +30,15 @@
     "switchToUkrainian": "Switch to Ukrainian",
     "switchToLightTheme": "Switch to light theme",
     "switchToDarkTheme": "Switch to dark theme"
+  },
+  "errors": {
+    "emailAlreadyRegistered": "Email is already registered",
+    "invalidCredentials": "Invalid email or password",
+    "invalidOrExpiredToken": "Invalid or expired token",
+    "missingAuthenticationToken": "Missing authentication token",
+    "requestFailed": "Request failed",
+    "serverError": "Server error. Please try again later",
+    "tooManyRequests": "Too many requests. Please wait and try again",
+    "unauthorized": "Unauthorized. Check your credentials and try again"
   }
 }
