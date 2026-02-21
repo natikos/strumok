@@ -105,7 +105,7 @@ const AppPreset = definePreset(Aura, {
     colorScheme: {
       dark: {
         app: {
-          background: "{surface.950}",
+          background: "{surface.800}",
         },
         content: {
           background: "{surface.900}",
@@ -143,7 +143,7 @@ const AppPreset = definePreset(Aura, {
       },
       light: {
         app: {
-          background: "{surface.50}",
+          background: "{surface.0}",
         },
         content: {
           background: "#ffffff",
