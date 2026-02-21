@@ -44,8 +44,6 @@
 
 <script setup lang="ts">
   import { FormField } from "@primevue/forms";
-  import InputText from "primevue/inputtext";
-  import Password from "primevue/password";
 
   import Typography from "@shared/Typography.vue";
 
