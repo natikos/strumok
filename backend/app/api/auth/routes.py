@@ -156,12 +156,14 @@ def refresh(
         ) from exc
 
     set_auth_cookie(response, user=user)
+    response.status_code = status.HTTP_204_NO_CONTENT
     return response
 
 
 @router.post("/logout", status_code=status.HTTP_204_NO_CONTENT)
 def logout(response: Response) -> Response:
     response.delete_cookie(key=settings.auth.auth_cookie_name, samesite="lax")
+    response.status_code = status.HTTP_204_NO_CONTENT
     return response
 
 
