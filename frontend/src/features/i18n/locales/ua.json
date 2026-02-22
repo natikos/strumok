@@ -42,6 +42,7 @@
   "dashboard": {
     "title": "SaaS панель",
     "role": "Розробник",
+    "logout": "Вийти",
     "loadingUser": "Завантаження користувача",
     "loadingTitle": "Завантаження панелі...",
     "welcomeTitle": "З поверненням, {name}!",

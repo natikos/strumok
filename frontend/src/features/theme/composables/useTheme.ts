@@ -1,8 +1,9 @@
-import { ref } from "vue";
+import { computed, ref } from "vue";
 
 import type { ThemeMode } from "@/features/preferences/preferences.storage";
 
 const theme = ref<ThemeMode>("light");
+const isDarkTheme = computed(() => theme.value === "dark");
 
 function applyTheme(value: ThemeMode): void {
   theme.value = value;
@@ -24,13 +25,14 @@ export function useTheme() {
   };
 
   const toggleTheme = (): ThemeMode => {
-    const nextTheme: ThemeMode = theme.value === "dark" ? "light" : "dark";
+    const nextTheme: ThemeMode = isDarkTheme.value ? "light" : "dark";
     setTheme(nextTheme);
     return nextTheme;
   };
 
   return {
     initializeTheme,
+    isDarkTheme,
     setTheme,
     theme,
     toggleTheme,

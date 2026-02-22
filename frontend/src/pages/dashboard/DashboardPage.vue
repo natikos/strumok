@@ -3,41 +3,43 @@
     <aside class="dashboard-sidebar">
       <img class="dashboard-sidebar__logo" src="/icon.svg" alt="Strumok Icon" />
       <nav class="dashboard-sidebar__menu" aria-label="Main">
-        <button
+        <Button
           v-for="item in sidebarItems"
           :key="item.icon"
           class="dashboard-sidebar__item"
-          type="button"
+          variant="text"
+          rounded
+          :aria-label="item.label"
+          :title="item.label"
         >
           <i :class="item.icon"></i>
-        </button>
+        </Button>
       </nav>
+      <Button
+        class="dashboard-sidebar__item dashboard-sidebar__logout"
+        variant="text"
+        rounded
+        :aria-label="$t('dashboard.logout')"
+        :title="$t('dashboard.logout')"
+        :disabled="isLoggingOut"
+        @click="handleLogout"
+      >
+        <i class="pi pi-sign-out"></i>
+      </Button>
     </aside>
 
     <div class="dashboard-main">
       <header class="dashboard-topbar">
         <div class="dashboard-topbar__actions">
-          <Button
-            :label="languageLabel"
-            variant="text"
-            rounded
-            :aria-label="languageAriaLabel"
-            :title="languageAriaLabel"
-            @click="handleLocaleToggle"
-          />
-          <Button
-            :icon="themeIcon"
-            variant="text"
-            rounded
-            :aria-label="themeAriaLabel"
-            :title="themeAriaLabel"
-            @click="handleThemeToggle"
-          />
+          <LanguageToggleButton @toggle="handlePreferenceToggle({ language: $event })" />
+          <ThemeToggleButton @toggle="handlePreferenceToggle({ theme: $event })" />
           <div class="dashboard-profile">
             <div class="dashboard-profile__avatar">{{ profileInitials }}</div>
             <div class="dashboard-profile__meta">
-              <strong>{{ profileName }}</strong>
-              <span>{{ t("dashboard.role") }}</span>
+              <strong>{{
+                me ? `${me.first_name} ${me.last_name}` : $t("dashboard.loadingUser")
+              }}</strong>
+              <span>{{ $t("dashboard.role") }}</span>
             </div>
           </div>
         </div>
@@ -47,12 +49,18 @@
         <div class="dashboard-breadcrumb">
           <i class="pi pi-home" aria-hidden="true"></i>
           <span>/</span>
-          <span>{{ t("dashboard.title") }}</span>
+          <span>{{ $t("dashboard.title") }}</span>
         </div>
 
         <section class="dashboard-empty-card" aria-live="polite">
-          <h1>{{ welcomeTitle }}</h1>
-          <p>{{ welcomeMessage }}</p>
+          <h1>
+            {{
+              me
+                ? $t("dashboard.welcomeTitle", { name: me.first_name })
+                : $t("dashboard.loadingTitle")
+            }}
+          </h1>
+          <p>{{ $t("dashboard.emptyMessage") }}</p>
         </section>
       </main>
     </div>
@@ -62,33 +70,37 @@
 <script setup lang="ts">
   import Button from "primevue/button";
   import { computed, onMounted, ref } from "vue";
-  import { useI18n } from "vue-i18n";
+  import { useRouter } from "vue-router";
 
   import { useLocale } from "@features/i18n/composables/useLocale";
   import type { LanguageCode, ThemeMode } from "@features/preferences/preferences.storage";
   import { useTheme } from "@features/theme/composables/useTheme";
-  import { getMe, updateMyPreferences } from "@shared/api/auth";
+  import { getMe, logoutUser, updateMyPreferences } from "@shared/api/auth";
   import type { components } from "@shared/api/generated/openapi";
+  import LanguageToggleButton from "@shared/components/i18n/LanguageToggleButton.vue";
+  import ThemeToggleButton from "@shared/components/theme/ThemeToggleButton.vue";
+  import { ROUTES } from "@shared/routing/routes";
 
   type UserOut = components["schemas"]["UserOut"];
 
-  const { t } = useI18n();
-  const { currentLocale, setLocale, toggleLocale } = useLocale();
-  const { setTheme, theme, toggleTheme } = useTheme();
+  const router = useRouter();
+  const { setLocale } = useLocale();
+  const { setTheme } = useTheme();
 
   const sidebarItems = [
-    { icon: "pi pi-home" },
-    { icon: "pi pi-th-large" },
-    { icon: "pi pi-star" },
-    { icon: "pi pi-compass" },
-    { icon: "pi pi-briefcase" },
-    { icon: "pi pi-wallet" },
-    { icon: "pi pi-user" },
-    { icon: "pi pi-bars" },
-    { icon: "pi pi-download" },
+    { icon: "pi pi-home", label: "Home" },
+    { icon: "pi pi-th-large", label: "Apps" },
+    { icon: "pi pi-star", label: "Favorites" },
+    { icon: "pi pi-compass", label: "Explore" },
+    { icon: "pi pi-briefcase", label: "Projects" },
+    { icon: "pi pi-wallet", label: "Billing" },
+    { icon: "pi pi-user", label: "Profile" },
+    { icon: "pi pi-bars", label: "Menu" },
+    { icon: "pi pi-download", label: "Downloads" },
   ];
 
   const me = ref<UserOut | null>(null);
+  const isLoggingOut = ref(false);
 
   onMounted(async () => {
     me.value = await getMe();
@@ -97,19 +109,9 @@
     setTheme(me.value.theme ?? "light");
   });
 
-  async function handleLocaleToggle(): Promise<void> {
-    const nextLocale = toggleLocale();
-    await savePreferences({ language: nextLocale, theme: theme.value });
-  }
-
-  async function handleThemeToggle(): Promise<void> {
-    const nextTheme = toggleTheme();
-    await savePreferences({ language: currentLocale.value, theme: nextTheme });
-  }
-
-  async function savePreferences(payload: {
-    language: LanguageCode;
-    theme: ThemeMode;
+  async function handlePreferenceToggle(payload: {
+    language?: LanguageCode;
+    theme?: ThemeMode;
   }): Promise<void> {
     try {
       me.value = await updateMyPreferences(payload);
@@ -118,13 +120,20 @@
     }
   }
 
-  const profileName = computed(() => {
-    if (!me.value) {
-      return t("dashboard.loadingUser");
+  async function handleLogout(): Promise<void> {
+    if (isLoggingOut.value) {
+      return;
     }
 
-    return `${me.value.first_name} ${me.value.last_name}`;
-  });
+    isLoggingOut.value = true;
+
+    try {
+      await logoutUser();
+      await router.replace(ROUTES.auth);
+    } finally {
+      isLoggingOut.value = false;
+    }
+  }
 
   const profileInitials = computed(() => {
     if (!me.value) {
@@ -133,28 +142,6 @@
 
     return `${me.value.first_name[0] ?? ""}${me.value.last_name[0] ?? ""}`.toUpperCase();
   });
-
-  const welcomeTitle = computed(() => {
-    if (!me.value) {
-      return t("dashboard.loadingTitle");
-    }
-
-    return t("dashboard.welcomeTitle", { name: me.value.first_name });
-  });
-
-  const welcomeMessage = computed(() => t("dashboard.emptyMessage"));
-
-  const themeIcon = computed(() => (theme.value === "dark" ? "pi pi-moon" : "pi pi-sun"));
-
-  const themeAriaLabel = computed(() =>
-    theme.value === "dark" ? t("layout.switchToLightTheme") : t("layout.switchToDarkTheme")
-  );
-
-  const languageLabel = computed(() => (currentLocale.value === "ua" ? "UA" : "EN"));
-
-  const languageAriaLabel = computed(() =>
-    currentLocale.value === "ua" ? t("layout.switchToEnglish") : t("layout.switchToUkrainian")
-  );
 </script>
 
 <style scoped lang="scss">
@@ -178,6 +165,10 @@
     &__menu {
       @include layout.stack(var(--s-app-space-2));
       width: 100%;
+    }
+
+    &__logout {
+      margin-top: auto;
     }
 
     &__item {

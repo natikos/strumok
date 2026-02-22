@@ -1,6 +1,6 @@
 import type { components } from "./generated/openapi.ts";
 
-import { markAuthenticatedInCache } from "./auth-session";
+import { markAuthenticatedInCache, markUnauthenticatedInCache } from "./auth-session";
 import { appApiClient, buildApiError } from "./client";
 
 type LoginIn = components["schemas"]["LoginIn"];
@@ -46,7 +46,7 @@ export async function getMe(): Promise<UserOut> {
   return data;
 }
 
-export async function updateMyPreferences(payload: UserPreferencesIn): Promise<UserOut> {
+export async function updateMyPreferences(payload: Partial<UserPreferencesIn>): Promise<UserOut> {
   const { data, error, response } = await appApiClient.PATCH("/auth/preferences", {
     body: payload,
   });
@@ -56,4 +56,14 @@ export async function updateMyPreferences(payload: UserPreferencesIn): Promise<U
   }
 
   return data;
+}
+
+export async function logoutUser(): Promise<void> {
+  const { response } = await appApiClient.POST("/auth/logout");
+
+  if (!response.ok) {
+    throw buildApiError(response.status, undefined);
+  }
+
+  markUnauthenticatedInCache();
 }

@@ -19,7 +19,7 @@ export function markAuthenticatedInCache(): void {
   setCachedAuthState(true);
 }
 
-export function markGuestInCache(): void {
+export function markUnauthenticatedInCache(): void {
   setCachedAuthState(false);
 }
 
@@ -33,14 +33,14 @@ async function checkAuthenticationFromServer(): Promise<boolean> {
     }
 
     if (response.status !== 401) {
-      markGuestInCache();
+      markUnauthenticatedInCache();
       return false;
     }
 
     const { response: refreshResponse } = await authApiClient.POST("/auth/refresh");
 
     if (!refreshResponse.ok) {
-      markGuestInCache();
+      markUnauthenticatedInCache();
       return false;
     }
 
@@ -49,7 +49,7 @@ async function checkAuthenticationFromServer(): Promise<boolean> {
     setCachedAuthState(response.ok);
     return response.ok;
   } catch {
-    markGuestInCache();
+    markUnauthenticatedInCache();
     return false;
   } finally {
     pendingAuthCheck = null;

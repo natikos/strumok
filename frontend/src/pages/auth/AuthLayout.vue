@@ -4,25 +4,9 @@
       <img class="auth-layout__logo" src="/logo.svg?v=12312" alt="Strumok Logo" />
 
       <div class="auth-layout__controls">
-        <Button
-          class="auth-layout__language-toggle"
-          :label="languageLabel"
-          variant="text"
-          rounded
-          :aria-label="languageAriaLabel"
-          :title="languageAriaLabel"
-          @click="toggleLocale"
-        />
+        <LanguageToggleButton class="auth-layout__language-toggle" />
 
-        <Button
-          class="auth-layout__theme-toggle"
-          :icon="themeIcon"
-          variant="text"
-          rounded
-          :aria-label="themeAriaLabel"
-          :title="themeAriaLabel"
-          @click="toggleTheme"
-        />
+        <ThemeToggleButton class="auth-layout__theme-toggle" />
       </div>
     </header>
 
@@ -33,27 +17,8 @@
 </template>
 
 <script setup lang="ts">
-  import { computed } from "vue";
-  import { useI18n } from "vue-i18n";
-
-  import { useLocale } from "@features/i18n/composables/useLocale";
-  import { useTheme } from "@features/theme/composables/useTheme";
-
-  const { t } = useI18n();
-  const { currentLocale, toggleLocale } = useLocale();
-  const { theme, toggleTheme } = useTheme();
-
-  const themeIcon = computed(() => (theme.value === "dark" ? "pi pi-moon" : "pi pi-sun"));
-
-  const themeAriaLabel = computed(() =>
-    theme.value === "dark" ? t("layout.switchToLightTheme") : t("layout.switchToDarkTheme")
-  );
-
-  const languageLabel = computed(() => (currentLocale.value === "ua" ? "UA" : "EN"));
-
-  const languageAriaLabel = computed(() =>
-    currentLocale.value === "ua" ? t("layout.switchToEnglish") : t("layout.switchToUkrainian")
-  );
+  import LanguageToggleButton from "@shared/components/i18n/LanguageToggleButton.vue";
+  import ThemeToggleButton from "@shared/components/theme/ThemeToggleButton.vue";
 </script>
 
 <style lang="scss" scoped>

@@ -42,6 +42,7 @@
   "dashboard": {
     "title": "SaaS Dashboard",
     "role": "Developer",
+    "logout": "Logout",
     "loadingUser": "Loading user",
     "loadingTitle": "Loading dashboard...",
     "welcomeTitle": "Welcome back, {name}!",
