@@ -183,9 +183,9 @@ export interface components {
         /** UserPreferencesIn */
         UserPreferencesIn: {
             /** Theme */
-            theme: "light" | "dark";
+            theme?: "light" | "dark" | null;
             /** Language */
-            language: "en" | "ua";
+            language?: "en" | "ua" | null;
         };
         /** ValidationError */
         ValidationError: {
