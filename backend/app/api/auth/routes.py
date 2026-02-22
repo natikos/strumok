@@ -176,8 +176,11 @@ def update_preferences(
     current_user: User = Depends(get_current_user),
     session: Session = Depends(get_session),
 ) -> UserOut:
-    current_user.theme = payload.theme
-    current_user.language = payload.language
+    if payload.theme is not None:
+        current_user.theme = payload.theme
+
+    if payload.language is not None:
+        current_user.language = payload.language
 
     session.add(current_user)
     session.commit()

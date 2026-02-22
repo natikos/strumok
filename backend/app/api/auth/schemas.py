@@ -34,8 +34,8 @@ class UserOut(BaseModel):
 
 
 class UserPreferencesIn(BaseModel):
-    theme: Literal["light", "dark"]
-    language: Literal["en", "ua"]
+    theme: Literal["light", "dark"] | None = None
+    language: Literal["en", "ua"] | None = None
 
 
 class ErrorOut(BaseModel):
