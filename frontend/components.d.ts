@@ -19,10 +19,12 @@ declare module 'vue' {
     DashboardPage: typeof import('./src/pages/dashboard/DashboardPage.vue')['default']
     FormFieldControl: typeof import('./src/shared/FormFieldControl.vue')['default']
     InputText: typeof import('primevue/inputtext')['default']
+    LanguageToggleButton: typeof import('./src/shared/components/i18n/LanguageToggleButton.vue')['default']
     Password: typeof import('primevue/password')['default']
     RouterLink: typeof import('vue-router')['RouterLink']
     RouterView: typeof import('vue-router')['RouterView']
     SelectButton: typeof import('primevue/selectbutton')['default']
+    ThemeToggleButton: typeof import('./src/shared/components/theme/ThemeToggleButton.vue')['default']
     Typography: typeof import('./src/shared/Typography.vue')['default']
   }
 }
