@@ -150,11 +150,13 @@ const AppPreset = definePreset(Aura, {
       },
       light: {
         app: {
+          backgroundStart: "{primary.400}",
+          backgroundEnd: "{primary.50}",
           background: "{surface.50}",
         },
         shell: {
           background:
-            "linear-gradient(to top left, var(--s-primary-900) 0%, var(--s-primary-100) 60%)",
+            "linear-gradient(to top left, {app.backgroundStart} 0%, {app.backgroundEnd} 75%)",
           borderColor: "{surface.200}",
           itemHoverBackground: "{surface.200}",
         },
@@ -195,17 +197,17 @@ const AppPreset = definePreset(Aura, {
       },
     },
     primary: {
-      50: "#eaf3ff",
-      100: "#cfe1ff",
-      200: "#a8c6f0",
-      300: "#7eabd8",
-      400: "#5f92c0",
-      500: "#3f79a8",
-      600: "#1f5f87",
-      700: "#003566",
-      800: "#002b52",
-      900: "#00223f",
-      950: "#00172b",
+      50: "#edf7ff",
+      100: "#d8ecff",
+      200: "#b8daf8",
+      300: "#8fc2ec",
+      400: "#5ea7e3",
+      500: "#2c8ad7",
+      600: "#1f74bf",
+      700: "#195f9e",
+      800: "#144a7b",
+      900: "#0e3559",
+      950: "#08233d",
     },
   },
 });

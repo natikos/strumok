@@ -1,7 +1,7 @@
 <template>
   <div class="auth-layout">
     <header class="auth-layout__header">
-      <img class="auth-layout__logo" src="/logo.svg?v=12312" alt="Strumok Logo" />
+      <img class="auth-layout__logo" src="/logo.svg" alt="Strumok Logo" />
 
       <div class="auth-layout__controls">
         <LanguageToggleButton class="auth-layout__language-toggle" />
@@ -24,7 +24,11 @@
 <style lang="scss" scoped>
   .auth-layout {
     @include layout.stack(0);
-    background: var(--s-app-background);
+    background: linear-gradient(
+      to top,
+      var(--s-app-background-start) 0%,
+      var(--s-app-background-end) 75%
+    );
     height: 100dvh;
     min-width: 20rem;
     width: 100%;
@@ -113,7 +117,7 @@
     }
   }
 
-  :global(.dark) .auth-layout {
+  .dark .auth-layout {
     background: var(--s-app-background);
   }
 </style>
