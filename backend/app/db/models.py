@@ -26,6 +26,16 @@ class FundEntryType(StrEnum):
     MANUAL_ADJUSTMENT = "manual_adjustment"
 
 
+class ThemeMode(StrEnum):
+    LIGHT = "light"
+    DARK = "dark"
+
+
+class LanguageCode(StrEnum):
+    EN = "en"
+    UA = "ua"
+
+
 class User(SQLModel, table=True):
     """System user account that can belong to one or more households."""
 
@@ -38,8 +48,8 @@ class User(SQLModel, table=True):
     password_hash: str
     is_admin: bool = Field(default=False)
     is_active: bool = Field(default=True)
-    theme: str = Field(default="light", max_length=16)
-    language: str = Field(default="ua", max_length=16)
+    theme: ThemeMode = Field(default=ThemeMode.LIGHT, max_length=16)
+    language: LanguageCode = Field(default=LanguageCode.UA, max_length=16)
     created_at: datetime = Field(default_factory=utc_now)
     updated_at: datetime = Field(
         default_factory=utc_now, sa_column_kwargs={"onupdate": utc_now}

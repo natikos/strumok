@@ -21,10 +21,10 @@
 
   let unregisterToastPresenter: VoidFunction | null = null;
 
-  onMounted(() => {
-    initializeLocale();
-    initializeTheme();
+  initializeLocale();
+  initializeTheme();
 
+  onMounted(() => {
     unregisterToastPresenter = registerToastPresenter((payload) => {
       const isTranslationKeyValid = i18n.te(payload.messageKey);
 

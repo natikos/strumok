@@ -1,7 +1,11 @@
 import { computed } from "vue";
 import { useI18n } from "vue-i18n";
 
-import type { LanguageCode } from "@/features/preferences/preferences.storage";
+import {
+  getStoredLanguage,
+  type LanguageCode,
+  storeLanguage,
+} from "@/features/preferences/preferences.storage";
 
 const SUPPORTED_LOCALES: readonly LanguageCode[] = ["en", "ua"];
 
@@ -9,8 +13,7 @@ export function useLocale() {
   const { locale } = useI18n();
 
   const initializeLocale = (): void => {
-    const browserLocale = navigator.language.toLowerCase();
-    locale.value = browserLocale.startsWith("uk") ? "ua" : "en";
+    setLocale(getStoredLanguage());
   };
 
   const setLocale = (value: LanguageCode): void => {
@@ -19,16 +22,17 @@ export function useLocale() {
     }
 
     locale.value = value;
+    storeLanguage(value);
   };
 
   const toggleLocale = (): LanguageCode => {
-    const nextLocale: LanguageCode = locale.value === "ua" ? "en" : "ua";
+    const nextLocale: LanguageCode = locale.value === "en" ? "ua" : "en";
     setLocale(nextLocale);
     return nextLocale;
   };
 
   return {
-    currentLocale: computed(() => locale.value === "ua" ? "ua" : "en"),
+    currentLocale: computed(() => (locale.value === "ua" ? "ua" : "en") as LanguageCode),
     initializeLocale,
     setLocale,
     toggleLocale,

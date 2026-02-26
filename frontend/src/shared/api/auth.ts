@@ -5,7 +5,7 @@ import { appApiClient, buildApiError } from "./client";
 
 type LoginIn = components["schemas"]["LoginIn"];
 type RegisterIn = components["schemas"]["RegisterIn"];
-type UserOut = components["schemas"]["UserOut"];
+export type UserOut = components["schemas"]["UserOut"];
 type UserPreferencesIn = components["schemas"]["UserPreferencesIn"];
 
 export { ApiError } from "./client";

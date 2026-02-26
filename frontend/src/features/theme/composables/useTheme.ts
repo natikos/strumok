@@ -1,6 +1,10 @@
 import { computed, ref } from "vue";
 
-import type { ThemeMode } from "@/features/preferences/preferences.storage";
+import {
+  getStoredTheme,
+  storeTheme,
+  type ThemeMode,
+} from "@/features/preferences/preferences.storage";
 
 const theme = ref<ThemeMode>("light");
 const isDarkTheme = computed(() => theme.value === "dark");
@@ -9,15 +13,12 @@ function applyTheme(value: ThemeMode): void {
   theme.value = value;
   document.documentElement.classList.toggle("dark", value === "dark");
   document.documentElement.style.colorScheme = value;
-}
-
-function getSystemTheme(): ThemeMode {
-  return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+  storeTheme(value);
 }
 
 export function useTheme() {
   const initializeTheme = (): void => {
-    applyTheme(getSystemTheme());
+    applyTheme(getStoredTheme());
   };
 
   const setTheme = (value: ThemeMode): void => {

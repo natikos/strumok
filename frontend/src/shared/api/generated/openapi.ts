@@ -137,6 +137,11 @@ export interface components {
             /** Detail */
             detail?: components["schemas"]["ValidationError"][];
         };
+        /**
+         * LanguageCode
+         * @enum {string}
+         */
+        LanguageCode: "en" | "ua";
         /** LoginIn */
         LoginIn: {
             /**
@@ -161,6 +166,11 @@ export interface components {
             /** Password */
             password: string;
         };
+        /**
+         * ThemeMode
+         * @enum {string}
+         */
+        ThemeMode: "light" | "dark";
         /** UserOut */
         UserOut: {
             /** Id */
@@ -175,17 +185,13 @@ export interface components {
             is_admin: boolean;
             /** Is Active */
             is_active: boolean;
-            /** Theme */
-            theme?: "light" | "dark" | null;
-            /** Language */
-            language?: "en" | "ua" | null;
+            theme: components["schemas"]["ThemeMode"];
+            language: components["schemas"]["LanguageCode"];
         };
         /** UserPreferencesIn */
         UserPreferencesIn: {
-            /** Theme */
-            theme?: "light" | "dark" | null;
-            /** Language */
-            language?: "en" | "ua" | null;
+            theme?: components["schemas"]["ThemeMode"] | null;
+            language?: components["schemas"]["LanguageCode"] | null;
         };
         /** ValidationError */
         ValidationError: {

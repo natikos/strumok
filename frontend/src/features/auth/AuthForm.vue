@@ -104,14 +104,19 @@
   import { useRouter } from "vue-router";
   import { z } from "zod";
 
+  import { useLocale } from "@features/i18n/composables/useLocale";
+  import { useTheme } from "@features/theme/composables/useTheme";
   import type { FormSubmitEvent } from "@primevue/forms/form";
   import { ApiError, loginUser, registerUser } from "@shared/api/auth";
+  import type { UserOut } from "@shared/api/auth";
   import FormFieldControl from "@shared/FormFieldControl.vue";
   import { ROUTES } from "@shared/routing/routes";
 
   type AuthMode = "login" | "register";
 
   const router = useRouter();
+  const { setLocale } = useLocale();
+  const { setTheme } = useTheme();
 
   const mode = ref<AuthMode>("login");
   const isSubmitting = ref(false);
@@ -156,6 +161,8 @@
     isSubmitting.value = true;
 
     try {
+      let me: UserOut;
+
       if (isRegisterMode.value) {
         const { success, data } = registerSchema.safeParse(values);
 
@@ -165,7 +172,7 @@
 
         const { email, firstName, lastName, password } = data;
 
-        await registerUser({
+        me = await registerUser({
           email,
           first_name: firstName,
           last_name: lastName,
@@ -180,11 +187,14 @@
 
         const { email, password } = data;
 
-        await loginUser({
+        me = await loginUser({
           email,
           password,
         });
       }
+
+      setLocale(me.language);
+      setTheme(me.theme);
 
       await router.push(ROUTES.dashboard);
     } catch (error: unknown) {

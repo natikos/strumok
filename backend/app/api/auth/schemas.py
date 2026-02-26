@@ -1,7 +1,6 @@
-from typing import Literal
-
 from pydantic import BaseModel, ConfigDict, EmailStr, Field
-from app.db.models import User
+
+from app.db.models import LanguageCode, ThemeMode, User
 
 
 class RegisterIn(BaseModel):
@@ -25,8 +24,8 @@ class UserOut(BaseModel):
     last_name: str
     is_admin: bool
     is_active: bool
-    theme: Literal["light", "dark"] = "light"
-    language: Literal["en", "ua"] = "ua"
+    theme: ThemeMode
+    language: LanguageCode
 
     @classmethod
     def from_user(cls, user: User) -> "UserOut":
@@ -34,8 +33,8 @@ class UserOut(BaseModel):
 
 
 class UserPreferencesIn(BaseModel):
-    theme: Literal["light", "dark"] | None = None
-    language: Literal["en", "ua"] | None = None
+    theme: ThemeMode | None = None
+    language: LanguageCode | None = None
 
 
 class ErrorOut(BaseModel):

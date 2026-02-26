@@ -104,9 +104,8 @@
 
   onMounted(async () => {
     me.value = await getMe();
-
-    setLocale(me.value.language ?? "ua");
-    setTheme(me.value.theme ?? "light");
+    setLocale(me.value.language);
+    setTheme(me.value.theme);
   });
 
   async function handlePreferenceToggle(payload: {
@@ -115,6 +114,8 @@
   }): Promise<void> {
     try {
       me.value = await updateMyPreferences(payload);
+      setLocale(me.value.language);
+      setTheme(me.value.theme);
     } catch {
       // API errors are already shown globally by the client middleware.
     }
