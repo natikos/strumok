@@ -24,6 +24,7 @@
 <style lang="scss" scoped>
   .auth-layout {
     @include layout.stack(0);
+    background: var(--s-app-background);
     height: 100dvh;
     min-width: 20rem;
     width: 100%;
@@ -110,5 +111,9 @@
         padding: var(--s-app-space-3) var(--s-app-space-6) var(--s-app-space-4);
       }
     }
+  }
+
+  :global(.dark) .auth-layout {
+    background: var(--s-app-background);
   }
 </style>

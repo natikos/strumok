@@ -146,7 +146,7 @@
 
 <style scoped lang="scss">
   .dashboard-page {
-    background: var(--s-content-background);
+    background: var(--s-shell-background);
     color: var(--s-content-color);
     display: grid;
     grid-template-columns: 1fr;
@@ -186,7 +186,7 @@
       width: 100%;
 
       &:hover {
-        background: var(--s-content-hover-background);
+        background: var(--s-shell-item-hover-background);
       }
     }
   }
@@ -200,7 +200,7 @@
   .dashboard-topbar {
     @include layout.stack(var(--s-app-space-3));
     align-items: flex-start;
-    background: var(--s-content-background);
+    background: transparent;
     min-height: 4rem;
     justify-content: center;
     padding: var(--s-app-space-4);
@@ -299,7 +299,7 @@
     .dashboard-sidebar {
       @include layout.stack(var(--s-app-space-4));
       align-items: center;
-      background: var(--s-content-background);
+      background: transparent;
       padding: var(--s-app-space-3) var(--s-app-space-2);
     }
 
