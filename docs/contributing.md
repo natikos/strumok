@@ -1,4 +1,6 @@
-# Commit Messages
+# Contributing
+
+## Commit Messages
 
 All commit messages must follow the [Conventional Commits](https://www.conventionalcommits.org/) specification.
 

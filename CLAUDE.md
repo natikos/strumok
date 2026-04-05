@@ -1,1 +1,2 @@
-@docs/claude/commits.md
+@docs/contributing.md
+@docs/deployment.md
