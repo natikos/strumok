@@ -9,12 +9,12 @@ packages = ["."]
 # Project metadata
 [project]
 name = "strumok"
-version = "0.1.0"
+version = "0.0.1"
 description = "Co-op electricity meter reporting app"
 requires-python = ">=3.14"
 authors = [{ name = "natikos" }]
 dependencies = [
-  "fastapi>=0.116.1",
+  "fastapi[standard]>=0.116.1",
   "uvicorn[standard]>=0.35.0",
   "pydantic-settings>=2.12",
   "sqlmodel>=0.0.33",
@@ -23,6 +23,7 @@ dependencies = [
   "python-jose[cryptography]>=3.5.0",
   "psycopg[binary]>=3.3.2",
   "email-validator>=2.2.0",
+  "fastapi-cloud>=0.0.1",
 ]
 
 [project.optional-dependencies]

@@ -1,0 +1,34 @@
+name: Deployment
+on:
+  push:
+    tags:
+      - "v*"
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@v2
+
+      - name: Install frontend dependencies
+        run: bun install
+        working-directory: frontend
+
+      - name: Build frontend
+        run: bun run build
+        working-directory: frontend
+
+      - name: Copy frontend build
+        run: cp -r frontend/dist backend/dist
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version-file: backend/pyproject.toml
+
+      - name: Install FastAPI Cloud CLI
+        run: pip install fastapi-cloud
+
+      - name: Deploy
+        run: fastapi-cloud deploy --token ${{ secrets.FASTAPI_CLOUD_TOKEN }}
+        working-directory: backend
