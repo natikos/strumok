@@ -5,9 +5,6 @@ import { createApp } from "vue";
 import { createRouter, createWebHistory, type RouteRecordRaw } from "vue-router";
 
 import { i18n } from "@features/i18n";
-import AuthPage from "@pages/auth/AuthPage.vue";
-import VerifyEmailPage from "@pages/auth/VerifyEmailPage.vue";
-import DashboardPage from "@pages/dashboard/DashboardPage.vue";
 import { getAuthSessionState, initAuthSession } from "@shared/api/auth-session";
 import { ROUTES } from "@shared/routing/routes";
 
@@ -18,9 +15,9 @@ import "./style.scss";
 const app = createApp(App);
 
 const routes: RouteRecordRaw[] = [
-  { component: DashboardPage, meta: { authRequired: true }, path: ROUTES.dashboard },
-  { component: AuthPage, meta: { guestOnly: true }, path: ROUTES.auth },
-  { component: VerifyEmailPage, meta: { authRequired: true }, path: ROUTES.verifyEmail },
+  { component: () => import("@pages/dashboard/DashboardPage.vue"), meta: { authRequired: true }, path: ROUTES.dashboard },
+  { component: () => import("@pages/auth/AuthPage.vue"), meta: { guestOnly: true }, path: ROUTES.auth },
+  { component: () => import("@pages/auth/VerifyEmailPage.vue"), meta: { authRequired: true }, path: ROUTES.verifyEmail },
 ];
 
 export const router = createRouter({
