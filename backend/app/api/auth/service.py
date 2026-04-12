@@ -24,6 +24,12 @@ class InvalidOrExpiredTokenError(Exception):
     pass
 
 
+class VerificationEmailRateLimitError(Exception):
+    def __init__(self, *, retry_after_seconds: int):
+        super().__init__("verificationEmailCooldown")
+        self.retry_after_seconds = retry_after_seconds
+
+
 def create_access_token(user: User) -> str:
     expires = utc_now() + timedelta(minutes=settings.auth.access_token_expiration)
     payload = {
@@ -32,7 +38,9 @@ def create_access_token(user: User) -> str:
         "exp": expires,
         "type": "access",
     }
-    return jwt.encode(payload, settings.auth.secret_key, algorithm=settings.auth.algorithm)
+    return jwt.encode(
+        payload, settings.auth.secret_key, algorithm=settings.auth.algorithm
+    )
 
 
 def authenticate_user(*, session: Session, email: str, password: str) -> User:
@@ -107,3 +115,21 @@ def register_user(
 def login_user(*, session: Session, email: str, password: str) -> str:
     user = authenticate_user(session=session, email=email, password=password)
     return create_access_token(user)
+
+
+def request_email_verification_link(*, session: Session, user: User) -> None:
+    cooldown_seconds = settings.auth.verify_email_resend_cooldown_seconds
+    now = utc_now()
+    last_sent_at = user.verification_email_last_sent_at
+
+    if last_sent_at is not None:
+        elapsed_seconds = int((now - last_sent_at).total_seconds())
+        remaining_seconds = cooldown_seconds - elapsed_seconds
+
+        if remaining_seconds > 0:
+            raise VerificationEmailRateLimitError(retry_after_seconds=remaining_seconds)
+
+    # Email provider integration should be triggered from here.
+    user.verification_email_last_sent_at = now
+    session.add(user)
+    session.commit()

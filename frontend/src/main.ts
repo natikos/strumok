@@ -2,12 +2,13 @@ import "primeicons/primeicons.css";
 import PrimeVue from "primevue/config";
 import ToastService from "primevue/toastservice";
 import { createApp } from "vue";
-import { createRouter, createWebHistory } from "vue-router";
+import { createRouter, createWebHistory, type RouteRecordRaw } from "vue-router";
 
 import { i18n } from "@features/i18n";
 import AuthPage from "@pages/auth/AuthPage.vue";
+import VerifyEmailPage from "@pages/auth/VerifyEmailPage.vue";
 import DashboardPage from "@pages/dashboard/DashboardPage.vue";
-import { isAuthenticated } from "@shared/api/auth-session";
+import { getAuthSessionState, initAuthSession } from "@shared/api/auth-session";
 import { ROUTES } from "@shared/routing/routes";
 
 import App from "./App.vue";
@@ -16,9 +17,10 @@ import "./style.scss";
 
 const app = createApp(App);
 
-const routes = [
+const routes: RouteRecordRaw[] = [
   { component: DashboardPage, meta: { authRequired: true }, path: ROUTES.dashboard },
   { component: AuthPage, meta: { guestOnly: true }, path: ROUTES.auth },
+  { component: VerifyEmailPage, meta: { authRequired: true }, path: ROUTES.verifyEmail },
 ];
 
 export const router = createRouter({
@@ -26,13 +28,36 @@ export const router = createRouter({
   routes,
 });
 
+const authReady = initAuthSession();
+
 router.beforeEach(async (to) => {
+  await authReady;
+
+  const { isAuthenticated, isEmailVerified } = getAuthSessionState();
+  const isGoingToVerify = to.path === ROUTES.verifyEmail;
+
   if (to.meta["guestOnly"]) {
-    return (await isAuthenticated()) ? ROUTES.dashboard : true;
+    if (!isAuthenticated) {
+      return true;
+    }
+
+    return isEmailVerified ? ROUTES.dashboard : ROUTES.verifyEmail;
   }
 
   if (to.meta["authRequired"]) {
-    return (await isAuthenticated()) ? true : ROUTES.auth;
+    if (!isAuthenticated) {
+      return ROUTES.auth;
+    }
+
+    if (!isEmailVerified && !isGoingToVerify) {
+      return ROUTES.verifyEmail;
+    }
+
+    if (isEmailVerified && isGoingToVerify) {
+      return ROUTES.dashboard;
+    }
+
+    return true;
   }
 
   return true;

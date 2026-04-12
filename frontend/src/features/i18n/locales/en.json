@@ -37,7 +37,15 @@
     "serverError": "Something went wrong. Please try again",
     "tooManyRequests": "Too many requests. Please wait and try again",
     "unauthorized": "Please sign in and try again",
-    "validationError": "Please check your data and try again"
+    "validationError": "Please check your data and try again",
+    "verificationEmailCooldown": "Please wait before requesting another verification email"
+  },
+  "verifyEmail": {
+    "title": "Hi, {name}",
+    "subtitle": "Your email {email} is not verified yet. Verify it to continue.",
+    "sendButton": "Send verification link",
+    "resendCooldown": "Resend in {timer}",
+    "checkButton": "I already verified"
   },
   "dashboard": {
     "title": "SaaS Dashboard",

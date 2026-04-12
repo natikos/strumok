@@ -1,23 +1,31 @@
 <template>
   <Toast position="top-right" />
-  <RouterView />
+  <RouterView v-if="isReady" />
+  <AppLoader v-else />
 </template>
 
 <script setup lang="ts">
   import Toast from "primevue/toast";
   import { useToast } from "primevue/usetoast";
-  import { onBeforeUnmount, onMounted } from "vue";
+  import { onBeforeUnmount, onMounted, ref } from "vue";
   import { useI18n } from "vue-i18n";
-  import { RouterView } from "vue-router";
+  import { RouterView, useRouter } from "vue-router";
 
   import { useLocale } from "@features/i18n/composables/useLocale";
   import { useTheme } from "@features/theme/composables/useTheme";
   import { registerToastPresenter } from "@shared/api/error-toast";
+  import AppLoader from "@shared/components/AppLoader.vue";
 
+  const router = useRouter();
   const { initializeLocale } = useLocale();
   const { initializeTheme } = useTheme();
   const i18n = useI18n();
   const toast = useToast();
+  const isReady = ref(false);
+
+  void router.isReady().then(() => {
+    isReady.value = true;
+  });
 
   let unregisterToastPresenter: VoidFunction | null = null;
 

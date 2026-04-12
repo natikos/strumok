@@ -106,6 +106,23 @@ export interface paths {
         patch: operations["update_preferences_auth_preferences_patch"];
         trace?: never;
     };
+    "/auth/verification-link": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Send Verification Link */
+        post: operations["send_verification_link_auth_verification_link_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/health": {
         parameters: {
             query?: never;
@@ -185,6 +202,10 @@ export interface components {
             is_admin: boolean;
             /** Is Active */
             is_active: boolean;
+            /** Email Verified */
+            email_verified: boolean;
+            /** Verification Email Retry After Seconds */
+            verification_email_retry_after_seconds: number;
             theme: components["schemas"]["ThemeMode"];
             language: components["schemas"]["LanguageCode"];
         };
@@ -427,6 +448,49 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    send_verification_link_auth_verification_link_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: {
+                access_token?: string | null;
+            };
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+            /** @description Verification email cooldown is active */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "detail": "verificationEmailCooldown"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorOut"];
                 };
             };
         };

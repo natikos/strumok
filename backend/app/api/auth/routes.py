@@ -14,9 +14,11 @@ from app.api.auth.service import (
     InvalidOrExpiredTokenError,
     EmailAlreadyRegisteredError,
     InvalidCredentialsError,
+    VerificationEmailRateLimitError,
     authenticate_user,
     create_access_token,
     get_user_from_token,
+    request_email_verification_link,
     register_user,
 )
 from app.api.deps import get_current_user
@@ -71,6 +73,20 @@ ME_RESPONSES: dict[int | str, dict[str, Any]] = {
         },
     }
 }
+
+
+VERIFICATION_LINK_RESPONSES: dict[int | str, dict[str, Any]] = {
+    status.HTTP_429_TOO_MANY_REQUESTS: {
+        "description": "Verification email cooldown is active",
+        "model": ErrorOut,
+        "content": {
+            "application/json": {
+                "example": {"detail": "verificationEmailCooldown"},
+            }
+        },
+    }
+}
+
 
 def set_auth_cookie(response: Response, *, user: User) -> None:
     response.set_cookie(
@@ -189,3 +205,26 @@ def update_preferences(
     session.refresh(current_user)
 
     return UserOut.from_user(current_user)
+
+
+@router.post(
+    "/verification-link",
+    status_code=status.HTTP_204_NO_CONTENT,
+    responses=VERIFICATION_LINK_RESPONSES,
+)
+def send_verification_link(
+    current_user: User = Depends(get_current_user),
+    session: Session = Depends(get_session),
+) -> Response:
+    if current_user.email_verified:
+        return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+    try:
+        request_email_verification_link(session=session, user=current_user)
+        return Response(status_code=status.HTTP_204_NO_CONTENT)
+    except VerificationEmailRateLimitError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail="verificationEmailCooldown",
+            headers={"Retry-After": str(exc.retry_after_seconds)},
+        ) from exc

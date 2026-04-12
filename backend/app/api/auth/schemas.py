@@ -1,5 +1,7 @@
 from pydantic import BaseModel, ConfigDict, EmailStr, Field
 
+from app.core.config import settings
+from app.core.time import utc_now
 from app.db.models import LanguageCode, ThemeMode, User
 
 
@@ -24,12 +26,27 @@ class UserOut(BaseModel):
     last_name: str
     is_admin: bool
     is_active: bool
+    email_verified: bool
+    verification_email_retry_after_seconds: int
     theme: ThemeMode
     language: LanguageCode
 
     @classmethod
     def from_user(cls, user: User) -> "UserOut":
-        return cls.model_validate(user)
+        retry_after_seconds = 0
+        last_sent_at = user.verification_email_last_sent_at
+        cooldown_seconds = settings.auth.verify_email_resend_cooldown_seconds
+
+        if last_sent_at is not None and not user.email_verified:
+            elapsed_seconds = int((utc_now() - last_sent_at).total_seconds())
+            retry_after_seconds = max(cooldown_seconds - elapsed_seconds, 0)
+
+        return cls.model_validate(
+            {
+                **user.model_dump(),
+                "verification_email_retry_after_seconds": retry_after_seconds,
+            }
+        )
 
 
 class UserPreferencesIn(BaseModel):

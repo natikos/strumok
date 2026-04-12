@@ -1,6 +1,6 @@
 import type { components } from "./generated/openapi.ts";
 
-import { markAuthenticatedInCache, markUnauthenticatedInCache } from "./auth-session";
+import { setAuthSessionState } from "./auth-session";
 import { appApiClient, buildApiError } from "./client";
 
 type LoginIn = components["schemas"]["LoginIn"];
@@ -19,7 +19,7 @@ export async function loginUser(payload: LoginIn): Promise<UserOut> {
     throw buildApiError(response.status, error);
   }
 
-  markAuthenticatedInCache();
+  setAuthSessionState(true, data.email_verified);
   return data;
 }
 
@@ -32,7 +32,7 @@ export async function registerUser(payload: RegisterIn): Promise<UserOut> {
     throw buildApiError(response.status, error);
   }
 
-  markAuthenticatedInCache();
+  setAuthSessionState(true, data.email_verified);
   return data;
 }
 
@@ -42,6 +42,8 @@ export async function getMe(): Promise<UserOut> {
   if (error) {
     throw buildApiError(response.status, error);
   }
+
+  setAuthSessionState(true, data.email_verified);
 
   return data;
 }
@@ -65,5 +67,13 @@ export async function logoutUser(): Promise<void> {
     throw buildApiError(response.status, undefined);
   }
 
-  markUnauthenticatedInCache();
+  setAuthSessionState(false, false);
+}
+
+export async function sendVerificationEmailLink(): Promise<void> {
+  const { error, response } = await appApiClient.POST("/auth/verification-link");
+
+  if (!response.ok) {
+    throw buildApiError(response.status, error);
+  }
 }

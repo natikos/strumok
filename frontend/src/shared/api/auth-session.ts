@@ -1,71 +1,46 @@
 import { authApiClient } from "./client";
 
-const AUTH_CHECK_CACHE_TTL_MS = 90_000;
-let cachedAuthState: boolean | null = null;
-let cachedAt = 0;
-let pendingAuthCheck: Promise<boolean> | null = null;
-
-function setCachedAuthState(isAuthenticated: boolean): void {
-  cachedAuthState = isAuthenticated;
-  cachedAt = Date.now();
+interface AuthSessionState {
+  isAuthenticated: boolean;
+  isEmailVerified: boolean;
 }
 
-export function invalidateAuthSessionCache(): void {
-  cachedAuthState = null;
-  cachedAt = 0;
+const UNAUTHENTICATED_STATE: AuthSessionState = {
+  isAuthenticated: false,
+  isEmailVerified: false,
+};
+
+let authState: AuthSessionState = UNAUTHENTICATED_STATE;
+
+export function getAuthSessionState(): AuthSessionState {
+  return authState;
 }
 
-export function markAuthenticatedInCache(): void {
-  setCachedAuthState(true);
+export function setAuthSessionState(isAuthenticated: boolean, isEmailVerified: boolean): void {
+  authState = isAuthenticated ? { isAuthenticated, isEmailVerified } : UNAUTHENTICATED_STATE;
 }
 
-export function markUnauthenticatedInCache(): void {
-  setCachedAuthState(false);
+export async function initAuthSession(): Promise<AuthSessionState> {
+  authState = await fetchAuthState().catch(() => UNAUTHENTICATED_STATE);
+  return authState;
 }
 
-async function checkAuthenticationFromServer(): Promise<boolean> {
-  try {
-    let { response } = await authApiClient.GET("/auth/me");
+async function fetchMe(): Promise<AuthSessionState> {
+  const { data, response } = await authApiClient.GET("/auth/me");
 
-    if (response.ok) {
-      markAuthenticatedInCache();
-      return true;
-    }
-
-    if (response.status !== 401) {
-      markUnauthenticatedInCache();
-      return false;
-    }
-
-    const { response: refreshResponse } = await authApiClient.POST("/auth/refresh");
-
-    if (!refreshResponse.ok) {
-      markUnauthenticatedInCache();
-      return false;
-    }
-
-    ({ response } = await authApiClient.GET("/auth/me"));
-
-    setCachedAuthState(response.ok);
-    return response.ok;
-  } catch {
-    markUnauthenticatedInCache();
-    return false;
-  } finally {
-    pendingAuthCheck = null;
-  }
+  return response.ok && data
+    ? { isAuthenticated: true, isEmailVerified: data.email_verified }
+    : UNAUTHENTICATED_STATE;
 }
 
-export async function isAuthenticated(): Promise<boolean> {
-  if (cachedAuthState !== null && Date.now() - cachedAt < AUTH_CHECK_CACHE_TTL_MS) {
-    return cachedAuthState;
+async function fetchAuthState(): Promise<AuthSessionState> {
+  const state = await fetchMe();
+
+  if (state.isAuthenticated) {
+    return state;
   }
 
-  if (pendingAuthCheck) {
-    return pendingAuthCheck;
-  }
+  const { response } = await authApiClient.POST("/auth/refresh");
 
-  pendingAuthCheck = checkAuthenticationFromServer();
-
-  return pendingAuthCheck;
+  return response.ok ? fetchMe() : UNAUTHENTICATED_STATE;
 }

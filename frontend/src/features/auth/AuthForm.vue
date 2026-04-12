@@ -105,9 +105,10 @@
   import { z } from "zod";
 
   import { useLocale } from "@features/i18n/composables/useLocale";
+  import { getStoredTheme } from "@features/preferences/preferences.storage";
   import { useTheme } from "@features/theme/composables/useTheme";
   import type { FormSubmitEvent } from "@primevue/forms/form";
-  import { ApiError, loginUser, registerUser } from "@shared/api/auth";
+  import { ApiError, loginUser, registerUser, updateMyPreferences } from "@shared/api/auth";
   import type { UserOut } from "@shared/api/auth";
   import FormFieldControl from "@shared/FormFieldControl.vue";
   import { ROUTES } from "@shared/routing/routes";
@@ -193,10 +194,16 @@
         });
       }
 
+      const selectedTheme = getStoredTheme();
+
+      if (selectedTheme !== me.theme) {
+        me = await updateMyPreferences({ theme: selectedTheme });
+      }
+
       setLocale(me.language);
       setTheme(me.theme);
 
-      await router.push(ROUTES.dashboard);
+      await router.push(me.email_verified ? ROUTES.dashboard : ROUTES.verifyEmail);
     } catch (error: unknown) {
       // API errors are handled globally through client middleware + toast presenter.
       if (!(error instanceof ApiError) && error instanceof Error) {

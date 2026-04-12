@@ -48,8 +48,10 @@ class User(SQLModel, table=True):
     password_hash: str
     is_admin: bool = Field(default=False)
     is_active: bool = Field(default=True)
+    email_verified: bool = Field(default=False)
     theme: ThemeMode = Field(default=ThemeMode.LIGHT, max_length=16)
     language: LanguageCode = Field(default=LanguageCode.UA, max_length=16)
+    verification_email_last_sent_at: datetime | None = Field(default=None)
     created_at: datetime = Field(default_factory=utc_now)
     updated_at: datetime = Field(
         default_factory=utc_now, sa_column_kwargs={"onupdate": utc_now}

@@ -26,6 +26,7 @@ class AuthSettings(BaseSettings):
     algorithm: str = "HS256"
     access_token_expiration: int = 1440  # (min) 24 hours
     auth_cookie_name: str = "access_token"
+    verify_email_resend_cooldown_seconds: int = 180  # 3 minutes
 
 
 class Settings(BaseSettings):
