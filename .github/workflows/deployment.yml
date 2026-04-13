@@ -4,7 +4,7 @@ on:
     tags:
       - "v*"
 jobs:
-  release:
+  deploy:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
@@ -19,14 +19,11 @@ jobs:
         run: bun run build
         working-directory: frontend
 
-      - uses: actions/setup-python@v6
-        with:
-          python-version-file: backend/pyproject.toml
-
-      - name: Install backend dependencies
-        run: pip install -e .
-        working-directory: backend
+      - uses: astral-sh/setup-uv@v7
 
       - name: Deploy
-        run: fastapi deploy --app-id ${{ secrets.FASTAPI_CLOUD_APP_ID }}
+        run: uv run fastapi deploy
         working-directory: backend
+        env:
+          FASTAPI_CLOUD_TOKEN: ${{ secrets.FASTAPI_CLOUD_TOKEN }}
+          FASTAPI_CLOUD_APP_ID: ${{ secrets.FASTAPI_CLOUD_APP_ID }}
