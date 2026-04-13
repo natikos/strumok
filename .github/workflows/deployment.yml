@@ -19,9 +19,6 @@ jobs:
         run: bun run build
         working-directory: frontend
 
-      - name: Copy frontend build
-        run: cp -r frontend/dist backend/dist
-
       - uses: actions/setup-python@v5
         with:
           python-version-file: backend/pyproject.toml
