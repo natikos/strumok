@@ -28,5 +28,5 @@ jobs:
         working-directory: backend
 
       - name: Deploy
-        run: fastapi deploy --token ${{ secrets.FASTAPI_CLOUD_TOKEN }}
+        run: fastapi deploy --app-id ${{ secrets.FASTAPI_CLOUD_APP_ID }}
         working-directory: backend
