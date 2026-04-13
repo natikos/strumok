@@ -250,15 +250,6 @@ standard = [
 ]
 
 [[package]]
-name = "fastapi-cloud"
-version = "0.0.1"
-source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/f4/c4/5a3a4fc1d954d5d6b0df23501909d62dfea95240a901bf92f792ac0efe6e/fastapi_cloud-0.0.1.tar.gz", hash = "sha256:1432ba135a41c4710777434f5e8ca672caeaa82e597ce94b3feec39c630bd19c", size = 2688, upload-time = "2024-01-16T17:27:29.64Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/b1/90/57b9e209eecad1670e8591b1386d7dc63d0eb2c06bbaaf10fa4ccabd1359/fastapi_cloud-0.0.1-py3-none-any.whl", hash = "sha256:c4d0ee40c582776f83b5c4efee43194fefcea9a4722f782b6f535367d3c419c6", size = 2733, upload-time = "2024-01-16T17:27:31.659Z" },
-]
-
-[[package]]
 name = "fastapi-cloud-cli"
 version = "0.16.1"
 source = { registry = "https://pypi.org/simple" }
@@ -873,13 +864,12 @@ wheels = [
 
 [[package]]
 name = "strumok"
-version = "0.1.0"
+version = "0.0.1"
 source = { editable = "." }
 dependencies = [
     { name = "bcrypt" },
     { name = "email-validator" },
     { name = "fastapi", extra = ["standard"] },
-    { name = "fastapi-cloud" },
     { name = "passlib", extra = ["bcrypt"] },
     { name = "psycopg", extra = ["binary"] },
     { name = "pydantic-settings" },
@@ -898,7 +888,6 @@ requires-dist = [
     { name = "bcrypt", specifier = "==4.0.1" },
     { name = "email-validator", specifier = ">=2.2.0" },
     { name = "fastapi", extras = ["standard"], specifier = ">=0.116.1" },
-    { name = "fastapi-cloud", specifier = ">=0.0.1" },
     { name = "passlib", extras = ["bcrypt"], specifier = ">=1.7.4" },
     { name = "psycopg", extras = ["binary"], specifier = ">=3.3.2" },
     { name = "pydantic-settings", specifier = ">=2.12" },
