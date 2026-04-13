@@ -23,18 +23,10 @@ jobs:
         with:
           python-version-file: backend/pyproject.toml
 
-      - name: Install FastAPI Cloud CLI
-        run: pip install fastapi-cloud
-
-      - name: Debug PATH
-        run: |
-          echo "PATH: $PATH"
-          which fastapi-cloud || echo "not found in PATH"
-          pip show fastapi-cloud
-          pip install fastapi-cloud --target /tmp/test 2>&1 | head -5
-          find /opt/hostedtoolcache/Python -name "fastapi-cloud" 2>/dev/null
-          ls /opt/hostedtoolcache/Python/3.14.3/x64/bin/ | grep fast || echo "not in bin"
+      - name: Install backend dependencies
+        run: pip install -e .
+        working-directory: backend
 
       - name: Deploy
-        run: fastapi-cloud deploy --token ${{ secrets.FASTAPI_CLOUD_TOKEN }}
+        run: fastapi deploy --token ${{ secrets.FASTAPI_CLOUD_TOKEN }}
         working-directory: backend

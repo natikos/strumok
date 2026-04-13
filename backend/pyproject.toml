@@ -23,7 +23,6 @@ dependencies = [
   "python-jose[cryptography]>=3.5.0",
   "psycopg[binary]>=3.3.2",
   "email-validator>=2.2.0",
-  "fastapi-cloud>=0.0.1",
 ]
 
 [project.optional-dependencies]
