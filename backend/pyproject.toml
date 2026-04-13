@@ -25,5 +25,8 @@ dependencies = [
   "email-validator>=2.2.0",
 ]
 
+[tool.fastapi]
+entrypoint = "app.main:app"
+
 [project.optional-dependencies]
 dev = ["ruff>=0.15.1"]
