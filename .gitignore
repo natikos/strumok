@@ -2,6 +2,7 @@
 __pycache__/
 *.pyc
 backend/.venv/
+backend/dist/
 backend/.env
 backend/.ruff_cache/
 

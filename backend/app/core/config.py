@@ -7,12 +7,19 @@ from pydantic_settings import BaseSettings, NoDecode, SettingsConfigDict
 
 class DbSettings(BaseSettings):
     model_config = SettingsConfigDict(
-        env_prefix="DB_",
+        env_prefix="DATABASE_",
         extra="ignore",
         env_file=".env",
     )
 
     url: str
+
+    @field_validator("url", mode="after")
+    @classmethod
+    def add_psycopg_driver(cls, value: str) -> str:
+        if value.startswith("postgresql://"):
+            return value.replace("postgresql://", "postgresql+psycopg://", 1)
+        return value
 
 
 class AuthSettings(BaseSettings):
