@@ -1,9 +1,15 @@
+from sqlalchemy.pool import NullPool
 from sqlmodel import Session, SQLModel, create_engine
 
 from app.core.config import settings
 from app.db import models  # noqa: F401  # ensure model metadata is registered
 
-engine = create_engine(settings.db.url)
+engine = create_engine(
+    settings.db.url,
+    echo=False,
+    poolclass=NullPool,
+    connect_args={"client_encoding": "utf8", "prepare_threshold": None},
+)
 
 
 def init_db() -> None:
