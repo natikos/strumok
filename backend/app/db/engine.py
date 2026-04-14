@@ -8,7 +8,7 @@ engine = create_engine(
     settings.db.url,
     echo=False,
     poolclass=NullPool,
-    connect_args={"client_encoding": "utf8", "prepare_threshold": None},
+    connect_args={"client_encoding": "utf8", "prepare_threshold": None},  # noqa: E501
 )
 
 
