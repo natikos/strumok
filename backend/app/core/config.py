@@ -14,6 +14,13 @@ class DbSettings(BaseSettings):
 
     url: str
 
+    @field_validator("url", mode="after")
+    @classmethod
+    def add_psycopg_driver(cls, value: str) -> str:
+        if value.startswith("postgresql://"):
+            return value.replace("postgresql://", "postgresql+psycopg://", 1)
+        return value
+
 
 class AuthSettings(BaseSettings):
     model_config = SettingsConfigDict(

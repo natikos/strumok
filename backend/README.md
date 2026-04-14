@@ -6,7 +6,6 @@
 - `uv` installed at user/system level (not inside project venv)
 - `backend/.env` file (copy from `backend/.env.example`)
 
-
 ## Setup
 
 ⚠️ Run these commands from the `backend/` folder.
@@ -21,4 +20,10 @@ uv sync --extra dev
 
 ```bash
 python -m app.main
+```
+
+or dev mode:
+
+```bash
+uvicorn app.main:app --reload
 ```
