@@ -15,8 +15,25 @@ The Vue.js frontend is served by FastAPI as static files. This means:
 
 ## Deployment Flow
 
-1. Build the frontend: `bun run build` (inside `frontend/`)
-2. Deploy the backend via FastAPI Cloud CLI: `fastapi-cloud deploy` (inside `backend/`)
+Deployments are triggered automatically via GitHub Actions when a version tag is pushed:
+
+```bash
+git tag v1.2.3
+git push origin v1.2.3
+```
+
+The workflow (`.github/workflows/deployment.yml`) will:
+1. Build the frontend (`bun run build` inside `frontend/`)
+2. Deploy the backend to FastAPI Cloud (`uv run fastapi deploy` inside `backend/`)
+
+You can also trigger a deployment manually from the GitHub Actions UI using the **workflow_dispatch** option.
+
+### Required GitHub Secrets
+
+| Secret | Description |
+|---|---|
+| `FASTAPI_CLOUD_TOKEN` | FastAPI Cloud deploy token |
+| `FASTAPI_CLOUD_APP_ID` | FastAPI Cloud app identifier |
 
 ## Environment Variables
 
