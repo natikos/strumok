@@ -34,26 +34,29 @@ def get_file_path() -> str:
 def parse_csv(file_path: str):
     with open(file_path, "r") as meterFile:
         reader = csv.reader(meterFile)
-        rows_by_id = {}
+        rows = []
+
         for row in reader:
             has_id = row[0].strip().isdigit()
             name_idx = 1 if has_id else 0
             day_idx = 2 if has_id else 1
             night_idx = 3 if has_id else 2
 
-            name = row[name_idx]
-            if not name.strip():
+            name = row[name_idx].strip()
+            if not name:
                 continue
 
             meter_id = parse_int(row[0]) if has_id else None
-            rows_by_id[meter_id] = {
-                "household_id": meter_id,
-                "household_name": name,
-                "day_meter": parse_int(row[day_idx]),
-                "night_meter": parse_int(row[night_idx]),
-            }
+            rows.append(
+                {
+                    "household_id": meter_id,
+                    "household_name": row[name_idx],
+                    "day_meter": parse_int(row[day_idx]),
+                    "night_meter": parse_int(row[night_idx]),
+                }
+            )
 
-        return list(rows_by_id.values())
+        return rows
 
 
 def get_households():
@@ -88,7 +91,8 @@ def find_household_match(meter, households):
         (
             h
             for h in households
-            if h.name.split()[0].lower() == meter_surname or meter_lower in h.name.lower()
+            if h.name.split()[0].lower() == meter_surname
+            or meter_lower in h.name.lower()
         ),
         None,
     )
@@ -125,6 +129,7 @@ def get_period() -> str:
 
 def insert_meter_history(parsed_meters):
     period = get_period()
+
     with Session(engine) as session:
         for meter in parsed_meters:
             if meter["household_id"] is None:
