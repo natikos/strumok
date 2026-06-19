@@ -1,0 +1,46 @@
+{
+  "name": "frontend",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "bunx --bun vite",
+    "build": "vue-tsc --noEmit && bunx --bun vite build",
+    "preview": "bunx --bun vite preview",
+    "lint": "eslint --fix .",
+    "format": "prettier --write .",
+    "api:types": "bunx openapi-typescript \"${OPENAPI_URL:-http://localhost:8000/openapi.json}\" -o src/shared/api/generated/openapi.ts"
+  },
+  "dependencies": {
+    "@primeuix/themes": "^2.0.3",
+    "@primevue/forms": "^4.5.5",
+    "openapi-fetch": "^0.17.0",
+    "primeicons": "^7.0.0",
+    "primevue": "^4.5.5",
+    "vue": "^3.5.32",
+    "vue-i18n": "^11.3.2",
+    "vue-router": "^5.0.4",
+    "zod": "^4.3.6"
+  },
+  "devDependencies": {
+    "@primevue/auto-import-resolver": "^4.5.5",
+    "@types/node": "^24.12.2",
+    "@vitejs/plugin-vue": "^6.0.5",
+    "@vue/eslint-config-typescript": "^14.7.0",
+    "@vue/tsconfig": "^0.8.1",
+    "eslint": "^9.39.4",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-perfectionist": "^5.8.0",
+    "eslint-plugin-vue": "^10.8.0",
+    "globals": "^17.5.0",
+    "openapi-typescript": "^7.13.0",
+    "prettier": "^3.8.2",
+    "prettier-plugin-sort-json": "^4.2.0",
+    "sass": "^1.99.0",
+    "typescript": "^5.9.3",
+    "unplugin-vue-components": "^31.1.0",
+    "vite": "^7.3.2",
+    "vite-plugin-pwa": "^1.2.0",
+    "vue-tsc": "^3.2.6"
+  }
+}

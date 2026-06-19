@@ -1,0 +1,67 @@
+@font-face {
+  font-family: "FixelText";
+  src: url("/fonts/FixelText-Regular.woff2") format("woff2");
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "FixelText";
+  src: url("/fonts/FixelText-RegularItalic.woff2") format("woff2");
+  font-style: italic;
+  font-weight: 400;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "FixelText";
+  src: url("/fonts/FixelText-SemiBold.woff2") format("woff2");
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "FixelText";
+  src: url("/fonts/FixelText-SemiBoldItalic.woff2") format("woff2");
+  font-style: italic;
+  font-weight: 600;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "FixelText";
+  src: url("/fonts/FixelText-Bold.woff2") format("woff2");
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "FixelText";
+  src: url("/fonts/FixelText-BoldItalic.woff2") format("woff2");
+  font-style: italic;
+  font-weight: 700;
+  font-display: swap;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  font-family: "FixelText", "Segoe UI", Arial, sans-serif;
+  font-size: var(--s-app-font-size-md);
+  background: var(--s-app-background);
+  color: var(--s-content-color);
+  margin: 0;
+}
+
+.dark body {
+  color: var(--s-content-color);
+}
+
+#app {
+  height: 100dvh;
+}

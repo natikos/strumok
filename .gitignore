@@ -1,0 +1,26 @@
+# Python
+__pycache__/
+*.pyc
+backend/.venv/
+backend/dist/
+backend/.env
+backend/.ruff_cache/
+
+# Node
+node_modules/
+frontend/dist/
+frontend/dist-ssr/
+frontend/.env
+
+# Local database artifacts
+pg_data/
+postgres-data/
+*.sql
+*.dump
+
+# Data files
+*.xlsx
+*.csv
+
+# OS
+.DS_Store

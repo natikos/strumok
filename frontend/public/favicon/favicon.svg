@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" version="1.1" xmlns:xlink="http://www.w3.org/1999/xlink" width="246" height="320"><svg xmlns="http://www.w3.org/2000/svg" version="1.1" xmlns:xlink="http://www.w3.org/1999/xlink" width="246" height="320"><svg width="246" height="320" viewBox="40 8 160 208" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Strumok emblem">
+  <defs>
+    <linearGradient id="bulbFill" x1="90" y1="72" x2="236" y2="248" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#dbeafe"></stop>
+      <stop offset="1" stop-color="#93c5fd"></stop>
+    </linearGradient>
+  </defs>
+
+  <g transform="translate(8 8) scale(0.63)">
+    <path d="M160 52C110 52 70 92 70 142C70 176 88 205 112 232C128 250 138 270 138 288H182C182 270 192 250 208 232C232 205 250 176 250 142C250 92 210 52 160 52Z" fill="url(#bulbFill)" stroke="#1d4ed8" stroke-width="14" stroke-linejoin="round"></path>
+
+    <rect x="132" y="282" width="56" height="22" rx="9" fill="#93c5fd" stroke="#1d4ed8" stroke-width="12"></rect>
+    <rect x="138" y="302" width="44" height="18" rx="8" fill="#dbeafe" stroke="#1d4ed8" stroke-width="10"></rect>
+
+    <path d="M172 320V304C172 292 182 284 194 284H236C248 284 256 276 256 264V256" stroke="#1d4ed8" stroke-width="12" stroke-linecap="round" stroke-linejoin="round"></path>
+
+    <rect x="228" y="236" width="52" height="40" rx="20" fill="#60a5fa" stroke="#1d4ed8" stroke-width="12"></rect>
+    <line x1="280" y1="248" x2="294" y2="248" stroke="#1d4ed8" stroke-width="12" stroke-linecap="round"></line>
+    <line x1="280" y1="264" x2="294" y2="264" stroke="#1d4ed8" stroke-width="12" stroke-linecap="round"></line>
+
+    <path d="M176 108L132 164H166L146 222L194 162H162L176 108Z" fill="#2563eb" stroke="#1d4ed8" stroke-width="8" stroke-linejoin="round"></path>
+
+    <path d="M98 160C98 129 121 101 149 90" stroke="#1d4ed8" stroke-width="10" stroke-linecap="round"></path>
+
+    <line x1="160" y1="24" x2="160" y2="8" stroke="#1d4ed8" stroke-width="10" stroke-linecap="round"></line>
+    <line x1="108" y1="37" x2="99" y2="23" stroke="#1d4ed8" stroke-width="10" stroke-linecap="round"></line>
+    <line x1="212" y1="37" x2="221" y2="23" stroke="#1d4ed8" stroke-width="10" stroke-linecap="round"></line>
+    <line x1="76" y1="78" x2="62" y2="70" stroke="#1d4ed8" stroke-width="10" stroke-linecap="round"></line>
+    <line x1="244" y1="78" x2="258" y2="70" stroke="#1d4ed8" stroke-width="10" stroke-linecap="round"></line>
+  </g>
+</svg></svg><style>@media (prefers-color-scheme: light) { :root { filter: none; } }
+@media (prefers-color-scheme: dark) { :root { filter: none; } }
+</style></svg>

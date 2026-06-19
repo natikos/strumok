@@ -1,0 +1,218 @@
+import { definePreset } from "@primeuix/themes";
+import Aura from "@primeuix/themes/aura";
+
+const AppPreset = definePreset(Aura, {
+  components: {
+    selectbutton: {
+      css: () => `
+        .p-selectbutton button {
+          width: 100%;
+        }
+
+        .p-selectbutton .p-togglebutton:is(.p-highlight, .p-togglebutton-checked) .p-togglebutton-content {
+          border-radius: var(--s-app-radius-sm);
+        }
+      `,
+    },
+    card: {
+      css: () => `
+        .p-card {
+          border: 1px solid var(--s-content-border-color);
+        }
+      `,
+    },
+    formfield: {
+      css: () => `
+        .p-formfield {
+          display: flex;
+          flex-direction: column;
+          gap: var(--s-app-space-2);
+        }
+      `,
+    },
+    inputtext: {
+      css: () => `
+        .p-inputtext:autofill,
+        .p-password-input:autofill,
+        .p-inputtext:-webkit-autofill,
+        .p-inputtext:-webkit-autofill:hover,
+        .p-inputtext:-webkit-autofill:focus,
+        .p-inputtext:-webkit-autofill:active,
+        .p-password-input:-webkit-autofill,
+        .p-password-input:-webkit-autofill:hover,
+        .p-password-input:-webkit-autofill:focus,
+        .p-password-input:-webkit-autofill:active {
+          -webkit-text-fill-color: var(--s-form-field-color);
+          caret-color: var(--s-form-field-color);
+          box-shadow: 0 0 0 2rem var(--s-form-field-background) inset;
+          -webkit-box-shadow: 0 0 0 2rem var(--s-form-field-background) inset;
+        }
+      `,
+    },
+    toast: {
+      css: () => `
+        .p-toast .p-toast-message .p-toast-message-content {
+          align-items: center;
+        }
+
+        .p-toast .p-toast-message .p-toast-message-text {
+          display: flex;
+          flex: 1;
+          justify-content: center;
+          margin: 0;
+          min-height: 2rem;
+        }
+
+        .p-toast .p-toast-message .p-toast-summary {
+          line-height: 1.2;
+          margin: 0;
+        }
+
+        .p-toast .p-toast-message .p-toast-close-button {
+          align-self: center;
+        }
+      `,
+    },
+  },
+  primitive: {
+    borderRadius: {
+      lg: "1rem",
+      md: "0.75rem",
+      sm: "0.5rem",
+      xl: "1.25rem",
+    },
+  },
+  semantic: {
+    app: {
+      radius: {
+        lg: "{border.radius.lg}",
+        md: "{border.radius.md}",
+        sm: "{border.radius.sm}",
+        xl: "{border.radius.xl}",
+      },
+      space: {
+        1: "0.25rem",
+        2: "0.5rem",
+        3: "0.75rem",
+        4: "1rem",
+        5: "1.25rem",
+        6: "1.5rem",
+        8: "2rem",
+        10: "2.5rem",
+        12: "3rem",
+      },
+    },
+    colorScheme: {
+      dark: {
+        app: {
+          background: "{surface.800}",
+        },
+        shell: {
+          background: "{content.background}",
+          borderColor: "transparent",
+          itemHoverBackground: "{content.hoverBackground}",
+          itemActiveBackground: "{surface.700}",
+        },
+        content: {
+          background: "{surface.900}",
+          borderColor: "{surface.700}",
+          color: "{surface.50}",
+          hoverBackground: "{surface.800}",
+          hoverColor: "{surface.0}",
+          insetShadowColor: "{primary.900}",
+          shadow:
+            "0 1px 2px color-mix(in srgb, {surface.950}, transparent 65%), 0 10px 24px color-mix(in srgb, {surface.950}, transparent 76%)",
+        },
+        highlight: {
+          background: "color-mix(in srgb, {primary.400}, transparent 84%)",
+          color: "rgba(255,255,255,0.87)",
+          focusBackground: "color-mix(in srgb, {primary.400}, transparent 76%)",
+          focusColor: "rgba(255,255,255,0.87)",
+        },
+        primary: {
+          activeColor: "{primary.700}",
+          color: "{primary.400}",
+          hoverColor: "{primary.400}",
+          inverseColor: "#ffffff",
+        },
+        surface: {
+          0: "#f8fafc",
+          50: "#f1f5f9",
+          100: "#e2e8f0",
+          200: "#cbd5e1",
+          300: "#94a3b8",
+          400: "#64748b",
+          500: "#475569",
+          600: "#334155",
+          700: "#1e293b",
+          800: "#0f172a",
+          900: "#0a0f1e",
+          950: "#020617",
+        },
+      },
+      light: {
+        app: {
+          backgroundStart: "{primary.400}",
+          backgroundEnd: "{primary.50}",
+          background: "{surface.50}",
+        },
+        shell: {
+          background: "{content.background}",
+          borderColor: "{surface.200}",
+          itemHoverBackground: "{surface.100}",
+          itemActiveBackground: "{surface.200}",
+        },
+        content: {
+          background: "{surface.0}",
+          borderColor: "{surface.200}",
+          color: "{surface.900}",
+          hoverBackground: "{surface.100}",
+          hoverColor: "{surface.800}",
+          insetShadowColor: "color-mix(in srgb, {primary.900}, transparent 70%)",
+          shadow: "0 1px 2px {surface.100}, 0 10px 28px {surface.100}",
+        },
+        highlight: {
+          background: "{primary.50}",
+          color: "{primary.700}",
+          focusBackground: "{primary.100}",
+          focusColor: "{primary.800}",
+        },
+        primary: {
+          activeColor: "{primary.800}",
+          color: "{primary.600}",
+          hoverColor: "{primary.700}",
+          inverseColor: "#ffffff",
+        },
+        surface: {
+          0: "#ffffff",
+          50: "#f8fafc",
+          100: "#f1f5f9",
+          200: "#e2e8f0",
+          300: "#cbd5e1",
+          400: "#94a3b8",
+          500: "#64748b",
+          600: "#475569",
+          700: "#334155",
+          800: "#1e293b",
+          900: "#0f172a",
+          950: "#020617",
+        },
+      },
+    },
+    primary: {
+      50: "#edf7ff",
+      100: "#d8ecff",
+      200: "#b8daf8",
+      300: "#8fc2ec",
+      400: "#5ea7e3",
+      500: "#2c8ad7",
+      600: "#1f74bf",
+      700: "#195f9e",
+      800: "#144a7b",
+      900: "#0e3559",
+      950: "#08233d",
+    },
+  },
+});
+
+export default AppPreset;
