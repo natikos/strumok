@@ -1,7 +1,4 @@
 {
-  "units": {
-    "kwh": "kWh"
-  },
   "auth": {
     "login": "Login",
     "loginSubmit": "Submit",
@@ -25,11 +22,17 @@
     "nameMinLength": "Must be at least 2 characters",
     "passwordMinLength": "Password must be at least 8 characters"
   },
-  "layout": {
-    "switchToEnglish": "Switch to English",
-    "switchToUkrainian": "Switch to Ukrainian",
-    "switchToLightTheme": "Switch to light theme",
-    "switchToDarkTheme": "Switch to dark theme"
+  "common": { "submit": "Submit" },
+  "dashboard": {
+    "title": "SaaS Dashboard",
+    "role": "Developer",
+    "logout": "Logout",
+    "loadingUser": "Loading user",
+    "loadingTitle": "Loading dashboard...",
+    "welcomeTitle": "Welcome back, {name}!",
+    "subgreeting": "{month} reading is due — please submit your meter reading below.",
+    "subgreetingOverdue": "{month} deadline passed — please submit your late reading below.",
+    "subgreetingSubmitted": "{month} reading submitted. Thank you!"
   },
   "errors": {
     "emailAlreadyRegistered": "Email is already registered",
@@ -45,41 +48,17 @@
     "validationError": "Please check your data and try again",
     "verificationEmailCooldown": "Please wait before requesting another verification email"
   },
-  "verifyEmail": {
-    "title": "Hi, {name}",
-    "subtitle": "Your email {email} is not verified yet. Verify it to continue.",
-    "sendButton": "Send verification link",
-    "resendCooldown": "Resend in {timer}",
-    "checkButton": "I already verified"
-  },
-  "settings": {
-    "title": "Settings",
-    "appearance": "Appearance",
-    "theme": "Theme",
-    "themeLight": "Light",
-    "themeDark": "Dark",
-    "language": "Language"
-  },
   "household": {
     "switchAria": "Switch household"
   },
-  "nav": {
-    "home": "Home",
-    "history": "History",
-    "settings": "Settings"
-  },
-  "dashboard": {
-    "title": "SaaS Dashboard",
-    "role": "Developer",
-    "logout": "Logout",
-    "loadingUser": "Loading user",
-    "loadingTitle": "Loading dashboard...",
-    "welcomeTitle": "Welcome back, {name}!",
-    "subgreeting": "{month} reading is due — please submit your meter reading below.",
-    "subgreetingOverdue": "{month} deadline passed — please submit your late reading below.",
-    "subgreetingSubmitted": "{month} reading submitted. Thank you!"
+  "layout": {
+    "switchToEnglish": "Switch to English",
+    "switchToUkrainian": "Switch to Ukrainian",
+    "switchToLightTheme": "Switch to light theme",
+    "switchToDarkTheme": "Switch to dark theme"
   },
   "meterReadings": {
+    "total": "Total",
     "title": "Electricity meter",
     "usageFor": "Used — {month}",
     "usageEmpty": "No readings yet",
@@ -120,6 +99,49 @@
     "trendDecreasing": "Decreasing",
     "trendIncreasing": "Increasing"
   },
+  "months": {
+    "long": [
+      "January",
+      "February",
+      "March",
+      "April",
+      "May",
+      "June",
+      "July",
+      "August",
+      "September",
+      "October",
+      "November",
+      "December"
+    ]
+  },
+  "nav": { "home": "Dashboard", "history": "History", "settings": "Settings", "logout": "Logout" },
+  "settings": {
+    "title": "Settings",
+    "appearance": "Appearance",
+    "theme": "Theme",
+    "themeLight": "Light",
+    "themeDark": "Dark",
+    "language": "Language"
+  },
+  "statuses": {
+    "meterReading": {
+      "overdue": "Overdue",
+      "submitted": "Submitted",
+      "submittedLate": "Submitted late"
+    }
+  },
+  "submitMeter": {
+    "title": "Submit your {month} meter readings",
+    "note": {
+      "submitted": "Thank you for submitting your readings on time",
+      "submittedLate": "Your readings were submitted after {deadline}, but future charges will be adjusted based on your submission"
+    }
+  },
+
+  "units": {
+    "kwh": "kWh"
+  },
   "usageHistory": {
     "title": "Usage history",
     "day": "Day",
@@ -134,5 +156,12 @@
     "emptyDescription": "Once you submit your first monthly reading, it will appear here.",
     "emptyCta": "Submit a reading",
     "navLabel": "History"
+  },
+  "verifyEmail": {
+    "title": "Hi, {name}",
+    "subtitle": "Your email {email} is not verified yet. Verify it to continue.",
+    "sendButton": "Send verification link",
+    "resendCooldown": "Resend in {timer}",
+    "checkButton": "I already verified"
   }
 }

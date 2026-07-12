@@ -1,0 +1,10 @@
+@use "layout" as layout;
+
+.card {
+  @include layout.stack(var(--s-app-space-4));
+  @include layout.content-padding();
+
+  background: var(--s-content-background);
+  border: 1px solid var(--s-content-border-color);
+  border-radius: var(--s-app-radius-lg);
+}

@@ -27,7 +27,7 @@
             />
             <Button
               class="verify-email-card__button"
-              :label="$t('dashboard.logout')"
+              :label="$t('nav.logout')"
               severity="contrast"
               variant="outlined"
               @click="handleLogout"

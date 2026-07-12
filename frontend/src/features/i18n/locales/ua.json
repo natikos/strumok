@@ -1,7 +1,4 @@
 {
-  "units": {
-    "kwh": "кВт·год"
-  },
   "auth": {
     "login": "Вхід",
     "loginSubmit": "Увійти",
@@ -25,11 +22,17 @@
     "nameMinLength": "Має бути щонайменше 2 символи",
     "passwordMinLength": "Пароль має містити щонайменше 8 символів"
   },
-  "layout": {
-    "switchToEnglish": "Перемкнути мову на англійську",
-    "switchToUkrainian": "Перемкнути мову на українську",
-    "switchToLightTheme": "Увімкнути світлу тему",
-    "switchToDarkTheme": "Увімкнути темну тему"
+  "common": { "submit": "Надіслати" },
+  "dashboard": {
+    "title": "SaaS панель",
+    "role": "Розробник",
+    "logout": "Вийти",
+    "loadingUser": "Завантаження користувача",
+    "loadingTitle": "Завантаження панелі...",
+    "welcomeTitle": "З поверненням, {name}!",
+    "subgreeting": "Показники за {month} — надішліть показники лічильника нижче.",
+    "subgreetingOverdue": "Термін за {month} минув — надішліть запізнілі показники нижче.",
+    "subgreetingSubmitted": "Показники за {month} надіслано. Дякуємо!"
   },
   "errors": {
     "emailAlreadyRegistered": "Ця електронна скринька вже зареєстрована",
@@ -45,42 +48,18 @@
     "validationError": "Перевірте введені дані та спробуйте ще раз",
     "verificationEmailCooldown": "Зачекайте перед повторним надсиланням листа підтвердження"
   },
-  "verifyEmail": {
-    "title": "Привіт, {name}",
-    "subtitle": "Ваша електронна скринька {email} ще не підтверджена. Підтвердьте її, щоб продовжити.",
-    "sendButton": "Надіслати лист підтвердження",
-    "resendCooldown": "Повторно через {timer}",
-    "checkButton": "Я вже підтвердив(-ла)"
-  },
-  "settings": {
-    "title": "Налаштування",
-    "appearance": "Вигляд",
-    "theme": "Тема",
-    "themeLight": "Світла",
-    "themeDark": "Темна",
-    "language": "Мова"
-  },
   "household": {
     "switchAria": "Обрати домогосподарство"
   },
-  "nav": {
-    "home": "Головна",
-    "history": "Історія",
-    "settings": "Налаштування"
-  },
-  "dashboard": {
-    "title": "SaaS панель",
-    "role": "Розробник",
-    "logout": "Вийти",
-    "loadingUser": "Завантаження користувача",
-    "loadingTitle": "Завантаження панелі...",
-    "welcomeTitle": "З поверненням, {name}!",
-    "subgreeting": "Показники за {month} — надішліть показники лічильника нижче.",
-    "subgreetingOverdue": "Термін за {month} минув — надішліть запізнілі показники нижче.",
-    "subgreetingSubmitted": "Показники за {month} надіслано. Дякуємо!"
+  "layout": {
+    "switchToEnglish": "Перемкнути мову на англійську",
+    "switchToUkrainian": "Перемкнути мову на українську",
+    "switchToLightTheme": "Увімкнути світлу тему",
+    "switchToDarkTheme": "Увімкнути темну тему"
   },
   "meterReadings": {
     "title": "Лічильник електроенергії",
+    "total": "Всього",
     "usageFor": "Спожито — {month}",
     "usageEmpty": "Ще немає показників",
     "deltaContext": "vs {month}",
@@ -120,6 +99,54 @@
     "trendDecreasing": "Знижується",
     "trendIncreasing": "Зростає"
   },
+  "months": {
+    "long": [
+      "Січень",
+      "Лютий",
+      "Березень",
+      "Квітень",
+      "Травень",
+      "Червень",
+      "Липень",
+      "Серпень",
+      "Вересень",
+      "Жовтень",
+      "Листопад",
+      "Грудень"
+    ]
+  },
+  "nav": {
+    "home": "Панель керування",
+    "history": "Історія",
+    "settings": "Налаштування",
+    "logout": "Вихід"
+  },
+  "settings": {
+    "title": "Налаштування",
+    "appearance": "Вигляд",
+    "theme": "Тема",
+    "themeLight": "Світла",
+    "themeDark": "Темна",
+    "language": "Мова"
+  },
+  "statuses": {
+    "meterReading": {
+      "overdue": "Прострочено",
+      "submitted": "Надіслано",
+      "submittedLate": "Надіслано"
+    }
+  },
+  "submitMeter": {
+    "title": "Показники за {month}",
+    "note": {
+      "submitted": "Надіслано",
+      "submittedLate": "Надіслано після {deadline}, сума до оплати не зміниться, але подальші нарахування будуть коригуватися",
+      "pending": "Ваше споживання буде коригуватися на основі наданих показань"
+    }
+  },
+  "units": {
+    "kwh": "кВт·год"
+  },
   "usageHistory": {
     "title": "Історія споживання",
     "day": "День",
@@ -134,5 +161,12 @@
     "emptyDescription": "Як тільки ви надішлете перший щомісячний показник, він з'явиться тут.",
     "emptyCta": "Надіслати показник",
     "navLabel": "Історія"
+  },
+  "verifyEmail": {
+    "title": "Привіт, {name}",
+    "subtitle": "Ваша електронна скринька {email} ще не підтверджена. Підтвердьте її, щоб продовжити.",
+    "sendButton": "Надіслати лист підтвердження",
+    "resendCooldown": "Повторно через {timer}",
+    "checkButton": "Я вже підтвердив(-ла)"
   }
 }

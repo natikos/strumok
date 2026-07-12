@@ -32,7 +32,8 @@ export function useLocale() {
   };
 
   return {
-    currentLocale: computed(() => (locale.value === "ua" ? "ua" : "en") as LanguageCode),
+    currentLocale: computed(() => locale.value as LanguageCode),
+    intlLocale: computed(() => (locale.value === "ua" ? "uk-UA" : "en-US")),
     initializeLocale,
     setLocale,
     toggleLocale,

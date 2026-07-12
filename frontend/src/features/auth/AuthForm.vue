@@ -200,10 +200,11 @@
         me = await updateMyPreferences({ theme: selectedTheme });
       }
 
-      setLocale(me.language);
       setTheme(me.theme);
 
       await router.push(me.email_verified ? ROUTES.root : ROUTES.verifyEmail);
+
+      setLocale(me.language);
     } catch (error: unknown) {
       // API errors are handled globally through client middleware + toast presenter.
       if (!(error instanceof ApiError) && error instanceof Error) {

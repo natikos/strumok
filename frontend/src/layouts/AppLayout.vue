@@ -1,7 +1,12 @@
 <template>
   <div class="app-layout">
     <aside class="app-sidebar">
-      <img class="app-sidebar__logo app-sidebar__logo--icon" src="/icon.svg" alt="Strumok" aria-hidden="true" />
+      <img
+        class="app-sidebar__logo app-sidebar__logo--icon"
+        src="/icon.svg"
+        alt="Strumok"
+        aria-hidden="true"
+      />
       <img class="app-sidebar__logo app-sidebar__logo--wide" src="/logo.svg" alt="Strumok" />
       <nav class="app-sidebar__menu" aria-label="Main">
         <button
@@ -30,12 +35,12 @@
         </button>
         <button
           class="app-sidebar__item"
-          :aria-label="$t('dashboard.logout')"
+          :aria-label="$t('nav.logout')"
           :disabled="isLoggingOut"
           @click="handleLogout"
         >
           <i class="pi pi-sign-out" aria-hidden="true"></i>
-          <span class="app-sidebar__item-label">{{ $t("dashboard.logout") }}</span>
+          <span class="app-sidebar__item-label">{{ $t("nav.logout") }}</span>
         </button>
       </div>
     </aside>
@@ -64,7 +69,6 @@
               <strong>{{
                 me ? `${me.first_name} ${me.last_name}` : $t("dashboard.loadingUser")
               }}</strong>
-              <span>{{ $t("dashboard.role") }}</span>
             </div>
           </div>
         </div>
@@ -89,12 +93,12 @@
       </button>
       <button
         class="app-mobile-nav__item"
-        :aria-label="$t('dashboard.logout')"
+        :aria-label="$t('nav.logout')"
         :disabled="isLoggingOut"
         @click="handleLogout"
       >
         <i class="pi pi-sign-out" aria-hidden="true"></i>
-        <span class="app-mobile-nav__label">{{ $t("dashboard.logout") }}</span>
+        <span class="app-mobile-nav__label">{{ $t("nav.logout") }}</span>
       </button>
     </nav>
   </div>
@@ -103,8 +107,8 @@
 <script setup lang="ts">
   import Select from "primevue/select";
   import { computed, onMounted, ref } from "vue";
-  import { RouterView, useRoute, useRouter } from "vue-router";
   import { useI18n } from "vue-i18n";
+  import { RouterView, useRoute, useRouter } from "vue-router";
 
   import { useCurrentHousehold } from "@features/households/useCurrentHousehold";
   import { useLocale } from "@features/i18n/composables/useLocale";
@@ -228,7 +232,9 @@
       font-size: 1rem;
       min-height: 2.75rem;
       padding: 0 var(--s-app-space-3);
-      transition: background-color 160ms ease, color 160ms ease;
+      transition:
+        background-color 160ms ease,
+        color 160ms ease;
       width: 100%;
       text-align: left;
 
@@ -342,7 +348,7 @@
   .app-content {
     min-height: 0;
     overflow-y: auto;
-    padding: 0;
+    padding: var(--s-app-space-5);
   }
 
   @media (min-width: 21.25rem) {
@@ -411,8 +417,12 @@
       background: transparent;
       padding: var(--s-app-space-4) var(--s-app-space-3);
 
-      &__logo--icon { display: none; }
-      &__logo--wide { display: block; }
+      &__logo--icon {
+        display: none;
+      }
+      &__logo--wide {
+        display: block;
+      }
     }
 
     .app-topbar {
@@ -421,6 +431,7 @@
     }
 
     .app-content {
+      padding: var(--s-app-space-8);
       background: var(--s-app-background);
       border-radius: var(--s-app-radius-lg) 0 0 0;
       box-shadow: inset 0.5px 0.5px 3px 0.5px var(--s-content-inset-shadow-color);

@@ -22,6 +22,22 @@
   width: $size;
 }
 
+@mixin content-padding(
+  $mobile: var(--s-app-space-2),
+  $tablet: var(--s-app-space-3),
+  $desktop: var(--s-app-space-4)
+) {
+  padding: $mobile;
+
+  @media (min-width: 640px) {
+    padding: $tablet;
+  }
+
+  @media (min-width: 1024px) {
+    padding: $desktop;
+  }
+}
+
 @function darken-var($color, $amount) {
   @return string.unquote("color-mix(in srgb, #{$color}, black #{$amount})");
 }

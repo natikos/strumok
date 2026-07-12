@@ -1,0 +1,306 @@
+<template>
+  <div class="card">
+    <div class="submit-card__header">
+      <div class="submit-card__header-content">
+        <span class="submit-card__icon-wrap">
+          <i class="pi pi-calendar" aria-hidden="true"></i>
+        </span>
+        <h3 class="submit-card__title">
+          {{ t("submitMeter.title", { month: t(`months.long.${billingMonthIndex}`) }) }}
+        </h3>
+      </div>
+
+      <DeadlineBadge :reading="latestReading" />
+    </div>
+
+    <template v-if="isSubmitted">
+      <div class="submit-card__submitted-readings">
+        <div class="submit-card__meter-row">
+          <span class="submit-card__zone submit-card__zone--day">
+            <i class="pi pi-sun" aria-hidden="true"></i>
+            {{ t("meterReadings.day") }}
+          </span>
+          <span class="submit-card__meter-num">{{
+            formatValue(latestReading?.day_meter_value)
+          }}</span>
+        </div>
+        <div class="submit-card__meter-row">
+          <span class="submit-card__zone submit-card__zone--night">
+            <i class="pi pi-moon" aria-hidden="true"></i>
+            {{ t("meterReadings.night") }}
+          </span>
+          <span class="submit-card__meter-num">{{
+            formatValue(latestReading?.night_meter_value)
+          }}</span>
+        </div>
+      </div>
+      <div v-if="submittedStatus === 'submitted'" class="submit-card__note">
+        <i class="pi pi-check-circle" aria-hidden="true"></i>
+        {{ t("submitMeter.note.submitted") }}
+      </div>
+      <div v-else-if="submittedStatus === 'submitted-late'" class="submit-card__note">
+        <i class="pi pi-exclamation-circle" aria-hidden="true"></i>
+        {{ t("submitMeter.note.submittedLate", { deadline: deadlineDate }) }}
+      </div>
+    </template>
+
+    <template v-else>
+      <div class="submit-card__form">
+        <div class="submit-card__field">
+          <label class="submit-card__field-label">
+            <i
+              class="pi pi-sun submit-card__input-icon submit-card__input-icon--day"
+              aria-hidden="true"
+            ></i>
+            {{ t("meterReadings.day") }}
+          </label>
+          <InputNumber
+            v-model="dayValueModel"
+            class="submit-card__input"
+            placeholder="1234"
+            :min="0"
+            :use-grouping="false"
+            :invalid="!!errors.dayMeterValue"
+            fluid
+          />
+          <span v-if="errors.dayMeterValue" class="submit-card__field-error">{{
+            t(errors.dayMeterValue)
+          }}</span>
+        </div>
+        <div class="submit-card__field">
+          <label class="submit-card__field-label">
+            <i
+              class="pi pi-moon submit-card__input-icon submit-card__input-icon--night"
+              aria-hidden="true"
+            ></i>
+            {{ t("meterReadings.night") }}
+          </label>
+          <InputNumber
+            v-model="nightValueModel"
+            class="submit-card__input"
+            placeholder="5678"
+            :min="0"
+            :use-grouping="false"
+            :invalid="!!errors.nightMeterValue"
+            fluid
+          />
+          <span v-if="errors.nightMeterValue" class="submit-card__field-error">{{
+            t(errors.nightMeterValue)
+          }}</span>
+        </div>
+        <Button
+          class="submit-card__btn"
+          :label="t('common.submit')"
+          :loading="isSubmitting"
+          @click="$emit('submit')"
+        />
+      </div>
+      <div v-if="isOverdue" class="submit-card__note">
+        <i class="pi pi-shield" aria-hidden="true"></i>
+        {{ t("submitMeter.note") }}
+      </div>
+    </template>
+  </div>
+</template>
+
+<script setup lang="ts">
+  import Button from "primevue/button";
+  import InputNumber from "primevue/inputnumber";
+  import { computed } from "vue";
+  import { useI18n } from "vue-i18n";
+
+  import type { FieldErrors } from "@/features/dashboard/types";
+  import { useLocale } from "@/features/i18n/composables/useLocale";
+  import { getDeadlineStatus, getSubmitDeadline } from "@/features/meter-readings/deadline";
+  import type { MeterReadingOut } from "@shared/api/meter-readings";
+
+  import DeadlineBadge from "./DeadlineBadge.vue";
+
+  interface Props {
+    isOverdue: boolean;
+    isSubmitting: boolean;
+    errors: FieldErrors;
+    dayMeterValue: number | null;
+    nightMeterValue: number | null;
+    latestReading: MeterReadingOut | null;
+    isSubmitted: boolean;
+  }
+
+  const props = defineProps<Props>();
+  const emit = defineEmits<{
+    "update:dayMeterValue": [value: number | null];
+    "update:nightMeterValue": [value: number | null];
+    submit: [];
+  }>();
+
+  const { t } = useI18n();
+  const { intlLocale } = useLocale();
+
+  const billingMonthIndex = computed(() => new Date().getMonth() - 1);
+
+  const submittedStatus = computed(() => getDeadlineStatus(props.latestReading?.submitted_at));
+
+  const deadlineDate = computed(() => {
+    const deadline = getSubmitDeadline();
+    return deadline.toLocaleDateString(intlLocale.value);
+  });
+
+  const dayValueModel = computed({
+    get: () => props.dayMeterValue,
+    set: (v) => emit("update:dayMeterValue", v),
+  });
+
+  const nightValueModel = computed({
+    get: () => props.nightMeterValue,
+    set: (v) => emit("update:nightMeterValue", v),
+  });
+
+  function formatValue(value: number | string | undefined): string {
+    if (value == null) return "—";
+    const numeric = typeof value === "string" ? Number(value) : value;
+    return numeric.toLocaleString(intlLocale.value, { maximumFractionDigits: 2 });
+  }
+</script>
+
+<style scoped lang="scss">
+  .card {
+    max-width: 37.5rem;
+  }
+
+  .submit-card {
+    &__header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: var(--s-app-space-3);
+      flex-wrap: wrap;
+
+      &-content {
+        display: flex;
+        align-items: center;
+        gap: var(--s-app-space-3);
+      }
+    }
+
+    &__icon-wrap {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 2.5rem;
+      height: 2.5rem;
+      border-radius: var(--s-app-radius-md);
+      background: color-mix(in srgb, var(--s-primary-color), transparent 88%);
+      flex-shrink: 0;
+
+      .pi {
+        font-size: 1.2rem;
+        color: var(--s-primary-color);
+      }
+    }
+
+    &__title {
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: var(--s-content-color);
+    }
+
+    &__window {
+      font-size: 0.8rem;
+      color: color-mix(in srgb, var(--s-content-color), transparent 40%);
+      margin-top: 0.1rem;
+    }
+
+    &__label {
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--s-content-color);
+    }
+
+    &__form {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: var(--s-app-space-3);
+    }
+
+    &__field {
+      @include layout.stack(var(--s-app-space-1));
+
+      &-label {
+        display: inline-flex;
+        align-items: center;
+        gap: var(--s-app-space-2);
+        font-size: 0.82rem;
+        font-weight: 600;
+        color: var(--s-content-color);
+      }
+
+      &-error {
+        font-size: 0.75rem;
+        color: var(--s-red-500);
+      }
+    }
+
+    &__input-icon {
+      font-size: 1rem;
+
+      &--day {
+        color: var(--s-amber-500);
+      }
+      &--night {
+        color: var(--s-primary-900);
+      }
+    }
+
+    &__btn {
+      grid-column: 1 / -1;
+      margin-top: var(--s-app-space-2);
+      width: fit-content;
+      justify-self: end;
+    }
+
+    &__note {
+      display: flex;
+      align-items: flex-start;
+      gap: var(--s-app-space-2);
+      font-size: 0.78rem;
+      color: color-mix(in srgb, var(--s-content-color), transparent 45%);
+
+      .pi {
+        font-size: 0.85rem;
+        flex-shrink: 0;
+        margin-top: 0.15em;
+      }
+    }
+
+    &__submitted-readings {
+      @include layout.stack(var(--s-app-space-2));
+    }
+
+    &__meter-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: var(--s-app-space-2);
+    }
+
+    &__zone {
+      display: inline-flex;
+      align-items: center;
+      gap: var(--s-app-space-2);
+      font-size: 0.95rem;
+      color: color-mix(in srgb, var(--s-content-color), transparent 25%);
+
+      &--day .pi {
+        color: var(--s-amber-500);
+      }
+      &--night .pi {
+        color: var(--s-primary-900);
+      }
+    }
+
+    &__meter-num {
+      font-size: 1.1rem;
+      font-weight: 700;
+    }
+  }
+</style>

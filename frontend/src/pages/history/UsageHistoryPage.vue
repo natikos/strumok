@@ -27,10 +27,7 @@
       </div>
     </section>
 
-    <div
-      v-if="!isLoading && groups.length === 0"
-      class="usage-history__empty"
-    >
+    <div v-if="!isLoading && groups.length === 0" class="usage-history__empty">
       <i class="pi pi-inbox usage-history__empty-icon" aria-hidden="true"></i>
       <h2 class="usage-history__empty-title">{{ $t("usageHistory.emptyTitle") }}</h2>
       <p class="usage-history__empty-description">
@@ -46,11 +43,7 @@
     </div>
 
     <template v-else>
-      <section
-        v-for="group in groups"
-        :key="group.year"
-        class="usage-history__group"
-      >
+      <section v-for="group in groups" :key="group.year" class="usage-history__group">
         <div class="usage-history__group-head">
           <h2 class="usage-history__group-year">{{ group.year }}</h2>
           <span class="usage-history__group-summary">
@@ -64,11 +57,7 @@
           </span>
         </div>
         <ol class="usage-history__list">
-          <li
-            v-for="entry in group.entries"
-            :key="entry.period"
-            class="usage-history__item"
-          >
+          <li v-for="entry in group.entries" :key="entry.period" class="usage-history__item">
             <div class="usage-history__item-head">
               <span class="usage-history__month">{{ entry.monthLabel }}</span>
             </div>
@@ -117,10 +106,7 @@
               </span>
               <span class="usage-history__charge-value">
                 {{ formatUah(entry.amountCharged) }}
-                <span
-                  v-if="entry.amountCharged < 0"
-                  class="usage-history__charge-tag"
-                >
+                <span v-if="entry.amountCharged < 0" class="usage-history__charge-tag">
                   {{ $t("usageHistory.credit") }}
                 </span>
               </span>
@@ -163,9 +149,8 @@
   const isLoading = ref(true);
 
   const { t } = useI18n();
-  const { currentLocale } = useLocale();
+  const { intlLocale } = useLocale();
   const { currentId } = useCurrentHousehold();
-  const intlLocale = computed(() => (currentLocale.value === "ua" ? "uk-UA" : "en-US"));
 
   function periodToDate(period: string): Date {
     const [yearStr, monthStr] = period.split("-");
@@ -213,7 +198,7 @@
         totalUsage: acc.totalUsage + entry.totalUsage,
         totalCharged: acc.totalCharged + entry.amountCharged,
       }),
-      { monthCount: 0, totalUsage: 0, totalCharged: 0 },
+      { monthCount: 0, totalUsage: 0, totalCharged: 0 }
     );
   });
 
@@ -246,14 +231,6 @@
 </script>
 
 <style scoped lang="scss">
-  .usage-history {
-    padding: var(--s-app-space-5);
-
-    @media (min-width: 60rem) {
-      padding: var(--s-app-space-8);
-    }
-  }
-
   .usage-history__header {
     margin-bottom: var(--s-app-space-5);
   }
