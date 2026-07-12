@@ -1,5 +1,5 @@
 <template>
-  <div class="card">
+  <div class="card submit-card">
     <div class="submit-card__header">
       <div class="submit-card__header-content">
         <span class="submit-card__icon-wrap">
@@ -10,10 +10,30 @@
         </h3>
       </div>
 
-      <DeadlineBadge :reading="latestReading" />
+      <template v-if="isLoading">
+        <Skeleton height="1.5rem" width="120px" class="submit-card__skeleton-badge" />
+      </template>
+      <template v-else>
+        <DeadlineBadge :reading="latestReading" />
+      </template>
     </div>
 
-    <template v-if="isSubmitted">
+    <template v-if="isLoading">
+      <div class="submit-card__form">
+        <div class="submit-card__field">
+          <Skeleton height="1rem" width="40%" class="submit-card__skeleton-label" />
+          <Skeleton height="2.75rem" class="submit-card__skeleton-input" />
+        </div>
+        <div class="submit-card__field">
+          <Skeleton height="1rem" width="40%" class="submit-card__skeleton-label" />
+          <Skeleton height="2.75rem" class="submit-card__skeleton-input" />
+        </div>
+        <Skeleton height="2.5rem" width="100px" class="submit-card__skeleton-button" />
+      </div>
+      <Skeleton height="1rem" width="60%" class="submit-card__skeleton-note" />
+    </template>
+
+    <template v-else-if="isSubmitted">
       <div class="submit-card__submitted-readings">
         <div class="submit-card__meter-row">
           <span class="submit-card__zone submit-card__zone--day">
@@ -97,7 +117,11 @@
       </div>
       <div v-if="isOverdue" class="submit-card__note">
         <i class="pi pi-shield" aria-hidden="true"></i>
-        {{ t("submitMeter.note") }}
+        {{ t("submitMeter.note.overdue") }}
+      </div>
+      <div v-else class="submit-card__note">
+        <i class="pi pi-info-circle" aria-hidden="true"></i>
+        {{ t("submitMeter.note.pending") }}
       </div>
     </template>
   </div>
@@ -106,6 +130,7 @@
 <script setup lang="ts">
   import Button from "primevue/button";
   import InputNumber from "primevue/inputnumber";
+  import Skeleton from "primevue/skeleton";
   import { computed } from "vue";
   import { useI18n } from "vue-i18n";
 
@@ -119,6 +144,7 @@
   interface Props {
     isOverdue: boolean;
     isSubmitting: boolean;
+    isLoading: boolean;
     errors: FieldErrors;
     dayMeterValue: number | null;
     nightMeterValue: number | null;
@@ -163,17 +189,19 @@
 </script>
 
 <style scoped lang="scss">
-  .card {
-    max-width: 37.5rem;
-  }
-
   .submit-card {
+    display: flex;
+    flex-direction: column;
+    min-height: 16rem;
+    max-width: 37.5rem;
+
     &__header {
       display: flex;
       align-items: center;
       justify-content: space-between;
       gap: var(--s-app-space-3);
       flex-wrap: wrap;
+      flex-shrink: 0;
 
       &-content {
         display: flex;
@@ -301,6 +329,30 @@
     &__meter-num {
       font-size: 1.1rem;
       font-weight: 700;
+    }
+
+    &__skeleton-badge {
+      border-radius: 2rem;
+      align-self: center;
+    }
+
+    &__skeleton-label {
+      border-radius: var(--s-app-radius-sm);
+    }
+
+    &__skeleton-input {
+      border-radius: var(--s-app-radius-md);
+    }
+
+    &__skeleton-button {
+      border-radius: var(--s-app-radius-md);
+      grid-column: 1 / -1;
+      margin-top: var(--s-app-space-2);
+      justify-self: end;
+    }
+
+    &__skeleton-note {
+      border-radius: var(--s-app-radius-sm);
     }
   }
 </style>

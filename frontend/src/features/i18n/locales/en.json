@@ -135,10 +135,11 @@
     "title": "Submit your {month} meter readings",
     "note": {
       "submitted": "Thank you for submitting your readings on time",
-      "submittedLate": "Your readings were submitted after {deadline}, but future charges will be adjusted based on your submission"
+      "submittedLate": "Your readings were submitted after {deadline}, but future charges will be adjusted based on your submission",
+      "overdue": "The deadline has passed. Please submit your reading as soon as possible",
+      "pending": "Your consumption will be adjusted based on your submitted readings"
     }
   },
-
   "units": {
     "kwh": "kWh"
   },

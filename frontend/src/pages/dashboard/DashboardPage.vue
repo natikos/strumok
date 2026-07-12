@@ -4,6 +4,7 @@
       <div class="dashboard__left">
         <MeterSubmitCard
           :billing-month-index="billingMonthIndex"
+          :is-loading="isLoading"
           :is-overdue="isOverdue"
           :is-submitting="isSubmitting"
           :errors="errors"
@@ -39,6 +40,7 @@
   const { currentId } = useCurrentHousehold();
 
   const {
+    isLoading,
     isSubmitting,
     errors,
     dayMeterValue,

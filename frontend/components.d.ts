@@ -29,6 +29,7 @@ declare module 'vue' {
     RouterView: typeof import('vue-router')['RouterView']
     SelectButton: typeof import('primevue/selectbutton')['default']
     SettingsPage: typeof import('./src/pages/settings/SettingsPage.vue')['default']
+    Skeleton: typeof import('primevue/skeleton')['default']
     ThemeToggleButton: typeof import('./src/shared/components/theme/ThemeToggleButton.vue')['default']
     Typography: typeof import('./src/shared/Typography.vue')['default']
     UsageHistoryPage: typeof import('./src/pages/history/UsageHistoryPage.vue')['default']

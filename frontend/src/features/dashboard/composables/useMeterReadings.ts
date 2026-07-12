@@ -5,6 +5,7 @@ import type { FieldErrors } from "@/features/dashboard/types";
 import { useCurrentHousehold } from "@/features/households/useCurrentHousehold";
 import { useLocale } from "@/features/i18n/composables/useLocale";
 import { DEADLINE_DAY, getSubmitDeadline } from "@/features/meter-readings/deadline";
+import { useAsyncData } from "@/shared/composables/useAsyncData";
 import { ApiError } from "@shared/api/client";
 import {
   listMyMeterReadings,
@@ -29,7 +30,6 @@ function capitalize(value: string): string {
   return value.charAt(0).toUpperCase() + value.slice(1);
 }
 
-
 const schema = z.object({
   dayMeterValue: z
     .number({ error: "meterReadings.dayMeterValueRequired" })
@@ -40,7 +40,6 @@ const schema = z.object({
 });
 
 export function useMeterReadings() {
-  const readings = ref<MeterReadingOut[]>([]);
   const isSubmitting = ref(false);
   const errors = ref<FieldErrors>({});
   const dayMeterValue = ref<null | number>(null);
@@ -48,6 +47,12 @@ export function useMeterReadings() {
 
   const { currentId } = useCurrentHousehold();
   const { intlLocale } = useLocale();
+
+  const {
+    data: readings,
+    isLoading,
+    execute: loadHistory,
+  } = useAsyncData(() => listMyMeterReadings(currentId.value), false);
 
   const currentMonthStart = (() => {
     const date = new Date();
@@ -61,8 +66,10 @@ export function useMeterReadings() {
 
   const readingsByPeriod = computed(() => {
     const map = new Map<string, MeterReadingOut>();
-    for (const reading of readings.value) {
-      map.set(reading.period, reading);
+    if (readings.value) {
+      for (const reading of readings.value) {
+        map.set(reading.period, reading);
+      }
     }
     return map;
   });
@@ -115,14 +122,6 @@ export function useMeterReadings() {
     return Math.max(0, Math.ceil(diffMs / (1000 * 60 * 60 * 24)));
   });
 
-  async function loadHistory(): Promise<void> {
-    try {
-      readings.value = await listMyMeterReadings(currentId.value);
-    } catch {
-      // Errors surface via global toast.
-    }
-  }
-
   async function handleSubmit(): Promise<void> {
     errors.value = {};
 
@@ -151,7 +150,9 @@ export function useMeterReadings() {
         },
         currentId.value
       );
-      readings.value = [...readings.value, created];
+      if (readings.value) {
+        readings.value = [...readings.value, created];
+      }
       dayMeterValue.value = null;
       nightMeterValue.value = null;
     } catch (error) {
@@ -168,6 +169,7 @@ export function useMeterReadings() {
   });
 
   return {
+    isLoading,
     isSubmitting,
     errors,
     dayMeterValue,
