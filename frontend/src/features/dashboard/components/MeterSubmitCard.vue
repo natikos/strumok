@@ -108,12 +108,6 @@
             t(errors.nightMeterValue)
           }}</span>
         </div>
-        <Button
-          class="submit-card__btn"
-          :label="t('common.submit')"
-          :loading="isSubmitting"
-          @click="$emit('submit')"
-        />
       </div>
       <div v-if="isOverdue" class="submit-card__note">
         <i class="pi pi-shield" aria-hidden="true"></i>
@@ -121,8 +115,14 @@
       </div>
       <div v-else class="submit-card__note">
         <i class="pi pi-info-circle" aria-hidden="true"></i>
-        {{ t("submitMeter.note.pending") }}
+        {{ t("submitMeter.note.due") }}
       </div>
+      <Button
+        class="submit-card__btn"
+        :label="t('common.submit')"
+        :loading="isSubmitting"
+        @click="$emit('submit')"
+      />
     </template>
   </div>
 </template>
@@ -280,10 +280,8 @@
     }
 
     &__btn {
-      grid-column: 1 / -1;
-      margin-top: var(--s-app-space-2);
+      align-self: flex-end;
       width: fit-content;
-      justify-self: end;
     }
 
     &__note {

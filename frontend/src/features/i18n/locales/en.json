@@ -138,7 +138,7 @@
       "submitted": "Thank you for submitting your readings on time",
       "submittedLate": "Your readings were submitted after {deadline}, but future charges will be adjusted based on your submission",
       "overdue": "Submission deadline has passed. Your current charges won't change, but future charges will be adjusted based on your submission",
-      "pending": "Your consumption will be adjusted based on your submitted readings"
+      "due": "Your consumption will be adjusted based on your submitted readings"
     }
   },
   "units": {
