@@ -1,30 +1,67 @@
+import {
+  differenceInDays,
+  endOfDay,
+  isAfter,
+  isBefore,
+  isWithinInterval,
+  setDate,
+  startOfDay,
+} from "date-fns";
+
 export const DEADLINE_DAY = 5;
 
-export type DeadlineStatus = "on-time" | "overdue" | "submitted" | "submitted-late";
+export type DeadlineStatus = "due" | "overdue" | "submitted" | "submitted-late";
 
-export function getSubmitDeadline(): Date {
-  const now = new Date();
-  now.setDate(DEADLINE_DAY);
-  return now;
+export interface DeadlineRange {
+  start: Date;
+  end: Date;
+}
+
+export function getSubmitWindow(): DeadlineRange {
+  return {
+    start: startOfDay(setDate(new Date(), 1)),
+    end: endOfDay(setDate(new Date(), DEADLINE_DAY)),
+  };
 }
 
 export function getDeadlineStatus(submittedAt: string | null | undefined): DeadlineStatus {
-  const today = new Date();
-  const isAfterDeadline = today.getDate() > DEADLINE_DAY;
+  const window = getSubmitWindow();
 
-  if (!submittedAt) {
-    return isAfterDeadline ? "overdue" : "on-time";
+  if (isOverdue(submittedAt)) {
+    return "overdue";
   }
 
-  const submittedDate = new Date(submittedAt);
-  const submittedDay = submittedDate.getDate();
+  if (isPending(submittedAt)) {
+    return "due";
+  }
 
-  return submittedDay > DEADLINE_DAY ? "submitted-late" : "submitted";
+  // If the submission is not overdue and not pending, it means it has been submitted.
+  return isWithinInterval(submittedAt!, window) ? "submitted" : "submitted-late";
+}
+
+export function isOverdue(submittedAt: string | null | undefined): boolean {
+  const window = getSubmitWindow();
+
+  if (!submittedAt) {
+    return isAfter(new Date(), window.end);
+  }
+
+  return isBefore(submittedAt, window.start) && isAfter(new Date(), window.end);
+}
+
+export function isPending(submittedAt: string | null | undefined): boolean {
+  const window = getSubmitWindow();
+
+  if (!submittedAt) {
+    return isWithinInterval(new Date(), window);
+  }
+
+  return isBefore(submittedAt, window.start);
 }
 
 export function getDaysLeft(): number {
-  const today = new Date();
-  const deadline = getSubmitDeadline();
-  const diffMs = deadline.getTime() - today.getTime();
-  return Math.max(0, Math.ceil(diffMs / (1000 * 60 * 60 * 24)));
+  const today = startOfDay(new Date());
+  const { end } = getSubmitWindow();
+
+  return Math.max(0, differenceInDays(end, today));
 }

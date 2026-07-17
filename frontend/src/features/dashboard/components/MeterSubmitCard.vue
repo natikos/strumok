@@ -136,7 +136,7 @@
 
   import type { FieldErrors } from "@/features/dashboard/types";
   import { useLocale } from "@/features/i18n/composables/useLocale";
-  import { getDeadlineStatus, getSubmitDeadline } from "@/features/meter-readings/deadline";
+  import { getDeadlineStatus, getSubmitWindow } from "@/features/meter-readings/deadline";
   import type { MeterReadingOut } from "@shared/api/meter-readings";
 
   import DeadlineBadge from "./DeadlineBadge.vue";
@@ -167,8 +167,8 @@
   const submittedStatus = computed(() => getDeadlineStatus(props.latestReading?.submitted_at));
 
   const deadlineDate = computed(() => {
-    const deadline = getSubmitDeadline();
-    return deadline.toLocaleDateString(intlLocale.value);
+    const { end } = getSubmitWindow();
+    return end.toLocaleDateString(intlLocale.value);
   });
 
   const dayValueModel = computed({

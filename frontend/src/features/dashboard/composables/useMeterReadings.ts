@@ -1,10 +1,11 @@
+import { capitalize } from "@utils/string";
 import { computed, ref, watch } from "vue";
 import { z } from "zod";
 
 import type { FieldErrors } from "@/features/dashboard/types";
 import { useCurrentHousehold } from "@/features/households/useCurrentHousehold";
 import { useLocale } from "@/features/i18n/composables/useLocale";
-import { DEADLINE_DAY, getSubmitDeadline } from "@/features/meter-readings/deadline";
+import { getSubmitWindow, isOverdue } from "@/features/meter-readings/deadline";
 import { useAsyncData } from "@/shared/composables/useAsyncData";
 import { ApiError } from "@shared/api/client";
 import {
@@ -24,10 +25,6 @@ export interface MeterPeriod {
 
 function periodKey(date: Date): string {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
-}
-
-function capitalize(value: string): string {
-  return value.charAt(0).toUpperCase() + value.slice(1);
 }
 
 const schema = z.object({
@@ -54,14 +51,14 @@ export function useMeterReadings() {
     execute: loadHistory,
   } = useAsyncData(() => listMyMeterReadings(currentId.value), false);
 
-  const currentMonthStart = (() => {
-    const date = new Date();
-    date.setDate(1);
-    date.setHours(0, 0, 0, 0);
-    return date;
-  })();
+  const currentMonthStart = new Date();
+  currentMonthStart.setDate(1);
+  currentMonthStart.setHours(0, 0, 0, 0);
 
-  const currentPeriod = periodKey(currentMonthStart);
+  const previousMonthStart = new Date(currentMonthStart);
+  previousMonthStart.setMonth(previousMonthStart.getMonth() - 1);
+
+  const currentBillingPeriod = periodKey(previousMonthStart);
   const today = new Date();
 
   const readingsByPeriod = computed(() => {
@@ -77,7 +74,7 @@ export function useMeterReadings() {
   const slots = computed<MeterPeriod[]>(() => {
     const HISTORY_MONTHS = 24;
     const result: MeterPeriod[] = [];
-    for (let offset = HISTORY_MONTHS; offset >= 0; offset -= 1) {
+    for (let offset = HISTORY_MONTHS; offset >= 1; offset -= 1) {
       const date = new Date(currentMonthStart);
       date.setMonth(date.getMonth() - offset);
       const period = periodKey(date);
@@ -90,7 +87,7 @@ export function useMeterReadings() {
         monthLong: capitalize(
           new Intl.DateTimeFormat(intlLocale.value, { month: "long" }).format(date)
         ),
-        isCurrent: period === currentPeriod,
+        isCurrent: period === currentBillingPeriod,
         reading: readingsByPeriod.value.get(period),
       });
     }
@@ -106,16 +103,11 @@ export function useMeterReadings() {
     return currentMeterPeriod.value.date.getMonth();
   });
 
-  const latestReading = computed<MeterReadingOut | undefined>(() => {
-    const pastFilled = slots.value.filter((slot) => !slot.isCurrent && slot.reading);
-    return pastFilled.at(-1)?.reading;
+  const latestSubmittedReading = computed<MeterReadingOut | undefined>(() => {
+    return readings.value?.at(0);
   });
 
-  const isOverdue = computed(
-    () => !currentMeterPeriod.value?.reading && today.getDate() > DEADLINE_DAY
-  );
-
-  const currentDeadlineDate = getSubmitDeadline();
+  const { end: currentDeadlineDate } = getSubmitWindow();
 
   const daysLeft = computed<number>(() => {
     const diffMs = currentDeadlineDate.getTime() - today.getTime();
@@ -144,7 +136,7 @@ export function useMeterReadings() {
     try {
       const created = await submitMyMeterReading(
         {
-          period: currentPeriod,
+          period: currentBillingPeriod,
           day_meter_value: parsed.data.dayMeterValue,
           night_meter_value: parsed.data.nightMeterValue,
         },
@@ -176,8 +168,8 @@ export function useMeterReadings() {
     nightMeterValue,
     currentSlot: currentMeterPeriod,
     billingMonthIndex,
-    isOverdue,
-    latestReading,
+    isOverdue: isOverdue(currentMeterPeriod.value?.reading?.submitted_at),
+    latestReading: latestSubmittedReading,
     daysLeft,
     loadHistory,
     handleSubmit,

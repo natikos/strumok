@@ -1,15 +1,16 @@
 <template>
   <div class="deadline-badge" :class="`deadline-badge--${status}`">
     <i :class="icon" aria-hidden="true"></i>
-    {{ label }}
+    {{ t(`statuses.meterReading.${toCamelCase(status)}`) }}
   </div>
 </template>
 
 <script setup lang="ts">
+  import { toCamelCase } from "@utils/string";
   import { computed } from "vue";
   import { useI18n } from "vue-i18n";
 
-  import { getDaysLeft, getDeadlineStatus } from "@/features/meter-readings/deadline";
+  import { type DeadlineStatus, getDeadlineStatus } from "@/features/meter-readings/deadline";
   import type { MeterReadingOut } from "@shared/api/meter-readings";
 
   interface Props {
@@ -21,23 +22,15 @@
 
   const status = computed(() => getDeadlineStatus(props.reading?.submitted_at));
 
-  const ICONS: Record<string, string> = {
-    submitted: "pi pi-check-circle",
-    "submitted-late": "pi pi-exclamation-triangle",
-    overdue: "pi pi-times-circle",
-    "on-time": "pi pi-clock",
-  } as const;
-
-  const icon = computed(() => ICONS[status.value]);
-
-  const LABELS: Record<string, string> = {
-    submitted: t("statuses.meterReading.submitted"),
-    "submitted-late": t("statuses.meterReading.submittedLate"),
-    overdue: t("statuses.meterReading.overdue"),
-    "on-time": t("meterReadings.daysLeft", { days: getDaysLeft() }),
-  } as const;
-
-  const label = computed(() => LABELS[status.value]);
+  const icon = computed(() => {
+    const ICONS: Record<DeadlineStatus, string> = {
+      submitted: "pi pi-check-circle",
+      "submitted-late": "pi pi-exclamation-triangle",
+      overdue: "pi pi-times-circle",
+      due: "pi pi-clock",
+    } as const;
+    return ICONS[status.value];
+  });
 </script>
 
 <style scoped lang="scss">
@@ -51,7 +44,7 @@
     border-radius: 2rem;
     white-space: nowrap;
 
-    &--on-time {
+    &--due {
       background: color-mix(in srgb, var(--s-primary-color), transparent 88%);
       color: var(--s-primary-color);
     }

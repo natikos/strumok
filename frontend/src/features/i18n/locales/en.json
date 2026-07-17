@@ -127,6 +127,7 @@
   "statuses": {
     "meterReading": {
       "overdue": "Overdue",
+      "due": "Due",
       "submitted": "Submitted",
       "submittedLate": "Submitted late"
     }
