@@ -54,11 +54,11 @@
           }}</span>
         </div>
       </div>
-      <div v-if="submittedStatus === 'submitted'" class="submit-card__note">
+      <div v-if="submittedStatus === 'submitted'" class="submit-card__note submit-card__note--submitted">
         <i class="pi pi-check-circle" aria-hidden="true"></i>
         {{ t("submitMeter.note.submitted") }}
       </div>
-      <div v-else-if="submittedStatus === 'submitted-late'" class="submit-card__note">
+      <div v-else-if="submittedStatus === 'submitted-late'" class="submit-card__note submit-card__note--submitted-late">
         <i class="pi pi-exclamation-circle" aria-hidden="true"></i>
         {{ t("submitMeter.note.submittedLate", { deadline: deadlineDate }) }}
       </div>
@@ -109,11 +109,11 @@
           }}</span>
         </div>
       </div>
-      <div v-if="isOverdue" class="submit-card__note">
+      <div v-if="isOverdue" class="submit-card__note submit-card__note--overdue">
         <i class="pi pi-shield" aria-hidden="true"></i>
         {{ t("submitMeter.note.overdue") }}
       </div>
-      <div v-else class="submit-card__note">
+      <div v-else class="submit-card__note submit-card__note--due">
         <i class="pi pi-info-circle" aria-hidden="true"></i>
         {{ t("submitMeter.note.due") }}
       </div>
@@ -295,6 +295,22 @@
         font-size: 0.85rem;
         flex-shrink: 0;
         margin-top: 0.15em;
+      }
+
+      &--overdue .pi {
+        color: var(--s-red-500);
+      }
+
+      &--due .pi {
+        color: var(--s-primary-color);
+      }
+
+      &--submitted .pi {
+        color: var(--s-green-500);
+      }
+
+      &--submitted-late .pi {
+        color: var(--s-amber-500);
       }
     }
 
