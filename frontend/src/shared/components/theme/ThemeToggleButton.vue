@@ -10,8 +10,6 @@
 </template>
 
 <script setup lang="ts">
-  import Button from "primevue/button";
-
   import type { ThemeMode } from "@features/preferences/preferences.storage";
   import { useTheme } from "@features/theme/composables/useTheme";
 

@@ -54,11 +54,17 @@
           }}</span>
         </div>
       </div>
-      <div v-if="submittedStatus === 'submitted'" class="submit-card__note submit-card__note--submitted">
+      <div
+        v-if="submittedStatus === 'submitted'"
+        class="submit-card__note submit-card__note--submitted"
+      >
         <i class="pi pi-check-circle" aria-hidden="true"></i>
         {{ t("submitMeter.note.submitted") }}
       </div>
-      <div v-else-if="submittedStatus === 'submitted-late'" class="submit-card__note submit-card__note--submitted-late">
+      <div
+        v-else-if="submittedStatus === 'submitted-late'"
+        class="submit-card__note submit-card__note--submitted-late"
+      >
         <i class="pi pi-exclamation-circle" aria-hidden="true"></i>
         {{ t("submitMeter.note.submittedLate", { deadline: deadlineDate }) }}
       </div>
@@ -128,9 +134,6 @@
 </template>
 
 <script setup lang="ts">
-  import Button from "primevue/button";
-  import InputNumber from "primevue/inputnumber";
-  import Skeleton from "primevue/skeleton";
   import { computed } from "vue";
   import { useI18n } from "vue-i18n";
 

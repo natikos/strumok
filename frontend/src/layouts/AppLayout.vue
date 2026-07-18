@@ -47,10 +47,12 @@
 
     <div class="app-main">
       <header class="app-topbar">
-        <img class="app-topbar__brand" src="/icon.svg" alt="Strumok" />
+        <img class="app-topbar__brand" src="/logo.svg" alt="Strumok" />
         <div class="app-topbar__actions">
           <div v-if="households.length > 1" class="app-household">
             <Select
+              variant="text"
+              size="small"
               :model-value="currentId"
               :options="households"
               option-label="name"
@@ -102,7 +104,6 @@
 </template>
 
 <script setup lang="ts">
-  import Select from "primevue/select";
   import { computed, onMounted, ref } from "vue";
   import { useI18n } from "vue-i18n";
   import { RouterView, useRoute, useRouter } from "vue-router";
@@ -279,7 +280,7 @@
     gap: var(--s-app-space-2);
     min-height: 4rem;
     padding: var(--s-app-space-3) var(--s-app-space-4);
-
+    border-bottom: 1px solid var(--s-content-border-color);
     &__actions {
       @include layout.row(var(--s-app-space-2));
       margin-left: auto;
@@ -287,8 +288,8 @@
   }
 
   .app-topbar__brand {
-    height: 2.5rem;
-    width: 2.5rem;
+    height: 2.2rem;
+    width: auto;
 
     @media (min-width: 60rem) {
       display: none;
@@ -298,6 +299,10 @@
   .app-household {
     @include layout.row(var(--s-app-space-2));
     margin-left: auto;
+
+    .p-select {
+      max-width: 9rem;
+    }
   }
 
   .app-profile {
@@ -319,7 +324,12 @@
 
     &__meta {
       @include layout.stack(0);
+      display: none;
       line-height: 1.15;
+
+      @media (min-width: 60rem) {
+        display: block;
+      }
 
       strong {
         color: var(--s-content-color);
@@ -349,7 +359,7 @@
   .app-mobile-nav {
     @include layout.row(0);
     background: var(--s-shell-background);
-    border-top: 1px solid color-mix(in srgb, var(--s-content-color), transparent 88%);
+    border-top: 1px solid var(--s-content-border-color);
     bottom: 0;
     left: 0;
     position: fixed;

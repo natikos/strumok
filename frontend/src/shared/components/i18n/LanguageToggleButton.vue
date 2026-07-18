@@ -12,8 +12,6 @@
 </template>
 
 <script setup lang="ts">
-  import Button from "primevue/button";
-
   import { useLocale } from "@features/i18n/composables/useLocale";
   import type { LanguageCode } from "@features/preferences/preferences.storage";
 
