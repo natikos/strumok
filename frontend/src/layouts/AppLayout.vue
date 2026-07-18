@@ -47,7 +47,7 @@
 
     <div class="app-main">
       <header class="app-topbar">
-        <span class="app-topbar__brand">Strumok</span>
+        <img class="app-topbar__brand" src="/icon.svg" alt="Strumok" />
         <div class="app-topbar__actions">
           <div v-if="households.length > 1" class="app-household">
             <Select
@@ -58,9 +58,6 @@
               :aria-label="$t('household.switchAria')"
               @update:model-value="onHouseholdChange"
             />
-          </div>
-          <div v-else-if="households.length === 1" class="app-household app-household--static">
-            {{ households[0]?.name }}
           </div>
 
           <div class="app-profile">
@@ -290,10 +287,8 @@
   }
 
   .app-topbar__brand {
-    font-size: 1.1rem;
-    font-weight: 700;
-    color: var(--s-content-color);
-    letter-spacing: -0.01em;
+    height: 2.5rem;
+    width: 2.5rem;
 
     @media (min-width: 60rem) {
       display: none;
@@ -303,12 +298,6 @@
   .app-household {
     @include layout.row(var(--s-app-space-2));
     margin-left: auto;
-
-    &--static {
-      color: var(--s-content-color);
-      font-size: 0.95rem;
-      font-weight: 600;
-    }
   }
 
   .app-profile {
