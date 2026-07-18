@@ -281,6 +281,11 @@
     min-height: 4rem;
     padding: var(--s-app-space-3) var(--s-app-space-4);
     border-bottom: 1px solid var(--s-content-border-color);
+
+    @media (min-width: 60rem) {
+      border-bottom: none;
+    }
+
     &__actions {
       @include layout.row(var(--s-app-space-2));
       margin-left: auto;
