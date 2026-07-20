@@ -33,7 +33,7 @@ app.include_router(auth_router)
 app.include_router(meter_readings_router)
 
 
-@app.get("/health")
+@app.get("/health", include_in_schema=False)
 def health() -> dict[str, str]:
     return {"status": "ok"}
 
@@ -42,7 +42,7 @@ def health() -> dict[str, str]:
 if DIST_DIR.is_dir():
     app.mount("/assets", StaticFiles(directory=DIST_DIR / "assets"), name="assets")
 
-    @app.get("/{path:path}")
+    @app.get("/{path:path}", include_in_schema=False)
     def serve_spa(path: str):
         file = DIST_DIR / path
         if file.is_file():
