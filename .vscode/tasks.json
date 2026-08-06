@@ -2,6 +2,25 @@
   "version": "2.0.0",
   "tasks": [
     {
+      "label": "Check Credentials",
+      "type": "shell",
+      "command": "./.vscode/check-credentials.sh",
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "icon": {
+        "id": "key",
+        "color": "terminal.ansiBlue"
+      },
+      "presentation": {
+        "reveal": "silent",
+        "panel": "dedicated"
+      },
+      "runOptions": {
+        "runOn": "folderOpen"
+      }
+    },
+    {
       "label": "Web",
       "type": "shell",
       "command": "bun run dev",

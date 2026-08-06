@@ -24,3 +24,6 @@ postgres-data/
 
 # OS
 .DS_Store
+
+# Local dev config (not for public repo)
+.vscode/credentials.local.sh

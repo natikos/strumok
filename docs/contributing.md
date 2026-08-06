@@ -1,5 +1,14 @@
 # Contributing
 
+## Git Hooks
+
+Pre-commit hooks (lint + format on staged files) run via [lefthook](https://github.com/evilmartians/lefthook). One-time setup per clone:
+
+```bash
+brew install lefthook   # or see lefthook docs for other package managers
+lefthook install
+```
+
 ## Commit Messages
 
 All commit messages must follow the [Conventional Commits](https://www.conventionalcommits.org/) specification.

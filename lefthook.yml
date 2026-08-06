@@ -1,0 +1,20 @@
+pre-commit:
+  parallel: true
+  jobs:
+    - name: backend lint
+      root: backend/
+      glob: "*.py"
+      run: uv run ruff check --fix {staged_files}
+      stage_fixed: true
+
+    - name: frontend lint
+      root: frontend/
+      glob: "*.{js,ts,vue}"
+      run: bunx eslint --fix {staged_files}
+      stage_fixed: true
+
+    - name: frontend format
+      root: frontend/
+      glob: "*.{js,ts,vue,json,scss,css,md}"
+      run: bunx prettier --write {staged_files}
+      stage_fixed: true
