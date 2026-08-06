@@ -1,0 +1,40 @@
+name: CI
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: astral-sh/setup-uv@v7
+
+      - name: Install dependencies
+        run: uv sync --extra dev
+        working-directory: backend
+
+      - name: Lint
+        run: uv run ruff check .
+        working-directory: backend
+
+  frontend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: oven-sh/setup-bun@v2
+
+      - name: Install dependencies
+        run: bun install
+        working-directory: frontend
+
+      - name: Lint
+        run: bunx eslint .
+        working-directory: frontend
+
+      - name: Build
+        run: bun run build
+        working-directory: frontend
