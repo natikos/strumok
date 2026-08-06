@@ -29,7 +29,7 @@ Electricity billing for a garden cooperative on one shared utility bill. Residen
 - **Generated types**: `frontend/src/shared/api/generated/openapi.ts` is produced by `bun run api:types` against a running backend. Never hand-edit; regenerate after changing schemas.
 - **Migrations**: hand-written SQL in `backend/migrations/`, applied manually. `init_db()` only runs `create_all` in development. No Alembic.
 - **Frontend layout**: `features/` (domain logic + components), `pages/` (routed views), `shared/`, `layouts/`. Aliases `@/`, `@features`, `@pages`, `@shared`, `@utils`. Components under those dirs and all PrimeVue components are auto-imported — don't add explicit imports.
-- **Styling**: scoped SCSS with BEM, `--s-*` design tokens from `src/preset.ts` (check there before hand-rolling colors), `layout` SCSS module auto-injected. Mobile viewport first.
+- **Styling**: scoped SCSS with BEM, `--s-*` design tokens from `src/preset.ts` (check there before hand-rolling colors), `layout` SCSS module auto-injected. Mobile viewport first, minimum supported width **360px** — write base styles for 360px, then layer on wider layouts with `@include layout.respond-to("sm"|"md"|"lg"|"xl")` (`frontend/src/shared/styles/_layout.scss`) instead of a new hardcoded `@media` breakpoint. Grid/flex children holding text or inputs need `min-width: 0` or they can force overflow at 360px.
 
 ## When to delegate
 

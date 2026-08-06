@@ -1,4 +1,30 @@
 @use "sass:string";
+@use "sass:map";
+
+// Design floor: the smallest supported viewport is 360px. Never gate base
+// (mobile) styles behind a media query — write for 360px first, then use
+// these breakpoints to layer on wider layouts.
+$breakpoints: (
+  "xs": 23.125rem,
+  // 370px — first bump above the 360px floor, for minor spacing tweaks
+  "sm": 40rem,
+  // 640px
+  "md": 48rem,
+  // 768px
+  "lg": 60rem,
+  // 960px
+  "xl": 75rem, // 1200px
+);
+
+@mixin respond-to($name) {
+  @if not map.has-key($breakpoints, $name) {
+    @error "Unknown breakpoint `#{$name}`. Available: #{map.keys($breakpoints)}";
+  }
+
+  @media (min-width: map.get($breakpoints, $name)) {
+    @content;
+  }
+}
 
 @mixin stack($gap) {
   display: flex;
@@ -29,11 +55,11 @@
 ) {
   padding: $mobile;
 
-  @media (min-width: 640px) {
+  @include respond-to("sm") {
     padding: $tablet;
   }
 
-  @media (min-width: 1024px) {
+  @include respond-to("lg") {
     padding: $desktop;
   }
 }
