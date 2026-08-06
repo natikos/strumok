@@ -44,19 +44,7 @@ branch has no commits ahead of `main`, say so and stop.
 - If already on a feature branch: keep it. Do not re-branch.
 - Never commit directly to `main`.
 
-## 3. Commit
-
-Stage deliberately — `git add` the files belonging to this change, not `-A`.
-Review `git diff --staged` before committing: look for debug leftovers, typos,
-committed secrets, and stray `.env`/CSV files.
-
-One Conventional Commits message per `docs/contributing.md`:
-`<type>(<scope>): <description>`. Scope is the area (`auth`, `meter-readings`,
-`frontend`, `ci`). **Do not add a `Co-Authored-By` trailer.**
-
-If the branch already has the right commits, skip this stage.
-
-## 4. Issue
+## 3. Issue
 
 Check whether one already exists: `gh issue list --search "<key words>" --state open`.
 If a relevant issue is already open, reuse its number and skip creation.
@@ -66,11 +54,28 @@ broken behaviour, `enhancement` if it's new work; title imperative and specific;
 body is summary + repro-or-acceptance-criteria + area; anything unknown written
 literally as `Unknown — needs investigation`.
 
-Hold on to the issue number for the PR body.
+Hold on to the issue number — it's needed for the commit message, the PR title,
+and the PR body.
+
+## 4. Commit
+
+Stage deliberately — `git add` the files belonging to this change, not `-A`.
+Review `git diff --staged` before committing: look for debug leftovers, typos,
+committed secrets, and stray `.env`/CSV files.
+
+One Conventional Commits message per `docs/contributing.md`, with the issue
+number suffixed:
+`<type>(<scope>): <description> (#<issue>)`. Scope is the area (`auth`,
+`meter-readings`, `frontend`, `ci`). **Do not add a `Co-Authored-By` trailer.**
+
+If the branch already has the right commits, skip this stage.
 
 ## 5. Push and open the PR
 
 `git push -u origin <branch>`, then `gh pr create`.
+
+PR title: same convention as the commit, suffixed with the issue number —
+`<type>(<scope>): <description> (#<issue>)`.
 
 PR body: 2–4 lines of what changed and why, then `Closes #<issue>` on its own
 line so the merge closes the issue. **No "Test plan" section.** No
