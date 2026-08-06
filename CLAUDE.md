@@ -34,3 +34,14 @@ Electricity billing for a garden cooperative on one shared utility bill. Residen
 ## When to delegate
 
 Specialists live in `.claude/agents/`: `tech-lead` (architecture, review, security, CI/CD gate), `product-owner` (scope + acceptance criteria before building), `qa-automation` (tests), `ui-ux-designer` (flows, layout, usability).
+
+For any request that names a feature or user-facing capability rather than a specific, already-scoped edit (e.g. "build a dashboard", "add reporting", "let residents track X") — don't ask which specialist to use or wait to be told. Work out the pipeline yourself and run it without narrating the routing decision:
+
+1. **Scope first.** If the request is broad or the acceptance criteria aren't obvious from the ask, run `product-owner` before writing any code. Skip it only for edits that are already small and specific (rename a field, fix a bug, tweak a style).
+2. **Architecture/data-model calls.** If the feature needs a new table, a new API shape, a cross-cutting decision, or touches auth/household-scoping/money handling, run `tech-lead` to decide the approach before implementing.
+3. **UI/flow work.** If the feature has a user-facing screen or interaction, run `ui-ux-designer` for layout/flow before or alongside implementation.
+4. **Implement** using the conventions above.
+5. **Tests.** Once behavior is implemented, run `qa-automation` to add coverage.
+6. **Ship.** Use `/shipit` when the user asks to ship, per its own flow.
+
+Not every stage applies to every request — a one-screen form may only need product-owner + implementation, not tech-lead. Use judgment on what's overkill, but default to running the relevant specialists rather than asking the user which one to invoke. Still check in with the user on genuinely ambiguous product decisions the specialists can't resolve (e.g. conflicting priorities) — the goal is to remove *tool-routing* friction, not product judgment calls.
