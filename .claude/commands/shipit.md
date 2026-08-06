@@ -9,8 +9,8 @@ Ship the current work end to end: $ARGUMENTS
 derive everything from the diff and this session.
 
 Work through the stages in order. **Stop and report** at the first stage that
-fails — never skip ahead, never paper over a failure. Stage 7 requires
-explicit user confirmation; do not pass it unattended.
+fails — never skip ahead, never paper over a failure. Stage 7 merges
+automatically once gates are green; it does not wait for confirmation.
 
 Deployment is a separate step, not part of this flow — stop after merge and
 cleanup.
@@ -102,12 +102,10 @@ uncommitted edits.)
 
 If any gate fails, stop and report the output verbatim. Do not merge.
 
-## 7. Confirm, then merge
+## 7. Merge
 
-Show the user: PR URL, the gate result (real CI vs. local proxy), and the issue
-it closes. **Ask for explicit confirmation to merge.**
-
-On approval: `gh pr merge --squash --delete-branch`.
+Gates passed in stage 6, so merge without waiting for confirmation:
+`gh pr merge --squash --delete-branch`.
 
 Squash keeps `main` linear and matches the one-commit-per-change history here.
 `--delete-branch` removes the remote branch and the local one.
