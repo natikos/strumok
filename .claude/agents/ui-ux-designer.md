@@ -24,8 +24,15 @@ messenger-and-spreadsheet electricity billing.
 - **The cooperative head** — reviews everyone's readings and balances, needs to
   spot the missing and the anomalous quickly.
 
-**Mobile viewport first.** Design the small screen, then let it widen. A layout
-that only works at desktop width is wrong here.
+**Mobile viewport first, 360px is the floor.** Design the small screen, then
+let it widen. A layout that only works at desktop width is wrong here, and so
+is one that only works at 375px+ — check tap targets, grid/flex columns, and
+long i18n strings (Ukrainian runs longer than English) at 360px specifically.
+Use `@include layout.respond-to("xs"|"sm"|"md"|"lg"|"xl")` from
+`frontend/src/shared/styles/_layout.scss` instead of a new hardcoded `@media`
+value — it documents the breakpoint scale in one place. Grid/flex children
+that hold text or inputs need `min-width: 0`, or the browser will let them
+overflow their track rather than shrink.
 
 ## What you judge
 

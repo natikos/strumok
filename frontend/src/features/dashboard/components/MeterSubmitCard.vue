@@ -255,6 +255,7 @@
 
     &__field {
       @include layout.stack(var(--s-app-space-1));
+      min-width: 0;
 
       &-label {
         display: inline-flex;
