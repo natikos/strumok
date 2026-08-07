@@ -1,19 +1,23 @@
 ---
-description: Branch, commit, open a tracked PR, gate on CI, merge, and clean up
-allowed-tools: Bash(git status:*), Bash(git branch:*), Bash(git switch:*), Bash(git checkout:*), Bash(git add:*), Bash(git commit:*), Bash(git push:*), Bash(git pull:*), Bash(git fetch:*), Bash(git log:*), Bash(git diff:*), Bash(git remote:*), Bash(git rev-parse:*), Bash(gh repo view:*), Bash(gh api:*), Bash(gh issue create:*), Bash(gh issue list:*), Bash(gh issue view:*), Bash(gh label list:*), Bash(gh pr create:*), Bash(gh pr view:*), Bash(gh pr checks:*), Bash(gh pr merge:*), Bash(uv run ruff:*), Bash(bunx eslint:*), Bash(bun run build:*)
+description: Commit anything pending, gate locally, open a tracked PR, wait for green, squash-merge, and clean up
+allowed-tools: Bash(git status:*), Bash(git branch:*), Bash(git switch:*), Bash(git add:*), Bash(git commit:*), Bash(git push:*), Bash(git pull:*), Bash(git fetch:*), Bash(git log:*), Bash(git diff:*), Bash(git remote:*), Bash(git rev-parse:*), Bash(gh repo view:*), Bash(gh api:*), Bash(gh issue create:*), Bash(gh issue list:*), Bash(gh issue view:*), Bash(gh label list:*), Bash(gh pr create:*), Bash(gh pr view:*), Bash(gh pr checks:*), Bash(gh pr merge:*), Bash(uv run ruff:*), Bash(uv run pytest:*), Bash(bunx eslint:*), Bash(bun run test:*), Bash(bun run build:*)
 ---
 
-Ship the current work end to end: $ARGUMENTS
+Land the current work: $ARGUMENTS
 
-`$ARGUMENTS` is optional. It may carry a subject for the commit/issue. If empty,
-derive everything from the diff and this session.
+`$ARGUMENTS` is optional — it may carry a subject or an issue number. If empty,
+derive everything from the branch, the diff, and this session.
+
+Much of the setup may already be done: the `commit-work` skill creates the
+branch, ensures the issue exists, and commits in slices during implementation.
+Stages 1–3 **verify** that rather than redoing it, and fill in whatever is
+missing.
 
 Work through the stages in order. **Stop and report** at the first stage that
-fails — never skip ahead, never paper over a failure. Stage 7 merges
-automatically once gates are green; it does not wait for confirmation.
+fails — never skip ahead, never paper over a failure. Stage 6 merges
+automatically once CI is green; it does not wait for confirmation.
 
-Deployment is a separate step, not part of this flow — stop after merge and
-cleanup.
+Deployment is a separate step, not part of this flow — stop after cleanup.
 
 ---
 
@@ -33,89 +37,93 @@ this PR. Stop immediately and tell the user:
 Do not attempt the flow anyway, and do not switch accounts yourself — that
 changes the user's global git tooling.
 
-Also confirm there is something to ship. If the tree is clean *and* the current
-branch has no commits ahead of `main`, say so and stop.
+**Confirm there is something to ship.** If the tree is clean *and* the branch has
+no commits ahead of `main`, there is nothing to land — say so and stop. If the
+user asked to implement something that doesn't exist yet, this command is
+premature: implement it first (per `CLAUDE.md`, committing via `commit-work`),
+then run `/shipit`.
 
 ## 2. Branch
 
-- If on `main`: create a branch from current `main` — `git switch -c <type>/<slug>`,
-  where `<type>` matches the Conventional Commits type (`feat`, `fix`, `chore`,
-  `refactor`, `docs`) and `<slug>` is 2–4 kebab-case words from the change.
-- If already on a feature branch: keep it. Do not re-branch.
-- Never commit directly to `main`.
+If already on a feature branch, keep it — `commit-work` most likely created it.
+
+If on `main` with uncommitted changes, create one now:
+`git switch -c <type>/<slug>`. Never commit directly to `main`.
 
 ## 3. Issue
 
-Check whether one already exists: `gh issue list --search "<key words>" --state open`.
-If a relevant issue is already open, reuse its number and skip creation.
+Recover the issue number from the existing commit subjects first —
+`git log main..HEAD --format=%s` — since `commit-work` suffixes each one with
+`(#n)`. If `$ARGUMENTS` names a number, that wins.
 
-Otherwise create one — same rules as `/create-issue`: `bug` label if this fixes
-broken behaviour, `enhancement` if it's new work; title imperative and specific;
-body is summary + repro-or-acceptance-criteria + area; anything unknown written
-literally as `Unknown — needs investigation`.
+If neither yields one, search: `gh issue list --search "<key words>" --state open`,
+and reuse a relevant open issue. Otherwise file one with the `create-issue`
+skill's rules: `bug` label if this fixes broken behaviour, `enhancement` if it's
+new work; title imperative and specific; body is summary +
+repro-or-acceptance-criteria + area; anything unknown written literally as
+`Unknown — needs investigation`.
 
-Hold on to the issue number — it's needed for the commit message, the PR title,
-and the PR body.
+Hold on to the number — it's needed for the PR title and body.
 
-## 4. Commit
+## 4. Commit anything pending
 
-Stage deliberately — `git add` the files belonging to this change, not `-A`.
-Review `git diff --staged` before committing: look for debug leftovers, typos,
-committed secrets, and stray `.env`/CSV files.
+If the tree is clean, skip this stage — `commit-work` already handled it.
 
-One Conventional Commits message per `docs/contributing.md`, with the issue
-number suffixed:
-`<type>(<scope>): <description> (#<issue>)`. Scope is the area (`auth`,
-`meter-readings`, `frontend`, `ci`). **Do not add a `Co-Authored-By` trailer.**
+Otherwise commit what's left per the Commit Messages section of
+`docs/contributing.md` — stage deliberately, review `git diff --staged` for
+debug leftovers and secrets, and write the message to that spec.
 
-If the branch already has the right commits, skip this stage.
+## 5. Gate locally, then open the PR
 
-## 5. Push and open the PR
+Run the same gates CI runs, so a red PR is caught before it's opened. Needs
+Postgres up — `docker compose up -d` from the repo root.
 
-`git push -u origin <branch>`, then `gh pr create`.
+```
+cd backend  && uv run ruff check . && uv run pytest
+cd frontend && bunx eslint . && bun run test && bun run build
+```
 
-PR title: same convention as the commit, suffixed with the issue number —
-`<type>(<scope>): <description> (#<issue>)`.
+Use `bunx eslint .`, not `bun run lint` — the latter auto-fixes and would leave
+uncommitted edits. `bun run build` runs `vue-tsc --noEmit` first, so it is the
+type gate too; it writes to the gitignored `backend/dist/` and won't dirty the
+tree.
 
-PR body: 2–4 lines of what changed and why, then `Closes #<issue>` on its own
-line so the merge closes the issue. **No "Test plan" section.** No
+**If any gate fails, stop and report the output verbatim.** Do not open a PR.
+
+Then `git push -u origin <branch>` and `gh pr create`.
+
+PR title: the same subject format as a commit, per `docs/contributing.md`.
+Since this squash-merges, the PR title becomes the commit subject on `main`.
+
+PR body: 2–4 lines covering what changed and *why* — the squash-merge collapses
+the branch's commits, so this body is what survives as the durable explanation.
+Then `Closes #<issue>` on its own line. **No "Test plan" section.** No
 `Co-Authored-By`. Print the PR URL.
 
-## 6. Gate on green
+## 6. Gate on green, then merge
 
 Wait for checks: `gh pr checks --watch`.
 
-**This repo currently has no CI workflow** — `.github/workflows/deployment.yml`
-only fires on `v*` tags, so a PR has zero checks and `gh pr checks` will report
-none. Treat "no checks configured" as **not green**, never as a pass. Fall back
-to running the equivalent gates locally, and label them as such in your report:
+`.github/workflows/ci.yml` runs on pull requests, covering backend lint + pytest
+and frontend lint + test + build. If `gh pr checks` reports **no checks
+configured**, CI did not trigger — treat that as **not green**, never as a pass,
+and report it rather than merging on the strength of stage 5 alone.
 
-```
-cd backend  && uv run ruff check .
-cd frontend && bunx eslint . && bun run build
-```
+If checks fail, stop and report which job failed with its output. Do not merge.
 
-(`bun run build` runs `vue-tsc --noEmit` first, so it is the type gate too. It
-writes to the gitignored `backend/dist/`, so it will not dirty the tree. Use
-`bunx eslint .` — not `bun run lint`, which auto-fixes and would leave
-uncommitted edits.)
-
-If any gate fails, stop and report the output verbatim. Do not merge.
-
-## 7. Merge
-
-Gates passed in stage 6, so merge without waiting for confirmation:
+Once green, merge without waiting for confirmation:
 `gh pr merge --squash --delete-branch`.
 
-Squash keeps `main` linear and matches the one-commit-per-change history here.
-`--delete-branch` removes the remote branch and the local one.
+Squash keeps `main` linear at one commit per change, which makes `git blame`
+land on a commit that explains the whole change. The branch's incremental
+commits stay visible in the PR for review.
 
-## 8. Clean up
+## 7. Clean up
 
 ```
 git switch main
 git pull --ff-only
-git branch --delete <branch>     # if step 7 left it behind
+git branch --delete <branch>     # if stage 6 left it behind
 git fetch --prune
 ```
 
@@ -126,7 +134,7 @@ and that `main` contains the squashed commit.
 
 ## Report
 
-End with a compact summary: branch, commit, issue, PR, how the change was gated
-(real CI or local proxy), merge result, and cleanup. State plainly anything you
-skipped and why. Deployment is not part of this command — mention it's a
-separate step if the user wants to ship to production.
+End with a compact summary: branch, commits, issue, PR, local gate results, CI
+result, merge, and cleanup. State plainly anything you skipped and why.
+Deployment is not part of this command — mention it's a separate step if the
+user wants to ship to production.

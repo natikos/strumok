@@ -47,8 +47,25 @@ For any request that names a feature or user-facing capability rather than a spe
 1. **Scope first.** If the request is broad or the acceptance criteria aren't obvious from the ask, run `product-owner` before writing any code. Skip it only for edits that are already small and specific (rename a field, fix a bug, tweak a style).
 2. **Architecture/data-model calls.** If the feature needs a new table, a new API shape, a cross-cutting decision, or touches auth/household-scoping/money handling, run `tech-lead` to decide the approach before implementing.
 3. **UI/flow work.** If the feature has a user-facing screen or interaction, run `ui-ux-designer` for layout/flow before or alongside implementation.
-4. **Implement** using the conventions above.
-5. **Tests.** Once behavior is implemented, run `qa-automation` to add coverage.
-6. **Ship.** Use `/shipit` when the user asks to ship, per its own flow.
+4. **Implement** using the conventions above. Start non-trivial work with the
+   `commit-work` skill — it creates the branch, ensures a tracked issue exists,
+   and commits each coherent slice as it lands. Commit as you go, not once at
+   the end.
+5. **Tests.** Once behavior is implemented, run `qa-automation` to add coverage,
+   then review its diff and commit it yourself — specialists don't commit.
+6. **Ship.** Run `/shipit` when the user asks to land the work. It's a command,
+   not a skill: it squash-merges to `main`, so it runs only when the user asks
+   for it — never on your own initiative.
+
+**Issue tracking.** Work should be tracked before it's committed. `commit-work`
+handles the common path (reuse the number in the request, else search, else
+file). Use `create-issue` directly when the user reports something you're *not*
+about to fix — "I found X bug" with no fix requested. Don't file duplicates:
+both search open issues first.
+
+**Specialists can't commit or file issues.** None of them have `gh` or `Skill`
+access; `qa-automation` alone can write files, and only test files. They report
+findings — the main agent reviews the diff and commits it. That keeps one
+reviewer between generated code and history.
 
 Not every stage applies to every request — a one-screen form may only need product-owner + implementation, not tech-lead. Use judgment on what's overkill, but default to running the relevant specialists rather than asking the user which one to invoke. Still check in with the user on genuinely ambiguous product decisions the specialists can't resolve (e.g. conflicting priorities) — the goal is to remove _tool-routing_ friction, not product judgment calls.
