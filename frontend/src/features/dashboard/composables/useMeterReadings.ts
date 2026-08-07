@@ -5,7 +5,7 @@ import { z } from "zod";
 import type { FieldErrors } from "@/features/dashboard/types";
 import { useCurrentHousehold } from "@/features/households/useCurrentHousehold";
 import { useLocale } from "@/features/i18n/composables/useLocale";
-import { getSubmitWindow, isOverdue } from "@/features/meter-readings/deadline";
+import { getDaysLeft, isOverdue } from "@/features/meter-readings/deadline";
 import { useAsyncData } from "@/shared/composables/useAsyncData";
 import { ApiError } from "@shared/api/client";
 import {
@@ -59,7 +59,6 @@ export function useMeterReadings() {
   previousMonthStart.setMonth(previousMonthStart.getMonth() - 1);
 
   const currentBillingPeriod = periodKey(previousMonthStart);
-  const today = new Date();
 
   const readingsByPeriod = computed(() => {
     const map = new Map<string, MeterReadingOut>();
@@ -107,12 +106,7 @@ export function useMeterReadings() {
     return readings.value?.at(0);
   });
 
-  const { end: currentDeadlineDate } = getSubmitWindow();
-
-  const daysLeft = computed<number>(() => {
-    const diffMs = currentDeadlineDate.getTime() - today.getTime();
-    return Math.max(0, Math.ceil(diffMs / (1000 * 60 * 60 * 24)));
-  });
+  const daysLeft = computed<number>(() => getDaysLeft());
 
   async function handleSubmit(): Promise<void> {
     errors.value = {};
