@@ -3,22 +3,29 @@
 
 # Strumok
 
-Electricity billing for a garden cooperative on one shared utility bill. Residents submit monthly meter readings; the head gets consistent per-household accounting.
+Electricity billing for a garden cooperative on one shared utility bill. Residents submit monthly meter readings; the head gets consistent per-household accounting. Mobile-first PWA — residents are expected to use it on their phones out in the garden, not at a desk.
 
 ## Stack & commands
 
 - **Backend** (`backend/`, Python 3.14 + uv): FastAPI, SQLModel, PostgreSQL (psycopg), JWT in an HttpOnly cookie. Run `uvicorn app.main:app --reload`; lint with `ruff`.
-- **Frontend** (`frontend/`, Bun): Vue 3 + TS, Vite, PrimeVue (Aura preset customized in `src/preset.ts`), vue-i18n (en/ua), zod, openapi-fetch. `bun run dev` / `bun run lint` / `bun run build` (vue-tsc + vite, outputs to `backend/dist/`).
+- **Frontend** (`frontend/`, Bun): Vue 3 + TS, Vite, PrimeVue (Aura preset customized in `src/preset.ts`), vue-i18n (en/ua), zod, openapi-fetch, installable PWA (`vite-plugin-pwa`, configured in `vite.config.ts`). `bun run dev` / `bun run lint` / `bun run build` (vue-tsc + vite, outputs to `backend/dist/`).
 - **Local Postgres**: `docker compose up -d` from repo root.
-- No test suite exists yet — adding one means bootstrapping pytest / Vitest from scratch.
+- **Tests**: `cd backend && uv run pytest` (needs local Postgres: `docker compose up -d`); `cd frontend && bun run test`. See [docs/testing.md](docs/testing.md).
 
 ## Domain
 
-- `User` — account; `is_admin`, `email_verified`, theme/language preferences.
-- `Household` — cooperative plot, owned by at most one user (`households.user_id`, nullable). A user may own several; the frontend keeps a "current household" in localStorage.
-- `MeterReading` — one row per `(household_id, period)` (period is `YYYY-MM`, unique constraint). Stores cumulative `day/night_meter_value`, derived `day/night_usage_kwh` (current − previous reading), and `amount_charged_uah`.
-- `amount_charged_uah` is **not populated by any code path yet** — tariffs and the reserve fund are unimplemented. Don't assume billing math exists.
-- Submission window is days 1–5 of the month (`frontend/src/features/meter-readings/deadline.ts`).
+A `User` owns zero or more `Household`s (garden plots on the shared bill). Each month, on
+days 1–5 (`frontend/src/features/meter-readings/deadline.ts`), a resident submits one
+`MeterReading` per household for the prior period — cumulative day/night meter values, from
+which usage is derived. The head uses these across all households to reconcile the one shared
+utility bill. A user can hold multiple households (frontend tracks a "current household" in
+localStorage), but a household has at most one owning user.
+
+Per-household billing (turning usage into `amount_charged_uah`) is unimplemented — see
+[Known limitations](docs/known-limitations.md).
+
+Keep this section current as the domain evolves — update it in the same change that adds or
+changes a concept, not as separate cleanup later.
 
 ## Conventions
 
@@ -44,4 +51,4 @@ For any request that names a feature or user-facing capability rather than a spe
 5. **Tests.** Once behavior is implemented, run `qa-automation` to add coverage.
 6. **Ship.** Use `/shipit` when the user asks to ship, per its own flow.
 
-Not every stage applies to every request — a one-screen form may only need product-owner + implementation, not tech-lead. Use judgment on what's overkill, but default to running the relevant specialists rather than asking the user which one to invoke. Still check in with the user on genuinely ambiguous product decisions the specialists can't resolve (e.g. conflicting priorities) — the goal is to remove *tool-routing* friction, not product judgment calls.
+Not every stage applies to every request — a one-screen form may only need product-owner + implementation, not tech-lead. Use judgment on what's overkill, but default to running the relevant specialists rather than asking the user which one to invoke. Still check in with the user on genuinely ambiguous product decisions the specialists can't resolve (e.g. conflicting priorities) — the goal is to remove _tool-routing_ friction, not product judgment calls.

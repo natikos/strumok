@@ -1,6 +1,6 @@
 services:
   database:
-    image: postgres:16
+    image: postgres:17.6
     environment:
       POSTGRES_DB: strumok
       POSTGRES_USER: postgres
