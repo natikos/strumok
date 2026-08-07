@@ -30,6 +30,7 @@ export default defineConfigWithVueTs(
       "@typescript-eslint/no-explicit-any": "error",
       "@typescript-eslint/no-floating-promises": "error",
       "@typescript-eslint/no-misused-promises": "error",
+      "@typescript-eslint/max-params": ["error", { max: 3 }],
       "vue/max-attributes-per-line": [
         "error",
         {
@@ -62,7 +63,7 @@ export default defineConfigWithVueTs(
               "side-effect-builtin",
               "side-effect-external",
               "value-builtin",
-              "value-external"
+              "value-external",
             ],
             [
               "type-import",
@@ -86,12 +87,7 @@ export default defineConfigWithVueTs(
               "relative-style",
             ],
           ],
-          internalPattern: [
-            "^@/.+",
-            "^@features/.+",
-            "^@pages/.+",
-            "^@shared/.+",
-          ],
+          internalPattern: ["^@/.+", "^@features/.+", "^@pages/.+", "^@shared/.+"],
           newlinesBetween: 1,
           order: "asc",
           sortSideEffects: true,

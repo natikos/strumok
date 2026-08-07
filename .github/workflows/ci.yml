@@ -7,6 +7,20 @@ on:
 jobs:
   backend:
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17.6
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
     steps:
       - uses: actions/checkout@v6
 
@@ -20,8 +34,17 @@ jobs:
         run: uv run ruff check .
         working-directory: backend
 
+      - name: Test
+        # The suite creates and drops its own throwaway database on this server.
+        run: uv run pytest
+        working-directory: backend
+        env:
+          TEST_DATABASE_URL: postgresql+psycopg://postgres:postgres@localhost:5432/postgres
+
   frontend:
     runs-on: ubuntu-latest
+    env:
+      TZ: UTC
     steps:
       - uses: actions/checkout@v6
 
@@ -33,6 +56,10 @@ jobs:
 
       - name: Lint
         run: bunx eslint .
+        working-directory: frontend
+
+      - name: Test
+        run: bun run test
         working-directory: frontend
 
       - name: Build
