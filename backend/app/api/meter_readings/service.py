@@ -68,12 +68,13 @@ def submit_meter_reading(
     previous = session.exec(
         select(MeterReading)
         .where(MeterReading.household_id == household_id)
+        .where(MeterReading.period < period)
         .order_by(desc(MeterReading.period))
     ).first()
 
     if previous:
-        day_usage_kwh = day_meter_value - previous.day_meter_value
-        night_usage_kwh = night_meter_value - previous.night_meter_value
+        day_usage_kwh = max(day_meter_value - previous.day_meter_value, Decimal("0"))
+        night_usage_kwh = max(night_meter_value - previous.night_meter_value, Decimal("0"))
     else:
         day_usage_kwh = Decimal("0")
         night_usage_kwh = Decimal("0")

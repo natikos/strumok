@@ -184,13 +184,46 @@ class TestSubmitMeterReading:
         assert reading.day_usage_kwh == Decimal("100.00")
         assert reading.night_usage_kwh == Decimal("100.00")
 
-    def test_a_reading_lower_than_the_prior_one_produces_negative_usage(
+    def test_backfilling_an_older_period_diffs_against_the_immediately_prior_one(
         self, session: Session
     ) -> None:
-        # Meter replacement, typo, or rollover: the service does not clamp to
-        # zero. This is the divergence from the recalculation script noted in
-        # the QA brief -- pinning it here documents the current (surprising)
-        # behavior rather than asserting it is correct.
+        # A household already has readings for 2026-05 and 2026-07; backfilling
+        # 2026-06 must diff against 2026-05 (immediately prior), not 2026-07
+        # (globally latest) which would produce a nonsensical negative usage.
+        user = make_user(session)
+        household = make_household(session, user_id=user.id)
+        make_meter_reading(
+            session,
+            household_id=household.id,
+            period="2026-05",
+            day_meter_value="2000.00",
+            night_meter_value="1000.00",
+        )
+        make_meter_reading(
+            session,
+            household_id=household.id,
+            period="2026-07",
+            day_meter_value="3000.00",
+            night_meter_value="1700.00",
+        )
+
+        reading = submit_meter_reading(
+            session=session,
+            user=user,
+            household_id=household.id,
+            period="2026-06",
+            day_meter_value=Decimal("2500.00"),
+            night_meter_value=Decimal("1300.00"),
+        )
+
+        assert reading.day_usage_kwh == Decimal("500.00")
+        assert reading.night_usage_kwh == Decimal("300.00")
+
+    def test_a_reading_lower_than_the_prior_one_clamps_usage_to_zero(
+        self, session: Session
+    ) -> None:
+        # Meter replacement, typo, or rollover: usage is clamped to zero,
+        # matching both recalculation scripts (GREATEST/max(..., 0)).
         user = make_user(session)
         household = make_household(session, user_id=user.id)
         make_meter_reading(
@@ -210,8 +243,8 @@ class TestSubmitMeterReading:
             night_meter_value=Decimal("50.00"),
         )
 
-        assert reading.day_usage_kwh == Decimal("-4900.00")
-        assert reading.night_usage_kwh == Decimal("-2950.00")
+        assert reading.day_usage_kwh == Decimal("0")
+        assert reading.night_usage_kwh == Decimal("0")
 
     def test_duplicate_period_for_the_same_household_is_rejected(
         self, session: Session
