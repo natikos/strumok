@@ -1,12 +1,13 @@
 ---
-description: Draft and file a GitHub issue for a bug or task
+name: create-issue
+description: Draft and file a GitHub issue for a bug or task. Use when the user reports a bug ("I found a bug", "this is broken", "X doesn't work"), asks for new work to be tracked, or says things like "report it", "file an issue", or "log this as a task" — without necessarily naming GitHub explicitly.
 allowed-tools: Bash(gh issue create:*), Bash(gh issue list:*), Bash(gh label list:*)
 ---
 
-File a GitHub issue for: $ARGUMENTS
+File a GitHub issue.
 
-If `$ARGUMENTS` is empty, use what was already discussed in this session as the
-subject — do not ask the user to repeat it.
+Use what was already discussed in this session as the subject — do not ask the
+user to repeat it unless nothing relevant was discussed.
 
 ## 1. Classify
 

@@ -1,8 +1,35 @@
 {
   "permissions": {
     "allow": [
-      "Skill(shipit)",
-      "Skill(shipit:*)"
+      "Agent(*)",
+      "Skill(*)",
+      "Bash(git status:*)",
+      "Bash(git branch:*)",
+      "Bash(git switch:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git push:*)",
+      "Bash(git pull:*)",
+      "Bash(git fetch:*)",
+      "Bash(git log:*)",
+      "Bash(git diff:*)",
+      "Bash(git remote:*)",
+      "Bash(git rev-parse:*)",
+      "Bash(gh repo view:*)",
+      "Bash(gh issue create:*)",
+      "Bash(gh issue list:*)",
+      "Bash(gh issue view:*)",
+      "Bash(gh label list:*)",
+      "Bash(gh pr create:*)",
+      "Bash(gh pr view:*)",
+      "Bash(gh pr checks:*)",
+      "Bash(gh pr merge:*)",
+      "Bash(uv run ruff:*)",
+      "Bash(uv run pytest:*)",
+      "Bash(bunx eslint:*)",
+      "Bash(bun run test:*)",
+      "Bash(bun run build:*)",
+      "Bash(docker compose up:*)"
     ]
   }
 }
