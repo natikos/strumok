@@ -43,6 +43,13 @@ Two independent signals, because each is weak alone:
 2. **File churn.** Files re-touched within 14 days, regardless of commit type.
    Catches unsettled work that was never labelled as a fix.
 
+Renames are read as delete-plus-add (`git log --no-renames`), so both the old
+and new path count as touched. With rename detection on, git reports only the
+destination path — which would hide a fix from the commit that introduced the
+file under its old name, and inflate churn for a path whose identity changed
+rather than its content. Both signals also assume squash-merges, which is what
+this repo does; a real merge commit would report no files at all.
+
 Neither is a verdict. A file at the top of the churn list may be under active
 development rather than badly built — `en.json`/`ua.json` move whenever any
 user-facing string changes, and that is normal. Treat the list as a place to

@@ -89,8 +89,15 @@ class Commit:
 
 def load_commits(since: str | None) -> list[Commit]:
     """Read commits oldest-first, each with the files it touched."""
-    cmd = ["git", "log", "--reverse", "--name-only", "--date=short",
-           "--format=%x00%H|%ad|%s"]
+    # --no-renames so a rename reports both the old and new path. With rename
+    # detection on, --name-only prints only the destination, which would hide a
+    # fix from the change that introduced the file under its old name and
+    # inflate churn for a path that changed identity rather than content.
+    #
+    # Merge commits would report no files at all (git suppresses combined
+    # diffs), but this repo squash-merges exclusively, so none exist.
+    cmd = ["git", "log", "--reverse", "--name-only", "--no-renames",
+           "--date=short", "--format=%x00%H|%ad|%s"]
     if since:
         cmd.append(f"--since={since}")
 
@@ -229,18 +236,25 @@ def report_issues() -> None:
         print("  unavailable (`gh` not installed, unauthenticated, or offline)")
         return
 
-    issues = json.loads(out)
-    if not issues:
-        print("  none open")
-        return
+    # `gh --json` pins the schema, but a version bump or API change reshaping
+    # this should cost the issues section, not the whole report.
+    try:
+        issues = json.loads(out)
+        if not issues:
+            print("  none open")
+            return
 
-    today = datetime.now().date()
-    rows = []
-    for issue in issues:
-        created = datetime.fromisoformat(issue["createdAt"]).date()
-        labels = {label["name"] for label in issue["labels"]}
-        is_bug = bool(labels & {"bug", "defect"})
-        rows.append((( today - created).days, issue["number"], issue["title"], is_bug))
+        today = datetime.now().date()
+        rows = []
+        for issue in issues:
+            created = datetime.fromisoformat(issue["createdAt"]).date()
+            labels = {label["name"] for label in issue["labels"]}
+            is_bug = bool(labels & {"bug", "defect"})
+            rows.append(((today - created).days, issue["number"],
+                         issue["title"], is_bug))
+    except (json.JSONDecodeError, KeyError, TypeError, ValueError) as exc:
+        print(f"  unavailable (unexpected `gh` output: {exc})")
+        return
 
     rows.sort(reverse=True)
     bugs = [r for r in rows if r[3]]
