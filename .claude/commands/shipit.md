@@ -5,8 +5,15 @@ allowed-tools: Bash(git status:*), Bash(git branch:*), Bash(git switch:*), Bash(
 
 Land the current work: $ARGUMENTS
 
-`$ARGUMENTS` is optional — it may carry a subject or an issue number. If empty,
-derive everything from the branch, the diff, and this session.
+`$ARGUMENTS` is optional — it may carry a subject, an issue number, and/or the
+literal word `auto`. If empty, derive everything from the branch, the diff,
+and this session.
+
+**`auto` mode**: by default, once CI is green the command stops and waits for
+the user to explicitly approve the merge — it does not merge on its own. Pass
+`auto` in `$ARGUMENTS` (e.g. `/shipit auto`, or `/shipit auto #42`) to skip that
+wait and merge automatically as soon as checks pass, same as before. Strip
+`auto` out before treating the rest of `$ARGUMENTS` as a subject/issue number.
 
 Much of the setup may already be done: the `commit-work` skill creates the
 branch, ensures the issue exists, and commits in slices during implementation.
@@ -14,8 +21,15 @@ Stages 1–3 **verify** that rather than redoing it, and fill in whatever is
 missing.
 
 Work through the stages in order. **Stop and report** at the first stage that
-fails — never skip ahead, never paper over a failure. Stage 6 merges
-automatically once CI is green; it does not wait for confirmation.
+fails — never skip ahead, never paper over a failure. Stage 6 merges once CI is
+green — automatically in `auto` mode, otherwise only after the user approves.
+
+**One change per PR.** If the working tree has edits unrelated to the work this
+invocation is landing (a different fix, a doc tweak, a config change made
+earlier in the session), do not bundle them into this PR just because they're
+sitting there. Stash or set them aside, ship the intended change on its own
+branch/issue, then return to the rest separately — unless the user has
+explicitly said to combine them.
 
 Deployment is a separate step, not part of this flow — stop after cleanup.
 
@@ -111,8 +125,14 @@ and report it rather than merging on the strength of stage 5 alone.
 
 If checks fail, stop and report which job failed with its output. Do not merge.
 
-Once green, merge without waiting for confirmation:
-`gh pr merge --squash --delete-branch`.
+Once green:
+
+- **`auto` mode**: merge immediately, no confirmation —
+  `gh pr merge --squash --delete-branch`.
+- **Default**: stop and report that the PR is green and ready, with its URL,
+  and ask the user to confirm before merging. Do not run `gh pr merge` until
+  they explicitly approve in this conversation. Once approved, run
+  `gh pr merge --squash --delete-branch` and continue to stage 7.
 
 Squash keeps `main` linear at one commit per change, which makes `git blame`
 land on a commit that explains the whole change. The branch's incremental
@@ -135,6 +155,8 @@ and that `main` contains the squashed commit.
 ## Report
 
 End with a compact summary: branch, commits, issue, PR, local gate results, CI
-result, merge, and cleanup. State plainly anything you skipped and why.
+result, merge, and cleanup. State plainly anything you skipped and why. If
+stopped in default mode waiting for merge approval, say so explicitly instead
+of implying the work is fully landed.
 Deployment is not part of this command — mention it's a separate step if the
 user wants to ship to production.
