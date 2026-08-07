@@ -24,6 +24,7 @@
       "Bash(gh pr view:*)",
       "Bash(gh pr checks:*)",
       "Bash(gh pr merge:*)",
+      "Bash(gh pr list:*)",
       "Bash(uv run ruff:*)",
       "Bash(uv run pytest:*)",
       "Bash(bunx eslint:*)",
