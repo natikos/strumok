@@ -87,6 +87,12 @@ Otherwise commit what's left per the Commit Messages section of
 `docs/contributing.md` — stage deliberately, review `git diff --staged` for
 debug leftovers and secrets, and write the message to that spec.
 
+**In default mode**, show the staged diff and drafted message to the user and
+wait for their go-ahead before running `git commit` — same rule as
+`commit-work`, never commit on your own initiative. **In `auto` mode**, the
+user has already given that go-ahead by passing `auto` — commit immediately
+without a checkpoint, same as stage 6's merge.
+
 ## 5. Gate locally, then open the PR
 
 Run the same gates CI runs, so a red PR is caught before it's opened. Needs
