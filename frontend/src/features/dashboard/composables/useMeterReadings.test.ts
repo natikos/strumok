@@ -209,12 +209,8 @@ describe("useMeterReadings", () => {
         null
       );
 
-      // The newly created reading is appended to the *end* of the array, but
-      // `latestReading` reads `.at(0)` -- so a resident who just submitted this
-      // month's reading still sees last month's reading as "latest" until the
-      // next full reload. Pinning current behavior, not asserting it's right.
       expect(result.currentSlot.value?.reading?.id).toBe(99);
-      expect(result.latestReading.value?.id).toBe(1);
+      expect(result.latestReading.value?.id).toBe(99);
     });
 
     it("resets the input fields after a successful submit", async () => {

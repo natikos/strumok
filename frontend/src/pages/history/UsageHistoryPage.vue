@@ -27,7 +27,7 @@
       </div>
     </section>
 
-    <div v-if="!isLoading && groups.length === 0" class="usage-history__empty">
+    <div v-if="!isLoading && !summary" class="usage-history__empty">
       <i class="pi pi-inbox usage-history__empty-icon" aria-hidden="true"></i>
       <h2 class="usage-history__empty-title">{{ $t("usageHistory.emptyTitle") }}</h2>
       <p class="usage-history__empty-description">
@@ -57,60 +57,103 @@
           </span>
         </div>
         <ol class="usage-history__list">
-          <li v-for="entry in group.entries" :key="entry.period" class="usage-history__item">
+          <li
+            v-for="entry in group.entries"
+            :key="entry.period"
+            class="usage-history__item"
+            :class="{
+              'usage-history__item--not-submitted': !entry.submitted,
+              'usage-history__item--current': entry.period === currentBillingPeriod,
+            }"
+          >
             <div class="usage-history__item-head">
               <span class="usage-history__month">{{ entry.monthLabel }}</span>
-            </div>
-
-            <div class="usage-history__metrics">
-              <div
-                class="usage-history__metric"
-                :class="{ 'usage-history__metric--negative': entry.dayUsage < 0 }"
+              <span
+                v-if="!entry.submitted"
+                class="usage-history__not-submitted-tag"
+                :class="{
+                  'usage-history__not-submitted-tag--due': entry.period === currentBillingPeriod,
+                }"
               >
-                <span class="usage-history__metric-label">
-                  <i class="pi pi-sun" aria-hidden="true"></i>
-                  {{ $t("usageHistory.day") }}
-                </span>
-                <span class="usage-history__metric-value">
-                  {{ formatKwh(entry.dayUsage) }}
-                </span>
-              </div>
-              <div
-                class="usage-history__metric"
-                :class="{ 'usage-history__metric--negative': entry.nightUsage < 0 }"
-              >
-                <span class="usage-history__metric-label">
-                  <i class="pi pi-moon" aria-hidden="true"></i>
-                  {{ $t("usageHistory.night") }}
-                </span>
-                <span class="usage-history__metric-value">
-                  {{ formatKwh(entry.nightUsage) }}
-                </span>
-              </div>
-              <div class="usage-history__metric usage-history__metric--total">
-                <span class="usage-history__metric-label">
-                  {{ $t("usageHistory.total") }}
-                </span>
-                <span class="usage-history__metric-value">
-                  {{ formatKwh(entry.totalUsage) }}
-                </span>
-              </div>
-            </div>
-
-            <div
-              class="usage-history__charge"
-              :class="{ 'usage-history__charge--credit': entry.amountCharged < 0 }"
-            >
-              <span class="usage-history__charge-label">
-                {{ $t("usageHistory.charged") }}
-              </span>
-              <span class="usage-history__charge-value">
-                {{ formatUah(entry.amountCharged) }}
-                <span v-if="entry.amountCharged < 0" class="usage-history__charge-tag">
-                  {{ $t("usageHistory.credit") }}
-                </span>
+                <i class="pi pi-clock" aria-hidden="true"></i>
+                {{
+                  entry.period === currentBillingPeriod
+                    ? $t("usageHistory.notSubmitted")
+                    : $t("usageHistory.noData")
+                }}
               </span>
             </div>
+
+            <template v-if="entry.submitted">
+              <div class="usage-history__metrics">
+                <div
+                  class="usage-history__metric"
+                  :class="{ 'usage-history__metric--negative': entry.dayUsage < 0 }"
+                >
+                  <span class="usage-history__metric-label">
+                    <i class="pi pi-sun" aria-hidden="true"></i>
+                    {{ $t("usageHistory.day") }}
+                  </span>
+                  <span class="usage-history__metric-value">
+                    {{ formatKwh(entry.dayUsage) }}
+                  </span>
+                </div>
+                <div
+                  class="usage-history__metric"
+                  :class="{ 'usage-history__metric--negative': entry.nightUsage < 0 }"
+                >
+                  <span class="usage-history__metric-label">
+                    <i class="pi pi-moon" aria-hidden="true"></i>
+                    {{ $t("usageHistory.night") }}
+                  </span>
+                  <span class="usage-history__metric-value">
+                    {{ formatKwh(entry.nightUsage) }}
+                  </span>
+                </div>
+                <div class="usage-history__metric usage-history__metric--total">
+                  <span class="usage-history__metric-label">
+                    {{ $t("usageHistory.total") }}
+                  </span>
+                  <span class="usage-history__metric-value">
+                    {{ formatKwh(entry.totalUsage) }}
+                  </span>
+                </div>
+              </div>
+
+              <div
+                class="usage-history__charge"
+                :class="{ 'usage-history__charge--credit': entry.amountCharged < 0 }"
+              >
+                <span class="usage-history__charge-label">
+                  {{ $t("usageHistory.charged") }}
+                </span>
+                <span class="usage-history__charge-value">
+                  {{ formatUah(entry.amountCharged) }}
+                  <span v-if="entry.amountCharged < 0" class="usage-history__charge-tag">
+                    {{ $t("usageHistory.credit") }}
+                  </span>
+                </span>
+              </div>
+            </template>
+
+            <p v-else class="usage-history__not-submitted-note">
+              {{
+                entry.period === currentBillingPeriod
+                  ? $t("usageHistory.notSubmittedDescription")
+                  : $t("usageHistory.noDataDescription")
+              }}
+            </p>
+
+            <Button
+              v-if="!entry.submitted && entry.period === currentBillingPeriod"
+              as="router-link"
+              :to="ROUTES.root"
+              :label="$t('usageHistory.notSubmittedCta')"
+              icon="pi pi-arrow-right"
+              icon-pos="right"
+              size="small"
+              class="usage-history__not-submitted-cta"
+            />
           </li>
         </ol>
       </section>
@@ -119,6 +162,7 @@
 </template>
 
 <script setup lang="ts">
+  import { format, subMonths } from "date-fns";
   import { computed, onMounted, ref, watch } from "vue";
   import { useI18n } from "vue-i18n";
 
@@ -135,6 +179,7 @@
     nightUsage: number;
     totalUsage: number;
     amountCharged: number;
+    submitted: boolean;
   }
 
   interface YearGroup {
@@ -156,11 +201,14 @@
     return new Date(Number(yearStr), Number(monthStr) - 1, 1);
   }
 
+  const currentBillingPeriod = computed(() => format(subMonths(new Date(), 1), "yyyy-MM"));
+
   const sortedEntries = computed<HistoryEntry[]>(() => {
     const entries = readings.value.map((reading) => {
       const date = periodToDate(reading.period);
       const dayUsage = Number(reading.day_usage_kwh);
       const nightUsage = Number(reading.night_usage_kwh);
+
       return {
         period: reading.period,
         year: String(date.getFullYear()),
@@ -169,6 +217,7 @@
         nightUsage,
         totalUsage: dayUsage + nightUsage,
         amountCharged: Number(reading.amount_charged_uah),
+        submitted: reading.id !== null,
       };
     });
     return entries.sort((a, b) => (a.period < b.period ? 1 : -1));
@@ -178,8 +227,11 @@
     const map = new Map<string, HistoryEntry[]>();
     for (const entry of sortedEntries.value) {
       const list = map.get(entry.year);
-      if (list) list.push(entry);
-      else map.set(entry.year, [entry]);
+      if (list) {
+        list.push(entry);
+      } else {
+        map.set(entry.year, [entry]);
+      }
     }
     return Array.from(map, ([year, entries]) => ({
       year,
@@ -190,8 +242,13 @@
   });
 
   const summary = computed(() => {
-    if (sortedEntries.value.length === 0) return null;
-    return sortedEntries.value.reduce(
+    const submittedEntries = sortedEntries.value.filter((entry) => entry.submitted);
+
+    if (submittedEntries.length === 0) {
+      return null;
+    }
+
+    return submittedEntries.reduce(
       (acc, entry) => ({
         monthCount: acc.monthCount + 1,
         totalUsage: acc.totalUsage + entry.totalUsage,
@@ -353,10 +410,39 @@
     grid-template-columns: 1fr;
     padding: var(--s-app-space-4);
 
-    @media (min-width: 45rem) {
+    @include layout.respond-to("md") {
       align-items: center;
       grid-template-columns: 7rem 1fr 9rem;
       gap: var(--s-app-space-5);
+    }
+  }
+
+  .usage-history__item--not-submitted {
+    border-style: dashed;
+  }
+
+  .usage-history__item--current {
+    border-color: color-mix(in srgb, var(--s-primary-color), transparent 50%);
+  }
+
+  .usage-history__not-submitted-note {
+    color: color-mix(in srgb, var(--s-content-color), transparent 45%);
+    font-size: 0.85rem;
+    margin: 0;
+
+    @include layout.respond-to("md") {
+      grid-column: 2;
+    }
+  }
+
+  .usage-history__not-submitted-cta {
+    justify-self: start;
+    text-decoration: none;
+    white-space: nowrap;
+
+    @include layout.respond-to("md") {
+      grid-column: 3;
+      justify-self: end;
     }
   }
 
@@ -364,6 +450,7 @@
     align-items: baseline;
     column-gap: var(--s-app-space-2);
     display: flex;
+    flex-wrap: wrap;
   }
 
   .usage-history__month {
@@ -371,6 +458,23 @@
     font-size: 1.05rem;
     font-weight: 600;
     text-transform: capitalize;
+  }
+
+  .usage-history__not-submitted-tag {
+    align-items: center;
+    color: color-mix(in srgb, var(--s-content-color), transparent 50%);
+    column-gap: var(--s-app-space-1);
+    display: inline-flex;
+    font-size: 0.75rem;
+    font-weight: 500;
+
+    &--due {
+      color: var(--s-amber-500, #f59e0b);
+    }
+
+    i {
+      font-size: 0.8rem;
+    }
   }
 
   .usage-history__metrics {
@@ -423,7 +527,7 @@
     @include layout.stack(0.1rem);
     align-items: flex-start;
 
-    @media (min-width: 45rem) {
+    @include layout.respond-to("md") {
       align-items: flex-end;
       text-align: right;
     }

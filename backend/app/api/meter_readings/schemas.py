@@ -20,13 +20,17 @@ class MeterReadingIn(BaseModel):
 class MeterReadingOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
-    id: int = Field(examples=[1])
+    id: int | None = Field(examples=[1])
     household_id: int = Field(examples=[1])
     submitted_by_user_id: int | None = Field(examples=[1])
     period: str = Field(examples=["2026-07"])
-    day_meter_value: Decimal = Field(max_digits=12, decimal_places=2, examples=["3205.00"])
-    night_meter_value: Decimal = Field(max_digits=12, decimal_places=2, examples=["1820.00"])
+    day_meter_value: Decimal | None = Field(
+        max_digits=12, decimal_places=2, examples=["3205.00"]
+    )
+    night_meter_value: Decimal | None = Field(
+        max_digits=12, decimal_places=2, examples=["1820.00"]
+    )
     day_usage_kwh: Decimal = Field(max_digits=12, decimal_places=2, examples=["145.50"])
     night_usage_kwh: Decimal = Field(max_digits=12, decimal_places=2, examples=["98.20"])
     amount_charged_uah: Decimal = Field(max_digits=12, decimal_places=2, examples=["987.65"])
-    submitted_at: datetime = Field(examples=["2026-07-20T08:40:50.453Z"])
+    submitted_at: datetime | None = Field(examples=["2026-07-20T08:40:50.453Z"])

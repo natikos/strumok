@@ -34,6 +34,7 @@ changes a concept, not as separate cleanup later.
 - **Backend module shape**: `backend/app/api/<feature>/{routes,schemas,service}.py`. No DB access in routes.
 - **Household scoping**: every household-bound route resolves access through a dependency that verifies ownership and 403s otherwise (`require_household_id`). Follow that pattern for new routes.
 - **Money/usage**: `Decimal` end to end in the backend; JSON emits them as strings, so the frontend parses.
+- **Prefer installed libraries**: don't hand-roll logic (date math, formatting, etc.) that an already-installed dependency covers — e.g. use `date-fns` (already a dependency, see `frontend/src/features/meter-readings/deadline.ts`) instead of native `Date` arithmetic.
 - **Generated types**: `frontend/src/shared/api/generated/openapi.ts` is produced by `bun run api:types` against a running backend. Never hand-edit; regenerate after changing schemas.
 - **Migrations**: hand-written SQL in `backend/migrations/`, applied manually. `init_db()` only runs `create_all` in development. No Alembic.
 - **Frontend layout**: `features/` (domain logic + components), `pages/` (routed views), `shared/`, `layouts/`. Aliases `@/`, `@features`, `@pages`, `@shared`, `@utils`. Components under those dirs and all PrimeVue components are auto-imported — don't add explicit imports.

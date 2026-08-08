@@ -184,8 +184,10 @@
     set: (v) => emit("update:nightMeterValue", v),
   });
 
-  function formatValue(value: number | string | undefined): string {
-    if (value == null) return "—";
+  function formatValue(value: number | string | null | undefined): string {
+    if (value == null) {
+      return "—";
+    }
     const numeric = typeof value === "string" ? Number(value) : value;
     return numeric.toLocaleString(intlLocale.value, { maximumFractionDigits: 2 });
   }

@@ -64,7 +64,9 @@ export function useMeterReadings() {
     const map = new Map<string, MeterReadingOut>();
     if (readings.value) {
       for (const reading of readings.value) {
-        map.set(reading.period, reading);
+        if (reading.id !== null) {
+          map.set(reading.period, reading);
+        }
       }
     }
     return map;
@@ -73,6 +75,7 @@ export function useMeterReadings() {
   const slots = computed<MeterPeriod[]>(() => {
     const HISTORY_MONTHS = 24;
     const result: MeterPeriod[] = [];
+
     for (let offset = HISTORY_MONTHS; offset >= 1; offset -= 1) {
       const date = new Date(currentMonthStart);
       date.setMonth(date.getMonth() - offset);
@@ -90,6 +93,7 @@ export function useMeterReadings() {
         reading: readingsByPeriod.value.get(period),
       });
     }
+
     return result;
   });
 
@@ -98,12 +102,14 @@ export function useMeterReadings() {
   );
 
   const billingMonthIndex = computed(() => {
-    if (!currentMeterPeriod.value) return 0;
+    if (!currentMeterPeriod.value) {
+      return 0;
+    }
     return currentMeterPeriod.value.date.getMonth();
   });
 
   const latestSubmittedReading = computed<MeterReadingOut | undefined>(() => {
-    return readings.value?.at(0);
+    return readings.value?.find((reading) => reading.id !== null);
   });
 
   const daysLeft = computed<number>(() => getDaysLeft());
@@ -119,8 +125,12 @@ export function useMeterReadings() {
     if (!parsed.success) {
       const flat = z.flattenError(parsed.error).fieldErrors;
       const next: FieldErrors = {};
-      if (flat.dayMeterValue?.[0]) next.dayMeterValue = flat.dayMeterValue[0];
-      if (flat.nightMeterValue?.[0]) next.nightMeterValue = flat.nightMeterValue[0];
+      if (flat.dayMeterValue?.[0]) {
+        next.dayMeterValue = flat.dayMeterValue[0];
+      }
+      if (flat.nightMeterValue?.[0]) {
+        next.nightMeterValue = flat.nightMeterValue[0];
+      }
       errors.value = next;
       return;
     }
@@ -136,9 +146,15 @@ export function useMeterReadings() {
         },
         currentId.value
       );
+
       if (readings.value) {
-        readings.value = [...readings.value, created];
+        const hasPeriod = readings.value.some((reading) => reading.period === created.period);
+
+        readings.value = hasPeriod
+          ? readings.value.map((reading) => (reading.period === created.period ? created : reading))
+          : [created, ...readings.value];
       }
+
       dayMeterValue.value = null;
       nightMeterValue.value = null;
     } catch (error) {

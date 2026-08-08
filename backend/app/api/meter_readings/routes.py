@@ -83,8 +83,7 @@ def list_my_meter_readings(
     household_id: int = Depends(require_household_id),
     session: Session = Depends(get_session),
 ) -> list[MeterReadingOut]:
-    readings = list_meter_readings(session=session, household_id=household_id)
-    return [MeterReadingOut.model_validate(r) for r in readings]
+    return list_meter_readings(session=session, household_id=household_id)
 
 
 @router.post(
