@@ -6,6 +6,7 @@ going wrong, so they're covered at both the service layer (direct DB behavior)
 and the route layer (HTTP status + stable error codes).
 """
 
+from datetime import datetime, timezone
 from decimal import Decimal
 
 import pytest
@@ -20,6 +21,8 @@ from app.api.meter_readings.service import (
     list_meter_readings,
     submit_meter_reading,
 )
+from app.api.meter_readings.service import _previous_period
+from app.core.time import utc_now
 from tests.factories import (
     authenticate,
     make_household,
@@ -303,7 +306,14 @@ class TestListMeterReadings:
         self, session: Session
     ) -> None:
         user = make_user(session)
-        household = make_household(session, user_id=user.id)
+        # Household created exactly at the earliest submitted period, so the
+        # gap-fill range is limited to periods on/after 2025-11 and the
+        # asserted list isn't polluted by unrelated synthetic entries.
+        household = make_household(
+            session,
+            user_id=user.id,
+            created_at=datetime(2025, 11, 1, tzinfo=timezone.utc),
+        )
         # Deliberately unsorted insertion, spanning a year boundary, so a bug
         # that orders by id/insertion-order instead of period sorts wrong.
         make_meter_reading(session, household_id=household.id, period="2025-11")
@@ -311,16 +321,129 @@ class TestListMeterReadings:
         make_meter_reading(session, household_id=household.id, period="2025-12")
 
         readings = list_meter_readings(session=session, household_id=household.id)
+        submitted = [r for r in readings if r.id is not None]
 
-        assert [r.period for r in readings] == ["2026-01", "2025-12", "2025-11"]
+        assert [r.period for r in submitted] == ["2026-01", "2025-12", "2025-11"]
+        # The whole list (real + synthetic gap entries) must still be sorted
+        # descending by period, with no duplicates or out-of-range periods.
+        periods = [r.period for r in readings]
+        assert periods == sorted(periods, reverse=True)
+        # The synthetic gap-fill walk starts at last month (the current
+        # calendar month's submission window hasn't opened yet), so the
+        # newest period present is whichever is greater: the newest real
+        # submission or last month.
+        last_month = _previous_period(utc_now().strftime("%Y-%m"))
+        assert periods[0] == max("2026-01", last_month)
+        assert periods[-1] == "2025-11"
 
-    def test_returns_no_readings_for_a_household_with_none_submitted(
+    def test_returns_only_synthetic_gap_entries_for_a_household_with_none_submitted(
         self, session: Session
     ) -> None:
+        # Household created two months before "now": with nothing submitted,
+        # every period whose submission window has already opened must still
+        # appear as a synthetic not-submitted entry rather than the household
+        # vanishing from history entirely. The current calendar month's
+        # window hasn't opened yet, so it must NOT appear as a gap entry.
+        now = utc_now()
+        created_month = (now.month - 2) if now.month > 2 else (now.month + 10)
+        created_year = now.year if now.month > 2 else now.year - 1
         user = make_user(session)
-        household = make_household(session, user_id=user.id)
+        household = make_household(
+            session,
+            user_id=user.id,
+            created_at=datetime(created_year, created_month, 1, tzinfo=timezone.utc),
+        )
 
-        assert list_meter_readings(session=session, household_id=household.id) == []
+        readings = list_meter_readings(session=session, household_id=household.id)
+
+        last_month = _previous_period(now.strftime("%Y-%m"))
+        assert len(readings) == 2
+        assert all(r.id is None for r in readings)
+        assert all(r.day_meter_value is None for r in readings)
+        assert all(r.night_meter_value is None for r in readings)
+        assert all(r.submitted_at is None for r in readings)
+        assert all(r.day_usage_kwh == Decimal("0") for r in readings)
+        assert all(r.night_usage_kwh == Decimal("0") for r in readings)
+        assert all(r.amount_charged_uah == Decimal("0") for r in readings)
+        assert readings[0].period == last_month
+        assert now.strftime("%Y-%m") not in [r.period for r in readings]
+
+    def test_a_missed_month_appears_as_a_not_submitted_entry_alongside_real_ones(
+        self, session: Session
+    ) -> None:
+        # Household created three months back; the resident submitted the
+        # oldest and newest periods but skipped the middle one. The gap must
+        # surface as a synthetic entry, not silently disappear from history.
+        # "Newest" here is last calendar month, since a period for the
+        # current calendar month can't legitimately be submitted yet (its
+        # submission window only opens next month) and the synthetic
+        # gap-fill walk no longer considers it.
+        now = utc_now()
+
+        def shift(period_offset: int) -> str:
+            year, month = now.year, now.month - period_offset
+            while month <= 0:
+                month += 12
+                year -= 1
+            return f"{year}-{month:02d}"
+
+        oldest_period = shift(3)
+        gap_period = shift(2)
+        newest_period = shift(1)
+        oldest_year, oldest_month = (int(p) for p in oldest_period.split("-"))
+
+        user = make_user(session)
+        household = make_household(
+            session,
+            user_id=user.id,
+            created_at=datetime(oldest_year, oldest_month, 1, tzinfo=timezone.utc),
+        )
+        make_meter_reading(
+            session,
+            household_id=household.id,
+            period=oldest_period,
+            day_meter_value="1000.00",
+            night_meter_value="500.00",
+        )
+        make_meter_reading(
+            session,
+            household_id=household.id,
+            period=newest_period,
+            day_meter_value="1200.00",
+            night_meter_value="620.00",
+            day_usage_kwh="200.00",
+            night_usage_kwh="120.00",
+        )
+
+        readings = list_meter_readings(session=session, household_id=household.id)
+
+        assert [r.period for r in readings] == [
+            newest_period,
+            gap_period,
+            oldest_period,
+        ]
+
+        newest, gap, oldest = readings
+
+        assert newest.id is not None
+        assert newest.day_meter_value == Decimal("1200.00")
+        assert newest.night_meter_value == Decimal("620.00")
+        assert newest.day_usage_kwh == Decimal("200.00")
+        assert newest.night_usage_kwh == Decimal("120.00")
+        assert newest.submitted_at is not None
+
+        assert gap.id is None
+        assert gap.day_meter_value is None
+        assert gap.night_meter_value is None
+        assert gap.submitted_at is None
+        assert gap.day_usage_kwh == Decimal("0")
+        assert gap.night_usage_kwh == Decimal("0")
+        assert gap.amount_charged_uah == Decimal("0")
+
+        assert oldest.id is not None
+        assert oldest.day_meter_value == Decimal("1000.00")
+        assert oldest.night_meter_value == Decimal("500.00")
+        assert oldest.submitted_at is not None
 
 
 class TestRequireHouseholdIdRoute:
@@ -368,9 +491,24 @@ class TestRequireHouseholdIdRoute:
     def test_no_household_id_param_resolves_via_get_user_household_id(
         self, client, session: Session
     ) -> None:
+        now = utc_now()
+        last_month = _previous_period(now.strftime("%Y-%m"))
+        last_month_year, last_month_month = (int(p) for p in last_month.split("-"))
         user = make_user(session, email="resolver@example.com")
-        household = make_household(session, name="Resolved Plot", user_id=user.id)
-        make_meter_reading(session, household_id=household.id, period="2026-05")
+        # Household created in the same month as the sole submitted reading
+        # (last month, the newest period a resident could actually have
+        # submitted), so there are no gap periods to fill and the response
+        # contains exactly that one real entry.
+        household = make_household(
+            session,
+            name="Resolved Plot",
+            user_id=user.id,
+            created_at=datetime(
+                last_month_year, last_month_month, 1, tzinfo=timezone.utc
+            ),
+        )
+        period = last_month
+        make_meter_reading(session, household_id=household.id, period=period)
         authenticate(client, user)
 
         response = client.get("/meter-readings")
@@ -379,6 +517,8 @@ class TestRequireHouseholdIdRoute:
         body = response.json()
         assert len(body) == 1
         assert body[0]["household_id"] == household.id
+        assert body[0]["period"] == period
+        assert body[0]["id"] is not None
 
 
 class TestMeterReadingRoutesHappyPath:
@@ -437,12 +577,24 @@ class TestMeterReadingRoutesHappyPath:
     def test_get_lists_readings_for_the_caller_household_only(
         self, client, session: Session
     ) -> None:
+        now = utc_now()
+        period = _previous_period(now.strftime("%Y-%m"))
+        period_year, period_month = (int(p) for p in period.split("-"))
+        created_at = datetime(period_year, period_month, 1, tzinfo=timezone.utc)
         user = make_user(session, email="lister@example.com")
         other_user = make_user(session, email="other@example.com")
-        household = make_household(session, name="Mine", user_id=user.id)
-        other_household = make_household(session, name="Not mine", user_id=other_user.id)
-        make_meter_reading(session, household_id=household.id, period="2026-06")
-        make_meter_reading(session, household_id=other_household.id, period="2026-06")
+        # Both households created in the same month as their reading (last
+        # month, the newest period actually submittable) so each has exactly
+        # one real entry and no gap-filled periods, keeping the "only mine"
+        # assertion unambiguous.
+        household = make_household(
+            session, name="Mine", user_id=user.id, created_at=created_at
+        )
+        other_household = make_household(
+            session, name="Not mine", user_id=other_user.id, created_at=created_at
+        )
+        make_meter_reading(session, household_id=household.id, period=period)
+        make_meter_reading(session, household_id=other_household.id, period=period)
         authenticate(client, user)
 
         response = client.get(
@@ -453,3 +605,4 @@ class TestMeterReadingRoutesHappyPath:
         body = response.json()
         assert len(body) == 1
         assert body[0]["household_id"] == household.id
+        assert body[0]["id"] is not None
