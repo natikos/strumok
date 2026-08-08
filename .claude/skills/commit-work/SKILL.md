@@ -53,6 +53,15 @@ Two things that section calls for, applied to a long agent run:
   watch for debug leftovers, stray `console.log`/`print`, commented-out code,
   committed secrets, and `.env` or CSV files. Fix them before committing.
 
+**Get explicit approval before every commit.** When a slice is ready, stage
+it, show the user `git diff --staged` and the drafted commit message, and wait
+for their go-ahead before running `git commit`. Do not run `git commit` on
+your own initiative — always ask first, for every commit, not just the first
+one in a session. Exception: if the user has explicitly told you to run
+hands-off for this task (e.g. "just commit as you go", `/shipit auto`), skip
+the checkpoint for the commits that instruction covers — it's the approval
+itself, given up front instead of per slice.
+
 ## 4. Report
 
 After each commit, state in one line: the branch, the commit subject, and what's
