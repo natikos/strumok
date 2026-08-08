@@ -41,7 +41,7 @@
             {{ t("meterReadings.day") }}
           </span>
           <span class="submit-card__meter-num">{{
-            formatValue(latestReading?.day_meter_value)
+            formatMeterValue(latestReading?.day_meter_value, intlLocale)
           }}</span>
         </div>
         <div class="submit-card__meter-row">
@@ -50,7 +50,7 @@
             {{ t("meterReadings.night") }}
           </span>
           <span class="submit-card__meter-num">{{
-            formatValue(latestReading?.night_meter_value)
+            formatMeterValue(latestReading?.night_meter_value, intlLocale)
           }}</span>
         </div>
       </div>
@@ -141,6 +141,7 @@
   import { useLocale } from "@/features/i18n/composables/useLocale";
   import { getDeadlineStatus, getSubmitWindow } from "@/features/meter-readings/deadline";
   import type { MeterReadingOut } from "@shared/api/meter-readings";
+  import { formatMeterValue } from "@shared/utils/format";
 
   import DeadlineBadge from "./DeadlineBadge.vue";
 
@@ -183,14 +184,6 @@
     get: () => props.nightMeterValue,
     set: (v) => emit("update:nightMeterValue", v),
   });
-
-  function formatValue(value: number | string | null | undefined): string {
-    if (value == null) {
-      return "—";
-    }
-    const numeric = typeof value === "string" ? Number(value) : value;
-    return numeric.toLocaleString(intlLocale.value, { maximumFractionDigits: 2 });
-  }
 </script>
 
 <style scoped lang="scss">
