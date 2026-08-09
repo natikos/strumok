@@ -47,6 +47,12 @@ const AppPreset = definePreset(Aura, {
           box-shadow: 0 0 0 2rem var(--s-form-field-background) inset;
           -webkit-box-shadow: 0 0 0 2rem var(--s-form-field-background) inset;
         }
+
+        .p-inputtext:-webkit-autofill::placeholder,
+        .p-password-input:-webkit-autofill::placeholder {
+          -webkit-text-fill-color: var(--s-surface-400);
+          color: var(--s-surface-400);
+        }
       `,
     },
     toast: {
