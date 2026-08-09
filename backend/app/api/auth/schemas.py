@@ -20,6 +20,10 @@ class LoginIn(BaseModel):
     password: str = Field(min_length=1, max_length=128)
 
 
+class VerifyEmailIn(BaseModel):
+    token: str = Field(min_length=1, max_length=2048)
+
+
 class HouseholdSummary(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 

@@ -10,13 +10,16 @@ from app.api.auth.schemas import (
     UserOut,
     UserPreferencesIn,
     UserWithHouseholdsOut,
+    VerifyEmailIn,
 )
 from app.api.auth.service import (
     InvalidOrExpiredTokenError,
     EmailAlreadyRegisteredError,
     InvalidCredentialsError,
     VerificationEmailRateLimitError,
+    VerificationEmailSendFailedError,
     authenticate_user,
+    confirm_email_verification,
     create_access_token,
     get_user_from_token,
     list_user_households,
@@ -86,6 +89,27 @@ VERIFICATION_LINK_RESPONSES: dict[int | str, dict[str, Any]] = {
                 "example": {"detail": "verificationEmailCooldown"},
             }
         },
+    },
+    status.HTTP_502_BAD_GATEWAY: {
+        "description": "Verification email could not be sent",
+        "model": ErrorOut,
+        "content": {
+            "application/json": {
+                "example": {"detail": "verificationEmailSendFailed"},
+            }
+        },
+    },
+}
+
+VERIFY_EMAIL_RESPONSES: dict[int | str, dict[str, Any]] = {
+    status.HTTP_400_BAD_REQUEST: {
+        "description": "Verification token is invalid or expired",
+        "model": ErrorOut,
+        "content": {
+            "application/json": {
+                "example": {"detail": "invalidOrExpiredToken"},
+            }
+        },
     }
 }
 
@@ -103,7 +127,18 @@ def set_auth_cookie(response: Response, *, user: User) -> None:
 @router.post(
     "/register",
     response_model=UserOut,
-    responses=REGISTER_RESPONSES,
+    responses={
+        **REGISTER_RESPONSES,
+        status.HTTP_502_BAD_GATEWAY: {
+            "description": "Verification email could not be sent",
+            "model": ErrorOut,
+            "content": {
+                "application/json": {
+                    "example": {"detail": "verificationEmailSendFailed"},
+                }
+            },
+        },
+    },
     status_code=status.HTTP_201_CREATED,
 )
 def register(
@@ -120,6 +155,14 @@ def register(
             password=payload.password,
         )
         set_auth_cookie(response, user=user)
+
+        try:
+            request_email_verification_link(session=session, user=user)
+        except VerificationEmailSendFailedError as exc:
+            raise HTTPException(
+                status_code=status.HTTP_502_BAD_GATEWAY,
+                detail="verificationEmailSendFailed",
+            ) from exc
 
         return UserOut.from_user(user)
     except EmailAlreadyRegisteredError as exc:
@@ -235,4 +278,28 @@ def send_verification_link(
             status_code=status.HTTP_429_TOO_MANY_REQUESTS,
             detail="verificationEmailCooldown",
             headers={"Retry-After": str(exc.retry_after_seconds)},
+        ) from exc
+    except VerificationEmailSendFailedError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail="verificationEmailSendFailed",
+        ) from exc
+
+
+@router.post(
+    "/verify-email",
+    response_model=UserOut,
+    responses=VERIFY_EMAIL_RESPONSES,
+)
+def verify_email(
+    payload: VerifyEmailIn,
+    session: Session = Depends(get_session),
+) -> UserOut:
+    try:
+        user = confirm_email_verification(session=session, token=payload.token)
+        return UserOut.from_user(user)
+    except InvalidOrExpiredTokenError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="invalidOrExpiredToken",
         ) from exc
