@@ -27,10 +27,11 @@
       "Bash(gh pr list:*)",
       "Bash(uv run ruff:*)",
       "Bash(uv run pytest:*)",
-      "Bash(bunx eslint:*)",
       "Bash(bun run test:*)",
+      "Bash(bun run lint:*)",
       "Bash(bun run build:*)",
-      "Bash(docker compose up:*)"
+      "Bash(docker compose up:*)",
+      "Bash(uv run *)"
     ]
   }
 }

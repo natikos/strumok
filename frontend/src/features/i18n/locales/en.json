@@ -24,15 +24,7 @@
   },
   "common": { "submit": "Submit" },
   "dashboard": {
-    "title": "SaaS Dashboard",
-    "role": "Developer",
-    "logout": "Logout",
-    "loadingUser": "Loading user",
-    "loadingTitle": "Loading dashboard...",
-    "welcomeTitle": "Welcome back, {name}!",
-    "subgreeting": "{month} reading is due — please submit your meter reading below.",
-    "subgreetingOverdue": "{month} deadline passed — please submit your late reading below.",
-    "subgreetingSubmitted": "{month} reading submitted. Thank you!"
+    "loadingUser": "Loading user"
   },
   "errors": {
     "emailAlreadyRegistered": "Email is already registered",
@@ -169,6 +161,14 @@
     "subtitle": "Your email {email} is not verified yet. Verify it to continue.",
     "sendButton": "Send verification link",
     "resendCooldown": "Resend in {timer}",
-    "checkButton": "I already verified"
+    "checkButton": "I already verified",
+    "confirming": "Confirming your email...",
+    "successTitle": "Email verified",
+    "successBody": "Your email has been verified.",
+    "errorTitle": "Verification failed",
+    "errorExpired": "This link is invalid or has expired. Request a new one below.",
+    "sendFailed": "We couldn't send the verification email. Please try again shortly.",
+    "stillNotVerified": "Still not verified. Check your inbox and click the link we sent you.",
+    "goToDashboard": "Go to dashboard"
   }
 }

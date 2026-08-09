@@ -50,6 +50,10 @@ router.beforeEach(async (to) => {
   const { isAuthenticated, isEmailVerified } = getAuthSessionState();
   const isGoingToVerify = to.path === ROUTES.verifyEmail;
 
+  if (isGoingToVerify && typeof to.query["token"] === "string") {
+    return true;
+  }
+
   if (to.meta["guestOnly"]) {
     if (!isAuthenticated) {
       return true;

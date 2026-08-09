@@ -123,6 +123,23 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/auth/verify-email": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Verify Email */
+    post: operations["verify_email_auth_verify_email_post"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/meter-readings": {
     parameters: {
       query?: never;
@@ -329,6 +346,11 @@ export interface components {
       input?: unknown;
       /** Context */
       ctx?: Record<string, never>;
+    };
+    /** VerifyEmailIn */
+    VerifyEmailIn: {
+      /** Token */
+      token: string;
     };
   };
   responses: never;
@@ -570,6 +592,67 @@ export interface operations {
            *     }
            */
           "application/json": components["schemas"]["ErrorOut"];
+        };
+      };
+      /** @description Verification email could not be sent */
+      502: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          /**
+           * @example {
+           *       "detail": "verificationEmailSendFailed"
+           *     }
+           */
+          "application/json": components["schemas"]["ErrorOut"];
+        };
+      };
+    };
+  };
+  verify_email_auth_verify_email_post: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["VerifyEmailIn"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["UserOut"];
+        };
+      };
+      /** @description Verification token is invalid or expired */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          /**
+           * @example {
+           *       "detail": "invalidOrExpiredToken"
+           *     }
+           */
+          "application/json": components["schemas"]["ErrorOut"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
         };
       };
     };

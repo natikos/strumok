@@ -78,3 +78,16 @@ export async function sendVerificationEmailLink(): Promise<void> {
     throw buildApiError(response.status, error);
   }
 }
+
+export async function confirmEmailVerification(token: string): Promise<UserOut> {
+  const { data, error, response } = await appApiClient.POST("/auth/verify-email", {
+    body: { token },
+  });
+
+  if (error) {
+    throw buildApiError(response.status, error);
+  }
+
+  setAuthSessionState(true, data.email_verified);
+  return data;
+}

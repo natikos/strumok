@@ -23,13 +23,14 @@ dependencies = [
   "python-jose[cryptography]>=3.5.0",
   "email-validator>=2.2.0",
   "psycopg[binary]>=3.3.2",
+  "httpx>=0.28",
 ]
 
 [tool.fastapi]
 entrypoint = "app.main:app"
 
 [project.optional-dependencies]
-dev = ["ruff>=0.15.1", "pytest>=9.1", "httpx>=0.28"]
+dev = ["ruff>=0.15.1", "pytest>=9.1"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

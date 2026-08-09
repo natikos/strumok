@@ -34,6 +34,20 @@ class AuthSettings(BaseSettings):
     access_token_expiration: int = 1440  # (min) 24 hours
     auth_cookie_name: str = "access_token"
     verify_email_resend_cooldown_seconds: int = 180  # 3 minutes
+    verification_token_expiration: int = 1440  # (min) 24 hours
+
+
+class BrevoSettings(BaseSettings):
+    model_config = SettingsConfigDict(
+        env_prefix="BREVO_",
+        extra="ignore",
+        env_file=".env",
+    )
+
+    api_key: str = ""
+    sender_email: str = ""
+    sender_name: str = "Струмок (Електроенергія)"
+    app_base_url: str = "http://localhost:5173"
 
 
 class Settings(BaseSettings):
@@ -58,6 +72,7 @@ class Settings(BaseSettings):
 
     db: DbSettings = DbSettings()  # type: ignore
     auth: AuthSettings = AuthSettings()  # type: ignore
+    brevo: BrevoSettings = BrevoSettings()
 
     @property
     def auth_cookie_secure(self) -> bool:
