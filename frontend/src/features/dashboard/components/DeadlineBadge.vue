@@ -10,7 +10,7 @@
   import { computed } from "vue";
   import { useI18n } from "vue-i18n";
 
-  import { type DeadlineStatus, getDeadlineStatus } from "@/features/meter-readings/deadline";
+  import { type DeadlineStatus, getDeadlineStatus } from "@/shared/utils/deadline";
   import type { MeterReadingOut } from "@shared/api/meter-readings";
 
   interface Props {

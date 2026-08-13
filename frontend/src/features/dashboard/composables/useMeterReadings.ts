@@ -5,8 +5,8 @@ import { z } from "zod";
 import type { FieldErrors } from "@/features/dashboard/types";
 import { useCurrentHousehold } from "@/features/households/useCurrentHousehold";
 import { useLocale } from "@/features/i18n/composables/useLocale";
-import { getDaysLeft, isOverdue } from "@/features/meter-readings/deadline";
 import { useAsyncData } from "@/shared/composables/useAsyncData";
+import { getDaysLeft, isOverdue } from "@/shared/utils/deadline";
 import { ApiError } from "@shared/api/client";
 import {
   listMyMeterReadings,
