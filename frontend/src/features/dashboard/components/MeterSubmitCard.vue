@@ -139,7 +139,7 @@
 
   import type { FieldErrors } from "@/features/dashboard/types";
   import { useLocale } from "@/features/i18n/composables/useLocale";
-  import { getDeadlineStatus, getSubmitWindow } from "@/features/meter-readings/deadline";
+  import { getDeadlineStatus, getSubmitWindow } from "@/shared/utils/deadline";
   import type { MeterReadingOut } from "@shared/api/meter-readings";
   import { formatMeterValue } from "@shared/utils/format";
 
