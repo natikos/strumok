@@ -26,6 +26,18 @@
   "dashboard": {
     "loadingUser": "Завантаження користувача"
   },
+  "deadline": {
+    "label": "Кінцевий термін",
+    "dueIn": "через {days} днів",
+    "nextDeadline": "Наступний кінцевий термін",
+    "currentDeadline": "Поточний кінцевий термін",
+    "overdue": "Протерміновано"
+  },
+  "deadlineCard": {
+    "label": "Кінцевий термін",
+    "nextPeriod": "Наступне подання показників за {month}",
+    "currentPeriod": "Закриття подачі показників за {month}"
+  },
   "errors": {
     "emailAlreadyRegistered": "Ця електронна скринька вже зареєстрована",
     "invalidCredentials": "Невірна електронна скринька або пароль",
@@ -71,7 +83,7 @@
     "currentMonthHeading": "Показники за {month}",
     "meterValues": "Показники лічильника",
     "dueNow": "Потрібно зараз",
-    "overdue": "Прострочено",
+    "overdue": "Протерміновано",
     "previousReadings": "Попередні: День {day} · Ніч {night}",
     "submittedTitle": "Показники за {month} надіслано",
     "submittedThankYou": "Дякуємо, {name}. Ваші показники записано.",

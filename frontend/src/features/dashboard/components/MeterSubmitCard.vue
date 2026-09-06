@@ -5,7 +5,7 @@
         <span class="submit-card__icon-wrap">
           <i class="pi pi-calendar" aria-hidden="true"></i>
         </span>
-        <h3 class="submit-card__title">
+        <h3 class="card__title">
           {{ t("submitMeter.title", { month: t(`months.long.${billingMonthIndex}`) }) }}
         </h3>
       </div>
@@ -224,12 +224,6 @@
       }
     }
 
-    &__title {
-      font-size: 1.05rem;
-      font-weight: 700;
-      color: var(--s-content-color);
-    }
-
     &__window {
       font-size: 0.8rem;
       color: color-mix(in srgb, var(--s-content-color), transparent 40%);
@@ -288,7 +282,7 @@
       align-items: flex-start;
       gap: var(--s-app-space-2);
       font-size: 0.78rem;
-      color: color-mix(in srgb, var(--s-content-color), transparent 45%);
+      color: var(--s-content-secondary-color);
 
       .pi {
         font-size: 0.85rem;
@@ -329,7 +323,7 @@
       align-items: center;
       gap: var(--s-app-space-2);
       font-size: 0.95rem;
-      color: color-mix(in srgb, var(--s-content-color), transparent 25%);
+      color: var(--s-content-secondary-color);
 
       &--day .pi {
         color: var(--s-amber-500);

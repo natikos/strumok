@@ -20,7 +20,7 @@
       </div>
 
       <div class="dashboard__right">
-        <div>Placeholder for InfoSidebarCards</div>
+        <DeadlineCard :current-reading="currentSlot?.reading" />
       </div>
     </div>
 
@@ -33,6 +33,7 @@
 <script setup lang="ts">
   import { onMounted, watch } from "vue";
 
+  import DeadlineCard from "@/features/dashboard/components/DeadlineCard.vue";
   import MeterSubmitCard from "@/features/dashboard/components/MeterSubmitCard.vue";
   import { useMeterReadings } from "@/features/dashboard/composables/useMeterReadings.ts";
   import { useCurrentHousehold } from "@/features/households/useCurrentHousehold";

@@ -26,6 +26,18 @@
   "dashboard": {
     "loadingUser": "Loading user"
   },
+  "deadline": {
+    "label": "Next deadline",
+    "dueIn": "in {days} days",
+    "nextDeadline": "Next deadline",
+    "currentDeadline": "Current deadline",
+    "overdue": "Overdue"
+  },
+  "deadlineCard": {
+    "label": "Submission Deadline",
+    "nextPeriod": "Next submission for {month}",
+    "currentPeriod": "Closing submission for {month}"
+  },
   "errors": {
     "emailAlreadyRegistered": "Email is already registered",
     "invalidCredentials": "Invalid email or password",

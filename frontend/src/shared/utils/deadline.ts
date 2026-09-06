@@ -1,11 +1,12 @@
 import {
-  differenceInDays,
+  differenceInCalendarDays,
   endOfDay,
   isAfter,
   isBefore,
   isWithinInterval,
   setDate,
   startOfDay,
+  startOfToday,
 } from "date-fns";
 
 export const DEADLINE_DAY = 5;
@@ -60,8 +61,6 @@ export function isPending(submittedAt: string | null | undefined): boolean {
 }
 
 export function getDaysLeft(): number {
-  const today = startOfDay(new Date());
   const { end } = getSubmitWindow();
-
-  return Math.max(0, differenceInDays(end, today));
+  return differenceInCalendarDays(end, startOfToday());
 }
