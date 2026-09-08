@@ -26,7 +26,6 @@ declare module 'vue' {
     LanguageToggleButton: typeof import('./src/shared/components/i18n/LanguageToggleButton.vue')['default']
     MeterSubmitCard: typeof import('./src/features/dashboard/components/MeterSubmitCard.vue')['default']
     Password: typeof import('primevue/password')['default']
-    ProgressBar: typeof import('primevue/progressbar')['default']
     ProgressSpinner: typeof import('primevue/progressspinner')['default']
     RouterLink: typeof import('vue-router')['RouterLink']
     RouterView: typeof import('vue-router')['RouterView']

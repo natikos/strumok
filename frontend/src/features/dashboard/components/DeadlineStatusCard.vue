@@ -56,22 +56,35 @@
         </div>
       </div>
 
-      <div v-else class="deadline-status__values">
-        <div class="deadline-status__value-tile">
-          <i class="pi pi-sun" aria-hidden="true"></i>
-          <span class="deadline-status__value-label">{{ t("meterReadings.day") }}</span>
-          <span class="deadline-status__value-num">{{
-            formatMeterValue(dayMeterValue, intlLocale)
-          }}</span>
+      <template v-else>
+        <div class="deadline-status__values">
+          <div class="deadline-status__value-tile">
+            <i class="pi pi-sun" aria-hidden="true"></i>
+            <span class="deadline-status__value-label">{{ t("meterReadings.day") }}</span>
+            <span class="deadline-status__value-num">{{
+              formatMeterValue(dayMeterValue, intlLocale)
+            }}</span>
+          </div>
+          <div class="deadline-status__value-tile">
+            <i class="pi pi-moon" aria-hidden="true"></i>
+            <span class="deadline-status__value-label">{{ t("meterReadings.night") }}</span>
+            <span class="deadline-status__value-num">{{
+              formatMeterValue(nightMeterValue, intlLocale)
+            }}</span>
+          </div>
         </div>
-        <div class="deadline-status__value-tile">
-          <i class="pi pi-moon" aria-hidden="true"></i>
-          <span class="deadline-status__value-label">{{ t("meterReadings.night") }}</span>
-          <span class="deadline-status__value-num">{{
-            formatMeterValue(nightMeterValue, intlLocale)
-          }}</span>
+
+        <div class="deadline-status__footer">
+          <p class="deadline-status__lock-note">{{ t("meterReadings.lockNote") }}</p>
+          <Button
+            class="deadline-status__edit-btn"
+            severity="secondary"
+            :outlined="true"
+            :label="t('meterReadings.editSubmitted')"
+            @click="$emit('edit')"
+          />
         </div>
-      </div>
+      </template>
     </template>
   </section>
 </template>
@@ -99,6 +112,7 @@
   }
 
   const props = defineProps<Props>();
+  defineEmits<{ edit: [] }>();
 
   const { t } = useI18n();
   const { intlLocale } = useLocale();
@@ -323,6 +337,38 @@
       font-size: 1.2rem;
       font-weight: 700;
       color: var(--s-content-color);
+    }
+
+    &__footer {
+      display: flex;
+      flex-direction: column;
+      align-items: stretch;
+      gap: var(--s-app-space-2);
+      padding-top: var(--s-app-space-3);
+      border-top: 1px solid var(--s-content-border-color);
+
+      @include layout.respond-to("sm") {
+        flex-direction: row;
+        align-items: center;
+        justify-content: space-between;
+      }
+    }
+
+    &__lock-note {
+      margin: 0;
+      font-size: 0.78rem;
+      color: color-mix(in srgb, var(--s-content-color), transparent 40%);
+    }
+
+    &__edit-btn {
+      width: 100%;
+      min-height: 3.25rem;
+      flex-shrink: 0;
+
+      @include layout.respond-to("sm") {
+        width: auto;
+        min-height: 0;
+      }
     }
 
     &--overdue {

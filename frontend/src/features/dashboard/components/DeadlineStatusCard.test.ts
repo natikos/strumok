@@ -1,3 +1,4 @@
+import Button from "primevue/button";
 import Skeleton from "primevue/skeleton";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -14,7 +15,7 @@ function mountCard(props: Partial<InstanceType<typeof DeadlineStatusCard>["$prop
       ...props,
     },
     global: {
-      components: { Skeleton },
+      components: { Skeleton, Button },
     },
   });
 }
@@ -111,6 +112,44 @@ describe("DeadlineStatusCard", () => {
     expect(wrapper.find(".deadline-status__values").exists()).toBe(true);
     expect(wrapper.text()).toContain("1,234");
     expect(wrapper.text()).toContain("56");
+  });
+
+  it("renders an outlined edit button that emits edit when submitted", async () => {
+    vi.setSystemTime(new Date(2026, 5, 20));
+    const wrapper = mountCard({
+      status: "submitted",
+      submittedAt: new Date(2026, 5, 3, 9, 0).toISOString(),
+      dayMeterValue: 120,
+      nightMeterValue: 60,
+    });
+
+    const editButton = wrapper.findComponent(Button);
+    expect(editButton.exists()).toBe(true);
+    expect(editButton.props("label")).toBe("Edit reading");
+    expect(editButton.props("outlined")).toBe(true);
+
+    await editButton.trigger("click");
+    expect(wrapper.emitted("edit")).toHaveLength(1);
+  });
+
+  it("renders the edit button in the submitted-late state too", () => {
+    vi.setSystemTime(new Date(2026, 5, 20));
+    const wrapper = mountCard({
+      status: "submitted-late",
+      submittedAt: new Date(2026, 5, 10, 9, 0).toISOString(),
+      dayMeterValue: 120,
+      nightMeterValue: 60,
+    });
+
+    expect(wrapper.findComponent(Button).exists()).toBe(true);
+  });
+
+  it("renders no edit button while the window is still open", () => {
+    vi.setSystemTime(new Date(2026, 5, 2));
+    const wrapper = mountCard({ status: "due" });
+
+    expect(wrapper.findComponent(Button).exists()).toBe(false);
+    expect(wrapper.find(".deadline-status__footer").exists()).toBe(false);
   });
 
   it("renders exactly 5 window segments and marks the current day", () => {

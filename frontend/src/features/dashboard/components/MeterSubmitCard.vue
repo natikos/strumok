@@ -1,23 +1,5 @@
 <template>
   <div class="card submit-card">
-    <div class="submit-card__header">
-      <div class="submit-card__header-content">
-        <span class="submit-card__icon-wrap">
-          <i class="pi pi-calendar" aria-hidden="true"></i>
-        </span>
-        <h3 class="card__title">
-          {{ t("submitMeter.title", { month: t(`months.long.${billingMonthIndex}`) }) }}
-        </h3>
-      </div>
-
-      <template v-if="isLoading">
-        <Skeleton height="1.5rem" width="120px" class="submit-card__skeleton-badge" />
-      </template>
-      <template v-else>
-        <DeadlineBadge :reading="latestReading" />
-      </template>
-    </div>
-
     <template v-if="isLoading">
       <div class="submit-card__form">
         <div class="submit-card__field">
@@ -28,52 +10,15 @@
           <Skeleton height="1rem" width="40%" class="submit-card__skeleton-label" />
           <Skeleton height="2.75rem" class="submit-card__skeleton-input" />
         </div>
-        <Skeleton height="2.5rem" width="100px" class="submit-card__skeleton-button" />
       </div>
       <Skeleton height="1rem" width="60%" class="submit-card__skeleton-note" />
-    </template>
-
-    <template v-else-if="isSubmitted">
-      <div class="submit-card__submitted-readings">
-        <div class="submit-card__meter-row">
-          <span class="submit-card__zone submit-card__zone--day">
-            <i class="pi pi-sun" aria-hidden="true"></i>
-            {{ t("meterReadings.day") }}
-          </span>
-          <span class="submit-card__meter-num">{{
-            formatMeterValue(latestReading?.day_meter_value, intlLocale)
-          }}</span>
-        </div>
-        <div class="submit-card__meter-row">
-          <span class="submit-card__zone submit-card__zone--night">
-            <i class="pi pi-moon" aria-hidden="true"></i>
-            {{ t("meterReadings.night") }}
-          </span>
-          <span class="submit-card__meter-num">{{
-            formatMeterValue(latestReading?.night_meter_value, intlLocale)
-          }}</span>
-        </div>
-      </div>
-      <div
-        v-if="submittedStatus === 'submitted'"
-        class="submit-card__note submit-card__note--submitted"
-      >
-        <i class="pi pi-check-circle" aria-hidden="true"></i>
-        {{ t("submitMeter.note.submitted") }}
-      </div>
-      <div
-        v-else-if="submittedStatus === 'submitted-late'"
-        class="submit-card__note submit-card__note--submitted-late"
-      >
-        <i class="pi pi-exclamation-circle" aria-hidden="true"></i>
-        {{ t("submitMeter.note.submittedLate", { deadline: deadlineDate }) }}
-      </div>
+      <Skeleton height="3.25rem" class="submit-card__skeleton-button" />
     </template>
 
     <template v-else>
       <div class="submit-card__form">
         <div class="submit-card__field">
-          <label class="submit-card__field-label">
+          <label for="submit-card-day" class="submit-card__field-label">
             <i
               class="pi pi-sun submit-card__input-icon submit-card__input-icon--day"
               aria-hidden="true"
@@ -81,20 +26,34 @@
             {{ t("meterReadings.day") }}
           </label>
           <InputNumber
+            input-id="submit-card-day"
             v-model="dayValueModel"
             class="submit-card__input"
-            placeholder="1234"
+            inputmode="numeric"
+            :placeholder="t('meterReadings.meterValuePlaceholder')"
             :min="0"
             :use-grouping="false"
             :invalid="!!errors.dayMeterValue"
+            :pt="{
+              pcInputText: {
+                root: {
+                  'aria-invalid': !!errors.dayMeterValue,
+                  'aria-describedby': errors.dayMeterValue ? 'submit-card-day-error' : undefined,
+                },
+              },
+            }"
             fluid
           />
-          <span v-if="errors.dayMeterValue" class="submit-card__field-error">{{
-            t(errors.dayMeterValue)
-          }}</span>
+          <span
+            v-if="errors.dayMeterValue"
+            id="submit-card-day-error"
+            role="alert"
+            class="submit-card__field-error"
+            >{{ t(errors.dayMeterValue) }}</span
+          >
         </div>
         <div class="submit-card__field">
-          <label class="submit-card__field-label">
+          <label for="submit-card-night" class="submit-card__field-label">
             <i
               class="pi pi-moon submit-card__input-icon submit-card__input-icon--night"
               aria-hidden="true"
@@ -102,33 +61,53 @@
             {{ t("meterReadings.night") }}
           </label>
           <InputNumber
+            input-id="submit-card-night"
             v-model="nightValueModel"
             class="submit-card__input"
-            placeholder="5678"
+            inputmode="numeric"
+            :placeholder="t('meterReadings.meterValuePlaceholder')"
             :min="0"
             :use-grouping="false"
             :invalid="!!errors.nightMeterValue"
+            :pt="{
+              pcInputText: {
+                root: {
+                  'aria-invalid': !!errors.nightMeterValue,
+                  'aria-describedby': errors.nightMeterValue
+                    ? 'submit-card-night-error'
+                    : undefined,
+                },
+              },
+            }"
             fluid
           />
-          <span v-if="errors.nightMeterValue" class="submit-card__field-error">{{
-            t(errors.nightMeterValue)
-          }}</span>
+          <span
+            v-if="errors.nightMeterValue"
+            id="submit-card-night-error"
+            role="alert"
+            class="submit-card__field-error"
+            >{{ t(errors.nightMeterValue) }}</span
+          >
         </div>
       </div>
-      <div v-if="isOverdue" class="submit-card__note submit-card__note--overdue">
-        <i class="pi pi-shield" aria-hidden="true"></i>
-        {{ t("submitMeter.note.overdue") }}
+
+      <div class="submit-card__actions">
+        <div v-if="isOverdue" class="submit-card__note submit-card__note--overdue">
+          <i class="pi pi-shield" aria-hidden="true"></i>
+          {{ t("meterReadings.lateApprovalNote") }}
+        </div>
+
+        <Button
+          class="submit-card__btn"
+          :label="submitLabel"
+          :severity="isOverdue ? 'danger' : undefined"
+          :loading="isSubmitting"
+          :aria-busy="isSubmitting"
+          @click="$emit('submit')"
+        />
+
+        <p v-if="!isOverdue" class="submit-card__caption">{{ t("meterReadings.hintText") }}</p>
       </div>
-      <div v-else class="submit-card__note submit-card__note--due">
-        <i class="pi pi-info-circle" aria-hidden="true"></i>
-        {{ t("submitMeter.note.due") }}
-      </div>
-      <Button
-        class="submit-card__btn"
-        :label="t('common.submit')"
-        :loading="isSubmitting"
-        @click="$emit('submit')"
-      />
     </template>
   </div>
 </template>
@@ -138,12 +117,6 @@
   import { useI18n } from "vue-i18n";
 
   import type { FieldErrors } from "@/features/dashboard/types";
-  import { useLocale } from "@/features/i18n/composables/useLocale";
-  import { getDeadlineStatus, getSubmitWindow } from "@/shared/utils/deadline";
-  import type { MeterReadingOut } from "@shared/api/meter-readings";
-  import { formatMeterValue } from "@shared/utils/format";
-
-  import DeadlineBadge from "./DeadlineBadge.vue";
 
   interface Props {
     isOverdue: boolean;
@@ -152,8 +125,7 @@
     errors: FieldErrors;
     dayMeterValue: number | null;
     nightMeterValue: number | null;
-    latestReading: MeterReadingOut | null;
-    isSubmitted: boolean;
+    isFirstPeriod?: boolean;
   }
 
   const props = defineProps<Props>();
@@ -164,15 +136,15 @@
   }>();
 
   const { t } = useI18n();
-  const { intlLocale } = useLocale();
 
-  const billingMonthIndex = computed(() => new Date().getMonth() - 1);
-
-  const submittedStatus = computed(() => getDeadlineStatus(props.latestReading?.submitted_at));
-
-  const deadlineDate = computed(() => {
-    const { end } = getSubmitWindow();
-    return end.toLocaleDateString(intlLocale.value);
+  const submitLabel = computed(() => {
+    if (props.isOverdue) {
+      return t("meterReadings.submitLate");
+    }
+    if (props.isFirstPeriod) {
+      return t("meterReadings.submitFirst");
+    }
+    return t("meterReadings.submit");
   });
 
   const dayValueModel = computed({
@@ -190,56 +162,17 @@
   .submit-card {
     display: flex;
     flex-direction: column;
-    min-height: 16rem;
     max-width: 37.5rem;
 
-    &__header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: var(--s-app-space-3);
-      flex-wrap: wrap;
-      flex-shrink: 0;
-
-      &-content {
-        display: flex;
-        align-items: center;
-        gap: var(--s-app-space-3);
-      }
-    }
-
-    &__icon-wrap {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      width: 2.5rem;
-      height: 2.5rem;
-      border-radius: var(--s-app-radius-md);
-      background: color-mix(in srgb, var(--s-primary-color), transparent 88%);
-      flex-shrink: 0;
-
-      .pi {
-        font-size: 1.2rem;
-        color: var(--s-primary-color);
-      }
-    }
-
-    &__window {
-      font-size: 0.8rem;
-      color: color-mix(in srgb, var(--s-content-color), transparent 40%);
-      margin-top: 0.1rem;
-    }
-
-    &__label {
-      font-size: 0.85rem;
-      font-weight: 600;
-      color: var(--s-content-color);
-    }
-
     &__form {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
+      display: flex;
+      flex-direction: column;
       gap: var(--s-app-space-3);
+
+      @include layout.respond-to("sm") {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+      }
     }
 
     &__field {
@@ -272,9 +205,26 @@
       }
     }
 
+    &__actions {
+      @include layout.stack(var(--s-app-space-2));
+      padding-top: var(--s-app-space-3);
+      border-top: 1px solid var(--s-content-border-color);
+    }
+
     &__btn {
-      align-self: flex-end;
-      width: fit-content;
+      width: 100%;
+      min-height: 3.25rem;
+
+      @include layout.respond-to("sm") {
+        width: auto;
+        align-self: flex-end;
+      }
+    }
+
+    &__caption {
+      margin: 0;
+      font-size: 0.78rem;
+      color: var(--s-content-secondary-color);
     }
 
     &__note {
@@ -293,54 +243,6 @@
       &--overdue .pi {
         color: var(--s-red-500);
       }
-
-      &--due .pi {
-        color: var(--s-primary-color);
-      }
-
-      &--submitted .pi {
-        color: var(--s-green-500);
-      }
-
-      &--submitted-late .pi {
-        color: var(--s-amber-500);
-      }
-    }
-
-    &__submitted-readings {
-      @include layout.stack(var(--s-app-space-2));
-    }
-
-    &__meter-row {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: var(--s-app-space-2);
-    }
-
-    &__zone {
-      display: inline-flex;
-      align-items: center;
-      gap: var(--s-app-space-2);
-      font-size: 0.95rem;
-      color: var(--s-content-secondary-color);
-
-      &--day .pi {
-        color: var(--s-amber-500);
-      }
-      &--night .pi {
-        color: var(--s-primary-900);
-      }
-    }
-
-    &__meter-num {
-      font-size: 1.1rem;
-      font-weight: 700;
-    }
-
-    &__skeleton-badge {
-      border-radius: 2rem;
-      align-self: center;
     }
 
     &__skeleton-label {
@@ -353,9 +255,7 @@
 
     &__skeleton-button {
       border-radius: var(--s-app-radius-md);
-      grid-column: 1 / -1;
       margin-top: var(--s-app-space-2);
-      justify-self: end;
     }
 
     &__skeleton-note {

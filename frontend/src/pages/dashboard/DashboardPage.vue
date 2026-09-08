@@ -1,18 +1,15 @@
 <template>
   <div class="dashboard">
-    <div class="dashboard__main-grid">
-      <div class="dashboard__left">
+    <div class="dashboard__main-grid" :class="{ 'dashboard__main-grid--submitted': isSubmitted }">
+      <div v-if="!isSubmitted" class="dashboard__left">
         <MeterSubmitCard
-          :billing-month-index="billingMonthIndex"
           :is-loading="isLoading"
           :is-overdue="isOverdue"
           :is-submitting="isSubmitting"
           :errors="errors"
           :day-meter-value="dayMeterValue"
           :night-meter-value="nightMeterValue"
-          :latest-reading="latestReading ?? null"
-          :is-submitted="!!currentSlot?.reading"
-          :days-left="daysLeft"
+          :is-first-period="isFirstPeriod"
           @update:day-meter-value="dayMeterValue = $event"
           @update:night-meter-value="nightMeterValue = $event"
           @submit="handleSubmit"
@@ -33,14 +30,14 @@
       </div>
     </div>
 
-    <div>Placeholder for StatCards</div>
-    <div>Placeholder for TrendCard</div>
-    <div>Placeholder for UsageBreakdownCard</div>
+    <div class="dashboard__placeholder">Placeholder for StatCards</div>
+    <div class="dashboard__placeholder">Placeholder for TrendCard</div>
+    <div class="dashboard__placeholder">Placeholder for UsageBreakdownCard</div>
   </div>
 </template>
 
 <script setup lang="ts">
-  import { onMounted, watch } from "vue";
+  import { computed, onMounted, watch } from "vue";
 
   import DeadlineStatusCard from "@/features/dashboard/components/DeadlineStatusCard.vue";
   import MeterSubmitCard from "@/features/dashboard/components/MeterSubmitCard.vue";
@@ -58,13 +55,14 @@
     currentSlot,
     billingMonthIndex,
     isOverdue,
-    latestReading,
     daysLeft,
     deadlineStatus,
     isFirstPeriod,
     loadHistory,
     handleSubmit,
   } = useMeterReadings();
+
+  const isSubmitted = computed(() => !!currentSlot.value?.reading);
 
   onMounted(loadHistory);
 
@@ -82,9 +80,17 @@
       grid-template-columns: 1fr;
       gap: var(--s-app-space-4);
 
-      @media (min-width: 60rem) {
+      @include layout.respond-to("lg") {
         grid-template-columns: 1fr 22rem;
         align-items: stretch;
+      }
+
+      // Submitted: the form is gone, so there's nothing to put in the sidebar
+      // rail — let the status card span the content width like the cards below.
+      &--submitted {
+        @include layout.respond-to("lg") {
+          grid-template-columns: 1fr;
+        }
       }
     }
 
@@ -95,6 +101,18 @@
     &__right {
       display: flex;
       flex-direction: column;
+    }
+
+    &__placeholder {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 8rem;
+      border: 1px dashed var(--s-content-border-color);
+      border-radius: var(--s-app-radius-lg);
+      background: color-mix(in srgb, var(--s-content-color), transparent 97%);
+      font-size: 0.85rem;
+      color: color-mix(in srgb, var(--s-content-color), transparent 55%);
     }
   }
 </style>
