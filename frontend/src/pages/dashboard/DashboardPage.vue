@@ -20,7 +20,16 @@
       </div>
 
       <div class="dashboard__right">
-        <DeadlineCard :current-reading="currentSlot?.reading" />
+        <DeadlineStatusCard
+          :status="deadlineStatus"
+          :days-left="daysLeft"
+          :billing-month-index="billingMonthIndex"
+          :submitted-at="currentSlot?.reading?.submitted_at"
+          :day-meter-value="currentSlot?.reading?.day_meter_value"
+          :night-meter-value="currentSlot?.reading?.night_meter_value"
+          :is-first-period="isFirstPeriod"
+          :is-loading="isLoading"
+        />
       </div>
     </div>
 
@@ -33,7 +42,7 @@
 <script setup lang="ts">
   import { onMounted, watch } from "vue";
 
-  import DeadlineCard from "@/features/dashboard/components/DeadlineCard.vue";
+  import DeadlineStatusCard from "@/features/dashboard/components/DeadlineStatusCard.vue";
   import MeterSubmitCard from "@/features/dashboard/components/MeterSubmitCard.vue";
   import { useMeterReadings } from "@/features/dashboard/composables/useMeterReadings.ts";
   import { useCurrentHousehold } from "@/features/households/useCurrentHousehold";
@@ -51,6 +60,8 @@
     isOverdue,
     latestReading,
     daysLeft,
+    deadlineStatus,
+    isFirstPeriod,
     loadHistory,
     handleSubmit,
   } = useMeterReadings();

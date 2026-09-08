@@ -14,13 +14,14 @@
   import type { MeterReadingOut } from "@shared/api/meter-readings";
 
   interface Props {
-    reading: MeterReadingOut | null | undefined;
+    reading?: MeterReadingOut | null;
+    status?: DeadlineStatus;
   }
 
   const props = defineProps<Props>();
   const { t } = useI18n();
 
-  const status = computed(() => getDeadlineStatus(props.reading?.submitted_at));
+  const status = computed(() => props.status ?? getDeadlineStatus(props.reading?.submitted_at));
 
   const icon = computed(() => {
     const ICONS: Record<DeadlineStatus, string> = {

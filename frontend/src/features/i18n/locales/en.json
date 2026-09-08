@@ -26,17 +26,17 @@
   "dashboard": {
     "loadingUser": "Loading user"
   },
-  "deadline": {
-    "label": "Next deadline",
-    "dueIn": "in {days} days",
-    "nextDeadline": "Next deadline",
-    "currentDeadline": "Current deadline",
-    "overdue": "Overdue"
-  },
-  "deadlineCard": {
-    "label": "Submission Deadline",
-    "nextPeriod": "Next submission for {month}",
-    "currentPeriod": "Closing submission for {month}"
+  "deadlineStatus": {
+    "daysLeft": "{count} day left | {count} days left",
+    "windowClosesAt": "Window closes {day} {month}, 23:59",
+    "windowClosedAt": "Window closed {day} {month}, 23:59",
+    "overdueHeadline": "Submission deadline passed",
+    "submittedHeadline": "Reading submitted",
+    "submittedDetail": "Submitted {date} · can be changed until {day} {month}",
+    "submittedLateDetail": "Submitted late",
+    "firstPeriodHeadline": "First reading",
+    "firstPeriodExplainer": "Submit readings from day 1 to 5 each month — this window repeats every month",
+    "stripAriaLabel": "Submission window: {elapsed} of {total} days elapsed, closes on day {day}"
   },
   "errors": {
     "emailAlreadyRegistered": "Email is already registered",

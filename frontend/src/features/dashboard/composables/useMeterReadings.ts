@@ -6,7 +6,7 @@ import type { FieldErrors } from "@/features/dashboard/types";
 import { useCurrentHousehold } from "@/features/households/useCurrentHousehold";
 import { useLocale } from "@/features/i18n/composables/useLocale";
 import { useAsyncData } from "@/shared/composables/useAsyncData";
-import { getDaysLeft, isOverdue } from "@/shared/utils/deadline";
+import { getDaysLeft, getDeadlineStatus, isOverdue } from "@/shared/utils/deadline";
 import { ApiError } from "@shared/api/client";
 import {
   listMyMeterReadings,
@@ -114,6 +114,14 @@ export function useMeterReadings() {
 
   const daysLeft = computed<number>(() => getDaysLeft());
 
+  const deadlineStatus = computed(() =>
+    getDeadlineStatus(currentMeterPeriod.value?.reading?.submitted_at)
+  );
+
+  const isFirstPeriod = computed(
+    () => (readings.value?.filter((reading) => reading.id !== null).length ?? 0) === 0
+  );
+
   async function handleSubmit(): Promise<void> {
     errors.value = {};
 
@@ -181,6 +189,8 @@ export function useMeterReadings() {
     isOverdue: isOverdue(currentMeterPeriod.value?.reading?.submitted_at),
     latestReading: latestSubmittedReading,
     daysLeft,
+    deadlineStatus,
+    isFirstPeriod,
     loadHistory,
     handleSubmit,
   };

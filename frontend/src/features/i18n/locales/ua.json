@@ -26,17 +26,17 @@
   "dashboard": {
     "loadingUser": "Завантаження користувача"
   },
-  "deadline": {
-    "label": "Кінцевий термін",
-    "dueIn": "через {days} днів",
-    "nextDeadline": "Наступний кінцевий термін",
-    "currentDeadline": "Поточний кінцевий термін",
-    "overdue": "Протерміновано"
-  },
-  "deadlineCard": {
-    "label": "Кінцевий термін",
-    "nextPeriod": "Наступне подання показників за {month}",
-    "currentPeriod": "Закриття подачі показників за {month}"
+  "deadlineStatus": {
+    "daysLeft": "{count} день залишився | {count} дні залишилось | {count} днів залишилось",
+    "windowClosesAt": "Вікно закривається {day} {month}, 23:59",
+    "windowClosedAt": "Вікно закрилось {day} {month}, 23:59",
+    "overdueHeadline": "Термін подання минув",
+    "submittedHeadline": "Показники надіслано",
+    "submittedDetail": "Надіслано {date} · можна змінити до {day} {month}",
+    "submittedLateDetail": "Надіслано із запізненням",
+    "firstPeriodHeadline": "Перший показник",
+    "firstPeriodExplainer": "Подавайте показники з 1 по 5 число щомісяця — це вікно повторюється кожен місяць",
+    "stripAriaLabel": "Вікно подання: {elapsed} із {total} днів минуло, закінчується {day} числа"
   },
   "errors": {
     "emailAlreadyRegistered": "Ця електронна скринька вже зареєстрована",

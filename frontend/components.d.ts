@@ -19,7 +19,7 @@ declare module 'vue' {
     Card: typeof import('primevue/card')['default']
     DashboardPage: typeof import('./src/pages/dashboard/DashboardPage.vue')['default']
     DeadlineBadge: typeof import('./src/features/dashboard/components/DeadlineBadge.vue')['default']
-    DeadlineCard: typeof import('./src/features/dashboard/components/DeadlineCard.vue')['default']
+    DeadlineStatusCard: typeof import('./src/features/dashboard/components/DeadlineStatusCard.vue')['default']
     FormFieldControl: typeof import('./src/shared/FormFieldControl.vue')['default']
     InputNumber: typeof import('primevue/inputnumber')['default']
     InputText: typeof import('primevue/inputtext')['default']
