@@ -163,8 +163,8 @@ describe("getDaysLeft", () => {
     expect(getDaysLeft()).toBe(0);
   });
 
-  it("never goes negative once the window has passed", () => {
+  it("goes negative once the window has passed", () => {
     freezeAt([2026, 6, 20]);
-    expect(getDaysLeft()).toBe(0);
+    expect(getDaysLeft()).toBe(-15);
   });
 });

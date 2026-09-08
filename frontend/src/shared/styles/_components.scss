@@ -7,4 +7,10 @@
   background: var(--s-content-background);
   border: 1px solid var(--s-content-border-color);
   border-radius: var(--s-app-radius-lg);
+
+  &__title {
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    color: var(--s-content-color);
+  }
 }
