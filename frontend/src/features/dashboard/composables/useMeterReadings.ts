@@ -2,6 +2,7 @@ import { capitalize } from "@utils/string";
 import { computed, ref, watch } from "vue";
 import { z } from "zod";
 
+import { useUsageInsights } from "@/features/dashboard/composables/useUsageInsights";
 import type { FieldErrors } from "@/features/dashboard/types";
 import { useCurrentHousehold } from "@/features/households/useCurrentHousehold";
 import { useLocale } from "@/features/i18n/composables/useLocale";
@@ -122,6 +123,8 @@ export function useMeterReadings() {
     () => (readings.value?.filter((reading) => reading.id !== null).length ?? 0) === 0
   );
 
+  const insights = useUsageInsights(slots);
+
   async function handleSubmit(): Promise<void> {
     errors.value = {};
 
@@ -166,8 +169,15 @@ export function useMeterReadings() {
       dayMeterValue.value = null;
       nightMeterValue.value = null;
     } catch (error) {
-      if (!(error instanceof ApiError) && error instanceof Error) {
+      // An ApiError's message is the stable camelCase detail code, which maps
+      // to an i18n key. Surfacing it matters most for periodAlreadySubmitted:
+      // the submit endpoint only inserts, so re-submitting an existing period
+      // 409s, and swallowing that left the form looking like nothing happened.
+      if (error instanceof ApiError) {
+        errors.value = { form: `errors.${error.message}` };
+      } else if (error instanceof Error) {
         console.error(error);
+        errors.value = { form: "errors.requestFailed" };
       }
     } finally {
       isSubmitting.value = false;
@@ -185,6 +195,7 @@ export function useMeterReadings() {
     dayMeterValue,
     nightMeterValue,
     currentSlot: currentMeterPeriod,
+    slots,
     billingMonthIndex,
     isOverdue: isOverdue(currentMeterPeriod.value?.reading?.submitted_at),
     latestReading: latestSubmittedReading,
@@ -193,5 +204,6 @@ export function useMeterReadings() {
     isFirstPeriod,
     loadHistory,
     handleSubmit,
+    ...insights,
   };
 }
