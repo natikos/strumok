@@ -72,7 +72,8 @@ describe("YearOverYearCard", () => {
     const pill = wrapper.find(".yoy-card__pill");
     expect(pill.classes()).toContain("yoy-card__pill--down");
     expect(wrapper.find(".pi-arrow-down").exists()).toBe(true);
-    expect(wrapper.text()).toContain("less than last");
+    expect(pill.text()).toContain("50");
+    expect(pill.text()).toContain("kWh");
   });
 
   it("uses the increase treatment on the delta pill when usage went up", () => {
@@ -88,6 +89,7 @@ describe("YearOverYearCard", () => {
     const pill = wrapper.find(".yoy-card__pill");
     expect(pill.classes()).toContain("yoy-card__pill--up");
     expect(wrapper.find(".pi-arrow-up").exists()).toBe(true);
-    expect(wrapper.text()).toContain("more than last");
+    expect(pill.text()).toContain("50");
+    expect(pill.text()).toContain("kWh");
   });
 });

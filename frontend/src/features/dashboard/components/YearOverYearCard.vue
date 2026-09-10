@@ -38,7 +38,6 @@
           <i :class="deltaIcon" aria-hidden="true"></i>
           {{ formatKwh(Math.abs(comparison.deltaKwh), intlLocale, t("units.kwh")) }}
         </span>
-        <span class="yoy-card__delta-text">{{ deltaText }}</span>
 
         <!-- Only when both years were actually billed; see chargeDelta. -->
         <span v-if="deltaUahText" class="yoy-card__delta-uah">{{ deltaUahText }}</span>
@@ -114,17 +113,6 @@
 
     const value = formatUah(Math.abs(delta), intlLocale.value);
     return t(delta < 0 ? "dashboard.uahLess" : "dashboard.uahMore", { value });
-  });
-
-  const deltaText = computed(() => {
-    const data = props.comparison;
-    if (!data) {
-      return "";
-    }
-
-    const value = formatKwh(Math.abs(data.deltaKwh), intlLocale.value, t("units.kwh"));
-    const key = data.direction === "down" ? "dashboard.yoyLess" : "dashboard.yoyMore";
-    return t(key, { value, month: data.monthLong });
   });
 </script>
 
@@ -240,12 +228,6 @@
         background: color-mix(in srgb, var(--s-amber-500), transparent 88%);
         color: var(--s-amber-800);
       }
-    }
-
-    &__delta-text {
-      font-size: 0.8rem;
-      color: var(--s-content-secondary-color);
-      min-width: 0;
     }
 
     &__delta-uah {
