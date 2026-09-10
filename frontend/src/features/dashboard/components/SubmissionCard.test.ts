@@ -352,6 +352,7 @@ describe("SubmissionCard", () => {
         dayKwh: 12.5,
         nightKwh: 3.25,
         totalKwh: 15.75,
+        chargedUah: null,
       };
       const wrapper = mountCard({
         status: "submitted",

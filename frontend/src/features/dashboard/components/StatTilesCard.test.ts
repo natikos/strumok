@@ -21,9 +21,16 @@ const lastPeriod: PeriodUsage = {
   dayKwh: 120.5,
   nightKwh: 45.25,
   totalKwh: 165.75,
+  chargedUah: null,
 };
 
-const momChange: MomChange = { percent: 12.3, from: 100, to: 112.3, direction: "up" };
+const momChange: MomChange = {
+  percent: 12.3,
+  from: 100,
+  to: 112.3,
+  direction: "up",
+  deltaUah: null,
+};
 
 const monthlyAverage: MonthlyAverage = { averageKwh: 150.4, periodCount: 8 };
 
@@ -102,7 +109,7 @@ describe("StatTilesCard", () => {
   describe("month-over-month direction", () => {
     it("shows a down arrow and the down styling class when usage decreased", () => {
       const wrapper = mountCard({
-        momChange: { percent: -10, from: 100, to: 90, direction: "down" },
+        momChange: { percent: -10, from: 100, to: 90, direction: "down", deltaUah: null },
       });
 
       expect(wrapper.find(".pi-arrow-down").exists()).toBe(true);
@@ -112,7 +119,7 @@ describe("StatTilesCard", () => {
 
     it("shows an up arrow and the up styling class when usage increased", () => {
       const wrapper = mountCard({
-        momChange: { percent: 10, from: 100, to: 110, direction: "up" },
+        momChange: { percent: 10, from: 100, to: 110, direction: "up", deltaUah: null },
       });
 
       expect(wrapper.find(".pi-arrow-up").exists()).toBe(true);

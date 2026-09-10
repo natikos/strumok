@@ -39,7 +39,7 @@
     PeriodUsage,
   } from "@/features/dashboard/composables/useUsageInsights";
   import { useLocale } from "@/features/i18n/composables/useLocale";
-  import { formatMeterValue } from "@shared/utils/format";
+  import { formatMeterValue, formatUah } from "@shared/utils/format";
 
   interface Props {
     lastPeriod: PeriodUsage | null;
@@ -133,12 +133,21 @@
       ? monthName((props.lastPeriod.monthIndex + 11) % 12)
       : "";
 
+    // The hryvnia delta only exists for billed periods (#45), so the tile falls
+    // back to the kWh movement alone rather than implying a zero-cost change.
+    const sub =
+      mom.deltaUah == null || mom.deltaUah === 0
+        ? `${num(mom.from)} → ${num(mom.to)} ${kwh.value}`
+        : t(mom.deltaUah < 0 ? "dashboard.uahLess" : "dashboard.uahMore", {
+            value: formatUah(Math.abs(mom.deltaUah), intlLocale.value),
+          });
+
     return {
       key: "mom",
       label: t("dashboard.vsMonth", { month: previousMonth }),
       value: `${Math.abs(mom.percent).toFixed(1)}%`,
       unit: "",
-      sub: `${num(mom.from)} → ${num(mom.to)} ${kwh.value}`,
+      sub,
       isEmpty: false,
       icon: mom.direction === "down" ? "pi pi-arrow-down" : "pi pi-arrow-up",
       valueClass: mom.direction === "down" ? "stat-tile__value--down" : "stat-tile__value--up",

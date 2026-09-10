@@ -39,6 +39,9 @@
           {{ formatKwh(Math.abs(comparison.deltaKwh), intlLocale, t("units.kwh")) }}
         </span>
         <span class="yoy-card__delta-text">{{ deltaText }}</span>
+
+        <!-- Only when both years were actually billed; see chargeDelta. -->
+        <span v-if="deltaUahText" class="yoy-card__delta-uah">{{ deltaUahText }}</span>
       </footer>
     </template>
 
@@ -57,7 +60,7 @@
 
   import type { YearOverYear } from "@/features/dashboard/composables/useUsageInsights";
   import { useLocale } from "@/features/i18n/composables/useLocale";
-  import { formatKwh } from "@shared/utils/format";
+  import { formatKwh, formatUah } from "@shared/utils/format";
 
   interface Props {
     comparison: YearOverYear | null;
@@ -102,6 +105,16 @@
   const deltaIcon = computed(() =>
     props.comparison?.direction === "down" ? "pi pi-arrow-down" : "pi pi-arrow-up"
   );
+
+  const deltaUahText = computed(() => {
+    const delta = props.comparison?.deltaUah;
+    if (delta == null || delta === 0) {
+      return "";
+    }
+
+    const value = formatUah(Math.abs(delta), intlLocale.value);
+    return t(delta < 0 ? "dashboard.uahLess" : "dashboard.uahMore", { value });
+  });
 
   const deltaText = computed(() => {
     const data = props.comparison;
@@ -233,6 +246,14 @@
       font-size: 0.8rem;
       color: var(--s-content-secondary-color);
       min-width: 0;
+    }
+
+    &__delta-uah {
+      font-size: 0.8rem;
+      font-weight: 600;
+      font-variant-numeric: tabular-nums;
+      white-space: nowrap;
+      color: var(--s-content-color);
     }
 
     &__empty {

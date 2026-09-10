@@ -15,6 +15,7 @@ function makeComparison(overrides: Partial<YearOverYear> = {}): YearOverYear {
     deltaKwh: -50,
     deltaPercent: -25,
     direction: "down",
+    deltaUah: null,
     ...overrides,
   };
 }
