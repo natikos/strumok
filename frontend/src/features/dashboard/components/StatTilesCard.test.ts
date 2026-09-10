@@ -57,9 +57,9 @@ function mountCard(overrides: MountOverrides = {}) {
 }
 
 describe("StatTilesCard", () => {
-  it("always renders exactly 4 tiles", () => {
+  it("always renders exactly 3 tiles", () => {
     const wrapper = mountCard();
-    expect(wrapper.findAll(".stat-tile")).toHaveLength(4);
+    expect(wrapper.findAll(".stat-tile")).toHaveLength(3);
   });
 
   it("renders skeleton placeholders instead of tiles while loading", () => {
@@ -101,8 +101,8 @@ describe("StatTilesCard", () => {
       const wrapper = mountCard({ monthlyAverage: null });
 
       const tiles = wrapper.findAll(".stat-tile");
-      expect(tiles[3]?.classes()).toContain("stat-tile--empty");
-      expect(tiles[3]?.text()).toContain("—");
+      expect(tiles[2]?.classes()).toContain("stat-tile--empty");
+      expect(tiles[2]?.text()).toContain("—");
     });
   });
 

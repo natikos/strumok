@@ -1,7 +1,7 @@
 <template>
   <div class="stat-tiles">
     <template v-if="isLoading">
-      <Skeleton v-for="n in 4" :key="n" height="4.75rem" class="stat-tiles__skeleton" />
+      <Skeleton v-for="n in 3" :key="n" height="4.75rem" class="stat-tiles__skeleton" />
     </template>
 
     <template v-else>
@@ -95,7 +95,7 @@
 
     return {
       key: "last",
-      label: t("dashboard.lastPeriod", { month: last.monthLong }),
+      label: t("dashboard.lastPeriodEmpty"),
       value: num(last.totalKwh),
       unit: kwh.value,
       sub: `${t("meterReadings.day")} ${num(last.dayKwh)} · ${t("meterReadings.night")} ${num(last.nightKwh)} ${kwh.value}`,
@@ -154,20 +154,6 @@
     };
   });
 
-  const daysTile = computed<Tile>(() => ({
-    key: "days",
-    label: t("dashboard.daysIntoPeriod"),
-    value: t("dashboard.daysIntoPeriodValue", {
-      day: props.daysIntoPeriod.day,
-      total: props.daysIntoPeriod.daysInMonth,
-    }),
-    unit: "",
-    sub: t("dashboard.periodAccumulating", {
-      month: monthName(props.daysIntoPeriod.monthIndex),
-    }),
-    isEmpty: false,
-  }));
-
   const averageTile = computed<Tile>(() => {
     const average = props.monthlyAverage;
     if (!average) {
@@ -200,7 +186,6 @@
   const tiles = computed<Tile[]>(() => [
     lastPeriodTile.value,
     comparisonTile.value,
-    daysTile.value,
     averageTile.value,
   ]);
 </script>
@@ -213,7 +198,7 @@
     align-items: stretch;
 
     @include layout.respond-to("lg") {
-      grid-template-columns: repeat(4, 1fr);
+      grid-template-columns: repeat(3, 1fr);
     }
   }
 
