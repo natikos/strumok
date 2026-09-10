@@ -158,22 +158,12 @@
           </div>
         </template>
       </template>
+
+      <p v-if="lastPeriodLine" class="submission__last-period">
+        <i class="pi pi-history" aria-hidden="true"></i>
+        {{ lastPeriodLine }}
+      </p>
     </section>
-
-    <!-- Desktop-only summary rail. Hidden below lg in CSS rather than by a JS
-         viewport check, so there is one markup tree for both layouts. -->
-    <aside class="submission__rail">
-      <h2 class="submission__rail-title">{{ t("dashboard.submissionWindow") }}</h2>
-
-      <WindowStrip :is-overdue="status === 'overdue'" />
-
-      <dl class="submission__rail-list">
-        <div v-for="item in railItems" :key="item.key" class="submission__rail-row">
-          <dt class="submission__rail-label">{{ item.label }}</dt>
-          <dd class="submission__rail-value">{{ item.value }}</dd>
-        </div>
-      </dl>
-    </aside>
   </div>
 </template>
 
@@ -181,12 +171,7 @@
   import { computed } from "vue";
   import { useI18n } from "vue-i18n";
 
-  import type {
-    DayNightSplit,
-    DaysIntoPeriod,
-    MonthlyAverage,
-    PeriodUsage,
-  } from "@/features/dashboard/composables/useUsageInsights";
+  import type { PeriodUsage } from "@/features/dashboard/composables/useUsageInsights";
   import type { FieldErrors } from "@/features/dashboard/types";
   import { useLocale } from "@/features/i18n/composables/useLocale";
   import type { DeadlineStatus } from "@shared/utils/deadline";
@@ -213,11 +198,8 @@
     submittedAt?: string | null | undefined;
     submittedDayValue?: number | string | null | undefined;
     submittedNightValue?: number | string | null | undefined;
-    /** Rail + hints, all derived from the last *submitted* period. */
+    /** Used for the last-period hint and the previous-value input hints. */
     lastPeriod?: PeriodUsage | null | undefined;
-    monthlyAverage?: MonthlyAverage | null | undefined;
-    daysIntoPeriod?: DaysIntoPeriod | null | undefined;
-    dayNightSplit?: DayNightSplit | null | undefined;
     previousDayMeterValue?: number | string | null | undefined;
     previousNightMeterValue?: number | string | null | undefined;
   }
@@ -350,47 +332,15 @@
     },
   ]);
 
-  const railItems = computed(() => {
-    const items: { key: string; label: string; value: string }[] = [];
-
-    if (props.lastPeriod) {
-      items.push({
-        key: "last",
-        label: t("dashboard.lastPeriod", { month: props.lastPeriod.monthLong }),
-        value: formatKwh(props.lastPeriod.totalKwh, intlLocale.value, kwh.value),
-      });
+  const lastPeriodLine = computed(() => {
+    if (!props.lastPeriod) {
+      return "";
     }
 
-    if (props.monthlyAverage) {
-      items.push({
-        key: "avg",
-        label: t("dashboard.monthlyAverage"),
-        value: formatKwh(props.monthlyAverage.averageKwh, intlLocale.value, kwh.value),
-      });
-    }
-
-    if (props.daysIntoPeriod) {
-      items.push({
-        key: "days",
-        label: t("dashboard.periodAccumulating", {
-          month: t(`months.long.${props.daysIntoPeriod.monthIndex}`),
-        }),
-        value: t("dashboard.daysIntoPeriodValue", {
-          day: props.daysIntoPeriod.day,
-          total: props.daysIntoPeriod.daysInMonth,
-        }),
-      });
-    }
-
-    if (props.dayNightSplit) {
-      items.push({
-        key: "split",
-        label: t("dashboard.dayNightRatio"),
-        value: `${Math.round(props.dayNightSplit.dayPct)} / ${Math.round(props.dayNightSplit.nightPct)} %`,
-      });
-    }
-
-    return items;
+    return t("dashboard.lastPeriodSummary", {
+      month: props.lastPeriod.monthLong,
+      value: formatKwh(props.lastPeriod.totalKwh, intlLocale.value, kwh.value),
+    });
   });
 
   const dayValueModel = computed({
@@ -405,22 +355,12 @@
 </script>
 
 <style scoped lang="scss">
-  // Mobile: one bordered box wrapping the form; the rail is hidden. At lg the
-  // wrapper becomes a two-column grid and each section is its own card.
+  // One bordered box wrapping the form at every width — no rail column left
+  // to justify a separate lg layout for the outer wrapper.
   .submission {
     background: var(--s-content-background);
     border: 1px solid var(--s-content-border-color);
     border-radius: var(--s-app-radius-lg);
-
-    @include layout.respond-to("lg") {
-      display: grid;
-      grid-template-columns: 1fr 22rem;
-      align-items: stretch;
-      gap: var(--s-app-space-4);
-      background: none;
-      border: none;
-      border-radius: 0;
-    }
 
     &--overdue {
       border-color: color-mix(in srgb, var(--s-red-500), transparent 70%);
@@ -434,15 +374,6 @@
       @include layout.respond-to("lg") {
         gap: var(--s-app-space-4);
         padding: var(--s-app-space-4);
-        background: var(--s-content-background);
-        border: 1px solid var(--s-content-border-color);
-        border-radius: var(--s-app-radius-lg);
-      }
-    }
-
-    &--overdue &__main {
-      @include layout.respond-to("lg") {
-        border-color: color-mix(in srgb, var(--s-red-500), transparent 70%);
       }
     }
 
@@ -692,57 +623,19 @@
       }
     }
 
-    &__rail {
-      display: none;
-
-      @include layout.respond-to("lg") {
-        // space-between pins the summary list to the bottom so a taller form
-        // beside it doesn't leave the rail's content floating at the top.
-        display: flex;
-        flex-direction: column;
-        justify-content: space-between;
-        gap: var(--s-app-space-4);
-        padding: var(--s-app-space-4);
-        background: var(--s-content-background);
-        border: 1px solid var(--s-content-border-color);
-        border-radius: var(--s-app-radius-lg);
-      }
-    }
-
-    &__rail-title {
-      margin: 0;
-      font-size: 1rem;
-      font-weight: 700;
-      color: var(--s-content-color);
-    }
-
-    &__rail-list {
-      @include layout.stack(var(--s-app-space-2));
-      margin: 0;
-    }
-
-    &__rail-row {
+    &__last-period {
       display: flex;
-      align-items: baseline;
-      justify-content: space-between;
+      align-items: center;
       gap: var(--s-app-space-2);
-      padding-top: var(--s-app-space-2);
+      margin: 0;
+      padding-top: var(--s-app-space-3);
       border-top: 1px solid var(--s-content-border-color);
-    }
-
-    &__rail-label {
       font-size: 0.8rem;
       color: var(--s-content-secondary-color);
-      min-width: 0;
-    }
 
-    &__rail-value {
-      margin: 0;
-      font-size: 0.85rem;
-      font-weight: 700;
-      font-variant-numeric: tabular-nums;
-      white-space: nowrap;
-      color: var(--s-content-color);
+      .pi {
+        flex-shrink: 0;
+      }
     }
 
     &__badge-skel {

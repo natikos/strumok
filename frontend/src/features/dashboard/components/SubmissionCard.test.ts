@@ -3,12 +3,7 @@ import InputNumber from "primevue/inputnumber";
 import Skeleton from "primevue/skeleton";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import type {
-  DayNightSplit,
-  DaysIntoPeriod,
-  MonthlyAverage,
-  PeriodUsage,
-} from "@/features/dashboard/composables/useUsageInsights";
+import type { PeriodUsage } from "@/features/dashboard/composables/useUsageInsights";
 import type { FieldErrors } from "@/features/dashboard/types";
 import { mountWithPlugins } from "@/shared/testing/mount";
 import type { DeadlineStatus } from "@shared/utils/deadline";
@@ -31,9 +26,6 @@ interface MountOverrides {
   submittedDayValue?: number | string | null;
   submittedNightValue?: number | string | null;
   lastPeriod?: PeriodUsage | null;
-  monthlyAverage?: MonthlyAverage | null;
-  daysIntoPeriod?: DaysIntoPeriod | null;
-  dayNightSplit?: DayNightSplit | null;
   previousDayMeterValue?: number | string | null;
   previousNightMeterValue?: number | string | null;
 }
@@ -324,6 +316,36 @@ describe("SubmissionCard", () => {
       const status = wrapper.find('[role="status"]');
       expect(status.exists()).toBe(true);
       expect(status.attributes("aria-live")).toBe("polite");
+    });
+  });
+
+  describe("last period summary", () => {
+    it("shows the month and total usage when lastPeriod is provided", () => {
+      vi.setSystemTime(new Date(2026, 5, 2));
+      const lastPeriod: PeriodUsage = {
+        period: "2026-05",
+        monthLabel: "May",
+        monthLong: "May",
+        monthIndex: 4,
+        dayKwh: 100.25,
+        nightKwh: 20.5,
+        totalKwh: 120.75,
+        chargedUah: null,
+      };
+      const wrapper = mountCard({ status: "due", lastPeriod });
+
+      const line = wrapper.find(".submission__last-period");
+      expect(line.exists()).toBe(true);
+      expect(line.text()).toContain("May");
+      expect(line.text()).toContain("120.75");
+      expect(line.text()).toContain("kWh");
+    });
+
+    it("does not render when there is no last period", () => {
+      vi.setSystemTime(new Date(2026, 5, 2));
+      const wrapper = mountCard({ status: "due" });
+
+      expect(wrapper.find(".submission__last-period").exists()).toBe(false);
     });
   });
 
