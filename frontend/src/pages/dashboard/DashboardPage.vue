@@ -195,10 +195,27 @@
       gap: var(--s-app-space-4);
 
       @include layout.respond-to("lg") {
-        // Row 2 gives the YoY card the third column beside the chart above it;
-        // row 3 is the three-up split / season / record row.
-        grid-template-columns: repeat(3, 1fr);
+        // Six columns rather than three: a normal card takes two, so a leftover
+        // pair can take three each and split the row evenly. With three columns
+        // there is no way to express "half" and the pair would sit lopsided.
+        grid-template-columns: repeat(6, 1fr);
         align-items: stretch;
+
+        > * {
+          grid-column: span 2;
+        }
+
+        // Never strand a card alone in a third of the row — it reads as a
+        // layout mistake. One left over spans the full width; two left over
+        // take half each.
+        > :last-child:nth-child(3n + 1) {
+          grid-column: span 6;
+        }
+
+        > :nth-last-child(2):nth-child(3n + 1),
+        > :last-child:nth-child(3n + 2) {
+          grid-column: span 3;
+        }
       }
     }
 
