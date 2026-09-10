@@ -2,7 +2,7 @@ import { computed, type Ref } from "vue";
 
 import type { MeterPeriod } from "@/features/dashboard/composables/useMeterReadings";
 import { DEADLINE_DAY } from "@shared/utils/deadline";
-import { toKwh } from "@shared/utils/format";
+import { toDecimal } from "@shared/utils/format";
 
 /** Periods shown in the usage chart and used for the season/record aggregates. */
 export const TREND_MONTHS = 12;
@@ -35,6 +35,8 @@ export interface PeriodUsage {
   dayKwh: number;
   nightKwh: number;
   totalKwh: number;
+  /** Null when the period was never billed — see the note in `toUsage`. */
+  chargedUah: number | null;
 }
 
 export interface MomChange {
@@ -42,6 +44,8 @@ export interface MomChange {
   from: number;
   to: number;
   direction: "up" | "down" | "flat";
+  /** Null unless both periods carry a real charge. */
+  deltaUah: number | null;
 }
 
 export interface DaysIntoPeriod {
@@ -77,6 +81,8 @@ export interface YearOverYear {
   deltaKwh: number;
   deltaPercent: number;
   direction: "up" | "down" | "flat";
+  /** Null unless both years carry a real charge. */
+  deltaUah: number | null;
 }
 
 export interface SeasonAverage {
@@ -89,7 +95,7 @@ export interface SubmissionRecord {
   onTime: number;
   late: number;
   total: number;
-  entries: { period: string; state: "on-time" | "late" | "missing" }[];
+  entries: { period: string; state: "on-time" | "late" | "missing" | "unknown" }[];
 }
 
 function toUsage(slot: MeterPeriod): PeriodUsage | null {
@@ -97,8 +103,14 @@ function toUsage(slot: MeterPeriod): PeriodUsage | null {
     return null;
   }
 
-  const dayKwh = toKwh(slot.reading.day_usage_kwh);
-  const nightKwh = toKwh(slot.reading.night_usage_kwh);
+  const dayKwh = toDecimal(slot.reading.day_usage_kwh);
+  const nightKwh = toDecimal(slot.reading.night_usage_kwh);
+
+  // Billing is unimplemented (#45): readings submitted through the API always
+  // store 0, and only CSV-imported history carries a real charge. Treat 0 as
+  // "not billed" so a comparison against it is suppressed rather than shown as
+  // a swing to zero hryvnia.
+  const charged = toDecimal(slot.reading.amount_charged_uah);
 
   return {
     period: slot.period,
@@ -108,6 +120,7 @@ function toUsage(slot: MeterPeriod): PeriodUsage | null {
     dayKwh,
     nightKwh,
     totalKwh: dayKwh + nightKwh,
+    chargedUah: charged > 0 ? charged : null,
   };
 }
 
@@ -116,6 +129,14 @@ function percentChange(from: number, to: number): number {
     return to === 0 ? 0 : 100;
   }
   return ((to - from) / from) * 100;
+}
+
+/** The charge difference between two periods, or null if either wasn't billed. */
+function chargeDelta(from: PeriodUsage, to: PeriodUsage): number | null {
+  if (from.chargedUah === null || to.chargedUah === null) {
+    return null;
+  }
+  return to.chargedUah - from.chargedUah;
 }
 
 function directionOf(delta: number): "up" | "down" | "flat" {
@@ -155,11 +176,18 @@ export function useUsageInsights(slots: Ref<MeterPeriod[]>) {
       return null;
     }
 
-    const to = periods[periods.length - 1]!.totalKwh;
-    const from = periods[periods.length - 2]!.totalKwh;
-    const percent = percentChange(from, to);
+    const current = periods[periods.length - 1]!;
+    const previous = periods[periods.length - 2]!;
+    const to = current.totalKwh;
+    const from = previous.totalKwh;
 
-    return { percent, from, to, direction: directionOf(to - from) };
+    return {
+      percent: percentChange(from, to),
+      from,
+      to,
+      direction: directionOf(to - from),
+      deltaUah: chargeDelta(previous, current),
+    };
   });
 
   const daysIntoPeriod = computed<DaysIntoPeriod>(() => {
@@ -203,8 +231,8 @@ export function useUsageInsights(slots: Ref<MeterPeriod[]>) {
 
     return {
       labels: recent.map((slot) => slot.monthLabel),
-      day: recent.map((slot) => (slot.reading ? toKwh(slot.reading.day_usage_kwh) : null)),
-      night: recent.map((slot) => (slot.reading ? toKwh(slot.reading.night_usage_kwh) : null)),
+      day: recent.map((slot) => (slot.reading ? toDecimal(slot.reading.day_usage_kwh) : null)),
+      night: recent.map((slot) => (slot.reading ? toDecimal(slot.reading.night_usage_kwh) : null)),
       presentCount: recent.filter((slot) => slot.reading).length,
     };
   });
@@ -236,6 +264,7 @@ export function useUsageInsights(slots: Ref<MeterPeriod[]>) {
       deltaKwh,
       deltaPercent: percentChange(previous.totalKwh, last.totalKwh),
       direction: directionOf(deltaKwh),
+      deltaUah: chargeDelta(previous, last),
     };
   });
 
@@ -269,23 +298,37 @@ export function useUsageInsights(slots: Ref<MeterPeriod[]>) {
         return { period: slot.period, state: "missing" as const };
       }
 
-      // On time means submitted within the day 1–5 window of the month that
-      // follows the period being reported.
+      // The reporting month is the one after the period: a July reading is due
+      // days 1–5 of August.
       const submittedAt = new Date(slot.reading.submitted_at);
       const [year, month] = slot.period.split("-").map(Number);
       const dueMonth = new Date(year!, month!, 1);
-      const onTime =
+      const inDueMonth =
         submittedAt.getFullYear() === dueMonth.getFullYear() &&
-        submittedAt.getMonth() === dueMonth.getMonth() &&
-        submittedAt.getDate() <= DEADLINE_DAY;
+        submittedAt.getMonth() === dueMonth.getMonth();
 
-      return { period: slot.period, state: onTime ? ("on-time" as const) : ("late" as const) };
+      if (inDueMonth) {
+        return {
+          period: slot.period,
+          state: submittedAt.getDate() <= DEADLINE_DAY ? ("on-time" as const) : ("late" as const),
+        };
+      }
+
+      // Submitted before the period even closed, or long after it — the latter
+      // is how bulk-imported history looks, every row stamped with the import
+      // run rather than when the resident actually reported. Scoring those as
+      // late would blame residents for an import artifact, so they don't count.
+      return { period: slot.period, state: "unknown" as const };
     });
 
+    const onTime = entries.filter((entry) => entry.state === "on-time").length;
+    const late = entries.filter((entry) => entry.state === "late").length;
+
     return {
-      onTime: entries.filter((entry) => entry.state === "on-time").length,
-      late: entries.filter((entry) => entry.state === "late").length,
-      total: entries.length,
+      onTime,
+      late,
+      // Only periods we can actually judge belong in the "x of y" ratio.
+      total: onTime + late,
       entries,
     };
   });

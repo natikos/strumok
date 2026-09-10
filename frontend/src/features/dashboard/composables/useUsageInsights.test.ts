@@ -92,7 +92,13 @@ describe("useUsageInsights", () => {
       ]);
       const { momChange } = useUsageInsights(slots);
 
-      expect(momChange.value).toEqual({ percent: 50, from: 10, to: 15, direction: "up" });
+      expect(momChange.value).toEqual({
+        percent: 50,
+        from: 10,
+        to: 15,
+        direction: "up",
+        deltaUah: null,
+      });
     });
 
     it("reports a decrease as down with a negative percent", () => {
@@ -108,7 +114,13 @@ describe("useUsageInsights", () => {
       ]);
       const { momChange } = useUsageInsights(slots);
 
-      expect(momChange.value).toEqual({ percent: -50, from: 20, to: 10, direction: "down" });
+      expect(momChange.value).toEqual({
+        percent: -50,
+        from: 20,
+        to: 10,
+        direction: "down",
+        deltaUah: null,
+      });
     });
 
     it("reports equal usage as flat", () => {
@@ -124,7 +136,13 @@ describe("useUsageInsights", () => {
       ]);
       const { momChange } = useUsageInsights(slots);
 
-      expect(momChange.value).toEqual({ percent: 0, from: 15, to: 15, direction: "flat" });
+      expect(momChange.value).toEqual({
+        percent: 0,
+        from: 15,
+        to: 15,
+        direction: "flat",
+        deltaUah: null,
+      });
     });
 
     it("does not divide by zero when the prior period had zero usage", () => {
@@ -157,7 +175,13 @@ describe("useUsageInsights", () => {
       ]);
       const { momChange } = useUsageInsights(slots);
 
-      expect(momChange.value).toEqual({ percent: 0, from: 0, to: 0, direction: "flat" });
+      expect(momChange.value).toEqual({
+        percent: 0,
+        from: 0,
+        to: 0,
+        direction: "flat",
+        deltaUah: null,
+      });
     });
   });
 
@@ -281,6 +305,7 @@ describe("useUsageInsights", () => {
         deltaKwh: 6,
         deltaPercent: 50,
         direction: "up",
+        deltaUah: null,
       });
     });
 
@@ -394,13 +419,78 @@ describe("useUsageInsights", () => {
       ]);
       const { submissionRecord } = useUsageInsights(slots);
 
-      expect(submissionRecord.value.total).toBe(3);
+      // total counts only periods that can actually be judged on time, so the
+      // missing month is excluded from the ratio's denominator.
+      expect(submissionRecord.value.total).toBe(2);
       expect(submissionRecord.value.onTime).toBe(1);
       expect(submissionRecord.value.late).toBe(1);
       expect(submissionRecord.value.entries).toContainEqual({
         period: "2026-06",
         state: "missing",
       });
+    });
+
+    // Bulk-imported history carries the import run's timestamp on every row,
+    // not when the resident reported. Scoring those as late told residents they
+    // had missed ten deadlines they never missed.
+    it("treats a backfilled reading as unknown rather than late", () => {
+      const importedAt = new Date(2026, 5, 19, 20, 7).toISOString();
+      const slots = ref<MeterPeriod[]>([
+        makeSlot("2025-09", makeReading({ period: "2025-09", submitted_at: importedAt })),
+        makeSlot("2025-10", makeReading({ period: "2025-10", submitted_at: importedAt })),
+        makeSlot("2025-11", makeReading({ period: "2025-11", submitted_at: importedAt })),
+      ]);
+      const { submissionRecord } = useUsageInsights(slots);
+
+      expect(submissionRecord.value.entries.map((entry) => entry.state)).toEqual([
+        "unknown",
+        "unknown",
+        "unknown",
+      ]);
+      expect(submissionRecord.value.late).toBe(0);
+      expect(submissionRecord.value.total).toBe(0);
+    });
+
+    it("still judges an app submission made alongside backfilled history", () => {
+      const slots = ref<MeterPeriod[]>([
+        makeSlot(
+          "2025-11",
+          makeReading({ period: "2025-11", submitted_at: new Date(2026, 5, 19).toISOString() })
+        ),
+        makeSlot(
+          "2026-05",
+          makeReading({ period: "2026-05", submitted_at: new Date(2026, 5, 3).toISOString() })
+        ),
+      ]);
+      const { submissionRecord } = useUsageInsights(slots);
+
+      expect(submissionRecord.value.onTime).toBe(1);
+      expect(submissionRecord.value.total).toBe(1);
+    });
+  });
+
+  describe("hryvnia deltas", () => {
+    it("reports the charge difference when both periods were billed", () => {
+      const slots = ref<MeterPeriod[]>([
+        makeSlot("2026-05", makeReading({ period: "2026-05", amount_charged_uah: "611.00" })),
+        makeSlot("2026-06", makeReading({ period: "2026-06", amount_charged_uah: "679.15" })),
+      ]);
+      const { momChange } = useUsageInsights(slots);
+
+      expect(momChange.value?.deltaUah).toBeCloseTo(68.15);
+    });
+
+    // Billing is unimplemented (#45), so API-submitted readings store 0. A
+    // delta against that would read as a swing to zero hryvnia.
+    it("suppresses the delta when either period stored the unbilled zero", () => {
+      const slots = ref<MeterPeriod[]>([
+        makeSlot("2026-05", makeReading({ period: "2026-05", amount_charged_uah: "611.00" })),
+        makeSlot("2026-06", makeReading({ period: "2026-06", amount_charged_uah: "0.00" })),
+      ]);
+      const { momChange, lastSubmittedPeriod } = useUsageInsights(slots);
+
+      expect(momChange.value?.deltaUah).toBeNull();
+      expect(lastSubmittedPeriod.value?.chargedUah).toBeNull();
     });
   });
 
@@ -455,6 +545,7 @@ describe("useUsageInsights", () => {
           from: 10,
           to: 40,
           direction: "up",
+          deltaUah: null,
         });
       });
 

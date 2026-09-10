@@ -2,7 +2,7 @@
   <section class="card record-card">
     <header class="record-card__header">
       <h2 class="record-card__title">{{ t("dashboard.recordTitle") }}</h2>
-      <span class="record-card__value">
+      <span v-if="record.total > 0" class="record-card__value">
         {{ t("dashboard.recordValue", { onTime: record.onTime, total: record.total }) }}
       </span>
     </header>
@@ -99,6 +99,11 @@
 
       &--late {
         background: var(--s-amber-500);
+      }
+
+      // Backfilled history: submitted, but not on a timeline we can judge.
+      &--unknown {
+        background: color-mix(in srgb, var(--s-content-color), transparent 88%);
       }
     }
 
