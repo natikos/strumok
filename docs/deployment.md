@@ -39,7 +39,7 @@ You can also trigger a deployment manually from the GitHub Actions UI using the 
 
 | Variable | Description |
 |---|---|
-| `DB_URL` | PostgreSQL connection string |
+| `DATABASE_URL` | PostgreSQL connection string |
 | `AUTH_SECRET_KEY` | JWT signing secret |
 | `AUTH_ALGORITHM` | JWT algorithm (default: `HS256`) |
 | `CORS_ORIGINS` | Comma-separated list of allowed origins |
