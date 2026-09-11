@@ -271,7 +271,6 @@ def request_email_verification_link(*, session: Session, user: User) -> None:
 
     token = create_email_verification_token(user)
     link = f"{settings.brevo.app_base_url}/verify-email?token={token}"
-    print(f"Settings: {settings.brevo}")
     try:
         send_email(
             to_email=user.email,
@@ -282,7 +281,6 @@ def request_email_verification_link(*, session: Session, user: User) -> None:
             ),
         )
     except EmailSendError as exc:
-        print(f"Failed to send verification email to {user.email}: {exc}")
         raise VerificationEmailSendFailedError from exc
 
     user.verification_email_last_sent_at = now
