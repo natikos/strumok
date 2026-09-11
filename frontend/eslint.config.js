@@ -6,7 +6,8 @@ import eslintPluginVue from "eslint-plugin-vue";
 import globals from "globals";
 
 export default defineConfigWithVueTs(
-  { ignores: ["**/*.d.ts", "**/coverage", "**/dist"] },
+  // The design handoff bundle is vendored reference material, not app source.
+  { ignores: ["**/*.d.ts", "**/coverage", "**/dist", "design_handoff_*"] },
   eslint.configs.recommended,
   ...eslintPluginVue.configs["flat/strongly-recommended"],
   vueTsConfigs.recommendedTypeChecked,

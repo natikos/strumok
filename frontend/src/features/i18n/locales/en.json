@@ -22,21 +22,66 @@
     "nameMinLength": "Must be at least 2 characters",
     "passwordMinLength": "Password must be at least 8 characters"
   },
-  "common": { "submit": "Submit" },
+  "common": {
+    "submit": "Submit"
+  },
   "dashboard": {
-    "loadingUser": "Loading user"
+    "awaitingReading": "{month} awaiting reading",
+    "chartAriaLabel": "Monthly day and night electricity usage over the last {count} periods",
+    "emptyChartBody": "Your usage chart, day/night split and year-over-year comparison appear here as readings come in.",
+    "emptyChartTitle": "No usage to chart yet",
+    "firstRunStep1": "Read both numbers off your meter between the 1st and the 5th",
+    "firstRunStep2": "Your first submission sets the baseline — usage in kWh appears from next month",
+    "firstRunStep3": "The cooperative splits one shared bill across all logged readings",
+    "firstRunTitle": "How Strumok works",
+    "lastPeriodEmpty": "Last period",
+    "lastPeriodSummary": "Last period ({month}): {value}",
+    "lastSubmittedValue": "Last submitted: {value}",
+    "loadingUser": "Loading user",
+    "missedPeriods": "Missed periods",
+    "nightCheaperNote": "Night is cheaper — shifting load after 23:00 lowers the shared bill",
+    "noData": "—",
+    "onlySeasonSoFar": "Only 1 prior season so far",
+    "recentUsage": "Recent usage",
+    "seasonAutumn": "Autumn",
+    "seasonAvgValue": "avg {value}",
+    "seasonFootnote": "Average month per season · last 12 periods",
+    "seasonSpring": "Spring",
+    "seasonSummer": "Summer",
+    "seasonTitle": "Season to season",
+    "seasonWinter": "Winter",
+    "splitAriaLabel": "Day {day}, night {night}",
+    "splitTitle": "Day / night split",
+    "trendSparseNote": "Seasonal patterns become readable after about 6 months of readings",
+    "uahDelta": "Bill difference",
+    "uahLess": "{value} less",
+    "uahMore": "{value} more",
+    "unlockAfterSecond": "After your 2nd reading",
+    "unlockNeedsThirteen": "Needs 13 months",
+    "unlockNeedsTwo": "Needs 2 periods",
+    "usageChartFootnote": "kWh per month · last {count} periods",
+    "usedThisPeriod": "+{value} used",
+    "viewFullHistory": "View full history",
+    "vsMonth": "vs {month}",
+    "vsPrevious": "vs previous",
+    "vsSeasonTypical": "vs typical {season}",
+    "yoyAriaLabel": "{year}: {value}",
+    "yoyTitle": "Same month, last year",
+    "yoyTotalCurrent": "12-month total, {year}",
+    "yoyTotalPrevious": "Same window, {year}",
+    "yoyUnavailable": "No {month} {year} reading yet. This comparison unlocks once the same month exists in both years."
   },
-  "deadline": {
-    "label": "Next deadline",
-    "dueIn": "in {days} days",
-    "nextDeadline": "Next deadline",
-    "currentDeadline": "Current deadline",
-    "overdue": "Overdue"
-  },
-  "deadlineCard": {
-    "label": "Submission Deadline",
-    "nextPeriod": "Next submission for {month}",
-    "currentPeriod": "Closing submission for {month}"
+  "deadlineStatus": {
+    "daysLeft": "{count} day left | {count} days left",
+    "windowClosesAt": "Window closes {day} {month}, 23:59",
+    "windowClosedAt": "Window closed {day} {month}, 23:59",
+    "overdueHeadline": "Submission deadline passed",
+    "submittedHeadline": "Reading submitted",
+    "submittedDetail": "Submitted {date} · can be changed until {day} {month}",
+    "submittedLateDetail": "Submitted late",
+    "firstPeriodHeadline": "First reading",
+    "firstPeriodExplainer": "Submit readings from day 1 to 5 each month — this window repeats every month",
+    "stripAriaLabel": "Submission window: {elapsed} of {total} days elapsed, closes on day {day}"
   },
   "errors": {
     "emailAlreadyRegistered": "Email is already registered",
@@ -79,6 +124,10 @@
     "meterValueNonNegative": "Meter value must be zero or greater",
     "submit": "Submit reading",
     "submitLate": "Submit late reading",
+    "submitFirst": "Submit first reading",
+    "editSubmitted": "Edit reading",
+    "lockNote": "You can edit your reading until day 5 of the month",
+    "lateApprovalNote": "Late submissions go to the head of the cooperative for approval and won't change this period's charge",
     "notSubmitted": "not submitted",
     "currentMonthHeading": "Submit {month} reading",
     "meterValues": "Meter readings",
@@ -119,7 +168,12 @@
       "December"
     ]
   },
-  "nav": { "home": "Dashboard", "history": "History", "settings": "Settings", "logout": "Logout" },
+  "nav": {
+    "home": "Dashboard",
+    "history": "History",
+    "settings": "Settings",
+    "logout": "Logout"
+  },
   "settings": {
     "title": "Settings",
     "appearance": "Appearance",
@@ -166,7 +220,11 @@
     "emptyTitle": "No readings yet",
     "emptyDescription": "Once you submit your first monthly reading, it will appear here.",
     "emptyCta": "Submit a reading",
-    "navLabel": "History"
+    "navLabel": "History",
+    "recordTitle": "Submission record",
+    "recordValue": "{onTime} of {total}",
+    "recordOnTime": "On time",
+    "recordLate": "Late"
   },
   "verifyEmail": {
     "title": "Hi, {name}",
