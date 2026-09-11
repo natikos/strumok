@@ -1,15 +1,18 @@
+import logging
 from contextlib import asynccontextmanager
 from pathlib import Path
 
 import uvicorn
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 
 from app.api import auth_router, meter_readings_router
 from app.core.config import settings
 from app.db.engine import init_db
+
+logger = logging.getLogger(__name__)
 
 DIST_DIR = Path(__file__).resolve().parent.parent / "dist"
 
@@ -31,6 +34,12 @@ app.add_middleware(
 )
 app.include_router(auth_router)
 app.include_router(meter_readings_router)
+
+
+@app.exception_handler(Exception)
+async def unhandled_exception_handler(_: Request, exc: Exception) -> JSONResponse:
+    logger.exception("Unhandled exception")
+    return JSONResponse(status_code=500, content={"detail": "internalServerError"})
 
 
 @app.get("/health", include_in_schema=False)
