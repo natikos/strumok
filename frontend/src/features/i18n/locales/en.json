@@ -15,15 +15,10 @@
     "password": "Password",
     "confirmPassword": "Confirm password",
     "passwordMismatch": "Passwords do not match",
-    "requiredFields": "Please fill in all required fields",
-    "unexpectedError": "Something went wrong. Please try again",
     "requiredField": "This field is required",
     "invalidEmail": "Please enter a valid email address",
     "nameMinLength": "Must be at least 2 characters",
     "passwordMinLength": "Password must be at least 8 characters"
-  },
-  "common": {
-    "submit": "Submit"
   },
   "dashboard": {
     "awaitingReading": "{month} awaiting reading",
@@ -40,7 +35,6 @@
     "loadingUser": "Loading user",
     "missedPeriods": "Missed periods",
     "nightCheaperNote": "Night is cheaper — shifting load after 23:00 lowers the shared bill",
-    "noData": "—",
     "onlySeasonSoFar": "Only 1 prior season so far",
     "recentUsage": "Recent usage",
     "seasonAutumn": "Autumn",
@@ -53,11 +47,7 @@
     "splitAriaLabel": "Day {day}, night {night}",
     "splitTitle": "Day / night split",
     "trendSparseNote": "Seasonal patterns become readable after about 6 months of readings",
-    "uahDelta": "Bill difference",
-    "uahLess": "{value} less",
-    "uahMore": "{value} more",
     "unlockAfterSecond": "After your 2nd reading",
-    "unlockNeedsThirteen": "Needs 13 months",
     "unlockNeedsTwo": "Needs 2 periods",
     "usageChartFootnote": "kWh per month · last {count} periods",
     "usedThisPeriod": "+{value} used",
@@ -67,8 +57,6 @@
     "vsSeasonTypical": "vs typical {season}",
     "yoyAriaLabel": "{year}: {value}",
     "yoyTitle": "Same month, last year",
-    "yoyTotalCurrent": "12-month total, {year}",
-    "yoyTotalPrevious": "Same window, {year}",
     "yoyUnavailable": "No {month} {year} reading yet. This comparison unlocks once the same month exists in both years."
   },
   "deadlineStatus": {
@@ -107,15 +95,8 @@
     "switchToDarkTheme": "Switch to dark theme"
   },
   "meterReadings": {
-    "total": "Total",
-    "title": "Electricity meter",
-    "usageFor": "Used — {month}",
-    "usageEmpty": "No readings yet",
-    "deltaContext": "vs {month}",
     "day": "Day",
     "night": "Night",
-    "dayShort": "D",
-    "nightShort": "N",
     "dayMeterValue": "Day reading",
     "nightMeterValue": "Night reading",
     "meterValuePlaceholder": "e.g. 1 450",
@@ -128,29 +109,7 @@
     "editSubmitted": "Edit reading",
     "lockNote": "You can edit your reading until day 5 of the month",
     "lateApprovalNote": "Late submissions go to the head of the cooperative for approval and won't change this period's charge",
-    "notSubmitted": "not submitted",
-    "currentMonthHeading": "Submit {month} reading",
-    "meterValues": "Meter readings",
-    "dueNow": "Due now",
-    "overdue": "Overdue",
-    "previousReadings": "Previous: Day {day} · Night {night}",
-    "submittedTitle": "{month} reading submitted",
-    "submittedThankYou": "Thank you, {name}. Your reading has been recorded.",
-    "usedThisMonth": "Used this month: {kwh}",
-    "nextDeadline": "Next deadline",
-    "nextDeadlineDetail": "{month} — due in {days} days",
-    "estimatedCharge": "Your estimated charge",
-    "estimatedChargeDetail": "Average {avg} kWh × 1.3 — still submit to correct next month",
-    "overdueAlert": "{month} deadline passed",
-    "overdueExplanation": "Submit your late reading below. This will not change your {month} charge but will correct next month.",
-    "hintText": "Enter the numbers shown on your electricity meter, then press Submit",
-    "hintLate": "This will not change your {month} charge but will correct next month",
-    "usedLastMonth": "Used last month — {month}",
-    "dayNightBreakdown": "Day {day} · Night {night}",
-    "vsLastMonth": "vs last month",
-    "trendTitle": "Usage trend",
-    "trendDecreasing": "Decreasing",
-    "trendIncreasing": "Increasing"
+    "hintText": "Enter the numbers shown on your electricity meter, then press Submit"
   },
   "months": {
     "long": [
@@ -190,15 +149,6 @@
       "submittedLate": "Submitted late"
     }
   },
-  "submitMeter": {
-    "title": "Submit your {month} meter readings",
-    "note": {
-      "submitted": "Thank you for submitting your readings on time",
-      "submittedLate": "Your readings were submitted after {deadline}, but future charges will be adjusted based on your submission",
-      "overdue": "Submission deadline has passed. Your current charges won't change, but future charges will be adjusted based on your submission",
-      "due": "Your consumption will be adjusted based on your submitted readings"
-    }
-  },
   "units": {
     "kwh": "kWh"
   },
@@ -220,7 +170,6 @@
     "emptyTitle": "No readings yet",
     "emptyDescription": "Once you submit your first monthly reading, it will appear here.",
     "emptyCta": "Submit a reading",
-    "navLabel": "History",
     "recordTitle": "Submission record",
     "recordValue": "{onTime} of {total}",
     "recordOnTime": "On time",
@@ -235,7 +184,6 @@
     "confirming": "Confirming your email...",
     "successTitle": "Email verified",
     "successBody": "Your email has been verified.",
-    "errorTitle": "Verification failed",
     "errorExpired": "This link is invalid or has expired. Request a new one below.",
     "sendFailed": "We couldn't send the verification email. Please try again shortly.",
     "stillNotVerified": "Still not verified. Check your inbox and click the link we sent you.",
