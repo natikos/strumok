@@ -35,8 +35,8 @@
   import type {
     DaysIntoPeriod,
     MomChange,
-    MonthlyAverage,
     PeriodUsage,
+    SeasonComparison,
   } from "@/features/dashboard/composables/useUsageInsights";
   import { useLocale } from "@/features/i18n/composables/useLocale";
   import { formatMeterValue, formatUah } from "@shared/utils/format";
@@ -45,7 +45,7 @@
     lastPeriod: PeriodUsage | null;
     momChange: MomChange | null;
     daysIntoPeriod: DaysIntoPeriod;
-    monthlyAverage: MonthlyAverage | null;
+    seasonComparison: SeasonComparison | null;
     /** Overdue swaps the month-over-month tile for a missed-period count. */
     missedPeriods?: number;
     isLoading?: boolean;
@@ -79,6 +79,13 @@
   function monthName(index: number): string {
     return t(`months.long.${index}`);
   }
+
+  const SEASON_LABEL_KEY: Record<string, string> = {
+    summer: "dashboard.seasonSummer",
+    autumn: "dashboard.seasonAutumn",
+    winter: "dashboard.seasonWinter",
+    spring: "dashboard.seasonSpring",
+  };
 
   const lastPeriodTile = computed<Tile>(() => {
     const last = props.lastPeriod;
@@ -154,12 +161,12 @@
     };
   });
 
-  const averageTile = computed<Tile>(() => {
-    const average = props.monthlyAverage;
-    if (!average) {
+  const seasonComparisonTile = computed<Tile>(() => {
+    const comparison = props.seasonComparison;
+    if (!comparison) {
       return {
-        key: "avg",
-        label: t("dashboard.monthlyAverage"),
+        key: "season",
+        label: t("dashboard.vsSeasonTypical", { season: "" }).trim(),
         value: "",
         unit: "",
         sub: t("dashboard.unlockNeedsTwo"),
@@ -167,26 +174,31 @@
       };
     }
 
-    // Below six periods the mean is too noisy to present as a plain average.
+    const seasonName = t(SEASON_LABEL_KEY[comparison.season] ?? comparison.season);
+
+    // A single prior season is too thin to call "typical" without saying so.
     const sub =
-      average.periodCount < 6
-        ? t("dashboard.onlyMonthsSoFar", { count: average.periodCount })
-        : t("dashboard.monthsOfData", { count: average.periodCount });
+      comparison.periodCount < 2
+        ? t("dashboard.onlySeasonSoFar")
+        : `${num(comparison.currentKwh)} · ${t("dashboard.seasonAvgValue", { value: num(comparison.averageKwh) })}`;
 
     return {
-      key: "avg",
-      label: t("dashboard.monthlyAverage"),
-      value: num(average.averageKwh),
-      unit: kwh.value,
+      key: "season",
+      label: t("dashboard.vsSeasonTypical", { season: seasonName }),
+      value: `${Math.abs(comparison.deltaPercent).toFixed(1)}%`,
+      unit: "",
       sub,
       isEmpty: false,
+      icon: comparison.direction === "down" ? "pi pi-arrow-down" : "pi pi-arrow-up",
+      valueClass:
+        comparison.direction === "down" ? "stat-tile__value--down" : "stat-tile__value--up",
     };
   });
 
   const tiles = computed<Tile[]>(() => [
     lastPeriodTile.value,
     comparisonTile.value,
-    averageTile.value,
+    seasonComparisonTile.value,
   ]);
 </script>
 

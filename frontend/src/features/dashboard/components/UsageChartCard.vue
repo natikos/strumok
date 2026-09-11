@@ -128,8 +128,14 @@
           boxHeight: 8,
           usePointStyle: true,
           callbacks: {
+            title: (items: { dataIndex: number }[]) =>
+              items[0] ? props.series.fullLabels[items[0].dataIndex] : "",
             label: (ctx: { dataset: { label?: string }; parsed: { y: number | null } }) =>
               ` ${ctx.dataset.label}: ${ctx.parsed.y ?? 0} ${unit}`,
+            footer: (items: { parsed: { y: number | null } }[]) => {
+              const total = items.reduce((sum, item) => sum + (item.parsed.y ?? 0), 0);
+              return `${t("usageHistory.total")}: ${total} ${unit}`;
+            },
           },
         },
       },

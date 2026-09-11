@@ -1,7 +1,6 @@
 import { computed, type Ref } from "vue";
 
 import type { MeterPeriod } from "@/features/dashboard/composables/useMeterReadings";
-import { DEADLINE_DAY } from "@shared/utils/deadline";
 import { toDecimal } from "@shared/utils/format";
 
 /** Periods shown in the usage chart and used for the season/record aggregates. */
@@ -61,13 +60,19 @@ export interface DayNightSplit {
   nightPct: number;
 }
 
-export interface MonthlyAverage {
+export interface SeasonComparison {
+  season: Season;
+  currentKwh: number;
   averageKwh: number;
+  deltaPercent: number;
+  direction: "up" | "down" | "flat";
+  /** Prior periods the average is drawn from, current period excluded. */
   periodCount: number;
 }
 
 export interface TrendSeries {
   labels: string[];
+  fullLabels: string[];
   day: (number | null)[];
   night: (number | null)[];
   presentCount: number;
@@ -89,13 +94,6 @@ export interface SeasonAverage {
   season: Season;
   averageKwh: number;
   periodCount: number;
-}
-
-export interface SubmissionRecord {
-  onTime: number;
-  late: number;
-  total: number;
-  entries: { period: string; state: "on-time" | "late" | "missing" | "unknown" }[];
 }
 
 function toUsage(slot: MeterPeriod): PeriodUsage | null {
@@ -213,16 +211,6 @@ export function useUsageInsights(slots: Ref<MeterPeriod[]>) {
     };
   });
 
-  const monthlyAverage = computed<MonthlyAverage | null>(() => {
-    const periods = submittedPeriods.value;
-    if (periods.length === 0) {
-      return null;
-    }
-
-    const total = periods.reduce((sum, period) => sum + period.totalKwh, 0);
-    return { averageKwh: total / periods.length, periodCount: periods.length };
-  });
-
   /** The last 12 calendar slots, gaps included — a missing month is meaningful. */
   const recentSlots = computed<MeterPeriod[]>(() => slots.value.slice(-TREND_MONTHS));
 
@@ -231,6 +219,7 @@ export function useUsageInsights(slots: Ref<MeterPeriod[]>) {
 
     return {
       labels: recent.map((slot) => slot.monthLabel),
+      fullLabels: recent.map((slot) => `${slot.monthLong} ${slot.date.getFullYear()}`),
       day: recent.map((slot) => (slot.reading ? toDecimal(slot.reading.day_usage_kwh) : null)),
       night: recent.map((slot) => (slot.reading ? toDecimal(slot.reading.night_usage_kwh) : null)),
       presentCount: recent.filter((slot) => slot.reading).length,
@@ -292,44 +281,38 @@ export function useUsageInsights(slots: Ref<MeterPeriod[]>) {
     });
   });
 
-  const submissionRecord = computed<SubmissionRecord>(() => {
-    const entries = recentSlots.value.map((slot) => {
-      if (!slot.reading?.submitted_at) {
-        return { period: slot.period, state: "missing" as const };
-      }
+  /**
+   * How the last submitted period compares to that same season's average —
+   * the seasonally-honest replacement for a flat all-time average, which
+   * blends winter and summer and can never read as "normal."
+   */
+  const seasonComparison = computed<SeasonComparison | null>(() => {
+    const last = lastSubmittedPeriod.value;
+    if (!last) {
+      return null;
+    }
 
-      // The reporting month is the one after the period: a July reading is due
-      // days 1–5 of August.
-      const submittedAt = new Date(slot.reading.submitted_at);
-      const [year, month] = slot.period.split("-").map(Number);
-      const dueMonth = new Date(year!, month!, 1);
-      const inDueMonth =
-        submittedAt.getFullYear() === dueMonth.getFullYear() &&
-        submittedAt.getMonth() === dueMonth.getMonth();
+    const season = SEASON_BY_MONTH[last.monthIndex]!;
+    const priorInSeason = recentSlots.value
+      .map(toUsage)
+      .filter((usage): usage is PeriodUsage => usage !== null && usage.period !== last.period)
+      .filter((usage) => SEASON_BY_MONTH[usage.monthIndex] === season);
 
-      if (inDueMonth) {
-        return {
-          period: slot.period,
-          state: submittedAt.getDate() <= DEADLINE_DAY ? ("on-time" as const) : ("late" as const),
-        };
-      }
+    if (priorInSeason.length === 0) {
+      return null;
+    }
 
-      // Submitted before the period even closed, or long after it — the latter
-      // is how bulk-imported history looks, every row stamped with the import
-      // run rather than when the resident actually reported. Scoring those as
-      // late would blame residents for an import artifact, so they don't count.
-      return { period: slot.period, state: "unknown" as const };
-    });
-
-    const onTime = entries.filter((entry) => entry.state === "on-time").length;
-    const late = entries.filter((entry) => entry.state === "late").length;
+    const averageKwh =
+      priorInSeason.reduce((sum, usage) => sum + usage.totalKwh, 0) / priorInSeason.length;
+    const deltaPercent = percentChange(averageKwh, last.totalKwh);
 
     return {
-      onTime,
-      late,
-      // Only periods we can actually judge belong in the "x of y" ratio.
-      total: onTime + late,
-      entries,
+      season,
+      currentKwh: last.totalKwh,
+      averageKwh,
+      deltaPercent,
+      direction: directionOf(last.totalKwh - averageKwh),
+      periodCount: priorInSeason.length,
     };
   });
 
@@ -339,10 +322,9 @@ export function useUsageInsights(slots: Ref<MeterPeriod[]>) {
     momChange,
     daysIntoPeriod,
     dayNightSplit,
-    monthlyAverage,
     trendSeries,
     yearOverYear,
     seasonAverages,
-    submissionRecord,
+    seasonComparison,
   };
 }

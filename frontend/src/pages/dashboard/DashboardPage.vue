@@ -29,7 +29,7 @@
       :last-period="lastSubmittedPeriod"
       :mom-change="momChange"
       :days-into-period="daysIntoPeriod"
-      :monthly-average="monthlyAverage"
+      :season-comparison="seasonComparison"
       :missed-periods="missedPeriods"
       :is-loading="isLoading"
     />
@@ -57,12 +57,6 @@
         />
 
         <SeasonCard class="dashboard__desktop-only" :seasons="seasonAverages" />
-
-        <SubmissionRecordCard
-          class="dashboard__desktop-only"
-          :record="submissionRecord"
-          @view-history="goToHistory"
-        />
       </div>
     </template>
   </div>
@@ -79,7 +73,6 @@
   import SeasonCard from "@/features/dashboard/components/SeasonCard.vue";
   import StatTilesCard from "@/features/dashboard/components/StatTilesCard.vue";
   import SubmissionCard from "@/features/dashboard/components/SubmissionCard.vue";
-  import SubmissionRecordCard from "@/features/dashboard/components/SubmissionRecordCard.vue";
   import UsageChartCard from "@/features/dashboard/components/UsageChartCard.vue";
   import YearOverYearCard from "@/features/dashboard/components/YearOverYearCard.vue";
   import { useMeterReadings } from "@/features/dashboard/composables/useMeterReadings.ts";
@@ -108,11 +101,10 @@
     momChange,
     daysIntoPeriod,
     dayNightSplit,
-    monthlyAverage,
     trendSeries,
     yearOverYear,
     seasonAverages,
-    submissionRecord,
+    seasonComparison,
     submittedPeriods,
   } = useMeterReadings();
 

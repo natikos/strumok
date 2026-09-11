@@ -38,7 +38,6 @@ declare module 'vue' {
     Skeleton: typeof import('primevue/skeleton')['default']
     StatTilesCard: typeof import('./src/features/dashboard/components/StatTilesCard.vue')['default']
     SubmissionCard: typeof import('./src/features/dashboard/components/SubmissionCard.vue')['default']
-    SubmissionRecordCard: typeof import('./src/features/dashboard/components/SubmissionRecordCard.vue')['default']
     ThemeToggleButton: typeof import('./src/shared/components/theme/ThemeToggleButton.vue')['default']
     Typography: typeof import('./src/shared/Typography.vue')['default']
     UsageChartCard: typeof import('./src/features/dashboard/components/UsageChartCard.vue')['default']

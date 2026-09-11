@@ -220,32 +220,111 @@ describe("useUsageInsights", () => {
     });
   });
 
-  describe("monthlyAverage", () => {
+  describe("seasonComparison", () => {
     it("is null when there are no submitted periods", () => {
       const slots = ref<MeterPeriod[]>([makeSlot("2026-06", undefined)]);
-      const { monthlyAverage } = useUsageInsights(slots);
+      const { seasonComparison } = useUsageInsights(slots);
 
-      expect(monthlyAverage.value).toBeNull();
+      expect(seasonComparison.value).toBeNull();
     });
 
-    it("averages total usage across an unsorted set of submitted periods", () => {
+    it("is null when the last period is the only submission ever", () => {
       const slots = ref<MeterPeriod[]>([
+        makeSlot("2026-06", makeReading({ period: "2026-06" })), // summer
+      ]);
+      const { seasonComparison } = useUsageInsights(slots);
+
+      expect(seasonComparison.value).toBeNull();
+    });
+
+    it("is null when prior periods exist but none share the last period's season", () => {
+      const slots = ref<MeterPeriod[]>([
+        // spring
+        makeSlot("2026-04", makeReading({ period: "2026-04", day_usage_kwh: "20.00" })),
+        // summer -- the last submitted period
+        makeSlot("2026-06", makeReading({ period: "2026-06", day_usage_kwh: "10.00" })),
+      ]);
+      const { seasonComparison } = useUsageInsights(slots);
+
+      expect(seasonComparison.value).toBeNull();
+    });
+
+    it("averages same-season prior periods and reports the delta against the current one", () => {
+      const slots = ref<MeterPeriod[]>([
+        // summer 2025
+        makeSlot(
+          "2025-07",
+          makeReading({ period: "2025-07", day_usage_kwh: "20.00", night_usage_kwh: "0.00" })
+        ),
+        makeSlot(
+          "2025-08",
+          makeReading({ period: "2025-08", day_usage_kwh: "10.00", night_usage_kwh: "0.00" })
+        ),
+        // last submitted period, also summer
         makeSlot(
           "2026-06",
-          makeReading({ period: "2026-06", day_usage_kwh: "10.00", night_usage_kwh: "0.00" })
-        ),
-        makeSlot(
-          "2026-04",
-          makeReading({ period: "2026-04", day_usage_kwh: "20.00", night_usage_kwh: "0.00" })
-        ),
-        makeSlot(
-          "2026-05",
-          makeReading({ period: "2026-05", day_usage_kwh: "30.00", night_usage_kwh: "0.00" })
+          makeReading({ period: "2026-06", day_usage_kwh: "18.00", night_usage_kwh: "0.00" })
         ),
       ]);
-      const { monthlyAverage } = useUsageInsights(slots);
+      const { seasonComparison } = useUsageInsights(slots);
 
-      expect(monthlyAverage.value).toEqual({ averageKwh: 20, periodCount: 3 });
+      expect(seasonComparison.value).toEqual({
+        season: "summer",
+        currentKwh: 18,
+        averageKwh: 15, // (20 + 10) / 2, current period excluded
+        deltaPercent: 20,
+        direction: "up",
+        periodCount: 2,
+      });
+    });
+
+    it("excludes the current period itself from its own average", () => {
+      const slots = ref<MeterPeriod[]>([
+        // both summer -- if the current leaked into its own average it would
+        // equal itself and never show a delta.
+        makeSlot(
+          "2025-07",
+          makeReading({ period: "2025-07", day_usage_kwh: "12.00", night_usage_kwh: "0.00" })
+        ),
+        makeSlot(
+          "2026-06",
+          makeReading({ period: "2026-06", day_usage_kwh: "18.00", night_usage_kwh: "0.00" })
+        ),
+      ]);
+      const { seasonComparison } = useUsageInsights(slots);
+
+      expect(seasonComparison.value?.averageKwh).toBe(12);
+      expect(seasonComparison.value?.periodCount).toBe(1);
+    });
+
+    it("ignores same-season periods more than 12 calendar slots back", () => {
+      // 24 consecutive months ending on the last submitted period, June 2026
+      // (summer). The older half (indices 0-11) is exactly 12-23 slots back --
+      // outside the 12-slot window `recentSlots` keeps -- and carries a huge
+      // outlier usage on its summer months, which must not leak into the
+      // average even though it's the same season.
+      const periods = periodsEndingAt("2026-06", 24);
+      const summerMonths = new Set([5, 6, 7]); // Jun, Jul, Aug (0-indexed)
+
+      const slots = ref<MeterPeriod[]>(
+        periods.map((period, index) => {
+          const [, month] = period.split("-").map(Number);
+          const isOlderHalf = index < 12;
+          const isSummer = summerMonths.has(month! - 1);
+          const isLastPeriod = period === "2026-06";
+          const usage = isOlderHalf && isSummer && !isLastPeriod ? "999.00" : "10.00";
+          return makeSlot(
+            period,
+            makeReading({ period, day_usage_kwh: usage, night_usage_kwh: "0.00" })
+          );
+        })
+      );
+
+      const { seasonComparison } = useUsageInsights(slots);
+
+      // Every prior in-window summer reading is 10; if the 999 outlier from
+      // outside the window leaked in, the average would be dragged far above 10.
+      expect(seasonComparison.value?.averageKwh).toBe(10);
     });
   });
 
@@ -370,105 +449,6 @@ describe("useUsageInsights", () => {
     });
   });
 
-  describe("submissionRecord", () => {
-    it("classifies on-time as submitted within days 1-5 of the following month", () => {
-      const slots = ref<MeterPeriod[]>([
-        makeSlot(
-          "2026-05",
-          makeReading({
-            period: "2026-05",
-            submitted_at: new Date(2026, 5, 5, 23, 59).toISOString(),
-          })
-        ),
-      ]);
-      const { submissionRecord } = useUsageInsights(slots);
-
-      expect(submissionRecord.value.entries).toEqual([{ period: "2026-05", state: "on-time" }]);
-      expect(submissionRecord.value.onTime).toBe(1);
-      expect(submissionRecord.value.late).toBe(0);
-    });
-
-    it("classifies late as submitted after day 5 of the following month", () => {
-      const slots = ref<MeterPeriod[]>([
-        makeSlot(
-          "2026-05",
-          makeReading({ period: "2026-05", submitted_at: new Date(2026, 5, 6, 0, 0).toISOString() })
-        ),
-      ]);
-      const { submissionRecord } = useUsageInsights(slots);
-
-      expect(submissionRecord.value.entries).toEqual([{ period: "2026-05", state: "late" }]);
-      expect(submissionRecord.value.late).toBe(1);
-      expect(submissionRecord.value.onTime).toBe(0);
-    });
-
-    it("classifies a missing reading separately from late, and does not count it in either total", () => {
-      const slots = ref<MeterPeriod[]>([
-        makeSlot(
-          "2026-05",
-          makeReading({ period: "2026-05", submitted_at: new Date(2026, 5, 2, 0, 0).toISOString() })
-        ),
-        makeSlot("2026-06", undefined),
-        makeSlot(
-          "2026-04",
-          makeReading({
-            period: "2026-04",
-            submitted_at: new Date(2026, 4, 10, 0, 0).toISOString(),
-          })
-        ),
-      ]);
-      const { submissionRecord } = useUsageInsights(slots);
-
-      // total counts only periods that can actually be judged on time, so the
-      // missing month is excluded from the ratio's denominator.
-      expect(submissionRecord.value.total).toBe(2);
-      expect(submissionRecord.value.onTime).toBe(1);
-      expect(submissionRecord.value.late).toBe(1);
-      expect(submissionRecord.value.entries).toContainEqual({
-        period: "2026-06",
-        state: "missing",
-      });
-    });
-
-    // Bulk-imported history carries the import run's timestamp on every row,
-    // not when the resident reported. Scoring those as late told residents they
-    // had missed ten deadlines they never missed.
-    it("treats a backfilled reading as unknown rather than late", () => {
-      const importedAt = new Date(2026, 5, 19, 20, 7).toISOString();
-      const slots = ref<MeterPeriod[]>([
-        makeSlot("2025-09", makeReading({ period: "2025-09", submitted_at: importedAt })),
-        makeSlot("2025-10", makeReading({ period: "2025-10", submitted_at: importedAt })),
-        makeSlot("2025-11", makeReading({ period: "2025-11", submitted_at: importedAt })),
-      ]);
-      const { submissionRecord } = useUsageInsights(slots);
-
-      expect(submissionRecord.value.entries.map((entry) => entry.state)).toEqual([
-        "unknown",
-        "unknown",
-        "unknown",
-      ]);
-      expect(submissionRecord.value.late).toBe(0);
-      expect(submissionRecord.value.total).toBe(0);
-    });
-
-    it("still judges an app submission made alongside backfilled history", () => {
-      const slots = ref<MeterPeriod[]>([
-        makeSlot(
-          "2025-11",
-          makeReading({ period: "2025-11", submitted_at: new Date(2026, 5, 19).toISOString() })
-        ),
-        makeSlot(
-          "2026-05",
-          makeReading({ period: "2026-05", submitted_at: new Date(2026, 5, 3).toISOString() })
-        ),
-      ]);
-      const { submissionRecord } = useUsageInsights(slots);
-
-      expect(submissionRecord.value.onTime).toBe(1);
-      expect(submissionRecord.value.total).toBe(1);
-    });
-  });
-
   describe("hryvnia deltas", () => {
     it("reports the charge difference when both periods were billed", () => {
       const slots = ref<MeterPeriod[]>([
@@ -523,7 +503,9 @@ describe("useUsageInsights", () => {
         const insights = useUsageInsights(slots);
 
         expect(insights.lastSubmittedPeriod.value?.period).toBe("2026-05");
-        expect(insights.monthlyAverage.value?.averageKwh).toBe(10);
+        // May is spring (SEASON_BY_MONTH[4]) with no other submitted period at
+        // all yet, so there's nothing to compare against.
+        expect(insights.seasonComparison.value).toBeNull();
         expect(insights.momChange.value).toBeNull();
 
         // Simulate a household switch: an entirely new slot list.
@@ -539,7 +521,11 @@ describe("useUsageInsights", () => {
         ];
 
         expect(insights.lastSubmittedPeriod.value?.period).toBe("2026-06");
-        expect(insights.monthlyAverage.value?.averageKwh).toBe(25);
+        // June is summer (SEASON_BY_MONTH[5]) -- a different season from May's
+        // spring submission, so still nothing to compare against. Proves the
+        // computed re-derives after the slots ref is replaced, not that it's
+        // frozen returning the prior null by coincidence.
+        expect(insights.seasonComparison.value).toBeNull();
         expect(insights.momChange.value).toEqual({
           percent: 300,
           from: 10,

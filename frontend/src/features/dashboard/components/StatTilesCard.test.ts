@@ -4,8 +4,8 @@ import { describe, expect, it } from "vitest";
 import type {
   DaysIntoPeriod,
   MomChange,
-  MonthlyAverage,
   PeriodUsage,
+  SeasonComparison,
 } from "@/features/dashboard/composables/useUsageInsights";
 import { mountWithPlugins } from "@/shared/testing/mount";
 
@@ -32,13 +32,20 @@ const momChange: MomChange = {
   deltaUah: null,
 };
 
-const monthlyAverage: MonthlyAverage = { averageKwh: 150.4, periodCount: 8 };
+const seasonComparison: SeasonComparison = {
+  season: "summer",
+  currentKwh: 180,
+  averageKwh: 150.4,
+  deltaPercent: 19.7,
+  direction: "up",
+  periodCount: 8,
+};
 
 interface MountOverrides {
   lastPeriod?: PeriodUsage | null;
   momChange?: MomChange | null;
   daysIntoPeriod?: DaysIntoPeriod;
-  monthlyAverage?: MonthlyAverage | null;
+  seasonComparison?: SeasonComparison | null;
   missedPeriods?: number;
   isLoading?: boolean;
 }
@@ -49,7 +56,7 @@ function mountCard(overrides: MountOverrides = {}) {
       lastPeriod,
       momChange,
       daysIntoPeriod,
-      monthlyAverage,
+      seasonComparison,
       ...overrides,
     },
     global: { components: { Skeleton } },
@@ -73,9 +80,10 @@ describe("StatTilesCard", () => {
     it("shows a missed-periods count instead of the vs-month comparison", () => {
       const wrapper = mountCard({ missedPeriods: 2 });
 
-      expect(wrapper.text()).toContain("Missed periods");
-      expect(wrapper.text()).toContain("2");
-      expect(wrapper.text()).not.toContain("vs ");
+      const comparisonTile = wrapper.findAll(".stat-tile")[1]!;
+      expect(comparisonTile.text()).toContain("Missed periods");
+      expect(comparisonTile.text()).toContain("2");
+      expect(comparisonTile.text()).not.toContain("vs ");
     });
   });
 
@@ -97,12 +105,58 @@ describe("StatTilesCard", () => {
       expect(tiles[1]?.text()).toContain("—");
     });
 
-    it("shows an empty average tile when monthlyAverage is null", () => {
-      const wrapper = mountCard({ monthlyAverage: null });
+    it("shows an empty season-comparison tile when seasonComparison is null", () => {
+      const wrapper = mountCard({ seasonComparison: null });
 
       const tiles = wrapper.findAll(".stat-tile");
       expect(tiles[2]?.classes()).toContain("stat-tile--empty");
       expect(tiles[2]?.text()).toContain("—");
+    });
+  });
+
+  describe("season comparison tile", () => {
+    it("shows the percent delta, direction icon, and season name", () => {
+      const wrapper = mountCard();
+
+      const tile = wrapper.findAll(".stat-tile")[2]!;
+      expect(tile.text()).toContain("19.7%");
+      expect(tile.text()).toContain("Summer");
+      expect(tile.find(".pi-arrow-up").exists()).toBe(true);
+      expect(tile.find(".stat-tile__value--up").exists()).toBe(true);
+    });
+
+    it("shows a down arrow and styling when usage fell below the seasonal average", () => {
+      const wrapper = mountCard({
+        seasonComparison: {
+          season: "winter",
+          currentKwh: 90,
+          averageKwh: 120,
+          deltaPercent: -25,
+          direction: "down",
+          periodCount: 3,
+        },
+      });
+
+      const tile = wrapper.findAll(".stat-tile")[2]!;
+      expect(tile.text()).toContain("25.0%");
+      expect(tile.find(".pi-arrow-down").exists()).toBe(true);
+      expect(tile.find(".stat-tile__value--down").exists()).toBe(true);
+    });
+
+    it("flags a single prior season as too thin to call typical, rather than showing a false average", () => {
+      const wrapper = mountCard({
+        seasonComparison: {
+          season: "autumn",
+          currentKwh: 100,
+          averageKwh: 100,
+          deltaPercent: 0,
+          direction: "flat",
+          periodCount: 1,
+        },
+      });
+
+      const tile = wrapper.findAll(".stat-tile")[2]!;
+      expect(tile.text()).toContain("Only 1 prior season so far");
     });
   });
 
@@ -112,9 +166,10 @@ describe("StatTilesCard", () => {
         momChange: { percent: -10, from: 100, to: 90, direction: "down", deltaUah: null },
       });
 
-      expect(wrapper.find(".pi-arrow-down").exists()).toBe(true);
-      expect(wrapper.find(".pi-arrow-up").exists()).toBe(false);
-      expect(wrapper.find(".stat-tile__value--down").exists()).toBe(true);
+      const comparisonTile = wrapper.findAll(".stat-tile")[1]!;
+      expect(comparisonTile.find(".pi-arrow-down").exists()).toBe(true);
+      expect(comparisonTile.find(".pi-arrow-up").exists()).toBe(false);
+      expect(comparisonTile.find(".stat-tile__value--down").exists()).toBe(true);
     });
 
     it("shows an up arrow and the up styling class when usage increased", () => {
@@ -122,9 +177,10 @@ describe("StatTilesCard", () => {
         momChange: { percent: 10, from: 100, to: 110, direction: "up", deltaUah: null },
       });
 
-      expect(wrapper.find(".pi-arrow-up").exists()).toBe(true);
-      expect(wrapper.find(".pi-arrow-down").exists()).toBe(false);
-      expect(wrapper.find(".stat-tile__value--up").exists()).toBe(true);
+      const comparisonTile = wrapper.findAll(".stat-tile")[1]!;
+      expect(comparisonTile.find(".pi-arrow-up").exists()).toBe(true);
+      expect(comparisonTile.find(".pi-arrow-down").exists()).toBe(false);
+      expect(comparisonTile.find(".stat-tile__value--up").exists()).toBe(true);
     });
   });
 

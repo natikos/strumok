@@ -27,6 +27,45 @@
       </div>
     </section>
 
+    <section
+      v-if="!isLoading && submissionRecord.total > 0"
+      class="usage-history__record"
+      role="img"
+      :aria-label="recordAriaLabel"
+    >
+      <header class="usage-history__record-header">
+        <h2 class="usage-history__record-title">{{ $t("usageHistory.recordTitle") }}</h2>
+        <span class="usage-history__record-value">
+          {{
+            $t("usageHistory.recordValue", {
+              onTime: submissionRecord.onTime,
+              total: submissionRecord.total,
+            })
+          }}
+        </span>
+      </header>
+
+      <div class="usage-history__record-strip">
+        <span
+          v-for="entry in submissionRecord.entries"
+          :key="entry.period"
+          class="usage-history__record-segment"
+          :class="`usage-history__record-segment--${entry.state}`"
+        ></span>
+      </div>
+
+      <ul class="usage-history__record-legend">
+        <li class="usage-history__record-legend-item">
+          <span class="usage-history__record-swatch usage-history__record-swatch--on-time"></span>
+          {{ $t("usageHistory.recordOnTime") }}
+        </li>
+        <li class="usage-history__record-legend-item">
+          <span class="usage-history__record-swatch usage-history__record-swatch--late"></span>
+          {{ $t("usageHistory.recordLate") }}
+        </li>
+      </ul>
+    </section>
+
     <div v-if="!isLoading && !summary" class="usage-history__empty">
       <i class="pi pi-inbox usage-history__empty-icon" aria-hidden="true"></i>
       <h2 class="usage-history__empty-title">{{ $t("usageHistory.emptyTitle") }}</h2>
@@ -170,6 +209,12 @@
   import { useLocale } from "@features/i18n/composables/useLocale";
   import { listMyMeterReadings, type MeterReadingOut } from "@shared/api/meter-readings";
   import { ROUTES } from "@shared/routing/routes";
+  import { DEADLINE_DAY } from "@shared/utils/deadline";
+
+  interface SubmissionRecordEntry {
+    period: string;
+    state: "on-time" | "late" | "missing" | "unknown";
+  }
 
   interface HistoryEntry {
     period: string;
@@ -240,6 +285,56 @@
       totalCharged: entries.reduce((sum, e) => sum + e.amountCharged, 0),
     }));
   });
+
+  const submissionRecord = computed(() => {
+    const sorted = [...readings.value].sort((a, b) => (a.period < b.period ? -1 : 1));
+
+    const entries: SubmissionRecordEntry[] = sorted.map((reading) => {
+      if (reading.id === null || !reading.submitted_at) {
+        return { period: reading.period, state: "missing" };
+      }
+
+      // The reporting month is the one after the period: a July reading is due
+      // days 1-5 of August.
+      const submittedAt = new Date(reading.submitted_at);
+      const [year, month] = reading.period.split("-").map(Number);
+      const dueMonth = new Date(year!, month!, 1);
+      const inDueMonth =
+        submittedAt.getFullYear() === dueMonth.getFullYear() &&
+        submittedAt.getMonth() === dueMonth.getMonth();
+
+      if (inDueMonth) {
+        return {
+          period: reading.period,
+          state: submittedAt.getDate() <= DEADLINE_DAY ? "on-time" : "late",
+        };
+      }
+
+      // Submitted before the period even closed, or long after it — the latter
+      // is how bulk-imported history looks, every row stamped with the import
+      // run rather than when the resident actually reported. Scoring those as
+      // late would blame residents for an import artifact, so they don't count.
+      return { period: reading.period, state: "unknown" };
+    });
+
+    const onTime = entries.filter((entry) => entry.state === "on-time").length;
+    const late = entries.filter((entry) => entry.state === "late").length;
+
+    return {
+      onTime,
+      late,
+      // Only periods we can actually judge belong in the "x of y" ratio.
+      total: onTime + late,
+      entries,
+    };
+  });
+
+  const recordAriaLabel = computed(() =>
+    t("usageHistory.recordValue", {
+      onTime: submissionRecord.value.onTime,
+      total: submissionRecord.value.total,
+    })
+  );
 
   const summary = computed(() => {
     const submittedEntries = sortedEntries.value.filter((entry) => entry.submitted);
@@ -325,6 +420,96 @@
     font-size: 1.25rem;
     font-variant-numeric: tabular-nums;
     font-weight: 700;
+  }
+
+  .usage-history__record {
+    @include layout.stack(var(--s-app-space-3));
+    background: var(--s-content-background);
+    border: 1px solid var(--s-content-border-color);
+    border-radius: var(--s-app-radius-md);
+    margin-bottom: var(--s-app-space-5);
+    padding: var(--s-app-space-4);
+  }
+
+  .usage-history__record-header {
+    align-items: baseline;
+    display: flex;
+    gap: var(--s-app-space-2);
+    justify-content: space-between;
+  }
+
+  .usage-history__record-title {
+    color: var(--s-content-color);
+    font-size: 1rem;
+    font-weight: 700;
+    margin: 0;
+  }
+
+  .usage-history__record-value {
+    color: var(--s-content-color);
+    font-size: 0.9rem;
+    font-variant-numeric: tabular-nums;
+    font-weight: 700;
+    white-space: nowrap;
+  }
+
+  .usage-history__record-strip {
+    display: flex;
+    gap: var(--s-app-space-1);
+  }
+
+  .usage-history__record-segment {
+    background: color-mix(in srgb, var(--s-content-color), transparent 94%);
+    border-radius: 3px;
+    flex: 1;
+    height: 22px;
+    min-width: 0;
+
+    &--on-time {
+      background: var(--s-primary-color);
+    }
+
+    &--late {
+      background: var(--s-amber-500);
+    }
+
+    // Backfilled history: submitted, but not on a timeline we can judge.
+    &--unknown {
+      background: color-mix(in srgb, var(--s-content-color), transparent 88%);
+    }
+  }
+
+  .usage-history__record-legend {
+    align-items: center;
+    display: flex;
+    gap: var(--s-app-space-3);
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+
+  .usage-history__record-legend-item {
+    align-items: center;
+    color: var(--s-content-secondary-color);
+    display: inline-flex;
+    font-size: 0.75rem;
+    font-weight: 600;
+    gap: var(--s-app-space-1);
+  }
+
+  .usage-history__record-swatch {
+    border-radius: 0.2rem;
+    flex-shrink: 0;
+    height: 0.6rem;
+    width: 0.6rem;
+
+    &--on-time {
+      background: var(--s-primary-color);
+    }
+
+    &--late {
+      background: var(--s-amber-500);
+    }
   }
 
   .usage-history__empty {
