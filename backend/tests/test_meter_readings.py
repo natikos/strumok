@@ -25,10 +25,25 @@ from app.api.meter_readings.service import _previous_period
 from app.core.time import utc_now
 from tests.factories import (
     authenticate,
+    make_electricity_rate,
     make_household,
     make_meter_reading,
     make_user,
 )
+
+
+@pytest.fixture(autouse=True)
+def _default_electricity_rate(session: Session) -> None:
+    """Seed a rate covering every period these tests submit against.
+
+    `submit_meter_reading` now hard-requires an effective rate to compute
+    `amount_charged_uah`; without one, every existing submission test in this
+    file would fail with `NoRateConfiguredError` even though they don't assert
+    on billing at all. `effective_from` is set far enough in the past to cover
+    every period exercised below, and tests that care about a *specific* rate
+    seed their own (a later `effective_from` wins per `get_effective_rate`).
+    """
+    make_electricity_rate(session, effective_from="2000-01")
 
 
 class TestGetUserHouseholdId:
@@ -248,6 +263,105 @@ class TestSubmitMeterReading:
 
         assert reading.day_usage_kwh == Decimal("0")
         assert reading.night_usage_kwh == Decimal("0")
+
+    def test_amount_charged_is_usage_times_effective_rate_rounded_to_cents(
+        self, session: Session
+    ) -> None:
+        # Values chosen so day/night usage times rate produces a
+        # three-decimal intermediate, exercising the rounding step rather
+        # than a coincidentally-exact result.
+        user = make_user(session)
+        household = make_household(session, user_id=user.id)
+        make_meter_reading(
+            session,
+            household_id=household.id,
+            period="2026-06",
+            day_meter_value="1000.00",
+            night_meter_value="500.00",
+        )
+        make_electricity_rate(
+            session,
+            day_rate_uah="4.3250",
+            night_rate_uah="2.1750",
+            effective_from="2026-01",
+        )
+
+        reading = submit_meter_reading(
+            session=session,
+            user=user,
+            household_id=household.id,
+            period="2026-07",
+            day_meter_value=Decimal("1123.70"),
+            night_meter_value=Decimal("611.30"),
+        )
+
+        day_usage = Decimal("123.70")
+        night_usage = Decimal("111.30")
+        assert reading.day_usage_kwh == day_usage
+        assert reading.night_usage_kwh == night_usage
+        expected = (
+            day_usage * Decimal("4.3250") + night_usage * Decimal("2.1750")
+        ).quantize(Decimal("0.01"))
+        assert reading.amount_charged_uah == expected
+
+    def test_amount_charged_uses_the_rate_effective_for_the_submitted_period(
+        self, session: Session
+    ) -> None:
+        # Two rates on file; the period being submitted falls under the
+        # earlier one, so submitting must not pick up the later rate just
+        # because it exists in the table.
+        user = make_user(session)
+        household = make_household(session, user_id=user.id)
+        make_meter_reading(
+            session,
+            household_id=household.id,
+            period="2026-02",
+            day_meter_value="0.00",
+            night_meter_value="0.00",
+        )
+        make_electricity_rate(
+            session,
+            day_rate_uah="3.0000",
+            night_rate_uah="1.5000",
+            effective_from="2026-01",
+        )
+        make_electricity_rate(
+            session,
+            day_rate_uah="99.0000",
+            night_rate_uah="88.0000",
+            effective_from="2026-06",
+        )
+
+        reading = submit_meter_reading(
+            session=session,
+            user=user,
+            household_id=household.id,
+            period="2026-03",
+            day_meter_value=Decimal("100.00"),
+            night_meter_value=Decimal("100.00"),
+        )
+
+        assert reading.amount_charged_uah == Decimal("450.00")
+
+    def test_first_ever_reading_has_zero_usage_and_zero_amount_charged(
+        self, session: Session
+    ) -> None:
+        user = make_user(session)
+        household = make_household(session, user_id=user.id)
+        make_electricity_rate(
+            session, day_rate_uah="5.00", night_rate_uah="3.00", effective_from="2026-01"
+        )
+
+        reading = submit_meter_reading(
+            session=session,
+            user=user,
+            household_id=household.id,
+            period="2026-07",
+            day_meter_value=Decimal("3205.00"),
+            night_meter_value=Decimal("1820.00"),
+        )
+
+        assert reading.amount_charged_uah == Decimal("0.00")
 
     def test_duplicate_period_for_the_same_household_is_rejected(
         self, session: Session

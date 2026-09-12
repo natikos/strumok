@@ -13,7 +13,7 @@ from sqlmodel import Session
 
 from app.api.auth.service import create_access_token, pwd_context
 from app.core.config import settings
-from app.db.models import Household, MeterReading, User
+from app.db.models import ElectricityRate, Household, MeterReading, User
 
 DEFAULT_PASSWORD = "correct-horse-battery-staple"
 
@@ -96,6 +96,23 @@ def make_meter_reading(
     session.add(reading)
     session.flush()
     return reading
+
+
+def make_electricity_rate(
+    session: Session,
+    *,
+    day_rate_uah: Decimal | str = Decimal("4.32"),
+    night_rate_uah: Decimal | str = Decimal("2.16"),
+    effective_from: str = "2000-01",
+) -> ElectricityRate:
+    rate = ElectricityRate(
+        day_rate_uah=Decimal(day_rate_uah),
+        night_rate_uah=Decimal(night_rate_uah),
+        effective_from=effective_from,
+    )
+    session.add(rate)
+    session.flush()
+    return rate
 
 
 def authenticate(client, user: User) -> None:
