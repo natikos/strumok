@@ -3,6 +3,7 @@ from decimal import Decimal
 from sqlalchemy.exc import IntegrityError
 from sqlmodel import Session, asc, desc, select
 
+from app.api.electricity_rates.service import get_effective_rate
 from app.api.meter_readings.schemas import MeterReadingOut
 from app.core.time import utc_now
 from app.db.models import Household, MeterReading, User
@@ -122,6 +123,11 @@ def submit_meter_reading(
         day_usage_kwh = Decimal("0")
         night_usage_kwh = Decimal("0")
 
+    rate = get_effective_rate(session=session, period=period)
+    amount_charged_uah = (
+        day_usage_kwh * rate.day_rate_uah + night_usage_kwh * rate.night_rate_uah
+    ).quantize(Decimal("0.01"))
+
     reading = MeterReading(
         household_id=household_id,
         submitted_by_user_id=user.id,
@@ -130,6 +136,7 @@ def submit_meter_reading(
         night_meter_value=night_meter_value,
         day_usage_kwh=day_usage_kwh,
         night_usage_kwh=night_usage_kwh,
+        amount_charged_uah=amount_charged_uah,
     )
     session.add(reading)
 
