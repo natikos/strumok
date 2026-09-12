@@ -38,6 +38,12 @@
             </div>
           </div>
 
+          <p v-if="chargedThisPeriod" class="submission__charge">
+            <i class="pi pi-receipt" aria-hidden="true"></i>
+            {{ t("dashboard.chargedThisPeriod") }}
+            <strong class="submission__charge-value">{{ chargedThisPeriod }}</strong>
+          </p>
+
           <!-- Editing needs a backend update endpoint (issue #57); until that
                lands, don't render a button that can only fail, nor the lock
                note promising an edit the resident can't make. -->
@@ -176,7 +182,7 @@
   import { useLocale } from "@/features/i18n/composables/useLocale";
   import type { DeadlineStatus } from "@shared/utils/deadline";
   import { DEADLINE_DAY } from "@shared/utils/deadline";
-  import { formatKwh, formatMeterValue } from "@shared/utils/format";
+  import { formatKwh, formatMeterValue, formatUah } from "@shared/utils/format";
 
   import DeadlineBadge from "./DeadlineBadge.vue";
   import WindowStrip from "./WindowStrip.vue";
@@ -331,6 +337,11 @@
         : "",
     },
   ]);
+
+  const chargedThisPeriod = computed(() => {
+    const charged = props.lastPeriod?.chargedUah;
+    return charged == null ? "" : formatUah(charged, intlLocale.value);
+  });
 
   const lastPeriodLine = computed(() => {
     if (!props.lastPeriod) {
@@ -594,6 +605,25 @@
     &__value-usage {
       font-size: 0.75rem;
       color: color-mix(in srgb, var(--s-content-color), transparent 45%);
+    }
+
+    &__charge {
+      display: flex;
+      align-items: center;
+      gap: var(--s-app-space-2);
+      margin: 0;
+      font-size: 0.85rem;
+      color: var(--s-content-secondary-color);
+
+      .pi {
+        flex-shrink: 0;
+        color: var(--s-primary-900);
+      }
+    }
+
+    &__charge-value {
+      color: var(--s-content-color);
+      font-variant-numeric: tabular-nums;
     }
 
     &__footer {
