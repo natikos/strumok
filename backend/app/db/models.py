@@ -88,3 +88,15 @@ class MeterReading(SQLModel, table=True):
         default=Decimal("0"), decimal_places=2, max_digits=12
     )
     submitted_at: datetime = Field(default_factory=utc_now)
+
+
+class ElectricityRate(SQLModel, table=True):
+    """Day/night per-kWh rate effective from a given billing period onward."""
+
+    __tablename__ = "electricity_rates"  # type: ignore
+
+    id: int = Field(default=None, primary_key=True)
+    day_rate_uah: Decimal = Field(decimal_places=4, max_digits=12)
+    night_rate_uah: Decimal = Field(decimal_places=4, max_digits=12)
+    effective_from: str = Field(index=True)  # YYYY-MM
+    created_at: datetime = Field(default_factory=utc_now)

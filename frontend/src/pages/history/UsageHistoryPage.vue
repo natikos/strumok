@@ -210,6 +210,7 @@
   import { listMyMeterReadings, type MeterReadingOut } from "@shared/api/meter-readings";
   import { ROUTES } from "@shared/routing/routes";
   import { DEADLINE_DAY } from "@shared/utils/deadline";
+  import { formatUah as formatUahShared, toDecimal } from "@shared/utils/format";
 
   interface SubmissionRecordEntry {
     period: string;
@@ -251,8 +252,8 @@
   const sortedEntries = computed<HistoryEntry[]>(() => {
     const entries = readings.value.map((reading) => {
       const date = periodToDate(reading.period);
-      const dayUsage = Number(reading.day_usage_kwh);
-      const nightUsage = Number(reading.night_usage_kwh);
+      const dayUsage = toDecimal(reading.day_usage_kwh);
+      const nightUsage = toDecimal(reading.night_usage_kwh);
 
       return {
         period: reading.period,
@@ -261,7 +262,7 @@
         dayUsage,
         nightUsage,
         totalUsage: dayUsage + nightUsage,
-        amountCharged: Number(reading.amount_charged_uah),
+        amountCharged: toDecimal(reading.amount_charged_uah),
         submitted: reading.id !== null,
       };
     });
@@ -358,11 +359,7 @@
   }
 
   function formatUah(value: number): string {
-    return value.toLocaleString(intlLocale.value, {
-      style: "currency",
-      currency: "UAH",
-      maximumFractionDigits: 2,
-    });
+    return formatUahShared(value, intlLocale.value);
   }
 
   async function loadReadings(): Promise<void> {

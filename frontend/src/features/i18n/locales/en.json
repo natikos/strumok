@@ -22,6 +22,7 @@
   },
   "dashboard": {
     "awaitingReading": "{month} awaiting reading",
+    "chargedThisPeriod": "Charged this period",
     "chartAriaLabel": "Monthly day and night electricity usage over the last {count} periods",
     "emptyChartBody": "Your usage chart, day/night split and year-over-year comparison appear here as readings come in.",
     "emptyChartTitle": "No usage to chart yet",

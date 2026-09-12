@@ -14,6 +14,7 @@ from app.db.models import Household, MeterReading, User
 from tests.factories import (
     DEFAULT_PASSWORD,
     authenticate,
+    make_electricity_rate,
     make_household,
     make_meter_reading,
     make_user,
@@ -52,6 +53,7 @@ class TestIsolationSurvivesServiceCommit:
     def test_a_submits_through_the_api(self, client, session: Session) -> None:
         user = make_user(session, email="commit-check@example.com")
         household = make_household(session, name="Commit Check", user_id=user.id)
+        make_electricity_rate(session, effective_from="2000-01")
         authenticate(client, user)
 
         response = client.post(
