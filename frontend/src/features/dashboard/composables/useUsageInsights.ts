@@ -63,11 +63,9 @@ export interface DayNightSplit {
 export interface SeasonComparison {
   season: Season;
   currentKwh: number;
-  averageKwh: number;
+  previousYearKwh: number;
   deltaPercent: number;
   direction: "up" | "down" | "flat";
-  /** Prior periods the average is drawn from, current period excluded. */
-  periodCount: number;
 }
 
 export interface TrendSeries {
@@ -282,9 +280,9 @@ export function useUsageInsights(slots: Ref<MeterPeriod[]>) {
   });
 
   /**
-   * How the last submitted period compares to that same season's average —
-   * the seasonally-honest replacement for a flat all-time average, which
-   * blends winter and summer and can never read as "normal."
+   * How the last submitted period compares to the same season one year
+   * earlier — e.g. this summer vs. last summer — rather than a flat all-time
+   * average, which blends winter and summer and can never read as "normal."
    */
   const seasonComparison = computed<SeasonComparison | null>(() => {
     const last = lastSubmittedPeriod.value;
@@ -292,27 +290,23 @@ export function useUsageInsights(slots: Ref<MeterPeriod[]>) {
       return null;
     }
 
-    const season = SEASON_BY_MONTH[last.monthIndex]!;
-    const priorInSeason = recentSlots.value
-      .map(toUsage)
-      .filter((usage): usage is PeriodUsage => usage !== null && usage.period !== last.period)
-      .filter((usage) => SEASON_BY_MONTH[usage.monthIndex] === season);
+    const [year, month] = last.period.split("-");
+    const previousYearPeriod = `${Number(year) - 1}-${month}`;
+    const previousSlot = slots.value.find((slot) => slot.period === previousYearPeriod);
+    const previous = previousSlot ? toUsage(previousSlot) : null;
 
-    if (priorInSeason.length === 0) {
+    if (!previous) {
       return null;
     }
 
-    const averageKwh =
-      priorInSeason.reduce((sum, usage) => sum + usage.totalKwh, 0) / priorInSeason.length;
-    const deltaPercent = percentChange(averageKwh, last.totalKwh);
+    const deltaPercent = percentChange(previous.totalKwh, last.totalKwh);
 
     return {
-      season,
+      season: SEASON_BY_MONTH[last.monthIndex]!,
       currentKwh: last.totalKwh,
-      averageKwh,
+      previousYearKwh: previous.totalKwh,
       deltaPercent,
-      direction: directionOf(last.totalKwh - averageKwh),
-      periodCount: priorInSeason.length,
+      direction: directionOf(last.totalKwh - previous.totalKwh),
     };
   });
 

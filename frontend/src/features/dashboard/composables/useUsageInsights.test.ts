@@ -237,10 +237,12 @@ describe("useUsageInsights", () => {
       expect(seasonComparison.value).toBeNull();
     });
 
-    it("is null when prior periods exist but none share the last period's season", () => {
+    it("is null when there's no submission exactly one year before the last period, even if other same-season periods exist", () => {
       const slots = ref<MeterPeriod[]>([
-        // spring
-        makeSlot("2026-04", makeReading({ period: "2026-04", day_usage_kwh: "20.00" })),
+        // summer, but two years back -- not the exact one-year-back match
+        makeSlot("2024-06", makeReading({ period: "2024-06", day_usage_kwh: "20.00" })),
+        // spring, one year back -- same year offset, different season/month
+        makeSlot("2025-04", makeReading({ period: "2025-04", day_usage_kwh: "5.00" })),
         // summer -- the last submitted period
         makeSlot("2026-06", makeReading({ period: "2026-06", day_usage_kwh: "10.00" })),
       ]);
@@ -249,16 +251,21 @@ describe("useUsageInsights", () => {
       expect(seasonComparison.value).toBeNull();
     });
 
-    it("averages same-season prior periods and reports the delta against the current one", () => {
+    it("compares against the exact same calendar month one year earlier, not an average", () => {
       const slots = ref<MeterPeriod[]>([
-        // summer 2025
+        // decoy same-season periods that must NOT be folded into an average
         makeSlot(
           "2025-07",
-          makeReading({ period: "2025-07", day_usage_kwh: "20.00", night_usage_kwh: "0.00" })
+          makeReading({ period: "2025-07", day_usage_kwh: "50.00", night_usage_kwh: "0.00" })
         ),
         makeSlot(
           "2025-08",
-          makeReading({ period: "2025-08", day_usage_kwh: "10.00", night_usage_kwh: "0.00" })
+          makeReading({ period: "2025-08", day_usage_kwh: "90.00", night_usage_kwh: "0.00" })
+        ),
+        // the exact one-year-back match for the last submitted period
+        makeSlot(
+          "2025-06",
+          makeReading({ period: "2025-06", day_usage_kwh: "15.00", night_usage_kwh: "0.00" })
         ),
         // last submitted period, also summer
         makeSlot(
@@ -271,20 +278,19 @@ describe("useUsageInsights", () => {
       expect(seasonComparison.value).toEqual({
         season: "summer",
         currentKwh: 18,
-        averageKwh: 15, // (20 + 10) / 2, current period excluded
+        previousYearKwh: 15,
         deltaPercent: 20,
         direction: "up",
-        periodCount: 2,
       });
     });
 
-    it("excludes the current period itself from its own average", () => {
+    it("does not fall back to another same-season period when last year's exact month is missing", () => {
       const slots = ref<MeterPeriod[]>([
-        // both summer -- if the current leaked into its own average it would
-        // equal itself and never show a delta.
+        // same season (summer) but not the exact one-year-back month -- must
+        // not be used as a substitute match.
         makeSlot(
           "2025-07",
-          makeReading({ period: "2025-07", day_usage_kwh: "12.00", night_usage_kwh: "0.00" })
+          makeReading({ period: "2025-07", day_usage_kwh: "999.00", night_usage_kwh: "0.00" })
         ),
         makeSlot(
           "2026-06",
@@ -293,38 +299,7 @@ describe("useUsageInsights", () => {
       ]);
       const { seasonComparison } = useUsageInsights(slots);
 
-      expect(seasonComparison.value?.averageKwh).toBe(12);
-      expect(seasonComparison.value?.periodCount).toBe(1);
-    });
-
-    it("ignores same-season periods more than 12 calendar slots back", () => {
-      // 24 consecutive months ending on the last submitted period, June 2026
-      // (summer). The older half (indices 0-11) is exactly 12-23 slots back --
-      // outside the 12-slot window `recentSlots` keeps -- and carries a huge
-      // outlier usage on its summer months, which must not leak into the
-      // average even though it's the same season.
-      const periods = periodsEndingAt("2026-06", 24);
-      const summerMonths = new Set([5, 6, 7]); // Jun, Jul, Aug (0-indexed)
-
-      const slots = ref<MeterPeriod[]>(
-        periods.map((period, index) => {
-          const [, month] = period.split("-").map(Number);
-          const isOlderHalf = index < 12;
-          const isSummer = summerMonths.has(month! - 1);
-          const isLastPeriod = period === "2026-06";
-          const usage = isOlderHalf && isSummer && !isLastPeriod ? "999.00" : "10.00";
-          return makeSlot(
-            period,
-            makeReading({ period, day_usage_kwh: usage, night_usage_kwh: "0.00" })
-          );
-        })
-      );
-
-      const { seasonComparison } = useUsageInsights(slots);
-
-      // Every prior in-window summer reading is 10; if the 999 outlier from
-      // outside the window leaked in, the average would be dragged far above 10.
-      expect(seasonComparison.value?.averageKwh).toBe(10);
+      expect(seasonComparison.value).toBeNull();
     });
   });
 
