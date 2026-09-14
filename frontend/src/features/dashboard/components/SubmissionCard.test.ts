@@ -319,36 +319,6 @@ describe("SubmissionCard", () => {
     });
   });
 
-  describe("last period summary", () => {
-    it("shows the month and total usage when lastPeriod is provided", () => {
-      vi.setSystemTime(new Date(2026, 5, 2));
-      const lastPeriod: PeriodUsage = {
-        period: "2026-05",
-        monthLabel: "May",
-        monthLong: "May",
-        monthIndex: 4,
-        dayKwh: 100.25,
-        nightKwh: 20.5,
-        totalKwh: 120.75,
-        chargedUah: null,
-      };
-      const wrapper = mountCard({ status: "due", lastPeriod });
-
-      const line = wrapper.find(".submission__last-period");
-      expect(line.exists()).toBe(true);
-      expect(line.text()).toContain("May");
-      expect(line.text()).toContain("120.75");
-      expect(line.text()).toContain("kWh");
-    });
-
-    it("does not render when there is no last period", () => {
-      vi.setSystemTime(new Date(2026, 5, 2));
-      const wrapper = mountCard({ status: "due" });
-
-      expect(wrapper.find(".submission__last-period").exists()).toBe(false);
-    });
-  });
-
   describe("kWh units", () => {
     it("shows the unit alongside the last-submitted hint for both fields", () => {
       vi.setSystemTime(new Date(2026, 5, 2));

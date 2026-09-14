@@ -1,5 +1,5 @@
 <template>
-  <div class="submission" :class="`submission--${status}`">
+  <div class="submission" :class="{ [`submission--${status}`]: !isLoading }">
     <section class="submission__main" :aria-labelledby="headlineId">
       <header class="submission__header">
         <span class="submission__period">{{ periodLabel }}</span>
@@ -164,11 +164,6 @@
           </div>
         </template>
       </template>
-
-      <p v-if="lastPeriodLine" class="submission__last-period">
-        <i class="pi pi-history" aria-hidden="true"></i>
-        {{ lastPeriodLine }}
-      </p>
     </section>
   </div>
 </template>
@@ -341,17 +336,6 @@
   const chargedThisPeriod = computed(() => {
     const charged = props.lastPeriod?.chargedUah;
     return charged == null ? "" : formatUah(charged, intlLocale.value);
-  });
-
-  const lastPeriodLine = computed(() => {
-    if (!props.lastPeriod) {
-      return "";
-    }
-
-    return t("dashboard.lastPeriodSummary", {
-      month: props.lastPeriod.monthLong,
-      value: formatKwh(props.lastPeriod.totalKwh, intlLocale.value, kwh.value),
-    });
   });
 
   const dayValueModel = computed({
@@ -650,21 +634,6 @@
       @include layout.respond-to("sm") {
         width: auto;
         min-height: 2.75rem;
-      }
-    }
-
-    &__last-period {
-      display: flex;
-      align-items: center;
-      gap: var(--s-app-space-2);
-      margin: 0;
-      padding-top: var(--s-app-space-3);
-      border-top: 1px solid var(--s-content-border-color);
-      font-size: 0.8rem;
-      color: var(--s-content-secondary-color);
-
-      .pi {
-        flex-shrink: 0;
       }
     }
 
