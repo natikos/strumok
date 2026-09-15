@@ -250,12 +250,7 @@ describe("useMeterReadings", () => {
       await result.handleSubmit();
       await flushPromises();
 
-      // Current behavior: `readings.value` is still `null` after a failed load
-      // (useAsyncData never sets it), so `handleSubmit`'s
-      // `if (readings.value)` guard skips appending and the submitted reading
-      // is not reflected anywhere the UI reads from. This is a silent-data-loss
-      // path worth flagging, not something this test "fixes".
-      expect(result.latestReading.value).toBeUndefined();
+      expect(result.latestReading.value).toEqual(created);
     });
   });
 

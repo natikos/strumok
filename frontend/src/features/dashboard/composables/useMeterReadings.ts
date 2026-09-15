@@ -158,13 +158,12 @@ export function useMeterReadings() {
         currentId.value
       );
 
-      if (readings.value) {
-        const hasPeriod = readings.value.some((reading) => reading.period === created.period);
+      const existing = readings.value ?? [];
+      const hasPeriod = existing.some((reading) => reading.period === created.period);
 
-        readings.value = hasPeriod
-          ? readings.value.map((reading) => (reading.period === created.period ? created : reading))
-          : [created, ...readings.value];
-      }
+      readings.value = hasPeriod
+        ? existing.map((reading) => (reading.period === created.period ? created : reading))
+        : [created, ...existing];
 
       dayMeterValue.value = null;
       nightMeterValue.value = null;
