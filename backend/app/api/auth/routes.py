@@ -223,7 +223,11 @@ def refresh(
 
 @router.post("/logout", status_code=status.HTTP_204_NO_CONTENT)
 def logout(response: Response) -> Response:
-    response.delete_cookie(key=settings.auth.auth_cookie_name, samesite="lax")
+    response.delete_cookie(
+        key=settings.auth.auth_cookie_name,
+        samesite="lax",
+        secure=settings.auth_cookie_secure,
+    )
     response.status_code = status.HTTP_204_NO_CONTENT
     return response
 
