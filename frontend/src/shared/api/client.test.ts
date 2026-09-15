@@ -54,7 +54,7 @@ describe("appApiClient 401 refresh-and-retry middleware", () => {
     expect(response.status).toBe(200);
     expect(data).toEqual({ id: 1, email: "resident@example.com" });
 
-    const refreshCall = fetchMock.mock.calls[1][0] as Request;
+    const refreshCall = fetchMock.mock.calls[1]?.[0] as Request;
     expect(new URL(refreshCall.url).pathname).toBe("/auth/refresh");
   });
 
