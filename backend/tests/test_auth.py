@@ -243,11 +243,11 @@ class TestLogout:
         assert f"{settings.auth.auth_cookie_name}=" in set_cookie_header
         assert "Max-Age=0" in set_cookie_header
 
-    def test_logout_delete_cookie_omits_secure_flag_present_at_login_in_production_config(self) -> None:
+    def test_logout_delete_cookie_matches_secure_flag_set_at_login_in_production_config(self) -> None:
         """Exercises the two Response.delete_cookie/set_cookie calls exactly as
         app/api/auth/routes.py invokes them, under production's `secure=True`,
-        without touching the app or a database. This isolates the bug from the
-        dev-only cookie constraints the rest of the suite runs under.
+        without touching the app or a database. This isolates the assertion
+        from the dev-only cookie constraints the rest of the suite runs under.
         """
         from starlette.responses import Response
 
@@ -262,22 +262,21 @@ class TestLogout:
         )
 
         logout_response = Response()
-        # Mirrors app/api/auth/routes.py:226 exactly -- no `secure` kwarg.
-        logout_response.delete_cookie(key=settings.auth.auth_cookie_name, samesite="lax")
+        # Mirrors app/api/auth/routes.py:224-228 exactly.
+        logout_response.delete_cookie(
+            key=settings.auth.auth_cookie_name,
+            samesite="lax",
+            secure=True,  # production value of settings.auth_cookie_secure
+        )
 
         login_set_cookie = login_response.headers["set-cookie"]
         logout_set_cookie = logout_response.headers["set-cookie"]
 
         assert "Secure" in login_set_cookie
-        # BUG: this cookie was set with Secure, but the delete omits it. A
-        # browser only overwrites a Secure cookie with a Set-Cookie that is
-        # also sent over HTTPS and (per RFC 6265bis secure-cookie rules,
-        # enforced by Chrome/Firefox) still requires the deleting response's
-        # cookie to be treated consistently; more concretely, some browsers
-        # will store this as a *second*, non-Secure cookie with the same name
-        # rather than clearing the original, leaving the Secure auth cookie
-        # alive after "logout".
-        assert "Secure" not in logout_set_cookie
+        # The delete must also carry Secure, or browsers may store it as a
+        # second, non-Secure cookie with the same name instead of clearing
+        # the original, leaving the Secure auth cookie alive after "logout".
+        assert "Secure" in logout_set_cookie
 
 
 class TestVerificationLinkCooldown:
