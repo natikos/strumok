@@ -3,7 +3,7 @@ from decimal import Decimal
 from enum import StrEnum
 from typing import Optional
 
-from sqlalchemy import UniqueConstraint
+from sqlalchemy import UniqueConstraint, text
 from sqlmodel import Field, SQLModel
 
 from app.core.time import utc_now
@@ -48,9 +48,7 @@ class Household(SQLModel, table=True):
 
     id: int = Field(default=None, primary_key=True)
     name: str
-    user_id: Optional[int] = Field(
-        default=None, foreign_key="users.id", index=True
-    )
+    user_id: Optional[int] = Field(default=None, foreign_key="users.id", index=True)
     is_active: bool = Field(default=True)
     created_at: datetime = Field(default_factory=utc_now)
     updated_at: datetime = Field(
@@ -99,4 +97,7 @@ class ElectricityRate(SQLModel, table=True):
     day_rate_uah: Decimal = Field(decimal_places=4, max_digits=12)
     night_rate_uah: Decimal = Field(decimal_places=4, max_digits=12)
     effective_from: str = Field(index=True)  # YYYY-MM
-    created_at: datetime = Field(default_factory=utc_now)
+    created_at: datetime = Field(
+        default_factory=utc_now,
+        sa_column_kwargs={"server_default": text("CURRENT_TIMESTAMP")},
+    )

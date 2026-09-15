@@ -35,10 +35,9 @@ const momChange: MomChange = {
 const seasonComparison: SeasonComparison = {
   season: "summer",
   currentKwh: 180,
-  averageKwh: 150.4,
+  previousYearKwh: 150.4,
   deltaPercent: 19.7,
   direction: "up",
-  periodCount: 8,
 };
 
 interface MountOverrides {
@@ -115,25 +114,26 @@ describe("StatTilesCard", () => {
   });
 
   describe("season comparison tile", () => {
-    it("shows the percent delta, direction icon, and season name", () => {
+    it("shows the percent delta, direction icon, season name, and last year's value", () => {
       const wrapper = mountCard();
 
       const tile = wrapper.findAll(".stat-tile")[2]!;
       expect(tile.text()).toContain("19.7%");
       expect(tile.text()).toContain("Summer");
+      expect(tile.text()).toContain("last year");
+      expect(tile.text()).toContain("150.4");
       expect(tile.find(".pi-arrow-up").exists()).toBe(true);
       expect(tile.find(".stat-tile__value--up").exists()).toBe(true);
     });
 
-    it("shows a down arrow and styling when usage fell below the seasonal average", () => {
+    it("shows a down arrow and styling when usage fell below last year's same month", () => {
       const wrapper = mountCard({
         seasonComparison: {
           season: "winter",
           currentKwh: 90,
-          averageKwh: 120,
+          previousYearKwh: 120,
           deltaPercent: -25,
           direction: "down",
-          periodCount: 3,
         },
       });
 
@@ -141,22 +141,6 @@ describe("StatTilesCard", () => {
       expect(tile.text()).toContain("25.0%");
       expect(tile.find(".pi-arrow-down").exists()).toBe(true);
       expect(tile.find(".stat-tile__value--down").exists()).toBe(true);
-    });
-
-    it("flags a single prior season as too thin to call typical, rather than showing a false average", () => {
-      const wrapper = mountCard({
-        seasonComparison: {
-          season: "autumn",
-          currentKwh: 100,
-          averageKwh: 100,
-          deltaPercent: 0,
-          direction: "flat",
-          periodCount: 1,
-        },
-      });
-
-      const tile = wrapper.findAll(".stat-tile")[2]!;
-      expect(tile.text()).toContain("Only 1 prior season so far");
     });
   });
 

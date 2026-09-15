@@ -175,12 +175,7 @@
     }
 
     const seasonName = t(SEASON_LABEL_KEY[comparison.season] ?? comparison.season);
-
-    // A single prior season is too thin to call "typical" without saying so.
-    const sub =
-      comparison.periodCount < 2
-        ? t("dashboard.onlySeasonSoFar")
-        : `${num(comparison.currentKwh)} · ${t("dashboard.seasonAvgValue", { value: num(comparison.averageKwh) })}`;
+    const sub = `${num(comparison.currentKwh)} · ${t("dashboard.seasonPreviousYearValue", { value: num(comparison.previousYearKwh) })}`;
 
     return {
       key: "season",
