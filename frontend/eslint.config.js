@@ -11,6 +11,7 @@ export default defineConfigWithVueTs(
   eslint.configs.recommended,
   ...eslintPluginVue.configs["flat/strongly-recommended"],
   vueTsConfigs.recommendedTypeChecked,
+  eslintConfigPrettier,
   {
     files: ["**/*.{ts,vue}"],
     languageOptions: {
@@ -32,17 +33,6 @@ export default defineConfigWithVueTs(
       "@typescript-eslint/no-floating-promises": "error",
       "@typescript-eslint/no-misused-promises": "error",
       "@typescript-eslint/max-params": ["error", { max: 3 }],
-      "vue/max-attributes-per-line": [
-        "error",
-        {
-          multiline: {
-            max: 1,
-          },
-          singleline: {
-            max: 2,
-          },
-        },
-      ],
       "perfectionist/sort-imports": [
         "error",
         {
@@ -103,6 +93,5 @@ export default defineConfigWithVueTs(
         },
       ],
     },
-  },
-  eslintConfigPrettier
+  }
 );
