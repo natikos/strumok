@@ -132,6 +132,12 @@
     "settings": "Settings",
     "logout": "Logout"
   },
+  "noHousehold": {
+    "title": "No household yet",
+    "body": "You're not linked to a household yet, so there's nothing to show. Contact the cooperative head to get added to one.",
+    "checkAgain": "Check again",
+    "stillNotAssigned": "Still not assigned to a household. Please check back later."
+  },
   "settings": {
     "title": "Settings",
     "appearance": "Appearance",

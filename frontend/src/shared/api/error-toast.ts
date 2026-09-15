@@ -24,6 +24,11 @@ function getStatusMessageKey(status: number): string {
   }
 }
 
+// Detail codes callers render inline instead of via a toast — surfacing both
+// would be redundant. noHouseholdMembership: AppLayout blocks the whole app
+// behind a dedicated "no household yet" screen for it.
+const SILENCED_DETAILS = new Set(["noHouseholdMembership"]);
+
 function toErrorMessageKey(body: unknown, fallbackMessageKey: string): string {
   if (!body || typeof body !== "object" || !("detail" in body)) {
     return fallbackMessageKey;
@@ -46,8 +51,18 @@ export function registerToastPresenter(presenter: ToastPresenter): () => void {
   };
 }
 
+function isSilencedDetail(body: unknown): boolean {
+  return (
+    !!body &&
+    typeof body === "object" &&
+    "detail" in body &&
+    typeof body.detail === "string" &&
+    SILENCED_DETAILS.has(body.detail)
+  );
+}
+
 export function showApiErrorToast(status: number, body: unknown): void {
-  if (!toastPresenter) {
+  if (!toastPresenter || isSilencedDetail(body)) {
     return;
   }
 

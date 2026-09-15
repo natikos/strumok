@@ -111,4 +111,24 @@ describe("error-toast status-to-message-key mapping", () => {
     expect(() => showApiErrorToast(500, null)).not.toThrow();
     expect(presenter).not.toHaveBeenCalled();
   });
+
+  it("silences the toast for noHouseholdMembership, since AppLayout owns that UI", () => {
+    const presenter = vi.fn();
+    registerToastPresenter(presenter);
+
+    showApiErrorToast(404, { detail: "noHouseholdMembership" });
+
+    expect(presenter).not.toHaveBeenCalled();
+  });
+
+  it("still surfaces a toast for other detail codes on the same status", () => {
+    const presenter = vi.fn();
+    registerToastPresenter(presenter);
+
+    showApiErrorToast(409, { detail: "periodAlreadySubmitted" });
+
+    expect(presenter).toHaveBeenCalledWith(
+      expect.objectContaining({ messageKey: "errors.periodAlreadySubmitted" })
+    );
+  });
 });
