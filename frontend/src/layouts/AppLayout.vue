@@ -1,5 +1,7 @@
 <template>
-  <div class="app-layout">
+  <NoHouseholdScreen v-if="hasNoHousehold" @unblocked="handleUnblocked" />
+
+  <div v-else class="app-layout">
     <aside class="app-sidebar">
       <img
         class="app-sidebar__logo app-sidebar__logo--icon"
@@ -108,6 +110,7 @@
   import { useI18n } from "vue-i18n";
   import { RouterView, useRoute, useRouter } from "vue-router";
 
+  import NoHouseholdScreen from "@/layouts/NoHouseholdScreen.vue";
   import { useCurrentHousehold } from "@features/households/useCurrentHousehold";
   import { useLocale } from "@features/i18n/composables/useLocale";
   import { useTheme } from "@features/theme/composables/useTheme";
@@ -136,13 +139,26 @@
 
   const me = ref<UserOut | null>(null);
   const isLoggingOut = ref(false);
+  const hasNoHousehold = ref(false);
 
   onMounted(async () => {
     me.value = await getMe();
     setLocale(me.value.language);
     setTheme(me.value.theme);
+
+    if (me.value.households.length === 0) {
+      hasNoHousehold.value = true;
+      return;
+    }
+
     setHouseholds(me.value.households);
   });
+
+  function handleUnblocked(updatedMe: UserOut): void {
+    me.value = updatedMe;
+    setHouseholds(updatedMe.households);
+    hasNoHousehold.value = false;
+  }
 
   function onHouseholdChange(value: number): void {
     setCurrent(value);
