@@ -223,7 +223,7 @@
     "recordLate": "Із запізненням",
     "recordMissing": "Не подано",
     "recordStreak": "Серія вчасних подач: {count} міс.",
-    "recordMissedLastMonth": "Ви пропустили минулий місяць",
+    "recordMissedPeriods": "Ви пропустили минулий місяць | Ви пропустили {count} останні місяці",
     "recordLateThisMonth": "Цього місяця подано із запізненням"
   },
   "verifyEmail": {

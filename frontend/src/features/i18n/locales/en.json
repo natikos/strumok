@@ -223,7 +223,7 @@
     "recordLate": "Late",
     "recordMissing": "Not submitted",
     "recordStreak": "On-time streak: {count} months",
-    "recordMissedLastMonth": "You missed last month",
+    "recordMissedPeriods": "You missed last month | You missed the last {count} months",
     "recordLateThisMonth": "You're late this month"
   },
   "verifyEmail": {

@@ -37,7 +37,7 @@
         class="usage-history__record-status usage-history__record-status--warn"
       >
         <i class="pi pi-exclamation-circle" aria-hidden="true"></i>
-        {{ $t("usageHistory.recordMissedLastMonth") }}
+        {{ $t("usageHistory.recordMissedPeriods", { count: submissionRecord.trailingMissing }) }}
       </p>
       <p
         v-else-if="submissionRecord.lastState === 'late'"
@@ -360,6 +360,15 @@
     const lastEntry = entries.at(-1);
     const lastState = lastEntry?.state ?? null;
 
+    // How many consecutive periods, ending at the most recent, are missing.
+    let trailingMissing = 0;
+    for (let i = entries.length - 1; i >= 0; i -= 1) {
+      if (entries[i]!.state !== "missing") {
+        break;
+      }
+      trailingMissing += 1;
+    }
+
     return {
       onTime,
       late,
@@ -369,6 +378,7 @@
       strip: entries.slice(-RECORD_WINDOW),
       streak,
       lastState,
+      trailingMissing,
     };
   });
 
