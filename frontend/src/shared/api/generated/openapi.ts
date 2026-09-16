@@ -210,6 +210,24 @@ export interface paths {
     patch: operations["assign_admin_household_owner_admin_households__household_id__owner_patch"];
     trace?: never;
   };
+  "/electricity-rates": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** List Electricity Rates */
+    get: operations["list_electricity_rates_electricity_rates_get"];
+    put?: never;
+    /** Create Electricity Rate */
+    post: operations["create_electricity_rate_electricity_rates_post"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -245,6 +263,29 @@ export interface components {
       last_name: string;
       /** Is Active */
       is_active: boolean;
+    };
+    /** ElectricityRateCreateIn */
+    ElectricityRateCreateIn: {
+      /** Day Rate Uah */
+      day_rate_uah: number | string;
+      /** Night Rate Uah */
+      night_rate_uah: number | string;
+      /**
+       * Effective From
+       * @example 2026-07
+       */
+      effective_from: string;
+    };
+    /** ElectricityRateOut */
+    ElectricityRateOut: {
+      /** Id */
+      id: number;
+      /** Day Rate Uah */
+      day_rate_uah: string;
+      /** Night Rate Uah */
+      night_rate_uah: string;
+      /** Effective From */
+      effective_from: string;
     };
     /** ErrorOut */
     ErrorOut: {
@@ -498,20 +539,6 @@ export interface operations {
         };
         content: {
           "application/json": components["schemas"]["HTTPValidationError"];
-        };
-      };
-      /** @description Verification email could not be sent */
-      502: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          /**
-           * @example {
-           *       "detail": "verificationEmailSendFailed"
-           *     }
-           */
-          "application/json": components["schemas"]["ErrorOut"];
         };
       };
     };
@@ -1032,15 +1059,72 @@ export interface operations {
           [name: string]: unknown;
         };
         content: {
-          /**
-           * @example {
-           *       "detail": "householdNotFound"
-           *     }
-           */
           "application/json": components["schemas"]["ErrorOut"];
         };
       };
-      /** @description Household already has a different owner */
+      /** @description Household already has a different owner, or user is not active */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ErrorOut"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  list_electricity_rates_electricity_rates_get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ElectricityRateOut"][];
+        };
+      };
+    };
+  };
+  create_electricity_rate_electricity_rates_post: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["ElectricityRateCreateIn"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ElectricityRateOut"];
+        };
+      };
+      /** @description A rate is already configured for this period */
       409: {
         headers: {
           [name: string]: unknown;
@@ -1048,7 +1132,7 @@ export interface operations {
         content: {
           /**
            * @example {
-           *       "detail": "householdAlreadyAssigned"
+           *       "detail": "effectiveFromAlreadyExists"
            *     }
            */
           "application/json": components["schemas"]["ErrorOut"];

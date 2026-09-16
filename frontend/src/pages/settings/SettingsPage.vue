@@ -44,6 +44,14 @@
           <AdminHouseholdAssignment />
         </div>
       </section>
+
+      <section v-if="me?.is_admin" class="settings-section">
+        <h2 class="settings-section__title">{{ $t("admin.electricityRates") }}</h2>
+
+        <div class="settings-card settings-card--padded">
+          <ElectricityRatesSettings />
+        </div>
+      </section>
     </div>
   </div>
 </template>
@@ -52,6 +60,7 @@
   import { onMounted, ref } from "vue";
 
   import AdminHouseholdAssignment from "@features/admin/AdminHouseholdAssignment.vue";
+  import ElectricityRatesSettings from "@features/admin/ElectricityRatesSettings.vue";
   import { useLocale } from "@features/i18n/composables/useLocale";
   import type { LanguageCode, ThemeMode } from "@features/preferences/preferences.storage";
   import { useTheme } from "@features/theme/composables/useTheme";

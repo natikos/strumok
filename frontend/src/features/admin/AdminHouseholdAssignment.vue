@@ -26,8 +26,19 @@
         v-model="newHouseholdName"
         class="admin-assignment__input"
         :placeholder="$t('admin.newHouseholdNamePlaceholder')"
+        :invalid="!!errors.newHouseholdName"
         :disabled="isLoading"
+        :aria-invalid="!!errors.newHouseholdName"
+        :aria-describedby="errors.newHouseholdName ? 'admin-household-name-error' : undefined"
       />
+      <span
+        v-if="errors.newHouseholdName"
+        id="admin-household-name-error"
+        role="alert"
+        class="admin-assignment__field-error"
+      >
+        {{ $t(errors.newHouseholdName) }}
+      </span>
     </div>
 
     <div v-else class="admin-assignment__current-owner">
@@ -50,14 +61,24 @@
         option-label="label"
         option-value="value"
         :placeholder="$t('admin.assignToPlaceholder')"
+        :invalid="!!errors.selectedUserId"
         :disabled="isLoading"
+        :aria-invalid="!!errors.selectedUserId"
+        :aria-describedby="errors.selectedUserId ? 'admin-user-select-error' : undefined"
       />
+      <span
+        v-if="errors.selectedUserId"
+        id="admin-user-select-error"
+        role="alert"
+        class="admin-assignment__field-error"
+      >
+        {{ $t(errors.selectedUserId) }}
+      </span>
     </div>
 
     <Button
       class="admin-assignment__submit"
       :label="$t('admin.assign')"
-      :disabled="!canSubmit || isLoading"
       :loading="isLoading"
       @click="handleSubmit"
     />
@@ -69,6 +90,7 @@
   import { useToast } from "primevue/usetoast";
   import { computed, onMounted, ref } from "vue";
   import { useI18n } from "vue-i18n";
+  import { z } from "zod";
 
   import {
     type AdminHouseholdOut,
@@ -80,6 +102,16 @@
   } from "@shared/api/admin";
   import { ApiError } from "@shared/api/client";
 
+  interface FieldErrors {
+    newHouseholdName?: string;
+    selectedUserId?: string;
+  }
+
+  const schema = z.object({
+    newHouseholdName: z.string().trim().min(1, "admin.newHouseholdNameRequired").optional(),
+    selectedUserId: z.number({ error: "admin.assignToRequired" }),
+  });
+
   const { t } = useI18n();
   const confirm = useConfirm();
   const toast = useToast();
@@ -87,6 +119,7 @@
   const users = ref<AdminUserSummaryOut[]>([]);
   const households = ref<AdminHouseholdOut[]>([]);
   const isLoading = ref(false);
+  const errors = ref<FieldErrors>({});
 
   const selectedHouseholdId = ref<number | null>(null);
   const newHouseholdName = ref("");
@@ -128,18 +161,34 @@
     return owner ? userLabel(owner) : null;
   });
 
-  const canSubmit = computed(() => {
-    if (selectedUserId.value === null) {
-      return false;
-    }
-
-    return selectedHouseholdId.value !== null || newHouseholdName.value.trim().length > 0;
-  });
-
   function resetForm(): void {
     selectedHouseholdId.value = null;
     newHouseholdName.value = "";
     selectedUserId.value = null;
+    errors.value = {};
+  }
+
+  function validate(): boolean {
+    const parsed = schema.safeParse({
+      newHouseholdName: newHouseholdName.value.trim() || undefined,
+      selectedUserId: selectedUserId.value,
+    });
+
+    const next: FieldErrors = {};
+
+    if (!parsed.success) {
+      const flat = z.flattenError(parsed.error).fieldErrors;
+      if (flat.selectedUserId?.[0]) {
+        next.selectedUserId = flat.selectedUserId[0];
+      }
+    }
+
+    if (selectedHouseholdId.value === null && newHouseholdName.value.trim().length === 0) {
+      next.newHouseholdName = "admin.newHouseholdNameRequired";
+    }
+
+    errors.value = next;
+    return Object.keys(next).length === 0;
   }
 
   async function performAssignment(confirmReassignment: boolean): Promise<void> {
@@ -210,6 +259,10 @@
   });
 
   async function handleSubmit(): Promise<void> {
+    if (!validate()) {
+      return;
+    }
+
     if (isReassignment.value) {
       confirmReassignmentDialog();
       return;
@@ -242,6 +295,11 @@
   .admin-assignment__current-owner {
     color: color-mix(in srgb, var(--s-content-color), transparent 35%);
     font-size: 0.85rem;
+  }
+
+  .admin-assignment__field-error {
+    font-size: 0.75rem;
+    color: var(--s-red-500);
   }
 
   .admin-assignment__submit {
