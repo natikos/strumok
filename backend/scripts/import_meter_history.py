@@ -7,7 +7,7 @@ Usage:
 
 import csv
 import sys
-from datetime import datetime
+from datetime import datetime, timezone
 from difflib import SequenceMatcher
 
 from decimal import Decimal
@@ -158,6 +158,10 @@ def get_period() -> str:
 
 def insert_meter_history(parsed_meters):
     period = get_period()
+    # A period's reading is due days 1-5 of the following month.
+    year, month = (int(part) for part in period.split("-"))
+    due_year, due_month = (year, month + 1) if month < 12 else (year + 1, 1)
+    submitted_at = datetime(due_year, due_month, 1, tzinfo=timezone.utc)
 
     readings = []
     for meter in parsed_meters:
@@ -172,6 +176,7 @@ def insert_meter_history(parsed_meters):
             "day_usage_kwh": meter["day_usage"],
             "night_usage_kwh": meter["night_usage"],
             "amount_charged_uah": Decimal(str(meter["amount_charged_uah"])),
+            "submitted_at": submitted_at,
         })
 
     if not readings:
@@ -189,6 +194,7 @@ def insert_meter_history(parsed_meters):
                     "day_usage_kwh": insert(MeterReading).excluded.day_usage_kwh,
                     "night_usage_kwh": insert(MeterReading).excluded.night_usage_kwh,
                     "amount_charged_uah": insert(MeterReading).excluded.amount_charged_uah,
+                    "submitted_at": insert(MeterReading).excluded.submitted_at,
                 }
             )
         )
