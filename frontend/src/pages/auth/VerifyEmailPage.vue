@@ -200,7 +200,13 @@
       tokenState.value = "confirmed";
     } catch {
       tokenState.value = "error";
-      await syncUserState();
+
+      try {
+        await syncUserState();
+      } catch {
+        // Unauthenticated visitor with an invalid/expired token: no session
+        // to sync, so leave the error state from confirmEmailVerification as-is.
+      }
     }
   }
 
