@@ -1,10 +1,12 @@
 <template>
   <Toast position="top-right" />
+  <ConfirmDialog />
   <RouterView v-if="isReady" />
   <AppLoader v-else />
 </template>
 
 <script setup lang="ts">
+  import ConfirmDialog from "primevue/confirmdialog";
   import Toast from "primevue/toast";
   import { useToast } from "primevue/usetoast";
   import { onBeforeUnmount, onMounted, ref } from "vue";

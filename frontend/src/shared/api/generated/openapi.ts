@@ -158,10 +158,94 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/admin/users": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** List Admin Users */
+    get: operations["list_admin_users_admin_users_get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/admin/households": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** List Admin Households */
+    get: operations["list_admin_households_admin_households_get"];
+    put?: never;
+    /** Create Admin Household */
+    post: operations["create_admin_household_admin_households_post"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/admin/households/{household_id}/owner": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    /** Assign Admin Household Owner */
+    patch: operations["assign_admin_household_owner_admin_households__household_id__owner_patch"];
+    trace?: never;
+  };
 }
 export type webhooks = Record<string, never>;
 export interface components {
   schemas: {
+    /** AdminHouseholdCreateIn */
+    AdminHouseholdCreateIn: {
+      /** Name */
+      name: string;
+      /** User Id */
+      user_id: number;
+    };
+    /** AdminHouseholdOut */
+    AdminHouseholdOut: {
+      /** Id */
+      id: number;
+      /** Name */
+      name: string;
+      /** User Id */
+      user_id: number | null;
+      /** Is Active */
+      is_active: boolean;
+      owner?: components["schemas"]["AdminUserSummaryOut"] | null;
+    };
+    /** AdminUserSummaryOut */
+    AdminUserSummaryOut: {
+      /** Id */
+      id: number;
+      /** Email */
+      email: string;
+      /** First Name */
+      first_name: string;
+      /** Last Name */
+      last_name: string;
+      /** Is Active */
+      is_active: boolean;
+    };
     /** ErrorOut */
     ErrorOut: {
       /** Detail */
@@ -171,6 +255,16 @@ export interface components {
     HTTPValidationError: {
       /** Detail */
       detail?: components["schemas"]["ValidationError"][];
+    };
+    /** HouseholdOwnerAssignIn */
+    HouseholdOwnerAssignIn: {
+      /** User Id */
+      user_id: number | null;
+      /**
+       * Confirm Reassignment
+       * @default false
+       */
+      confirm_reassignment: boolean;
     };
     /** HouseholdSummary */
     HouseholdSummary: {
@@ -404,6 +498,20 @@ export interface operations {
         };
         content: {
           "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+      /** @description Verification email could not be sent */
+      502: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          /**
+           * @example {
+           *       "detail": "verificationEmailSendFailed"
+           *     }
+           */
+          "application/json": components["schemas"]["ErrorOut"];
         };
       };
     };
@@ -777,6 +885,170 @@ export interface operations {
           /**
            * @example {
            *       "detail": "periodAlreadySubmitted"
+           *     }
+           */
+          "application/json": components["schemas"]["ErrorOut"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  list_admin_users_admin_users_get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["AdminUserSummaryOut"][];
+        };
+      };
+    };
+  };
+  list_admin_households_admin_households_get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["AdminHouseholdOut"][];
+        };
+      };
+    };
+  };
+  create_admin_household_admin_households_post: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["AdminHouseholdCreateIn"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["AdminHouseholdOut"];
+        };
+      };
+      /** @description User does not exist */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          /**
+           * @example {
+           *       "detail": "userNotFound"
+           *     }
+           */
+          "application/json": components["schemas"]["ErrorOut"];
+        };
+      };
+      /** @description User is not active */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          /**
+           * @example {
+           *       "detail": "userInactive"
+           *     }
+           */
+          "application/json": components["schemas"]["ErrorOut"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  assign_admin_household_owner_admin_households__household_id__owner_patch: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        household_id: number;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["HouseholdOwnerAssignIn"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["AdminHouseholdOut"];
+        };
+      };
+      /** @description Household or user does not exist */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          /**
+           * @example {
+           *       "detail": "householdNotFound"
+           *     }
+           */
+          "application/json": components["schemas"]["ErrorOut"];
+        };
+      };
+      /** @description Household already has a different owner */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          /**
+           * @example {
+           *       "detail": "householdAlreadyAssigned"
            *     }
            */
           "application/json": components["schemas"]["ErrorOut"];
