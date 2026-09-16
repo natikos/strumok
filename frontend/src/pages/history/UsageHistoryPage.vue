@@ -63,6 +63,10 @@
           <span class="usage-history__record-swatch usage-history__record-swatch--late"></span>
           {{ $t("usageHistory.recordLate") }}
         </li>
+        <li class="usage-history__record-legend-item">
+          <span class="usage-history__record-swatch usage-history__record-swatch--missing"></span>
+          {{ $t("usageHistory.recordMissing") }}
+        </li>
       </ul>
     </section>
 
@@ -218,7 +222,7 @@
 
   interface SubmissionRecordEntry {
     period: string;
-    state: "on-time" | "late" | "missing" | "unknown";
+    state: "on-time" | "late" | "missing";
   }
 
   interface HistoryEntry {
@@ -300,26 +304,18 @@
       }
 
       // The reporting month is the one after the period: a July reading is due
-      // days 1-5 of August.
+      // days 1-5 of August. Submitted outside that window (before the period
+      // even closed, or long after) still counts as late — there's no month
+      // it could have landed in on time.
       const submittedAt = new Date(reading.submitted_at);
       const [year, month] = reading.period.split("-").map(Number);
       const dueMonth = new Date(year!, month!, 1);
-      const inDueMonth =
+      const onTime =
         submittedAt.getFullYear() === dueMonth.getFullYear() &&
-        submittedAt.getMonth() === dueMonth.getMonth();
+        submittedAt.getMonth() === dueMonth.getMonth() &&
+        submittedAt.getDate() <= DEADLINE_DAY;
 
-      if (inDueMonth) {
-        return {
-          period: reading.period,
-          state: submittedAt.getDate() <= DEADLINE_DAY ? "on-time" : "late",
-        };
-      }
-
-      // Submitted before the period even closed, or long after it — the latter
-      // is how bulk-imported history looks, every row stamped with the import
-      // run rather than when the resident actually reported. Scoring those as
-      // late would blame residents for an import artifact, so they don't count.
-      return { period: reading.period, state: "unknown" };
+      return { period: reading.period, state: onTime ? "on-time" : "late" };
     });
 
     const onTime = entries.filter((entry) => entry.state === "on-time").length;
@@ -474,9 +470,15 @@
       background: var(--s-amber-500);
     }
 
-    // Backfilled history: submitted, but not on a timeline we can judge.
-    &--unknown {
-      background: color-mix(in srgb, var(--s-content-color), transparent 88%);
+    // Never submitted at all.
+    &--missing {
+      background: repeating-linear-gradient(
+        135deg,
+        color-mix(in srgb, var(--s-content-color), transparent 88%),
+        color-mix(in srgb, var(--s-content-color), transparent 88%) 3px,
+        color-mix(in srgb, var(--s-content-color), transparent 96%) 3px,
+        color-mix(in srgb, var(--s-content-color), transparent 96%) 6px
+      );
     }
   }
 
@@ -510,6 +512,16 @@
 
     &--late {
       background: var(--s-amber-500);
+    }
+
+    &--missing {
+      background: repeating-linear-gradient(
+        135deg,
+        color-mix(in srgb, var(--s-content-color), transparent 88%),
+        color-mix(in srgb, var(--s-content-color), transparent 88%) 1px,
+        color-mix(in srgb, var(--s-content-color), transparent 96%) 1px,
+        color-mix(in srgb, var(--s-content-color), transparent 96%) 2px
+      );
     }
   }
 

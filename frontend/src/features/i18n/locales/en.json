@@ -220,7 +220,8 @@
     "recordTitle": "Submission record",
     "recordValue": "{onTime} of {total}",
     "recordOnTime": "On time",
-    "recordLate": "Late"
+    "recordLate": "Late",
+    "recordMissing": "Not submitted"
   },
   "verifyEmail": {
     "title": "Hi, {name}",

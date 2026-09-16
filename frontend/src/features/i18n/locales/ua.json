@@ -220,7 +220,8 @@
     "recordTitle": "Історія подачі",
     "recordValue": "{onTime} з {total}",
     "recordOnTime": "Вчасно",
-    "recordLate": "Із запізненням"
+    "recordLate": "Із запізненням",
+    "recordMissing": "Не подано"
   },
   "verifyEmail": {
     "title": "Привіт, {name}",

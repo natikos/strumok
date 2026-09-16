@@ -122,10 +122,9 @@ describe("UsageHistoryPage submissionRecord", () => {
     ]);
   });
 
-  it("treats a bulk-imported reading stamped long after its due month as unknown, not late", async () => {
-    // Backfilled history: submitted_at is the date of the import run, months
-    // after the reading's actual due month (2026-07). Scoring this as "late"
-    // would blame the resident for an import artifact.
+  it("treats a reading stamped outside its due month as late", async () => {
+    // submitted_at falls months after the reading's actual due month
+    // (2026-07) — there's no month it could have landed in on time.
     listMyMeterReadings.mockResolvedValue([
       makeReading({ period: "2026-06", submitted_at: "2027-01-15T12:00:00.000Z" }),
     ]);
@@ -142,16 +141,15 @@ describe("UsageHistoryPage submissionRecord", () => {
       }
     ).submissionRecord;
 
-    expect(record.entries).toEqual([{ period: "2026-06", state: "unknown" }]);
-    expect(record.late).toBe(0);
-    expect(record.total).toBe(0);
+    expect(record.entries).toEqual([{ period: "2026-06", state: "late" }]);
+    expect(record.late).toBe(1);
+    expect(record.total).toBe(1);
   });
 
-  it("still judges a normal on-time submission correctly alongside backfilled rows", async () => {
+  it("judges imported history stamped at the first of the period as on-time", async () => {
     listMyMeterReadings.mockResolvedValue([
-      // Bulk-imported, all stamped with the same later import run.
-      makeReading({ id: 1, period: "2025-01", submitted_at: "2026-01-01T00:00:00.000Z" }),
-      makeReading({ id: 2, period: "2025-02", submitted_at: "2026-01-01T00:00:00.000Z" }),
+      makeReading({ id: 1, period: "2025-01", submitted_at: "2025-02-01T00:00:00.000Z" }),
+      makeReading({ id: 2, period: "2025-02", submitted_at: "2025-03-01T00:00:00.000Z" }),
       // A genuine on-time submission in its own due month.
       makeReading({ id: 3, period: "2026-06", submitted_at: "2026-07-03T09:00:00.000Z" }),
     ]);
@@ -169,11 +167,11 @@ describe("UsageHistoryPage submissionRecord", () => {
     ).submissionRecord;
 
     expect(record.entries).toEqual([
-      { period: "2025-01", state: "unknown" },
-      { period: "2025-02", state: "unknown" },
+      { period: "2025-01", state: "on-time" },
+      { period: "2025-02", state: "on-time" },
       { period: "2026-06", state: "on-time" },
     ]);
-    expect(record.onTime).toBe(1);
-    expect(record.total).toBe(1);
+    expect(record.onTime).toBe(3);
+    expect(record.total).toBe(3);
   });
 });
