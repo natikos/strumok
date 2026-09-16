@@ -89,7 +89,8 @@
     "viewFullHistory": "View full history",
     "vsMonth": "vs {month}",
     "vsPrevious": "vs previous",
-    "vsSeasonTypical": "vs last {season}",
+    "vsMonthLastYear": "{month} vs last year",
+    "vsYearAgoEmpty": "vs same month last year",
     "yoyAriaLabel": "{year}: {value}",
     "yoyTitle": "Same month, last year",
     "yoyUnavailable": "No {month} {year} reading yet. This comparison unlocks once the same month exists in both years."

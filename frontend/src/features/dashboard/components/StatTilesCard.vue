@@ -80,13 +80,6 @@
     return t(`months.long.${index}`);
   }
 
-  const SEASON_LABEL_KEY: Record<string, string> = {
-    summer: "dashboard.seasonSummer",
-    autumn: "dashboard.seasonAutumn",
-    winter: "dashboard.seasonWinter",
-    spring: "dashboard.seasonSpring",
-  };
-
   const lastPeriodTile = computed<Tile>(() => {
     const last = props.lastPeriod;
     if (!last) {
@@ -166,7 +159,7 @@
     if (!comparison) {
       return {
         key: "season",
-        label: t("dashboard.vsSeasonTypical", { season: "" }).trim(),
+        label: t("dashboard.vsYearAgoEmpty"),
         value: "",
         unit: "",
         sub: t("dashboard.unlockNeedsTwo"),
@@ -174,12 +167,12 @@
       };
     }
 
-    const seasonName = t(SEASON_LABEL_KEY[comparison.season] ?? comparison.season);
+    const month = props.lastPeriod ? monthName(props.lastPeriod.monthIndex) : "";
     const sub = `${num(comparison.currentKwh)} · ${t("dashboard.seasonPreviousYearValue", { value: num(comparison.previousYearKwh) })}`;
 
     return {
       key: "season",
-      label: t("dashboard.vsSeasonTypical", { season: seasonName }),
+      label: t("dashboard.vsMonthLastYear", { month }),
       value: `${Math.abs(comparison.deltaPercent).toFixed(1)}%`,
       unit: "",
       sub,

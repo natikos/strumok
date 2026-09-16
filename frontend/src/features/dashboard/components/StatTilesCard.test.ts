@@ -114,12 +114,12 @@ describe("StatTilesCard", () => {
   });
 
   describe("season comparison tile", () => {
-    it("shows the percent delta, direction icon, season name, and last year's value", () => {
+    it("shows the percent delta, direction icon, compared month, and last year's value", () => {
       const wrapper = mountCard();
 
       const tile = wrapper.findAll(".stat-tile")[2]!;
       expect(tile.text()).toContain("19.7%");
-      expect(tile.text()).toContain("Summer");
+      expect(tile.text()).toContain("June");
       expect(tile.text()).toContain("last year");
       expect(tile.text()).toContain("150.4");
       expect(tile.find(".pi-arrow-up").exists()).toBe(true);

@@ -89,7 +89,8 @@
     "viewFullHistory": "Уся історія",
     "vsMonth": "проти {month}",
     "vsPrevious": "проти попереднього",
-    "vsSeasonTypical": "проти минулого {season}",
+    "vsMonthLastYear": "{month} проти минулого року",
+    "vsYearAgoEmpty": "Проти того ж місяця торік",
     "yoyAriaLabel": "{year}: {value}",
     "yoyTitle": "Той самий місяць торік",
     "yoyUnavailable": "Немає показників за {month} {year}. Порівняння стане доступним, коли той самий місяць буде в обох роках."
