@@ -210,7 +210,11 @@
   import { listMyMeterReadings, type MeterReadingOut } from "@shared/api/meter-readings";
   import { ROUTES } from "@shared/routing/routes";
   import { DEADLINE_DAY } from "@shared/utils/deadline";
-  import { formatUah as formatUahShared, toDecimal } from "@shared/utils/format";
+  import {
+    formatKwh as formatKwhShared,
+    formatUah as formatUahShared,
+    toDecimal,
+  } from "@shared/utils/format";
 
   interface SubmissionRecordEntry {
     period: string;
@@ -355,7 +359,7 @@
   });
 
   function formatKwh(value: number): string {
-    return `${value.toLocaleString(intlLocale.value, { maximumFractionDigits: 2 })} ${t("units.kwh")}`;
+    return formatKwhShared(value, intlLocale.value, t("units.kwh"));
   }
 
   function formatUah(value: number): string {
