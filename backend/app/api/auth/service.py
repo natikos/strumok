@@ -87,6 +87,10 @@ def get_user_from_token(
             algorithms=[settings.auth.algorithm],
             options={"verify_exp": verify_expiration},
         )
+
+        if payload.get("type") != "access":
+            raise ValueError("Unexpected token type")
+
         subject = payload.get("sub")
 
         if subject is None:

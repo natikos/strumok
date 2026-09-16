@@ -34,7 +34,7 @@ class AuthSettings(BaseSettings):
     access_token_expiration: int = 1440  # (min) 24 hours
     auth_cookie_name: str = "access_token"
     verify_email_resend_cooldown_seconds: int = 180  # 3 minutes
-    verification_token_expiration: int = 1440  # (min) 24 hours
+    verification_token_expiration: int = 60  # (min) 1 hour
 
 
 class BrevoSettings(BaseSettings):
