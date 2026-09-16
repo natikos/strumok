@@ -14,7 +14,9 @@
               <i class="pi pi-palette settings-row__icon"></i>
               <div>
                 <span class="settings-row__label">{{ $t("settings.theme") }}</span>
-                <span class="settings-row__hint">{{ isDarkTheme ? $t("settings.themeDark") : $t("settings.themeLight") }}</span>
+                <span class="settings-row__hint">{{
+                  isDarkTheme ? $t("settings.themeDark") : $t("settings.themeLight")
+                }}</span>
               </div>
             </div>
             <ThemeToggleButton @toggle="handlePreferenceToggle({ theme: $event })" />
@@ -25,11 +27,21 @@
               <i class="pi pi-language settings-row__icon"></i>
               <div>
                 <span class="settings-row__label">{{ $t("settings.language") }}</span>
-                <span class="settings-row__hint">{{ currentLocale === 'ua' ? 'Українська' : 'English' }}</span>
+                <span class="settings-row__hint">{{
+                  currentLocale === "ua" ? "Українська" : "English"
+                }}</span>
               </div>
             </div>
             <LanguageToggleButton @toggle="handlePreferenceToggle({ language: $event })" />
           </div>
+        </div>
+      </section>
+
+      <section v-if="me?.is_admin" class="settings-section">
+        <h2 class="settings-section__title">{{ $t("admin.title") }}</h2>
+
+        <div class="settings-card settings-card--padded">
+          <AdminHouseholdAssignment />
         </div>
       </section>
     </div>
@@ -37,15 +49,25 @@
 </template>
 
 <script setup lang="ts">
+  import { onMounted, ref } from "vue";
+
+  import AdminHouseholdAssignment from "@features/admin/AdminHouseholdAssignment.vue";
   import { useLocale } from "@features/i18n/composables/useLocale";
   import type { LanguageCode, ThemeMode } from "@features/preferences/preferences.storage";
   import { useTheme } from "@features/theme/composables/useTheme";
-  import { updateMyPreferences } from "@shared/api/auth";
+  import { getMe, updateMyPreferences } from "@shared/api/auth";
+  import type { UserWithHouseholdsOut } from "@shared/api/auth";
   import LanguageToggleButton from "@shared/components/i18n/LanguageToggleButton.vue";
   import ThemeToggleButton from "@shared/components/theme/ThemeToggleButton.vue";
 
   const { setLocale, currentLocale } = useLocale();
   const { setTheme, isDarkTheme } = useTheme();
+
+  const me = ref<UserWithHouseholdsOut | null>(null);
+
+  onMounted(async () => {
+    me.value = await getMe();
+  });
 
   async function handlePreferenceToggle(payload: {
     language?: LanguageCode;
@@ -100,6 +122,10 @@
     border: 1px solid var(--s-content-border-color);
     border-radius: var(--s-app-radius-md);
     overflow: hidden;
+
+    &--padded {
+      padding: var(--s-app-space-4);
+    }
   }
 
   .settings-row {

@@ -1,4 +1,21 @@
 {
+  "admin": {
+    "title": "Адміністрування",
+    "household": "Господарство",
+    "householdPlaceholder": "Оберіть наявне господарство або залиште порожнім, щоб створити нове",
+    "newHouseholdName": "Назва нового господарства",
+    "newHouseholdNamePlaceholder": "напр. Господарство Петренка",
+    "currentOwner": "Наразі належить {owner}",
+    "currentOwnerNone": "Наразі не призначено",
+    "assignTo": "Призначити",
+    "assignToPlaceholder": "Оберіть мешканця",
+    "assign": "Призначити господарство",
+    "assignSuccess": "Господарство «{household}» призначено {owner}",
+    "reassignConfirmTitle": "Перепризначити господарство?",
+    "reassignConfirmBody": "Це господарство вже належить {owner}. Перепризначення позбавить їх доступу до нього.",
+    "reassignConfirmAccept": "Перепризначити",
+    "reassignConfirmReject": "Скасувати"
+  },
   "auth": {
     "login": "Вхід",
     "loginSubmit": "Увійти",
@@ -71,7 +88,11 @@
     "stripAriaLabel": "Вікно подання: {elapsed} із {total} днів минуло, закінчується {day} числа"
   },
   "errors": {
+    "adminPrivilegesRequired": "У вас немає прав для цієї дії",
     "emailAlreadyRegistered": "Ця електронна скринька вже зареєстрована",
+    "householdNotFound": "Це господарство більше не існує",
+    "userInactive": "Обліковий запис цього користувача неактивний",
+    "userNotFound": "Цього користувача більше не існує",
     "invalidCredentials": "Невірна електронна скринька або пароль",
     "invalidOrExpiredToken": "Увійдіть у систему та спробуйте ще раз",
     "missingAuthenticationToken": "Увійдіть у систему та спробуйте ще раз",

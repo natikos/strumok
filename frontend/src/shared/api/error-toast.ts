@@ -26,8 +26,9 @@ function getStatusMessageKey(status: number): string {
 
 // Detail codes callers render inline instead of via a toast — surfacing both
 // would be redundant. noHouseholdMembership: AppLayout blocks the whole app
-// behind a dedicated "no household yet" screen for it.
-const SILENCED_DETAILS = new Set(["noHouseholdMembership"]);
+// behind a dedicated "no household yet" screen for it. householdAlreadyAssigned:
+// the admin household-assignment form triggers a confirmation dialog instead.
+const SILENCED_DETAILS = new Set(["noHouseholdMembership", "householdAlreadyAssigned"]);
 
 function toErrorMessageKey(body: unknown, fallbackMessageKey: string): string {
   if (!body || typeof body !== "object" || !("detail" in body)) {

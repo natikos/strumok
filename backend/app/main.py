@@ -8,7 +8,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 
-from app.api import auth_router, meter_readings_router
+from app.api import admin_router, auth_router, meter_readings_router
 from app.core.config import settings
 from app.db.engine import init_db
 
@@ -34,6 +34,7 @@ app.add_middleware(
 )
 app.include_router(auth_router)
 app.include_router(meter_readings_router)
+app.include_router(admin_router)
 
 
 @app.exception_handler(Exception)

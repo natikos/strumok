@@ -11,6 +11,7 @@ export {}
 /* prettier-ignore */
 declare module 'vue' {
   export interface GlobalComponents {
+    AdminHouseholdAssignment: typeof import('./src/features/admin/AdminHouseholdAssignment.vue')['default']
     AppLoader: typeof import('./src/shared/components/AppLoader.vue')['default']
     AuthForm: typeof import('./src/features/auth/AuthForm.vue')['default']
     AuthLayout: typeof import('./src/pages/auth/AuthLayout.vue')['default']
@@ -27,6 +28,7 @@ declare module 'vue' {
     InputNumber: typeof import('primevue/inputnumber')['default']
     InputText: typeof import('primevue/inputtext')['default']
     LanguageToggleButton: typeof import('./src/shared/components/i18n/LanguageToggleButton.vue')['default']
+    Message: typeof import('primevue/message')['default']
     Password: typeof import('primevue/password')['default']
     ProgressSpinner: typeof import('primevue/progressspinner')['default']
     RouterLink: typeof import('vue-router')['RouterLink']

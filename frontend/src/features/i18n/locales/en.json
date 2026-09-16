@@ -1,4 +1,21 @@
 {
+  "admin": {
+    "title": "Admin",
+    "household": "Household",
+    "householdPlaceholder": "Select an existing household, or leave empty to create one",
+    "newHouseholdName": "New household name",
+    "newHouseholdNamePlaceholder": "e.g. Petrenko plot",
+    "currentOwner": "Currently assigned to {owner}",
+    "currentOwnerNone": "Currently unassigned",
+    "assignTo": "Assign to",
+    "assignToPlaceholder": "Select a resident",
+    "assign": "Assign household",
+    "assignSuccess": "{household} assigned to {owner}",
+    "reassignConfirmTitle": "Reassign household?",
+    "reassignConfirmBody": "This household is already assigned to {owner}. Reassigning it will remove their access to it.",
+    "reassignConfirmAccept": "Reassign",
+    "reassignConfirmReject": "Cancel"
+  },
   "auth": {
     "login": "Login",
     "loginSubmit": "Submit",
@@ -71,7 +88,11 @@
     "stripAriaLabel": "Submission window: {elapsed} of {total} days elapsed, closes on day {day}"
   },
   "errors": {
+    "adminPrivilegesRequired": "You don't have permission to do that",
     "emailAlreadyRegistered": "Email is already registered",
+    "householdNotFound": "This household no longer exists",
+    "userInactive": "This user's account is inactive",
+    "userNotFound": "This user no longer exists",
     "invalidCredentials": "Invalid email or password",
     "invalidOrExpiredToken": "Please sign in and try again",
     "missingAuthenticationToken": "Please sign in and try again",

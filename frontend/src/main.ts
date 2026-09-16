@@ -1,5 +1,6 @@
 import "primeicons/primeicons.css";
 import PrimeVue from "primevue/config";
+import ConfirmationService from "primevue/confirmationservice";
 import ToastService from "primevue/toastservice";
 import { createApp } from "vue";
 import { createRouter, createWebHistory, type RouteRecordRaw } from "vue-router";
@@ -93,6 +94,7 @@ app
       preset: AppPreset,
     },
   })
-  .use(ToastService);
+  .use(ToastService)
+  .use(ConfirmationService);
 
 app.mount("#app");
