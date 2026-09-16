@@ -1,3 +1,4 @@
+import logging
 from typing import Any
 
 from fastapi import APIRouter, Cookie, Depends, HTTPException, Response, status
@@ -33,6 +34,7 @@ from app.db import get_session
 from app.db.models import User
 
 router = APIRouter(prefix="/auth", tags=["auth"])
+logger = logging.getLogger(__name__)
 
 REGISTER_RESPONSES: dict[int | str, dict[str, Any]] = {
     status.HTTP_409_CONFLICT: {
@@ -127,18 +129,7 @@ def set_auth_cookie(response: Response, *, user: User) -> None:
 @router.post(
     "/register",
     response_model=UserOut,
-    responses={
-        **REGISTER_RESPONSES,
-        status.HTTP_502_BAD_GATEWAY: {
-            "description": "Verification email could not be sent",
-            "model": ErrorOut,
-            "content": {
-                "application/json": {
-                    "example": {"detail": "verificationEmailSendFailed"},
-                }
-            },
-        },
-    },
+    responses=REGISTER_RESPONSES,
     status_code=status.HTTP_201_CREATED,
 )
 def register(
@@ -158,11 +149,8 @@ def register(
 
         try:
             request_email_verification_link(session=session, user=user)
-        except VerificationEmailSendFailedError as exc:
-            raise HTTPException(
-                status_code=status.HTTP_502_BAD_GATEWAY,
-                detail="verificationEmailSendFailed",
-            ) from exc
+        except VerificationEmailSendFailedError:
+            logger.exception("Verification email failed to send during registration")
 
         return UserOut.from_user(user)
     except EmailAlreadyRegisteredError as exc:

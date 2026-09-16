@@ -14,7 +14,7 @@ class EmailSendError(Exception):
 
 
 def send_email(*, to_email: str, to_name: str, subject: str, html_content: str) -> None:
-    if not settings.brevo.api_key or not settings.brevo.sender_email:
+    if not settings.brevo.api_key.get_secret_value() or not settings.brevo.sender_email:
         raise EmailSendError("Brevo is not configured")
 
     payload = {
@@ -32,7 +32,7 @@ def send_email(*, to_email: str, to_name: str, subject: str, html_content: str) 
             BREVO_SEND_URL,
             json=payload,
             headers={
-                "api-key": settings.brevo.api_key,
+                "api-key": settings.brevo.api_key.get_secret_value(),
                 "content-type": "application/json",
             },
             timeout=10.0,

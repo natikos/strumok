@@ -11,6 +11,7 @@ from unittest.mock import patch
 from jose import jwt
 from starlette.testclient import TestClient
 
+from app.api.auth.service import create_email_verification_token
 from app.core.config import settings
 from app.core.time import utc_now
 from tests.factories import DEFAULT_PASSWORD, authenticate, make_user
@@ -129,10 +130,27 @@ class TestMe:
                 "exp": utc_now() - timedelta(minutes=1),
                 "type": "access",
             },
-            settings.auth.secret_key,
+            settings.auth.secret_key.get_secret_value(),
             algorithm=settings.auth.algorithm,
         )
         client.cookies.set(settings.auth.auth_cookie_name, expired_token)
+
+        response = client.get("/auth/me")
+
+        assert response.status_code == 401
+        assert response.json()["detail"] == "invalidOrExpiredToken"
+
+    def test_me_with_email_verification_token_returns_401(self, client: TestClient, session) -> None:
+        """An emailed verification-link token must not double as a session cookie.
+
+        Regression for #62: get_user_from_token previously accepted any token
+        signed with the app secret regardless of `type`, so a verification
+        token (mailed to the resident, type "email_verification") could be
+        used to authenticate a full session.
+        """
+        user = make_user(session, email="resident@example.com")
+        verification_token = create_email_verification_token(user)
+        client.cookies.set(settings.auth.auth_cookie_name, verification_token)
 
         response = client.get("/auth/me")
 
@@ -170,7 +188,7 @@ class TestRefresh:
                 "exp": utc_now() - timedelta(days=1),
                 "type": "access",
             },
-            settings.auth.secret_key,
+            settings.auth.secret_key.get_secret_value(),
             algorithm=settings.auth.algorithm,
         )
         client.cookies.set(settings.auth.auth_cookie_name, expired_token)
@@ -182,7 +200,7 @@ class TestRefresh:
 
         new_token = response.cookies[settings.auth.auth_cookie_name]
         new_claims = jwt.decode(
-            new_token, settings.auth.secret_key, algorithms=[settings.auth.algorithm]
+            new_token, settings.auth.secret_key.get_secret_value(), algorithms=[settings.auth.algorithm]
         )
         assert new_claims["exp"] > utc_now().timestamp()
 
@@ -208,7 +226,7 @@ class TestRefresh:
     def test_refresh_with_missing_subject_returns_401(self, client: TestClient) -> None:
         token_without_subject = jwt.encode(
             {"email": "nobody@example.com", "exp": utc_now() + timedelta(minutes=5), "type": "access"},
-            settings.auth.secret_key,
+            settings.auth.secret_key.get_secret_value(),
             algorithm=settings.auth.algorithm,
         )
         client.cookies.set(settings.auth.auth_cookie_name, token_without_subject)
