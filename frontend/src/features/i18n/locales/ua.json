@@ -221,7 +221,10 @@
     "recordValue": "{onTime} з {total}",
     "recordOnTime": "Вчасно",
     "recordLate": "Із запізненням",
-    "recordMissing": "Не подано"
+    "recordMissing": "Не подано",
+    "recordStreak": "Серія вчасних подач: {count} міс.",
+    "recordMissedLastMonth": "Ви пропустили минулий місяць",
+    "recordLateThisMonth": "Цього місяця подано із запізненням"
   },
   "verifyEmail": {
     "title": "Привіт, {name}",

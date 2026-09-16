@@ -221,7 +221,10 @@
     "recordValue": "{onTime} of {total}",
     "recordOnTime": "On time",
     "recordLate": "Late",
-    "recordMissing": "Not submitted"
+    "recordMissing": "Not submitted",
+    "recordStreak": "On-time streak: {count} months",
+    "recordMissedLastMonth": "You missed last month",
+    "recordLateThisMonth": "You're late this month"
   },
   "verifyEmail": {
     "title": "Hi, {name}",
