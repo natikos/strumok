@@ -12,6 +12,7 @@ export {}
 declare module 'vue' {
   export interface GlobalComponents {
     AdminHouseholdAssignment: typeof import('./src/features/admin/AdminHouseholdAssignment.vue')['default']
+    AdminPage: typeof import('./src/pages/admin/AdminPage.vue')['default']
     AppLoader: typeof import('./src/shared/components/AppLoader.vue')['default']
     AuthForm: typeof import('./src/features/auth/AuthForm.vue')['default']
     AuthLayout: typeof import('./src/pages/auth/AuthLayout.vue')['default']

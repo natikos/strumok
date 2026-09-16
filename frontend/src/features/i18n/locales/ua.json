@@ -1,8 +1,9 @@
 {
   "admin": {
     "title": "Адміністрування",
+    "householdAssignment": "Призначення господарств",
     "household": "Господарство",
-    "householdPlaceholder": "Оберіть наявне господарство або залиште порожнім, щоб створити нове",
+    "householdPlaceholder": "Оберіть господарство",
     "newHouseholdName": "Назва нового господарства",
     "newHouseholdNamePlaceholder": "напр. Господарство Петренка",
     "currentOwner": "Наразі належить {owner}",
@@ -169,6 +170,8 @@
     "home": "Головна",
     "history": "Історія",
     "settings": "Налаштування",
+    "admin": "Адміністрування",
+    "accountMenu": "Меню облікового запису",
     "logout": "Вихід"
   },
   "noHousehold": {

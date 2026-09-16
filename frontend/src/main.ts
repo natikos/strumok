@@ -24,6 +24,7 @@ const routes: RouteRecordRaw[] = [
       { component: () => import("@pages/dashboard/DashboardPage.vue"), path: "" },
       { component: () => import("@pages/history/UsageHistoryPage.vue"), path: ROUTES.history },
       { component: () => import("@pages/settings/SettingsPage.vue"), path: ROUTES.settings },
+      { component: () => import("@pages/admin/AdminPage.vue"), path: ROUTES.admin },
     ],
   },
   {

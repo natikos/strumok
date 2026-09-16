@@ -1,8 +1,9 @@
 {
   "admin": {
     "title": "Admin",
+    "householdAssignment": "Household assignment",
     "household": "Household",
-    "householdPlaceholder": "Select an existing household, or leave empty to create one",
+    "householdPlaceholder": "Select a household",
     "newHouseholdName": "New household name",
     "newHouseholdNamePlaceholder": "e.g. Petrenko plot",
     "currentOwner": "Currently assigned to {owner}",
@@ -169,6 +170,8 @@
     "home": "Dashboard",
     "history": "History",
     "settings": "Settings",
+    "admin": "Admin",
+    "accountMenu": "Account menu",
     "logout": "Logout"
   },
   "noHousehold": {
