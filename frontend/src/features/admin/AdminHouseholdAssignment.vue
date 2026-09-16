@@ -8,11 +8,13 @@
         id="admin-household-select"
         v-model="selectedHouseholdId"
         class="admin-assignment__input"
+        fluid
         :options="householdOptions"
         option-label="label"
         option-value="value"
         :placeholder="$t('admin.householdPlaceholder')"
         :disabled="isLoading"
+        :pt="{ label: { class: 'admin-assignment__select-label' } }"
         show-clear
       />
     </div>
@@ -25,6 +27,7 @@
         id="admin-household-name"
         v-model="newHouseholdName"
         class="admin-assignment__input"
+        fluid
         :placeholder="$t('admin.newHouseholdNamePlaceholder')"
         :invalid="!!errors.newHouseholdName"
         :disabled="isLoading"
@@ -57,6 +60,7 @@
         id="admin-user-select"
         v-model="selectedUserId"
         class="admin-assignment__input"
+        fluid
         :options="userOptions"
         option-label="label"
         option-value="value"
@@ -65,6 +69,7 @@
         :disabled="isLoading"
         :aria-invalid="!!errors.selectedUserId"
         :aria-describedby="errors.selectedUserId ? 'admin-user-select-error' : undefined"
+        :pt="{ label: { class: 'admin-assignment__select-label' } }"
       />
       <span
         v-if="errors.selectedUserId"
@@ -279,6 +284,7 @@
 
   .admin-assignment__field {
     @include layout.stack(var(--s-app-space-2));
+    min-width: 0;
   }
 
   .admin-assignment__label {
@@ -290,6 +296,12 @@
   .admin-assignment__input {
     min-width: 0;
     width: 100%;
+    text-overflow: ellipsis;
+  }
+
+  .admin-assignment__select-label {
+    min-width: 0;
+    flex: 1 1 auto;
   }
 
   .admin-assignment__current-owner {

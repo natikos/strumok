@@ -247,9 +247,13 @@
   }
 
   .electricity-rates__item {
-    @include layout.row(var(--s-app-space-3), center, space-between);
+    @include layout.stack(var(--s-app-space-1));
     font-size: 0.85rem;
     min-width: 0;
+
+    @include layout.respond-to("sm") {
+      @include layout.row(var(--s-app-space-3), center, space-between);
+    }
   }
 
   .electricity-rates__period {
@@ -260,7 +264,11 @@
   .electricity-rates__values {
     color: color-mix(in srgb, var(--s-content-color), transparent 35%);
     min-width: 0;
-    text-align: right;
+    text-align: left;
+
+    @include layout.respond-to("sm") {
+      text-align: right;
+    }
   }
 
   .electricity-rates__empty {

@@ -62,14 +62,6 @@
 </script>
 
 <style scoped lang="scss">
-  .settings-page {
-    padding: var(--s-app-space-5);
-
-    @media (min-width: 60rem) {
-      padding: var(--s-app-space-8);
-    }
-  }
-
   .settings-header {
     margin-bottom: var(--s-app-space-6);
 

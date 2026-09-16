@@ -3,7 +3,7 @@
     "title": "Admin",
     "householdAssignment": "Household assignment",
     "household": "Household",
-    "householdPlaceholder": "Select an existing household, or leave empty to create one",
+    "householdPlaceholder": "Select a household",
     "newHouseholdName": "New household name",
     "newHouseholdNamePlaceholder": "e.g. Petrenko plot",
     "currentOwner": "Currently assigned to {owner}",
