@@ -36,10 +36,15 @@ class TestRegisterEmailVerification:
         assert "Verify email" in call_kwargs["html_content"]
 
     @patch("app.api.auth.service.send_email")
-    def test_register_fails_if_email_send_fails(
+    def test_register_succeeds_if_email_send_fails(
         self, mock_send_email: MagicMock, client: TestClient
     ) -> None:
-        """Registration fails if verification email cannot be sent."""
+        """Registration succeeds even if the verification email cannot be sent.
+
+        The account already exists once send_email is reached, so failing the
+        request here would strand the user: they can't log in unaware it
+        worked, and can't retry registration (409 emailAlreadyRegistered).
+        """
         mock_send_email.side_effect = EmailSendError("Brevo is not configured")
 
         payload = {
@@ -51,5 +56,7 @@ class TestRegisterEmailVerification:
 
         response = client.post("/auth/register", json=payload)
 
-        assert response.status_code == 502
-        assert response.json()["detail"] == "verificationEmailSendFailed"
+        assert response.status_code == 201
+        body = response.json()
+        assert body["email"] == "failuser@example.com"
+        assert body["email_verified"] is False
