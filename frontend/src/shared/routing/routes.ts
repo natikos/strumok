@@ -8,6 +8,7 @@ declare module "vue-router" {
 }
 
 export const ROUTES = {
+  admin: "/admin",
   auth: "/auth",
   history: "/history",
   root: "/",

@@ -116,7 +116,7 @@
   import { useTheme } from "@features/theme/composables/useTheme";
   import { getMe, logoutUser } from "@shared/api/auth";
   import type { components } from "@shared/api/generated/openapi";
-  import { ROUTES } from "@shared/routing/routes";
+  import { type AppRoutePath, ROUTES } from "@shared/routing/routes";
 
   type UserOut = components["schemas"]["UserWithHouseholdsOut"];
 
@@ -128,18 +128,26 @@
 
   const { t } = useI18n();
 
+  const me = ref<UserOut | null>(null);
+  const isLoggingOut = ref(false);
+  const hasNoHousehold = ref(false);
+
   const mainItems = computed(() => [
     { icon: "pi pi-home", label: t("nav.home"), route: ROUTES.root },
     { icon: "pi pi-chart-line", label: t("nav.history"), route: ROUTES.history },
   ]);
 
-  const bottomItems = computed(() => [
-    { icon: "pi pi-cog", label: t("nav.settings"), route: ROUTES.settings },
-  ]);
+  const bottomItems = computed(() => {
+    const items: { icon: string; label: string; route: AppRoutePath }[] = [
+      { icon: "pi pi-cog", label: t("nav.settings"), route: ROUTES.settings },
+    ];
 
-  const me = ref<UserOut | null>(null);
-  const isLoggingOut = ref(false);
-  const hasNoHousehold = ref(false);
+    if (me.value?.is_admin) {
+      items.push({ icon: "pi pi-shield", label: t("nav.admin"), route: ROUTES.admin });
+    }
+
+    return items;
+  });
 
   onMounted(async () => {
     me.value = await getMe();

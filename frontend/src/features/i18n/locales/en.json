@@ -1,6 +1,7 @@
 {
   "admin": {
     "title": "Admin",
+    "householdAssignment": "Household assignment",
     "household": "Household",
     "householdPlaceholder": "Select an existing household, or leave empty to create one",
     "newHouseholdName": "New household name",
@@ -169,6 +170,7 @@
     "home": "Dashboard",
     "history": "History",
     "settings": "Settings",
+    "admin": "Admin",
     "logout": "Logout"
   },
   "noHousehold": {
