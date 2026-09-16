@@ -11,6 +11,7 @@ from unittest.mock import patch
 from jose import jwt
 from starlette.testclient import TestClient
 
+from app.api.auth.service import create_email_verification_token
 from app.core.config import settings
 from app.core.time import utc_now
 from tests.factories import DEFAULT_PASSWORD, authenticate, make_user
@@ -133,6 +134,23 @@ class TestMe:
             algorithm=settings.auth.algorithm,
         )
         client.cookies.set(settings.auth.auth_cookie_name, expired_token)
+
+        response = client.get("/auth/me")
+
+        assert response.status_code == 401
+        assert response.json()["detail"] == "invalidOrExpiredToken"
+
+    def test_me_with_email_verification_token_returns_401(self, client: TestClient, session) -> None:
+        """An emailed verification-link token must not double as a session cookie.
+
+        Regression for #62: get_user_from_token previously accepted any token
+        signed with the app secret regardless of `type`, so a verification
+        token (mailed to the resident, type "email_verification") could be
+        used to authenticate a full session.
+        """
+        user = make_user(session, email="resident@example.com")
+        verification_token = create_email_verification_token(user)
+        client.cookies.set(settings.auth.auth_cookie_name, verification_token)
 
         response = client.get("/auth/me")
 
