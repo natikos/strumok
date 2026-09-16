@@ -123,6 +123,18 @@ export function useMeterReadings() {
     () => (readings.value?.filter((reading) => reading.id !== null).length ?? 0) === 0
   );
 
+  // Missing periods between the household's first submission and the
+  // currently-open one — never counts months before the household existed.
+  const missedPeriods = computed(() => {
+    const firstSubmittedIndex = slots.value.findIndex((slot) => slot.reading);
+    if (firstSubmittedIndex === -1) {
+      return 0;
+    }
+
+    return slots.value.slice(firstSubmittedIndex).filter((slot) => !slot.isCurrent && !slot.reading)
+      .length;
+  });
+
   const insights = useUsageInsights(slots);
 
   async function handleSubmit(): Promise<void> {
@@ -201,6 +213,7 @@ export function useMeterReadings() {
     daysLeft,
     deadlineStatus,
     isFirstPeriod,
+    missedPeriods,
     loadHistory,
     handleSubmit,
     ...insights,

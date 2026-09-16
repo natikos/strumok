@@ -106,6 +106,7 @@
     seasonAverages,
     seasonComparison,
     submittedPeriods,
+    missedPeriods,
   } = useMeterReadings();
 
   const isEditing = ref(false);
@@ -114,8 +115,6 @@
 
   const showFirstRunGuide = computed(() => !isLoading.value && !hasAnyReading.value);
   const showEmptyUsage = computed(() => !isLoading.value && !hasAnyReading.value);
-
-  const missedPeriods = computed(() => (deadlineStatus.value === "overdue" ? 1 : 0));
 
   /** Meter values from the last submitted period, shown as the "last submitted" hint. */
   const previousMeterValues = computed(() => {
