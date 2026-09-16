@@ -69,7 +69,7 @@ describe("UsageHistoryPage submissionRecord", () => {
       }
     ).submissionRecord;
 
-    expect(record).toEqual({
+    expect(record).toMatchObject({
       onTime: 1,
       late: 0,
       total: 1,
@@ -173,5 +173,46 @@ describe("UsageHistoryPage submissionRecord", () => {
     ]);
     expect(record.onTime).toBe(3);
     expect(record.total).toBe(3);
+  });
+
+  it("caps the visual strip at the most recent 12 periods while the ratio covers full history", async () => {
+    // 15 consecutive periods spanning two years: 2024-10 through 2025-12.
+    const periods = Array.from({ length: 15 }, (_, i) => {
+      const monthIndex = 9 + i; // October (index 9) 2024 onward
+      const year = 2024 + Math.floor(monthIndex / 12);
+      const month = (monthIndex % 12) + 1;
+      return `${year}-${String(month).padStart(2, "0")}`;
+    });
+
+    listMyMeterReadings.mockResolvedValue(
+      periods.map((period, i) => {
+        const [year, month] = period.split("-").map(Number);
+        const dueYear = month === 12 ? year! + 1 : year;
+        const dueMonth = month === 12 ? 1 : month! + 1;
+        return makeReading({
+          id: i + 1,
+          period,
+          submitted_at: `${dueYear}-${String(dueMonth).padStart(2, "0")}-01T00:00:00.000Z`,
+        });
+      })
+    );
+
+    const wrapper = await mountPage();
+    const record = (
+      wrapper.vm as unknown as {
+        submissionRecord: {
+          onTime: number;
+          total: number;
+          entries: { period: string }[];
+          strip: { period: string }[];
+        };
+      }
+    ).submissionRecord;
+
+    expect(record.entries).toHaveLength(15);
+    expect(record.total).toBe(15);
+    expect(record.strip).toHaveLength(12);
+    expect(record.strip[0]!.period).toBe(periods[3]);
+    expect(record.strip.at(-1)!.period).toBe(periods.at(-1));
   });
 });

@@ -27,32 +27,49 @@
       </div>
     </section>
 
-    <section
-      v-if="!isLoading && submissionRecord.total > 0"
-      class="usage-history__record"
-      role="img"
-      :aria-label="recordAriaLabel"
-    >
+    <section v-if="!isLoading && submissionRecord.total > 0" class="usage-history__record">
       <header class="usage-history__record-header">
         <h2 class="usage-history__record-title">{{ $t("usageHistory.recordTitle") }}</h2>
-        <span class="usage-history__record-value">
-          {{
-            $t("usageHistory.recordValue", {
-              onTime: submissionRecord.onTime,
-              total: submissionRecord.total,
-            })
-          }}
-        </span>
       </header>
 
-      <div class="usage-history__record-strip">
-        <span
-          v-for="entry in submissionRecord.entries"
-          :key="entry.period"
-          class="usage-history__record-segment"
-          :class="`usage-history__record-segment--${entry.state}`"
-        ></span>
-      </div>
+      <p
+        v-if="submissionRecord.lastState === 'missing'"
+        class="usage-history__record-status usage-history__record-status--warn"
+      >
+        <i class="pi pi-exclamation-circle" aria-hidden="true"></i>
+        {{ $t("usageHistory.recordMissedLastMonth") }}
+      </p>
+      <p
+        v-else-if="submissionRecord.lastState === 'late'"
+        class="usage-history__record-status usage-history__record-status--warn"
+      >
+        <i class="pi pi-exclamation-circle" aria-hidden="true"></i>
+        {{ $t("usageHistory.recordLateThisMonth") }}
+      </p>
+      <p v-else-if="submissionRecord.streak >= 2" class="usage-history__record-status">
+        <i class="pi pi-check-circle" aria-hidden="true"></i>
+        {{ $t("usageHistory.recordStreak", { count: submissionRecord.streak }) }}
+      </p>
+      <p v-else class="usage-history__record-status">
+        {{
+          $t("usageHistory.recordValue", {
+            onTime: submissionRecord.onTime,
+            total: submissionRecord.total,
+          })
+        }}
+      </p>
+
+      <ul class="usage-history__record-strip" :aria-label="recordAriaLabel">
+        <li v-for="entry in submissionRecord.strip" :key="entry.period">
+          <button
+            type="button"
+            class="usage-history__record-segment"
+            :class="`usage-history__record-segment--${entry.state}`"
+            :aria-label="`${entry.period} — ${$t(recordStateLabelKeys[entry.state])}`"
+            @click="jumpToPeriod(entry.period)"
+          ></button>
+        </li>
+      </ul>
 
       <ul class="usage-history__record-legend">
         <li class="usage-history__record-legend-item">
@@ -102,6 +119,7 @@
         <ol class="usage-history__list">
           <li
             v-for="entry in group.entries"
+            :id="`usage-history-entry-${entry.period}`"
             :key="entry.period"
             class="usage-history__item"
             :class="{
@@ -295,6 +313,14 @@
     }));
   });
 
+  const RECORD_WINDOW = 12;
+
+  const recordStateLabelKeys: Record<SubmissionRecordEntry["state"], string> = {
+    "on-time": "usageHistory.recordOnTime",
+    late: "usageHistory.recordLate",
+    missing: "usageHistory.recordMissing",
+  };
+
   const submissionRecord = computed(() => {
     const sorted = [...readings.value].sort((a, b) => (a.period < b.period ? -1 : 1));
 
@@ -321,12 +347,28 @@
     const onTime = entries.filter((entry) => entry.state === "on-time").length;
     const late = entries.filter((entry) => entry.state === "late").length;
 
+    // Current streak: consecutive on-time entries ending at the most recent
+    // judged (non-missing) period. Broken by the first late or missing entry.
+    let streak = 0;
+    for (let i = entries.length - 1; i >= 0; i -= 1) {
+      if (entries[i]!.state !== "on-time") {
+        break;
+      }
+      streak += 1;
+    }
+
+    const lastEntry = entries.at(-1);
+    const lastState = lastEntry?.state ?? null;
+
     return {
       onTime,
       late,
       // Only periods we can actually judge belong in the "x of y" ratio.
       total: onTime + late,
       entries,
+      strip: entries.slice(-RECORD_WINDOW),
+      streak,
+      lastState,
     };
   });
 
@@ -360,6 +402,12 @@
 
   function formatUah(value: number): string {
     return formatUahShared(value, intlLocale.value);
+  }
+
+  function jumpToPeriod(period: string): void {
+    document
+      .getElementById(`usage-history-entry-${period}`)
+      ?.scrollIntoView({ behavior: "smooth", block: "center" });
   }
 
   async function loadReadings(): Promise<void> {
@@ -450,17 +498,51 @@
     white-space: nowrap;
   }
 
+  .usage-history__record-status {
+    align-items: center;
+    color: var(--s-content-color);
+    column-gap: var(--s-app-space-1);
+    display: inline-flex;
+    font-size: 0.85rem;
+    font-weight: 600;
+    margin: 0;
+
+    i {
+      color: var(--s-primary-color);
+    }
+
+    &--warn i {
+      color: var(--s-amber-500);
+    }
+  }
+
   .usage-history__record-strip {
     display: flex;
     gap: var(--s-app-space-1);
+    list-style: none;
+    margin: 0;
+    padding: 0;
+
+    li {
+      display: flex;
+      flex: 1;
+      min-width: 0;
+    }
   }
 
   .usage-history__record-segment {
     background: color-mix(in srgb, var(--s-content-color), transparent 94%);
+    border: none;
     border-radius: 3px;
-    flex: 1;
+    cursor: pointer;
     height: 22px;
-    min-width: 0;
+    padding: 0;
+    width: 100%;
+
+    &:focus-visible {
+      outline: 2px solid var(--s-primary-color);
+      outline-offset: 2px;
+    }
 
     &--on-time {
       background: var(--s-primary-color);
