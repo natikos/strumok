@@ -59,7 +59,7 @@ def create_access_token(user: User) -> str:
         "type": "access",
     }
     return jwt.encode(
-        payload, settings.auth.secret_key, algorithm=settings.auth.algorithm
+        payload, settings.auth.secret_key.get_secret_value(), algorithm=settings.auth.algorithm
     )
 
 
@@ -83,7 +83,7 @@ def get_user_from_token(
     try:
         payload = jwt.decode(
             token,
-            settings.auth.secret_key,
+            settings.auth.secret_key.get_secret_value(),
             algorithms=[settings.auth.algorithm],
             options={"verify_exp": verify_expiration},
         )
@@ -146,7 +146,7 @@ def create_email_verification_token(user: User) -> str:
         "type": VERIFICATION_TOKEN_TYPE,
     }
     return jwt.encode(
-        payload, settings.auth.secret_key, algorithm=settings.auth.algorithm
+        payload, settings.auth.secret_key.get_secret_value(), algorithm=settings.auth.algorithm
     )
 
 
@@ -154,7 +154,7 @@ def verify_email_token(*, session: Session, token: str) -> User:
     try:
         payload = jwt.decode(
             token,
-            settings.auth.secret_key,
+            settings.auth.secret_key.get_secret_value(),
             algorithms=[settings.auth.algorithm],
         )
 

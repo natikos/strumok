@@ -129,7 +129,7 @@ class TestMe:
                 "exp": utc_now() - timedelta(minutes=1),
                 "type": "access",
             },
-            settings.auth.secret_key,
+            settings.auth.secret_key.get_secret_value(),
             algorithm=settings.auth.algorithm,
         )
         client.cookies.set(settings.auth.auth_cookie_name, expired_token)
@@ -170,7 +170,7 @@ class TestRefresh:
                 "exp": utc_now() - timedelta(days=1),
                 "type": "access",
             },
-            settings.auth.secret_key,
+            settings.auth.secret_key.get_secret_value(),
             algorithm=settings.auth.algorithm,
         )
         client.cookies.set(settings.auth.auth_cookie_name, expired_token)
@@ -182,7 +182,7 @@ class TestRefresh:
 
         new_token = response.cookies[settings.auth.auth_cookie_name]
         new_claims = jwt.decode(
-            new_token, settings.auth.secret_key, algorithms=[settings.auth.algorithm]
+            new_token, settings.auth.secret_key.get_secret_value(), algorithms=[settings.auth.algorithm]
         )
         assert new_claims["exp"] > utc_now().timestamp()
 
@@ -208,7 +208,7 @@ class TestRefresh:
     def test_refresh_with_missing_subject_returns_401(self, client: TestClient) -> None:
         token_without_subject = jwt.encode(
             {"email": "nobody@example.com", "exp": utc_now() + timedelta(minutes=5), "type": "access"},
-            settings.auth.secret_key,
+            settings.auth.secret_key.get_secret_value(),
             algorithm=settings.auth.algorithm,
         )
         client.cookies.set(settings.auth.auth_cookie_name, token_without_subject)

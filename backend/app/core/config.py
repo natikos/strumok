@@ -1,7 +1,7 @@
 from functools import lru_cache
 from typing import Annotated
 
-from pydantic import field_validator
+from pydantic import SecretStr, field_validator
 from pydantic_settings import BaseSettings, NoDecode, SettingsConfigDict
 
 
@@ -29,7 +29,7 @@ class AuthSettings(BaseSettings):
         env_file=".env",
     )
 
-    secret_key: str
+    secret_key: SecretStr
     algorithm: str = "HS256"
     access_token_expiration: int = 1440  # (min) 24 hours
     auth_cookie_name: str = "access_token"
@@ -44,7 +44,7 @@ class BrevoSettings(BaseSettings):
         env_file=".env",
     )
 
-    api_key: str = ""
+    api_key: SecretStr = SecretStr("")
     sender_email: str = ""
     sender_name: str = "Струмок (Електроенергія)"
     app_base_url: str = "http://localhost:5173"
