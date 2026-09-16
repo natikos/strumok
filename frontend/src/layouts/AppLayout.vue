@@ -64,14 +64,21 @@
             />
           </div>
 
-          <div class="app-profile">
+          <component
+            :is="me?.is_admin ? 'button' : 'div'"
+            class="app-profile"
+            :type="me?.is_admin ? 'button' : undefined"
+            :aria-label="me?.is_admin ? $t('nav.accountMenu') : undefined"
+            @click="me?.is_admin && profileMenu?.toggle($event)"
+          >
             <div class="app-profile__avatar">{{ profileInitials }}</div>
             <div class="app-profile__meta">
               <strong>{{
                 me ? `${me.first_name} ${me.last_name}` : $t("dashboard.loadingUser")
               }}</strong>
             </div>
-          </div>
+          </component>
+          <Menu v-if="me?.is_admin" ref="profileMenu" :model="profileMenuItems" popup />
         </div>
       </header>
 
@@ -82,7 +89,7 @@
 
     <nav class="app-mobile-nav" aria-label="Main">
       <button
-        v-for="item in [...mainItems, ...bottomItems]"
+        v-for="item in mobileNavItems"
         :key="item.icon"
         class="app-mobile-nav__item"
         :class="{ 'app-mobile-nav__item--active': isActiveRoute(item.route) }"
@@ -106,6 +113,7 @@
 </template>
 
 <script setup lang="ts">
+  import Menu from "primevue/menu";
   import { computed, onMounted, ref } from "vue";
   import { useI18n } from "vue-i18n";
   import { RouterView, useRoute, useRouter } from "vue-router";
@@ -137,17 +145,36 @@
     { icon: "pi pi-chart-line", label: t("nav.history"), route: ROUTES.history },
   ]);
 
-  const bottomItems = computed(() => {
-    const items: { icon: string; label: string; route: AppRoutePath }[] = [
-      { icon: "pi pi-cog", label: t("nav.settings"), route: ROUTES.settings },
-    ];
+  const settingsItem = computed(() => ({
+    icon: "pi pi-cog",
+    label: t("nav.settings"),
+    route: ROUTES.settings as AppRoutePath,
+  }));
 
-    if (me.value?.is_admin) {
-      items.push({ icon: "pi pi-shield", label: t("nav.admin"), route: ROUTES.admin });
-    }
+  const adminItem = computed(() => ({
+    icon: "pi pi-shield",
+    label: t("nav.admin"),
+    route: ROUTES.admin as AppRoutePath,
+  }));
 
-    return items;
-  });
+  // Desktop sidebar has room for every item; mobile keeps the bottom nav to
+  // core resident actions and moves the admin-only entry into the profile
+  // menu instead, so it doesn't crowd out labels at the 360px minimum width.
+  const bottomItems = computed(() =>
+    me.value?.is_admin ? [settingsItem.value, adminItem.value] : [settingsItem.value]
+  );
+
+  const mobileNavItems = computed(() => [...mainItems.value, settingsItem.value]);
+
+  const profileMenu = ref<InstanceType<typeof Menu> | null>(null);
+
+  const profileMenuItems = computed(() => [
+    {
+      icon: adminItem.value.icon,
+      label: adminItem.value.label,
+      command: () => router.push(adminItem.value.route),
+    },
+  ]);
 
   onMounted(async () => {
     me.value = await getMe();
@@ -336,7 +363,14 @@
 
   .app-profile {
     @include layout.row(var(--s-app-space-2));
+    background: transparent;
+    border: 0;
     margin-left: auto;
+    padding: 0;
+
+    &:where(button) {
+      cursor: pointer;
+    }
 
     .app-household + & {
       margin-left: 0;
