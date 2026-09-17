@@ -38,6 +38,7 @@
                 name="firstName"
                 label-key="auth.firstName"
                 placeholder-key="auth.firstName"
+                autocomplete="given-name"
                 :disabled="isSubmitting"
               />
               <FormFieldControl
@@ -45,6 +46,7 @@
                 name="lastName"
                 label-key="auth.lastName"
                 placeholder-key="auth.lastName"
+                autocomplete="family-name"
                 :disabled="isSubmitting"
               />
             </div>
@@ -56,6 +58,7 @@
             type="email"
             label-key="auth.email"
             placeholder-key="auth.emailPlaceholder"
+            autocomplete="username"
             :disabled="isSubmitting"
           />
           <FormFieldControl
@@ -64,6 +67,7 @@
             type="password"
             label-key="auth.password"
             placeholder-key="auth.password"
+            :autocomplete="isRegisterMode ? 'new-password' : 'current-password'"
             :disabled="isSubmitting"
           />
 
@@ -78,6 +82,7 @@
                 type="password"
                 label-key="auth.confirmPassword"
                 placeholder-key="auth.confirmPassword"
+                autocomplete="new-password"
                 :disabled="isSubmitting"
               />
             </div>
