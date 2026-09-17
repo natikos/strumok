@@ -48,6 +48,16 @@ export default defineConfig({
           },
         ],
       },
+      workbox: {
+        navigateFallbackDenylist: [
+          /^\/favicon\//,
+          /^\/health$/,
+          /^\/docs$/,
+          /^\/redoc$/,
+          /^\/openapi\.json$/,
+          /\.(png|jpg|jpeg|svg|ico|webmanifest|json)$/,
+        ],
+      },
     }),
   ],
   resolve: {
