@@ -216,12 +216,13 @@
 <style scoped lang="scss">
   .stat-tiles {
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: 1fr;
     gap: var(--s-app-space-2);
     align-items: stretch;
+    height: 100%;
 
     @include layout.respond-to("lg") {
-      grid-template-columns: repeat(3, 1fr);
+      grid-template-rows: repeat(3, 1fr);
     }
   }
 
