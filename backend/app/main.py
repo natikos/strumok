@@ -62,7 +62,14 @@ if DIST_DIR.is_dir():
     def serve_spa(path: str):
         file = DIST_DIR / path
         if file.is_file():
-            return FileResponse(file)
+            response = FileResponse(file)
+            if path == "sw.js":
+                response.headers["Cache-Control"] = (
+                    "no-cache, no-store, must-revalidate"
+                )
+                response.headers["Pragma"] = "no-cache"
+                response.headers["Expires"] = "0"
+            return response
         return FileResponse(DIST_DIR / "index.html")
 
 
