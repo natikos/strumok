@@ -333,8 +333,11 @@
     padding: var(--s-app-space-3) var(--s-app-space-4);
     border-bottom: 1px solid var(--s-content-border-color);
 
-    @media (min-width: 60rem) {
+    @include layout.respond-to("lg") {
       border-bottom: none;
+      // Matches .app-content's cap so the avatar/household switcher never
+      // drifts past a 1920px-wide screen's right edge.
+      max-width: min(100%, calc(120rem - 13rem));
     }
 
     &__actions {
@@ -411,6 +414,12 @@
     min-height: 0;
     overflow-y: auto;
     padding: var(--s-app-space-5);
+
+    @include layout.respond-to("lg") {
+      // Mirrors .app-topbar's cap so the content column's right edge lines
+      // up with a 1920px-wide screen instead of stretching further.
+      max-width: min(100%, calc(120rem - 13rem));
+    }
   }
 
   @media (min-width: 21.25rem) {

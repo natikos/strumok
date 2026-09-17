@@ -1,38 +1,42 @@
 <template>
   <div class="dashboard">
-    <SubmissionCard
-      :status="deadlineStatus"
-      :days-left="daysLeft"
-      :billing-month-index="billingMonthIndex"
-      :errors="errors"
-      :day-meter-value="dayMeterValue"
-      :night-meter-value="nightMeterValue"
-      :is-submitting="isSubmitting"
-      :is-loading="isLoading"
-      :is-first-period="isFirstPeriod"
-      :is-editing="isEditing"
-      :submitted-at="currentSlot?.reading?.submitted_at"
-      :submitted-day-value="currentSlot?.reading?.day_meter_value"
-      :submitted-night-value="currentSlot?.reading?.night_meter_value"
-      :last-period="lastSubmittedPeriod"
-      :previous-day-meter-value="previousMeterValues.day"
-      :previous-night-meter-value="previousMeterValues.night"
-      @update:day-meter-value="dayMeterValue = $event"
-      @update:night-meter-value="nightMeterValue = $event"
-      @submit="submitReading"
-      @edit="startEdit"
-    />
+    <div class="dashboard__top">
+      <SubmissionCard
+        class="dashboard__submission"
+        :status="deadlineStatus"
+        :days-left="daysLeft"
+        :billing-month-index="billingMonthIndex"
+        :errors="errors"
+        :day-meter-value="dayMeterValue"
+        :night-meter-value="nightMeterValue"
+        :is-submitting="isSubmitting"
+        :is-loading="isLoading"
+        :is-first-period="isFirstPeriod"
+        :is-editing="isEditing"
+        :submitted-at="currentSlot?.reading?.submitted_at"
+        :submitted-day-value="currentSlot?.reading?.day_meter_value"
+        :submitted-night-value="currentSlot?.reading?.night_meter_value"
+        :last-period="lastSubmittedPeriod"
+        :previous-day-meter-value="previousMeterValues.day"
+        :previous-night-meter-value="previousMeterValues.night"
+        @update:day-meter-value="dayMeterValue = $event"
+        @update:night-meter-value="nightMeterValue = $event"
+        @submit="submitReading"
+        @edit="startEdit"
+      />
+
+      <StatTilesCard
+        class="dashboard__stat-tiles"
+        :last-period="lastSubmittedPeriod"
+        :mom-change="momChange"
+        :days-into-period="daysIntoPeriod"
+        :season-comparison="seasonComparison"
+        :missed-periods="missedPeriods"
+        :is-loading="isLoading"
+      />
+    </div>
 
     <FirstRunGuideCard v-if="showFirstRunGuide" />
-
-    <StatTilesCard
-      :last-period="lastSubmittedPeriod"
-      :mom-change="momChange"
-      :days-into-period="daysIntoPeriod"
-      :season-comparison="seasonComparison"
-      :missed-periods="missedPeriods"
-      :is-loading="isLoading"
-    />
 
     <!-- With no readings at all there is nothing to chart, split or compare, so
          one dashed card stands in for the whole analytics block. -->
@@ -176,6 +180,24 @@
 <style scoped lang="scss">
   .dashboard {
     @include layout.stack(var(--s-app-space-4));
+
+    &__top {
+      @include layout.stack(var(--s-app-space-4));
+
+      @include layout.respond-to("lg") {
+        display: grid;
+        grid-template-columns: 2fr 1fr;
+        align-items: stretch;
+      }
+    }
+
+    &__submission {
+      min-width: 0;
+    }
+
+    &__stat-tiles {
+      min-width: 0;
+    }
 
     &__insights {
       display: grid;
