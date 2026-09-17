@@ -9,7 +9,7 @@ export const TREND_MONTHS = 12;
 /** Seasons run meteorologically: Dec–Feb winter, Mar–May spring, and so on. */
 export type Season = "winter" | "spring" | "summer" | "autumn";
 
-const SEASON_BY_MONTH: Season[] = [
+export const SEASON_BY_MONTH: Season[] = [
   "winter", // January
   "winter",
   "spring",
@@ -63,7 +63,9 @@ export interface DayNightSplit {
 export interface SeasonComparison {
   season: Season;
   currentKwh: number;
+  currentPeriodCount: number;
   previousYearKwh: number;
+  previousPeriodCount: number;
   deltaPercent: number;
   direction: "up" | "down" | "flat";
 }
@@ -280,33 +282,81 @@ export function useUsageInsights(slots: Ref<MeterPeriod[]>) {
   });
 
   /**
-   * How the last submitted period compares to the same season one year
-   * earlier — e.g. this summer vs. last summer — rather than a flat all-time
-   * average, which blends winter and summer and can never read as "normal."
+   * The month indices making up a season, and the calendar year each month
+   * belongs to relative to the season's own year — winter spans a year
+   * boundary (Dec of the prior year, Jan/Feb of the season's year).
+   */
+  function seasonMonths(season: Season): { monthIndex: number; yearOffset: number }[] {
+    if (season === "winter") {
+      return [
+        { monthIndex: 11, yearOffset: -1 }, // December
+        { monthIndex: 0, yearOffset: 0 }, // January
+        { monthIndex: 1, yearOffset: 0 }, // February
+      ];
+    }
+
+    return SEASON_BY_MONTH.reduce<{ monthIndex: number; yearOffset: number }[]>(
+      (acc, s, monthIndex) => (s === season ? [...acc, { monthIndex, yearOffset: 0 }] : acc),
+      []
+    );
+  }
+
+  /** Sums whatever readings exist for a season occurrence anchored on `seasonYear`. */
+  function sumSeason(
+    season: Season,
+    seasonYear: number
+  ): { totalKwh: number; periodCount: number } {
+    let totalKwh = 0;
+    let periodCount = 0;
+
+    for (const { monthIndex, yearOffset } of seasonMonths(season)) {
+      const period = `${seasonYear + yearOffset}-${String(monthIndex + 1).padStart(2, "0")}`;
+      const slot = slots.value.find((s) => s.period === period);
+      const usage = slot ? toUsage(slot) : null;
+      if (usage) {
+        totalKwh += usage.totalKwh;
+        periodCount += 1;
+      }
+    }
+
+    return { totalKwh, periodCount };
+  }
+
+  /**
+   * How this season so far compares to the same season one year earlier —
+   * e.g. this autumn vs. last autumn — anchored on today's actual season
+   * rather than the last submitted period, so a resident behind on
+   * submissions sees "no autumn reading yet" instead of a stale month
+   * dressed up as current (#78).
    */
   const seasonComparison = computed<SeasonComparison | null>(() => {
-    const last = lastSubmittedPeriod.value;
-    if (!last) {
+    const now = new Date();
+    const currentSeason = SEASON_BY_MONTH[now.getMonth()]!;
+    // Winter's "season year" is anchored on its ending February, so December
+    // still counts toward the winter that finishes the following year.
+    const seasonYear =
+      currentSeason === "winter" && now.getMonth() === 11
+        ? now.getFullYear() + 1
+        : now.getFullYear();
+
+    const current = sumSeason(currentSeason, seasonYear);
+    if (current.periodCount === 0) {
       return null;
     }
 
-    const [year, month] = last.period.split("-");
-    const previousYearPeriod = `${Number(year) - 1}-${month}`;
-    const previousSlot = slots.value.find((slot) => slot.period === previousYearPeriod);
-    const previous = previousSlot ? toUsage(previousSlot) : null;
-
-    if (!previous) {
+    const previous = sumSeason(currentSeason, seasonYear - 1);
+    if (previous.periodCount === 0) {
       return null;
     }
-
-    const deltaPercent = percentChange(previous.totalKwh, last.totalKwh);
 
     return {
-      season: SEASON_BY_MONTH[last.monthIndex]!,
-      currentKwh: last.totalKwh,
+      season: currentSeason,
+      currentKwh: current.totalKwh,
+      currentPeriodCount: current.periodCount,
       previousYearKwh: previous.totalKwh,
-      deltaPercent,
-      direction: directionOf(last.totalKwh - previous.totalKwh),
+      previousPeriodCount: previous.periodCount,
+      deltaPercent: percentChange(previous.totalKwh, current.totalKwh),
+      direction: directionOf(current.totalKwh - previous.totalKwh),
     };
   });
 

@@ -123,6 +123,23 @@ export function useMeterReadings() {
     () => (readings.value?.filter((reading) => reading.id !== null).length ?? 0) === 0
   );
 
+  // Missing periods between the household's first submission and now.
+  // The current slot is only exempt while its own submit window (days 1-5)
+  // is still open — once it closes, an unsubmitted current period counts as
+  // missed too, same as any other gap.
+  const missedPeriods = computed(() => {
+    const firstSubmittedIndex = slots.value.findIndex((slot) => slot.reading);
+    if (firstSubmittedIndex === -1) {
+      return 0;
+    }
+
+    const currentWindowOpen = deadlineStatus.value !== "overdue";
+
+    return slots.value
+      .slice(firstSubmittedIndex)
+      .filter((slot) => !slot.reading && !(slot.isCurrent && currentWindowOpen)).length;
+  });
+
   const insights = useUsageInsights(slots);
 
   async function handleSubmit(): Promise<void> {
@@ -201,6 +218,7 @@ export function useMeterReadings() {
     daysLeft,
     deadlineStatus,
     isFirstPeriod,
+    missedPeriods,
     loadHistory,
     handleSubmit,
     ...insights,
