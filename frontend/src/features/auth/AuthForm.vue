@@ -63,7 +63,10 @@
             id="auth-password"
             name="password"
             type="password"
-            :autocomplete="isRegisterMode ? 'new-password' : 'current-password'"
+            :input-props="{
+              autocomplete: 'current-password',
+              name: 'password',
+            }"
             label-key="auth.password"
             placeholder-key="auth.password"
             :disabled="isSubmitting"
@@ -78,7 +81,7 @@
                 id="auth-confirm-password"
                 name="confirmPassword"
                 type="password"
-                autocomplete="new-password"
+                :input-props="{ autocomplete: 'new-password', name: 'confirmPassword' }"
                 label-key="auth.confirmPassword"
                 placeholder-key="auth.confirmPassword"
                 :disabled="isSubmitting"
