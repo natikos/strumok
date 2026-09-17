@@ -7,6 +7,7 @@
     <Password
       v-if="type === 'password'"
       :id="id"
+      :autocomplete="autocomplete"
       class="form-field-control__control"
       :name="name"
       :feedback="false"
@@ -20,6 +21,7 @@
     <InputText
       v-else
       :id="id"
+      :autocomplete="autocomplete"
       class="form-field-control__control"
       :type="type"
       :name="name"
@@ -48,6 +50,7 @@
   import Typography from "@shared/Typography.vue";
 
   interface FormFieldControlProps {
+    autocomplete?: string;
     disabled?: boolean;
     id: string;
     labelKey: string;
