@@ -64,7 +64,7 @@
             name="password"
             type="password"
             :input-props="{
-              autocomplete: 'current-password',
+              autocomplete: mode === 'register' ? 'new-password' : 'current-password',
               name: 'password',
             }"
             label-key="auth.password"
