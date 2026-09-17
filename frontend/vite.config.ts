@@ -51,11 +51,8 @@ export default defineConfig({
       workbox: {
         navigateFallbackDenylist: [
           /^\/favicon\//,
-          /^\/health$/,
-          /^\/docs$/,
-          /^\/redoc$/,
-          /^\/openapi\.json$/,
-          /\.(png|jpg|jpeg|svg|ico|webmanifest|json)$/,
+          /^\/(?:health|docs|redoc|openapi\.json)(?:\/|$)/,
+          /\.(?:png|jpe?g|gif|svg|ico|webp|woff2?|ttf|otf|eot|webmanifest|json)$/,
         ],
       },
     }),
