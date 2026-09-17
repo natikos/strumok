@@ -17,9 +17,11 @@ export interface SubmissionCopyInput {
  * place so a new status can't update one switch and miss another.
  */
 export function useSubmissionCopy(props: ComputedRef<SubmissionCopyInput>) {
-  const { t } = useI18n();
+  const { locale, t } = useI18n();
 
-  const deadlineMonth = computed(() => t(`months.long.${props.value.deadlineMonthIndex}`));
+  const deadlineMonth = computed(() =>
+    t(`months.${locale.value === "ua" ? "genitive" : "long"}.${props.value.deadlineMonthIndex}`)
+  );
 
   const formattedSubmittedAt = computed(() => {
     const submittedAt = props.value.submittedAt;

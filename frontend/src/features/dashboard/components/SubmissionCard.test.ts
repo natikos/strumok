@@ -11,6 +11,7 @@ import type { DeadlineStatus } from "@shared/utils/deadline";
 import SubmissionCard from "./SubmissionCard.vue";
 
 interface MountOverrides {
+  locale?: "en" | "ua";
   status?: DeadlineStatus;
   daysLeft?: number;
   billingMonthIndex?: number;
@@ -31,6 +32,8 @@ interface MountOverrides {
 }
 
 function mountCard(overrides: MountOverrides = {}) {
+  const { locale = "en", ...props } = overrides;
+
   return mountWithPlugins(SubmissionCard, {
     props: {
       status: "due",
@@ -41,8 +44,9 @@ function mountCard(overrides: MountOverrides = {}) {
       nightMeterValue: null,
       isSubmitting: false,
       isLoading: false,
-      ...overrides,
+      ...props,
     },
+    locale,
     global: {
       components: { Skeleton, InputNumber, Button },
     },
@@ -90,6 +94,13 @@ describe("SubmissionCard", () => {
 
       expect(wrapper.find(".submission__period").text()).toBe("AUGUST");
       expect(wrapper.find(".submission__subline").text()).toContain("Window closes 5 September");
+    });
+
+    it("uses the Ukrainian genitive month form after the deadline day", () => {
+      vi.setSystemTime(new Date(2026, 8, 3));
+      const wrapper = mountCard({ locale: "ua", status: "due", billingMonthIndex: 8 });
+
+      expect(wrapper.find(".submission__subline").text()).toContain("Вікно закривається 5 вересня");
     });
 
     it("names the closing month in the submitted detail", () => {
