@@ -123,13 +123,13 @@ describe("SubmissionCard", () => {
       expect(button.props("severity")).toBe("danger");
     });
 
-    it("renders the late-approval shield note and hides the ordinary hint caption", () => {
+    it("renders the late-submission note and hides the ordinary hint caption", () => {
       vi.setSystemTime(new Date(2026, 5, 20));
       const wrapper = mountCard({ status: "overdue" });
 
       expect(wrapper.find(".submission__note").exists()).toBe(true);
       expect(wrapper.text()).toContain(
-        "Late submissions go to the head of the cooperative for approval and won't change this period's charge"
+        "Late submissions are recorded for information only and won't change this period's charge"
       );
       expect(wrapper.find(".submission__caption").exists()).toBe(false);
     });
