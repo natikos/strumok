@@ -23,6 +23,8 @@ jobs:
           VITE_API_BASE_URL: ""
 
       - uses: astral-sh/setup-uv@v7
+        with:
+          working-directory: backend
 
       - name: Deploy
         run: uv run fastapi deploy
