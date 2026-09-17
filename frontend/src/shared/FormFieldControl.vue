@@ -7,7 +7,7 @@
     <Password
       v-if="type === 'password'"
       :id="id"
-      :autocomplete="autocomplete"
+      :input-props="inputProps"
       class="form-field-control__control"
       :name="name"
       :feedback="false"
@@ -53,6 +53,7 @@
     autocomplete?: string;
     disabled?: boolean;
     id: string;
+    inputProps?: Record<string, unknown>;
     labelKey: string;
     name: string;
     placeholderKey: string;
