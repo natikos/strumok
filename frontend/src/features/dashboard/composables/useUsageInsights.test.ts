@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { effectScope, ref } from "vue";
 
 import type { MeterPeriod } from "@/features/dashboard/composables/useMeterReadings";
@@ -221,56 +221,59 @@ describe("useUsageInsights", () => {
   });
 
   describe("seasonComparison", () => {
-    it("is null when there are no submitted periods", () => {
-      const slots = ref<MeterPeriod[]>([makeSlot("2026-06", undefined)]);
+    // "Now" is anchored in August 2026 (summer) so the current season is
+    // deterministic regardless of when the test suite actually runs.
+    beforeEach(() => {
+      vi.useFakeTimers();
+      vi.setSystemTime(new Date(2026, 7, 15));
+    });
+
+    afterEach(() => {
+      vi.useRealTimers();
+    });
+
+    it("is null when there are no readings for the current season", () => {
+      const slots = ref<MeterPeriod[]>([makeSlot("2026-08", undefined)]);
       const { seasonComparison } = useUsageInsights(slots);
 
       expect(seasonComparison.value).toBeNull();
     });
 
-    it("is null when the last period is the only submission ever", () => {
+    it("is null when this season has a reading but last year's same season doesn't", () => {
       const slots = ref<MeterPeriod[]>([
-        makeSlot("2026-06", makeReading({ period: "2026-06" })), // summer
+        makeSlot("2026-08", makeReading({ period: "2026-08", day_usage_kwh: "18.00" })),
       ]);
       const { seasonComparison } = useUsageInsights(slots);
 
       expect(seasonComparison.value).toBeNull();
     });
 
-    it("is null when there's no submission exactly one year before the last period, even if other same-season periods exist", () => {
+    it("does not fall back to an unrelated season when only a different season a year back exists", () => {
       const slots = ref<MeterPeriod[]>([
-        // summer, but two years back -- not the exact one-year-back match
-        makeSlot("2024-06", makeReading({ period: "2024-06", day_usage_kwh: "20.00" })),
-        // spring, one year back -- same year offset, different season/month
+        // spring, one year back -- different season, must not be used
         makeSlot("2025-04", makeReading({ period: "2025-04", day_usage_kwh: "5.00" })),
-        // summer -- the last submitted period
-        makeSlot("2026-06", makeReading({ period: "2026-06", day_usage_kwh: "10.00" })),
+        makeSlot("2026-08", makeReading({ period: "2026-08", day_usage_kwh: "10.00" })),
       ]);
       const { seasonComparison } = useUsageInsights(slots);
 
       expect(seasonComparison.value).toBeNull();
     });
 
-    it("compares against the exact same calendar month one year earlier, not an average", () => {
+    it("sums whatever summer months exist this year and last year, rather than requiring all three", () => {
       const slots = ref<MeterPeriod[]>([
-        // decoy same-season periods that must NOT be folded into an average
-        makeSlot(
-          "2025-07",
-          makeReading({ period: "2025-07", day_usage_kwh: "50.00", night_usage_kwh: "0.00" })
-        ),
-        makeSlot(
-          "2025-08",
-          makeReading({ period: "2025-08", day_usage_kwh: "90.00", night_usage_kwh: "0.00" })
-        ),
-        // the exact one-year-back match for the last submitted period
+        // last year: only June and July submitted (August missed)
         makeSlot(
           "2025-06",
-          makeReading({ period: "2025-06", day_usage_kwh: "15.00", night_usage_kwh: "0.00" })
+          makeReading({ period: "2025-06", day_usage_kwh: "10.00", night_usage_kwh: "0.00" })
         ),
-        // last submitted period, also summer
         makeSlot(
-          "2026-06",
-          makeReading({ period: "2026-06", day_usage_kwh: "18.00", night_usage_kwh: "0.00" })
+          "2025-07",
+          makeReading({ period: "2025-07", day_usage_kwh: "5.00", night_usage_kwh: "0.00" })
+        ),
+        // this year: only August submitted so far
+        makeSlot(
+          "2026-08",
+          makeReading({ period: "2026-08", day_usage_kwh: "18.00", night_usage_kwh: "0.00" })
         ),
       ]);
       const { seasonComparison } = useUsageInsights(slots);
@@ -278,28 +281,50 @@ describe("useUsageInsights", () => {
       expect(seasonComparison.value).toEqual({
         season: "summer",
         currentKwh: 18,
+        currentPeriodCount: 1,
         previousYearKwh: 15,
+        previousPeriodCount: 2,
         deltaPercent: 20,
         direction: "up",
       });
     });
 
-    it("does not fall back to another same-season period when last year's exact month is missing", () => {
+    it("keeps December in the winter that ends the following February", () => {
+      vi.setSystemTime(new Date(2027, 0, 15)); // January 2027 -- winter
+
       const slots = ref<MeterPeriod[]>([
-        // same season (summer) but not the exact one-year-back month -- must
-        // not be used as a substitute match.
+        // this winter: December 2026 + January 2027
         makeSlot(
-          "2025-07",
-          makeReading({ period: "2025-07", day_usage_kwh: "999.00", night_usage_kwh: "0.00" })
+          "2026-12",
+          makeReading({ period: "2026-12", day_usage_kwh: "12.00", night_usage_kwh: "0.00" })
         ),
         makeSlot(
-          "2026-06",
-          makeReading({ period: "2026-06", day_usage_kwh: "18.00", night_usage_kwh: "0.00" })
+          "2027-01",
+          makeReading({ period: "2027-01", day_usage_kwh: "8.00", night_usage_kwh: "0.00" })
+        ),
+        // last winter: December 2025 + January 2026
+        makeSlot(
+          "2025-12",
+          makeReading({ period: "2025-12", day_usage_kwh: "10.00", night_usage_kwh: "0.00" })
+        ),
+        makeSlot(
+          "2026-01",
+          makeReading({ period: "2026-01", day_usage_kwh: "5.00", night_usage_kwh: "0.00" })
         ),
       ]);
       const { seasonComparison } = useUsageInsights(slots);
 
-      expect(seasonComparison.value).toBeNull();
+      expect(seasonComparison.value).toEqual(
+        expect.objectContaining({
+          season: "winter",
+          currentKwh: 20,
+          currentPeriodCount: 2,
+          previousYearKwh: 15,
+          previousPeriodCount: 2,
+          direction: "up",
+        })
+      );
+      expect(seasonComparison.value?.deltaPercent).toBeCloseTo(33.33, 1);
     });
   });
 

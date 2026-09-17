@@ -1,5 +1,5 @@
 import Skeleton from "primevue/skeleton";
-import { describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import type {
   DaysIntoPeriod,
@@ -35,7 +35,9 @@ const momChange: MomChange = {
 const seasonComparison: SeasonComparison = {
   season: "summer",
   currentKwh: 180,
+  currentPeriodCount: 2,
   previousYearKwh: 150.4,
+  previousPeriodCount: 2,
   deltaPercent: 19.7,
   direction: "up",
 };
@@ -63,6 +65,15 @@ function mountCard(overrides: MountOverrides = {}) {
 }
 
 describe("StatTilesCard", () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date(2026, 6, 15)); // July — summer, matching `seasonComparison` fixture
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
   it("always renders exactly 3 tiles", () => {
     const wrapper = mountCard();
     expect(wrapper.findAll(".stat-tile")).toHaveLength(3);
@@ -111,27 +122,37 @@ describe("StatTilesCard", () => {
       expect(tiles[2]?.classes()).toContain("stat-tile--empty");
       expect(tiles[2]?.text()).toContain("—");
     });
+
+    it("names the current season when seasonComparison is null", () => {
+      const wrapper = mountCard({ seasonComparison: null });
+
+      const tile = wrapper.findAll(".stat-tile")[2]!;
+      expect(tile.text()).toContain("Summer");
+      expect(tile.text()).not.toContain("Needs 2 periods");
+    });
   });
 
   describe("season comparison tile", () => {
-    it("shows the percent delta, direction icon, compared month, and last year's value", () => {
+    it("shows the percent delta, direction icon, current season, and last year's value", () => {
       const wrapper = mountCard();
 
       const tile = wrapper.findAll(".stat-tile")[2]!;
       expect(tile.text()).toContain("19.7%");
-      expect(tile.text()).toContain("June");
+      expect(tile.text()).toContain("Summer");
       expect(tile.text()).toContain("last year");
       expect(tile.text()).toContain("150.4");
       expect(tile.find(".pi-arrow-up").exists()).toBe(true);
       expect(tile.find(".stat-tile__value--up").exists()).toBe(true);
     });
 
-    it("shows a down arrow and styling when usage fell below last year's same month", () => {
+    it("shows a down arrow and styling when this season's usage fell below last year's", () => {
       const wrapper = mountCard({
         seasonComparison: {
-          season: "winter",
+          season: "summer",
           currentKwh: 90,
+          currentPeriodCount: 2,
           previousYearKwh: 120,
+          previousPeriodCount: 2,
           deltaPercent: -25,
           direction: "down",
         },

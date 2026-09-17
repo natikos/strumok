@@ -32,11 +32,13 @@
   import { computed } from "vue";
   import { useI18n } from "vue-i18n";
 
-  import type {
-    DaysIntoPeriod,
-    MomChange,
-    PeriodUsage,
-    SeasonComparison,
+  import {
+    type DaysIntoPeriod,
+    type MomChange,
+    type PeriodUsage,
+    type Season,
+    SEASON_BY_MONTH,
+    type SeasonComparison,
   } from "@/features/dashboard/composables/useUsageInsights";
   import { useLocale } from "@/features/i18n/composables/useLocale";
   import { formatMeterValue, formatUah } from "@shared/utils/format";
@@ -154,25 +156,46 @@
     };
   });
 
+  const seasonLabelKeys = {
+    summer: "dashboard.seasonSummer",
+    autumn: "dashboard.seasonAutumn",
+    winter: "dashboard.seasonWinter",
+    spring: "dashboard.seasonSpring",
+  } as const;
+
+  // "seasonNoData" needs the season name declined for its sentence (e.g.
+  // Ukrainian accusative "за весну", not the nominative tile-label "Весна")
+  // — every supported locale provides its own form, so no casing is guessed.
+  const seasonAccusativeKeys = {
+    summer: "dashboard.seasonSummerAccusative",
+    autumn: "dashboard.seasonAutumnAccusative",
+    winter: "dashboard.seasonWinterAccusative",
+    spring: "dashboard.seasonSpringAccusative",
+  } as const;
+
+  const currentSeason = computed<Season>(() => SEASON_BY_MONTH[new Date().getMonth()]!);
+
   const seasonComparisonTile = computed<Tile>(() => {
     const comparison = props.seasonComparison;
+    const seasonName = t(seasonLabelKeys[currentSeason.value]);
+    const seasonNameAccusative = t(seasonAccusativeKeys[currentSeason.value]);
+
     if (!comparison) {
       return {
         key: "season",
-        label: t("dashboard.vsYearAgoEmpty"),
+        label: t("dashboard.vsSeasonLastYear", { season: seasonName }),
         value: "",
         unit: "",
-        sub: t("dashboard.unlockNeedsTwo"),
+        sub: t("dashboard.seasonNoData", { season: seasonNameAccusative }),
         isEmpty: true,
       };
     }
 
-    const month = props.lastPeriod ? monthName(props.lastPeriod.monthIndex) : "";
     const sub = `${num(comparison.currentKwh)} · ${t("dashboard.seasonPreviousYearValue", { value: num(comparison.previousYearKwh) })}`;
 
     return {
       key: "season",
-      label: t("dashboard.vsMonthLastYear", { month }),
+      label: t("dashboard.vsSeasonLastYear", { season: seasonName }),
       value: `${Math.abs(comparison.deltaPercent).toFixed(1)}%`,
       unit: "",
       sub,
