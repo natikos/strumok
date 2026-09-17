@@ -75,6 +75,35 @@ describe("SubmissionCard", () => {
     });
   });
 
+  describe("period label vs deadline month", () => {
+    it("names the billing period in the header and the closing month in the subline", () => {
+      vi.setSystemTime(new Date(2026, 8, 17));
+      const wrapper = mountCard({ status: "overdue", billingMonthIndex: 7 });
+
+      expect(wrapper.find(".submission__period").text()).toBe("AUGUST");
+      expect(wrapper.find(".submission__subline").text()).toContain("September");
+    });
+
+    it("keeps the two months distinct while the window is open", () => {
+      vi.setSystemTime(new Date(2026, 8, 3));
+      const wrapper = mountCard({ status: "due", billingMonthIndex: 7 });
+
+      expect(wrapper.find(".submission__period").text()).toBe("AUGUST");
+      expect(wrapper.find(".submission__subline").text()).toContain("Window closes 5 September");
+    });
+
+    it("names the closing month in the submitted detail", () => {
+      vi.setSystemTime(new Date(2026, 8, 3));
+      const wrapper = mountCard({
+        status: "submitted",
+        billingMonthIndex: 7,
+        submittedAt: "2026-09-02T10:00:00Z",
+      });
+
+      expect(wrapper.find(".submission__subline").text()).toContain("September");
+    });
+  });
+
   describe("overdue", () => {
     it("shows the overdue headline and keeps the form visible", () => {
       vi.setSystemTime(new Date(2026, 5, 20));

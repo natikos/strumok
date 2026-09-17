@@ -1,6 +1,7 @@
 import {
   differenceInCalendarDays,
   endOfDay,
+  getMonth,
   isAfter,
   isBefore,
   isWithinInterval,
@@ -18,11 +19,16 @@ export interface DeadlineRange {
   end: Date;
 }
 
-export function getSubmitWindow(): DeadlineRange {
+export function getSubmitWindow(now: Date = new Date()): DeadlineRange {
   return {
-    start: startOfDay(setDate(new Date(), 1)),
-    end: endOfDay(setDate(new Date(), DEADLINE_DAY)),
+    start: startOfDay(setDate(now, 1)),
+    end: endOfDay(setDate(now, DEADLINE_DAY)),
   };
+}
+
+/** Month the submit window closes in, not the billing period being reported on. */
+export function getDeadlineMonthIndex(now: Date = new Date()): number {
+  return getMonth(getSubmitWindow(now).end);
 }
 
 export function getDeadlineStatus(submittedAt: string | null | undefined): DeadlineStatus {

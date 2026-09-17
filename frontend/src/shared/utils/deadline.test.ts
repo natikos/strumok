@@ -1,6 +1,13 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { getDaysLeft, getDeadlineStatus, getSubmitWindow, isOverdue, isPending } from "./deadline";
+import {
+  getDaysLeft,
+  getDeadlineMonthIndex,
+  getDeadlineStatus,
+  getSubmitWindow,
+  isOverdue,
+  isPending,
+} from "./deadline";
 
 /**
  * `now` is always constructed from local components (`new Date(y, m, d, ...)`),
@@ -48,6 +55,37 @@ describe("getSubmitWindow", () => {
     expect(start).toEqual(new Date(2026, 11, 1, 0, 0, 0, 0));
     expect(end.getMonth()).toBe(11);
     expect(end.getFullYear()).toBe(2026);
+  });
+
+  it("does not mutate the date it is given", () => {
+    const now = new Date(2026, 8, 17);
+
+    getSubmitWindow(now);
+
+    expect(now).toEqual(new Date(2026, 8, 17));
+  });
+});
+
+describe("getDeadlineMonthIndex", () => {
+  beforeEach(() => vi.useFakeTimers());
+  afterEach(() => vi.useRealTimers());
+
+  it("names the month the window closes in, not the period being reported on", () => {
+    freezeAt([2026, 8, 17]);
+
+    expect(getDeadlineMonthIndex()).toBe(8);
+  });
+
+  it("names the current month while the window is still open", () => {
+    freezeAt([2026, 8, 3]);
+
+    expect(getDeadlineMonthIndex()).toBe(8);
+  });
+
+  it("stays in month on a 31st, where naive date arithmetic would overflow", () => {
+    freezeAt([2026, 2, 31]);
+
+    expect(getDeadlineMonthIndex()).toBe(2);
   });
 });
 

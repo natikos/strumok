@@ -176,7 +176,7 @@
   import type { FieldErrors } from "@/features/dashboard/types";
   import { useLocale } from "@/features/i18n/composables/useLocale";
   import type { DeadlineStatus } from "@shared/utils/deadline";
-  import { DEADLINE_DAY } from "@shared/utils/deadline";
+  import { DEADLINE_DAY, getDeadlineMonthIndex } from "@shared/utils/deadline";
   import { formatKwh, formatMeterValue, formatUah } from "@shared/utils/format";
 
   import DeadlineBadge from "./DeadlineBadge.vue";
@@ -225,8 +225,8 @@
     () => !props.isEditing && (props.status === "submitted" || props.status === "submitted-late")
   );
 
-  const monthName = computed(() => t(`months.long.${props.billingMonthIndex}`));
-  const periodLabel = computed(() => monthName.value.toUpperCase());
+  const periodLabel = computed(() => t(`months.long.${props.billingMonthIndex}`).toUpperCase());
+  const deadlineMonth = computed(() => t(`months.long.${getDeadlineMonthIndex()}`));
 
   const kwh = computed(() => t("units.kwh"));
 
@@ -271,20 +271,20 @@
       case "due":
         return t("deadlineStatus.windowClosesAt", {
           day: DEADLINE_DAY,
-          month: monthName.value,
+          month: deadlineMonth.value,
         });
       case "submitted":
         return t("deadlineStatus.submittedDetail", {
           date: formattedSubmittedAt.value,
           day: DEADLINE_DAY,
-          month: monthName.value,
+          month: deadlineMonth.value,
         });
       case "submitted-late":
         return t("deadlineStatus.submittedLateDetail");
       default:
         return t("deadlineStatus.windowClosedAt", {
           day: DEADLINE_DAY,
-          month: monthName.value,
+          month: deadlineMonth.value,
         });
     }
   });
