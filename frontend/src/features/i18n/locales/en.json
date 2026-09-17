@@ -152,7 +152,7 @@
     "submitFirst": "Submit first reading",
     "editSubmitted": "Edit reading",
     "lockNote": "You can edit your reading until day 5 of the month",
-    "lateApprovalNote": "Late submissions go to the head of the cooperative for approval and won't change this period's charge",
+    "lateApprovalNote": "Late submissions are recorded for information only and won't change this period's charge",
     "hintText": "Enter the numbers shown on your electricity meter, then press Submit"
   },
   "months": {
