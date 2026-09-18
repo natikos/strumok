@@ -16,6 +16,7 @@ from app.api import (
     push_internal_router,
     push_router,
 )
+from app.api.push.scheduler import start_reminder_scheduler, stop_reminder_scheduler
 from app.core.config import settings
 from app.db.engine import init_db
 
@@ -27,8 +28,9 @@ DIST_DIR = Path(__file__).resolve().parent.parent / "dist"
 @asynccontextmanager
 async def lifespan(_: FastAPI):
     init_db()
+    start_reminder_scheduler()
     yield
-    # Perform any necessary cleanup here if needed
+    stop_reminder_scheduler()
 
 
 app = FastAPI(title=settings.app_name, lifespan=lifespan)
