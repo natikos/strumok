@@ -33,11 +33,14 @@ export async function unsubscribeFromPush(endpoint: string): Promise<void> {
 // TEMPORARY: manual end-to-end verification after a deploy. Safe to remove
 // once push has been confirmed working in production (issue #94).
 export async function sendTestPush(): Promise<{ removed: number; sent: number }> {
-  const { data, error, response } = await appApiClient.POST("/push/test");
+  const { data, response } = await appApiClient.POST("/push/test");
 
-  if (error) {
-    throw buildApiError(response.status, error);
+  // The endpoint has no request body/params, so FastAPI generates no error
+  // response schema for it, which collapses openapi-fetch's `error` type to
+  // `never` -- check `response.ok` instead of destructuring `error`.
+  if (!response.ok || !data) {
+    throw buildApiError(response.status, null);
   }
 
-  return { removed: data?.removed ?? 0, sent: data?.sent ?? 0 };
+  return { removed: data.removed, sent: data.sent };
 }
