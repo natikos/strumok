@@ -22,6 +22,10 @@ vi.mock("@features/push-notifications/usePushNotifications", () => ({
   usePushNotifications,
 }));
 
+vi.mock("primevue/usetoast", () => ({
+  useToast: () => ({ add: vi.fn() }),
+}));
+
 function mockPushState(initial: PushToggleState) {
   const state = ref(initial);
   const enable = vi.fn().mockResolvedValue(undefined);

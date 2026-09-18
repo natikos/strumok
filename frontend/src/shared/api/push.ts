@@ -29,3 +29,15 @@ export async function unsubscribeFromPush(endpoint: string): Promise<void> {
     throw buildApiError(response.status, error);
   }
 }
+
+// TEMPORARY: manual end-to-end verification after a deploy. Safe to remove
+// once push has been confirmed working in production (issue #94).
+export async function sendTestPush(): Promise<{ removed: number; sent: number }> {
+  const { data, error, response } = await appApiClient.POST("/push/test");
+
+  if (error) {
+    throw buildApiError(response.status, error);
+  }
+
+  return { removed: data?.removed ?? 0, sent: data?.sent ?? 0 };
+}
