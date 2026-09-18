@@ -50,6 +50,19 @@ class BrevoSettings(BaseSettings):
     app_base_url: str = "http://localhost:5173"
 
 
+class PushSettings(BaseSettings):
+    model_config = SettingsConfigDict(
+        env_prefix="PUSH_",
+        extra="ignore",
+        env_file=".env",
+    )
+
+    vapid_public_key: str = ""
+    vapid_private_key: SecretStr = SecretStr("")
+    vapid_subject: str = "mailto:admin@example.com"
+    reminder_secret: SecretStr = SecretStr("")
+
+
 class Settings(BaseSettings):
     """Application-wide grouped configuration."""
 
@@ -73,6 +86,7 @@ class Settings(BaseSettings):
     db: DbSettings = DbSettings()  # type: ignore
     auth: AuthSettings = AuthSettings()  # type: ignore
     brevo: BrevoSettings = BrevoSettings()
+    push: PushSettings = PushSettings()
 
     @property
     def auth_cookie_secure(self) -> bool:

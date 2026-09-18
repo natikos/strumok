@@ -21,9 +21,7 @@ class PeriodAlreadySubmittedError(Exception):
     pass
 
 
-def get_owned_household_id(
-    *, session: Session, user: User, household_id: int
-) -> int:
+def get_owned_household_id(*, session: Session, user: User, household_id: int) -> int:
     owned = session.exec(
         select(Household.id)
         .where(Household.user_id == user.id)
@@ -56,7 +54,14 @@ def _previous_period(period: str) -> str:
     return f"{year}-{month - 1:02d}"
 
 
-def list_meter_readings(*, session: Session, household_id: int) -> list[MeterReadingOut]:
+def current_billing_period() -> str:
+    """The period residents currently submit a reading for (the prior calendar month)."""
+    return _previous_period(utc_now().strftime("%Y-%m"))
+
+
+def list_meter_readings(
+    *, session: Session, household_id: int
+) -> list[MeterReadingOut]:
     household_created_at = session.exec(
         select(Household.created_at).where(Household.id == household_id)
     ).one()
@@ -118,7 +123,9 @@ def submit_meter_reading(
 
     if previous:
         day_usage_kwh = max(day_meter_value - previous.day_meter_value, Decimal("0"))
-        night_usage_kwh = max(night_meter_value - previous.night_meter_value, Decimal("0"))
+        night_usage_kwh = max(
+            night_meter_value - previous.night_meter_value, Decimal("0")
+        )
     else:
         day_usage_kwh = Decimal("0")
         night_usage_kwh = Decimal("0")

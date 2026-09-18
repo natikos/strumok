@@ -204,7 +204,15 @@
     "theme": "Theme",
     "themeLight": "Light",
     "themeDark": "Dark",
-    "language": "Language"
+    "language": "Language",
+    "notifications": "Notifications",
+    "remindMe": "Remind me to submit",
+    "remindMeOff": "Get a notification on the 1st and 5th of the month",
+    "remindMeRequesting": "Requesting permission…",
+    "remindMeOn": "On · reminders arrive on the 1st and 5th",
+    "remindMeDenied": "Blocked in your browser settings — enable notifications for this app, then reload",
+    "remindMeIosNotInstalled": "On iPhone, add Strumok to your Home Screen first (Share → Add to Home Screen), then turn this on",
+    "remindMeUnsupported": "Not available in this browser"
   },
   "statuses": {
     "meterReading": {

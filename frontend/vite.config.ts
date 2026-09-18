@@ -25,7 +25,13 @@ export default defineConfig({
       resolvers: [PrimeVueResolver()],
     }),
     VitePWA({
+      strategies: "injectManifest",
+      srcDir: "src",
+      filename: "sw.ts",
       registerType: "autoUpdate",
+      injectManifest: {
+        globPatterns: ["**/*.{js,css,html,ico,png,svg,webmanifest}"],
+      },
       manifest: {
         name: "Strumok",
         short_name: "Strumok",
@@ -46,13 +52,6 @@ export default defineConfig({
             type: "image/png",
             purpose: "any",
           },
-        ],
-      },
-      workbox: {
-        navigateFallbackDenylist: [
-          /^\/favicon\//,
-          /^\/(?:health|docs|redoc|openapi\.json)(?:\/|$)/,
-          /\.(?:png|jpe?g|gif|svg|ico|webp|woff2?|ttf|otf|eot|webmanifest|json)$/,
         ],
       },
     }),
