@@ -245,6 +245,41 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/push/vapid-public-key": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Get Vapid Public Key */
+    get: operations["get_vapid_public_key_push_vapid_public_key_get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/push/subscribe": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Subscribe */
+    post: operations["subscribe_push_subscribe_post"];
+    /** Unsubscribe */
+    delete: operations["unsubscribe_push_subscribe_delete"];
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -446,6 +481,24 @@ export interface components {
        */
       submitted_at: string | null;
     };
+    /** PushSubscriptionIn */
+    PushSubscriptionIn: {
+      /** Endpoint */
+      endpoint: string;
+      keys: components["schemas"]["PushSubscriptionKeysIn"];
+    };
+    /** PushSubscriptionKeysIn */
+    PushSubscriptionKeysIn: {
+      /** P256Dh */
+      p256dh: string;
+      /** Auth */
+      auth: string;
+    };
+    /** PushUnsubscribeIn */
+    PushUnsubscribeIn: {
+      /** Endpoint */
+      endpoint: string;
+    };
     /** RegisterIn */
     RegisterIn: {
       /**
@@ -526,6 +579,11 @@ export interface components {
       input?: unknown;
       /** Context */
       ctx?: Record<string, never>;
+    };
+    /** VapidPublicKeyOut */
+    VapidPublicKeyOut: {
+      /** Public Key */
+      public_key: string;
     };
     /** VerifyEmailIn */
     VerifyEmailIn: {
@@ -1202,6 +1260,88 @@ export interface operations {
            */
           "application/json": components["schemas"]["ErrorOut"];
         };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  get_vapid_public_key_push_vapid_public_key_get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["VapidPublicKeyOut"];
+        };
+      };
+    };
+  };
+  subscribe_push_subscribe_post: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["PushSubscriptionIn"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  unsubscribe_push_subscribe_delete: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["PushUnsubscribeIn"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
       };
       /** @description Validation Error */
       422: {

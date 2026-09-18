@@ -57,6 +57,7 @@ declare module 'vue' {
     Tabs: typeof import('primevue/tabs')['default']
     ThemeToggleButton: typeof import('./src/shared/components/theme/ThemeToggleButton.vue')['default']
     Toast: typeof import('primevue/toast')['default']
+    ToggleSwitch: typeof import('primevue/toggleswitch')['default']
     Typography: typeof import('./src/shared/Typography.vue')['default']
     UsageChartCard: typeof import('./src/features/dashboard/components/UsageChartCard.vue')['default']
     UsageHistoryPage: typeof import('./src/pages/history/UsageHistoryPage.vue')['default']
