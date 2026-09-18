@@ -1,3 +1,7 @@
+from datetime import datetime
+from decimal import Decimal
+from typing import Literal
+
 from pydantic import BaseModel, ConfigDict, Field
 
 from app.db.models import Household, User
@@ -46,3 +50,19 @@ class AdminHouseholdOut(BaseModel):
                 "owner": AdminUserSummaryOut.model_validate(owner) if owner else None,
             }
         )
+
+
+class AdminDashboardHouseholdOut(BaseModel):
+    id: int
+    name: str
+    owner: AdminUserSummaryOut | None = None
+    submission_status: Literal["submitted", "missing"]
+    submitted_at: datetime | None = None
+    latest_period: str | None = None
+    latest_usage_kwh: Decimal | None = Field(default=None, decimal_places=2)
+    latest_amount_charged_uah: Decimal | None = Field(default=None, decimal_places=2)
+
+
+class AdminDashboardOut(BaseModel):
+    current_period: str
+    households: list[AdminDashboardHouseholdOut]

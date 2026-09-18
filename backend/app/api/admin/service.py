@@ -1,6 +1,27 @@
+from decimal import Decimal
+
 from sqlmodel import Session, select
 
-from app.db.models import Household, User
+from app.api.admin.schemas import (
+    AdminDashboardHouseholdOut,
+    AdminDashboardOut,
+    AdminUserSummaryOut,
+)
+from app.api.meter_readings.service import _previous_period
+from app.core.time import utc_now
+from app.db.models import Household, MeterReading, User
+
+
+def _summed_usage_kwh(
+    day_usage_kwh: Decimal | None, night_usage_kwh: Decimal | None = None
+) -> Decimal | None:
+    if day_usage_kwh is None and night_usage_kwh is None:
+        return None
+    if day_usage_kwh is None:
+        return night_usage_kwh
+    if night_usage_kwh is None:
+        return day_usage_kwh
+    return day_usage_kwh + night_usage_kwh
 
 
 class UserNotFoundError(Exception):
@@ -36,6 +57,50 @@ def list_households_with_owners(
         )
     }
     return [(h, owners_by_id.get(h.user_id)) for h in households]
+
+
+def get_admin_dashboard(*, session: Session) -> AdminDashboardOut:
+    current_period = _previous_period(utc_now().strftime("%Y-%m"))
+    readings = session.exec(
+        select(MeterReading).order_by(
+            MeterReading.household_id, MeterReading.period.desc()
+        )
+    ).all()
+
+    latest_by_household: dict[int, MeterReading] = {}
+    current_by_household: dict[int, MeterReading] = {}
+    for reading in readings:
+        latest_by_household.setdefault(reading.household_id, reading)
+        if reading.period == current_period:
+            current_by_household[reading.household_id] = reading
+
+    households = []
+    for household, owner in list_households_with_owners(session=session):
+        current = current_by_household.get(household.id)
+        latest = latest_by_household.get(household.id)
+        households.append(
+            AdminDashboardHouseholdOut(
+                id=household.id,
+                name=household.name,
+                owner=AdminUserSummaryOut.model_validate(owner) if owner else None,
+                submission_status="submitted" if current else "missing",
+                submitted_at=current.submitted_at if current else None,
+                latest_period=latest.period if latest else None,
+                latest_usage_kwh=(
+                    _summed_usage_kwh(
+                        latest.day_usage_kwh,
+                        latest.night_usage_kwh,
+                    )
+                    if latest
+                    else None
+                ),
+                latest_amount_charged_uah=(
+                    latest.amount_charged_uah if latest else None
+                ),
+            )
+        )
+
+    return AdminDashboardOut(current_period=current_period, households=households)
 
 
 def _get_active_user(*, session: Session, user_id: int) -> User:

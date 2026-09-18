@@ -33,7 +33,18 @@
     "effectiveFromInvalid": "Вкажіть коректний період у форматі РРРР-ММ",
     "dayRateRequired": "Введіть денний тариф",
     "nightRateRequired": "Введіть нічний тариф",
-    "rateMustBePositive": "Тариф має бути більшим за нуль"
+    "rateMustBePositive": "Тариф має бути більшим за нуль",
+    "submissionOverview": "Стан подання показників",
+    "currentPeriod": "Поточний період: {period}",
+    "owner": "Власник",
+    "status": "Стан",
+    "latestUsage": "Останнє споживання",
+    "latestCharge": "Остання сума",
+    "submitted": "Подано",
+    "missing": "Не подано",
+    "tabSubmissions": "Подання",
+    "tabHouseholds": "Господарства",
+    "tabRates": "Тарифи"
   },
   "auth": {
     "login": "Вхід",

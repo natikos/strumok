@@ -33,7 +33,18 @@
     "effectiveFromInvalid": "Enter a valid period as YYYY-MM",
     "dayRateRequired": "Enter the day rate",
     "nightRateRequired": "Enter the night rate",
-    "rateMustBePositive": "Rate must be greater than zero"
+    "rateMustBePositive": "Rate must be greater than zero",
+    "submissionOverview": "Submission overview",
+    "currentPeriod": "Current period: {period}",
+    "owner": "Owner",
+    "status": "Status",
+    "latestUsage": "Latest usage",
+    "latestCharge": "Latest charge",
+    "submitted": "Submitted",
+    "missing": "Missing",
+    "tabSubmissions": "Submissions",
+    "tabHouseholds": "Households",
+    "tabRates": "Rates"
   },
   "auth": {
     "login": "Login",

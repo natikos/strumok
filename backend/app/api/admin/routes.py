@@ -4,6 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlmodel import Session
 
 from app.api.admin.schemas import (
+    AdminDashboardOut,
     AdminHouseholdCreateIn,
     AdminHouseholdOut,
     AdminUserSummaryOut,
@@ -16,6 +17,7 @@ from app.api.admin.service import (
     UserNotFoundError,
     assign_household_owner,
     create_household_for_user,
+    get_admin_dashboard,
     list_households_with_owners,
     list_users,
 )
@@ -76,6 +78,13 @@ ASSIGN_OWNER_RESPONSES: dict[int | str, dict[str, Any]] = {
 @router.get("/users", response_model=list[AdminUserSummaryOut])
 def list_admin_users(session: Session = Depends(get_session)) -> list[User]:
     return list_users(session=session)
+
+
+@router.get("/dashboard", response_model=AdminDashboardOut)
+def get_admin_dashboard_summary(
+    session: Session = Depends(get_session),
+) -> AdminDashboardOut:
+    return get_admin_dashboard(session=session)
 
 
 @router.get("/households", response_model=list[AdminHouseholdOut])

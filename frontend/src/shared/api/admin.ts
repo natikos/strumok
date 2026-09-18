@@ -4,6 +4,7 @@ import { ApiError, appApiClient, buildApiError } from "./client";
 
 export type AdminUserSummaryOut = components["schemas"]["AdminUserSummaryOut"];
 export type AdminHouseholdOut = components["schemas"]["AdminHouseholdOut"];
+export type AdminDashboardOut = components["schemas"]["AdminDashboardOut"];
 type AdminHouseholdCreateIn = components["schemas"]["AdminHouseholdCreateIn"];
 type HouseholdOwnerAssignIn = components["schemas"]["HouseholdOwnerAssignIn"];
 
@@ -17,6 +18,16 @@ export async function listAdminHouseholds(): Promise<AdminHouseholdOut[]> {
   const { data } = await appApiClient.GET("/admin/households");
 
   return data ?? [];
+}
+
+export async function getAdminDashboard(): Promise<AdminDashboardOut> {
+  const { data } = await appApiClient.GET("/admin/dashboard");
+
+  if (!data) {
+    throw new Error("Admin dashboard response was empty");
+  }
+
+  return data;
 }
 
 export async function createAdminHousehold(
