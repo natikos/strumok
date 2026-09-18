@@ -12,6 +12,7 @@ from app.api.push.service import (
     ReminderVariant,
     delete_subscription,
     send_reminders,
+    send_test_notification,
     upsert_subscription,
 )
 from app.core.config import settings
@@ -54,6 +55,16 @@ def unsubscribe(
     session: Session = Depends(get_session),
 ) -> None:
     delete_subscription(session=session, user=current_user, endpoint=payload.endpoint)
+
+
+# TEMPORARY: manual verification endpoint, see send_test_notification (#94).
+@router.post("/test", response_model=SendRemindersOut)
+def send_test(
+    current_user: User = Depends(get_current_user),
+    session: Session = Depends(get_session),
+) -> SendRemindersOut:
+    sent, removed = send_test_notification(session=session, user=current_user)
+    return SendRemindersOut(sent=sent, removed=removed)
 
 
 @internal_router.post("/send-reminders", response_model=SendRemindersOut)

@@ -280,6 +280,23 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/push/test": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Send Test */
+    post: operations["send_test_push_test_post"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -512,6 +529,13 @@ export interface components {
       last_name: string;
       /** Password */
       password: string;
+    };
+    /** SendRemindersOut */
+    SendRemindersOut: {
+      /** Sent */
+      sent: number;
+      /** Removed */
+      removed: number;
     };
     /**
      * ThemeMode
@@ -1350,6 +1374,26 @@ export interface operations {
         };
         content: {
           "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  send_test_push_test_post: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["SendRemindersOut"];
         };
       };
     };

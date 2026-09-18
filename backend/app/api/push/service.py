@@ -154,3 +154,29 @@ def send_reminders(*, session: Session, variant: ReminderVariant) -> tuple[int, 
 
 def _notification_payload(content: dict[str, str]) -> str:
     return json.dumps({**content, "url": "/"})
+
+
+# TEMPORARY: manual end-to-end check that a deployed subscription actually
+# receives a push, without waiting for the scheduled reminder or depending on
+# submission status. Safe to remove once push has been verified in production
+# (issue #94).
+def send_test_notification(*, session: Session, user: User) -> tuple[int, int]:
+    subscriptions = session.exec(
+        select(PushSubscription).where(PushSubscription.user_id == user.id)
+    ).all()
+    payload = _notification_payload(
+        {"title": "Strumok", "body": "Test notification -- push is working."}
+    )
+
+    sent = 0
+    removed = 0
+    for subscription in subscriptions:
+        _, outcome = _send_one(subscription, payload)
+        if outcome == "sent":
+            sent += 1
+        elif outcome == "remove":
+            session.delete(subscription)
+            removed += 1
+
+    session.commit()
+    return sent, removed
