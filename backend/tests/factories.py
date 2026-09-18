@@ -9,15 +9,21 @@ from decimal import Decimal
 from functools import lru_cache
 from itertools import count
 
-from sqlmodel import Session
-
 from app.api.auth.service import create_access_token, pwd_context
 from app.core.config import settings
-from app.db.models import ElectricityRate, Household, MeterReading, User
+from app.db.models import (
+    ElectricityRate,
+    Household,
+    MeterReading,
+    PushSubscription,
+    User,
+)
+from sqlmodel import Session
 
 DEFAULT_PASSWORD = "correct-horse-battery-staple"
 
 _email_counter = count(1)
+_endpoint_counter = count(1)
 
 
 @lru_cache(maxsize=1)
@@ -113,6 +119,26 @@ def make_electricity_rate(
     session.add(rate)
     session.flush()
     return rate
+
+
+def make_push_subscription(
+    session: Session,
+    *,
+    user_id: int,
+    endpoint: str | None = None,
+    p256dh: str = "test-p256dh-key",
+    auth: str = "test-auth-secret",
+) -> PushSubscription:
+    subscription = PushSubscription(
+        user_id=user_id,
+        endpoint=endpoint
+        or f"https://push.example.com/endpoint/{next(_endpoint_counter)}",
+        p256dh=p256dh,
+        auth=auth,
+    )
+    session.add(subscription)
+    session.flush()
+    return subscription
 
 
 def authenticate(client, user: User) -> None:
