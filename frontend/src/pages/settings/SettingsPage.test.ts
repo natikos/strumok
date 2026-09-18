@@ -107,11 +107,11 @@ describe("SettingsPage notifications section", () => {
   it("reflects on/off as the switch's checked state", () => {
     mockPushState("on");
     const onWrapper = mountSettingsPage();
-    expect(onWrapper.find('input[role="switch"]').element.checked).toBe(true);
+    expect(onWrapper.find<HTMLInputElement>('input[role="switch"]').element.checked).toBe(true);
 
     mockPushState("off");
     const offWrapper = mountSettingsPage();
-    expect(offWrapper.find('input[role="switch"]').element.checked).toBe(false);
+    expect(offWrapper.find<HTMLInputElement>('input[role="switch"]').element.checked).toBe(false);
   });
 
   it("calls enable() when the resident turns the switch on", () => {
