@@ -90,6 +90,8 @@
     "unlockAfterSecond": "After your 2nd reading",
     "unlockNeedsTwo": "Needs 2 periods",
     "usageChartFootnote": "kWh per month · last {count} periods",
+    "uahLess": "{value} less",
+    "uahMore": "{value} more",
     "usedThisPeriod": "+{value} used",
     "viewFullHistory": "View full history",
     "vsMonth": "vs {month}",

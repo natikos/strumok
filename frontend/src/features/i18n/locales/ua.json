@@ -90,6 +90,8 @@
     "unlockAfterSecond": "Після другого показника",
     "unlockNeedsTwo": "Потрібно 2 періоди",
     "usageChartFootnote": "кВт·год на місяць · останні {count} періодів",
+    "uahLess": "на {value} менше",
+    "uahMore": "на {value} більше",
     "usedThisPeriod": "+{value} спожито",
     "viewFullHistory": "Уся історія",
     "vsMonth": "проти {month}",
