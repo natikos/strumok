@@ -23,14 +23,20 @@
       "source.fixAll.eslint": "always"
     }
   },
-  "eslint.validate": ["javascript", "typescript", "vue"],
+  "eslint.validate": [
+    "javascript",
+    "typescript",
+    "vue"
+  ],
   "explorer.fileNesting.enabled": true,
   "explorer.fileNesting.patterns": {
-    "tsconfig.json": "tsconfig.*.json, env.d.ts",
+    "tsconfig.json": "tsconfig.*.json, types.d.ts",
     "vite.config.*": "jsconfig*, vitest.config.*, cypress.config.*, playwright.config.*",
     "package.json": "package-lock.json, pnpm*, .yarnrc*, yarn*, .eslint*, eslint*, .oxlint*, oxlint*, .oxfmt*, .prettier*, prettier*, .editorconfig"
   },
-  "eslint.workingDirectories": ["frontend"],
+  "eslint.workingDirectories": [
+    "frontend"
+  ],
   "editor.formatOnSave": true,
   "editor.defaultFormatter": "esbenp.prettier-vscode"
 }

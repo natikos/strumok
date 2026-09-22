@@ -6,8 +6,6 @@
 </template>
 
 <script setup lang="ts">
-  import ConfirmDialog from "primevue/confirmdialog";
-  import Toast from "primevue/toast";
   import { useToast } from "primevue/usetoast";
   import { onBeforeUnmount, onMounted, ref } from "vue";
   import { useI18n } from "vue-i18n";
