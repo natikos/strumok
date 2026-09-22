@@ -31,39 +31,7 @@ You can also trigger a deployment manually from the GitHub Actions UI using the 
 
 ### Required GitHub Secrets
 
-| Secret                 | Description                                                                                    |
-| ---------------------- | ---------------------------------------------------------------------------------------------- |
-| `FASTAPI_CLOUD_TOKEN`  | FastAPI Cloud deploy token                                                                     |
-| `FASTAPI_CLOUD_APP_ID` | FastAPI Cloud app identifier                                                                   |
-
-## Push Reminders
-
-The monthly meter-reading reminder runs in-process: an `AsyncIOScheduler`
-started in the FastAPI app's lifespan (`backend/app/api/push/scheduler.py`)
-fires the "opening" reminder on day 1 and the "final" reminder on day 5 of
-each month, both at 08:00 UTC, calling the same `send_reminders` service the
-`POST /internal/push/send-reminders` endpoint uses. That endpoint (secured by
-`PUSH_REMINDER_SECRET`) still exists for manual re-triggering/testing.
-
-Note: FastAPI Cloud's replica/restart behavior isn't verified here. If the
-backend ever runs multiple replicas, each one's scheduler fires independently
-and residents would get duplicate reminders — this hasn't been an issue with
-a single replica but would need a DB-backed lock if that changes.
-
-
-## Environment Variables
-
-| Variable                 | Description                                                          |
-| ------------------------ | -------------------------------------------------------------------- |
-| `DATABASE_URL`           | PostgreSQL connection string                                         |
-| `AUTH_SECRET_KEY`        | JWT signing secret                                                   |
-| `AUTH_ALGORITHM`         | JWT algorithm (default: `HS256`)                                     |
-| `CORS_ORIGINS`           | Comma-separated list of allowed origins                              |
-| `ENVIRONMENT`            | `development` or `production`                                        |
-| `BREVO_API_KEY`          | Brevo transactional email API key                                    |
-| `BREVO_SENDER_EMAIL`     | Verified Brevo sender address                                        |
-| `BREVO_APP_BASE_URL`     | Public app origin used to build verification links                   |
-| `PUSH_VAPID_PUBLIC_KEY`  | VAPID public key, sent to the frontend to create a push subscription |
-| `PUSH_VAPID_PRIVATE_KEY` | VAPID private key used to sign outgoing push messages                |
-| `PUSH_VAPID_SUBJECT`     | VAPID contact subject, e.g. `mailto:admin@example.com`               |
-| `PUSH_REMINDER_SECRET`   | Shared secret required to call `POST /internal/push/send-reminders`  |
+| Secret                 | Description                  |
+| ---------------------- | ---------------------------- |
+| `FASTAPI_CLOUD_TOKEN`  | FastAPI Cloud deploy token   |
+| `FASTAPI_CLOUD_APP_ID` | FastAPI Cloud app identifier |
