@@ -2,6 +2,7 @@ import "primeicons/primeicons.css";
 import PrimeVue from "primevue/config";
 import ConfirmationService from "primevue/confirmationservice";
 import ToastService from "primevue/toastservice";
+import { registerSW } from "virtual:pwa-register";
 import { createApp } from "vue";
 import { createRouter, createWebHistory, type RouteRecordRaw } from "vue-router";
 
@@ -14,6 +15,8 @@ import AppPreset from "./preset";
 import "./style.scss";
 
 const app = createApp(App);
+
+registerSW();
 
 const routes: RouteRecordRaw[] = [
   {

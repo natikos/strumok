@@ -21,7 +21,7 @@ export default defineConfig({
   plugins: [
     vue(),
     Components({
-      dirs: ["src/shared", "src/features", "src/pages"],
+      dirs: ["src"],
       resolvers: [PrimeVueResolver()],
     }),
     VitePWA({
