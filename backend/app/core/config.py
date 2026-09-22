@@ -57,10 +57,10 @@ class PushSettings(BaseSettings):
         env_file=".env",
     )
 
-    vapid_public_key: str = ""
-    vapid_private_key: SecretStr = SecretStr("")
-    vapid_subject: str = "mailto:admin@example.com"
-    reminder_secret: SecretStr = SecretStr("")
+    vapid_public_key: str
+    vapid_private_key: SecretStr
+    vapid_subject: str
+    reminder_secret: SecretStr
 
 
 class Settings(BaseSettings):
@@ -86,10 +86,11 @@ class Settings(BaseSettings):
     db: DbSettings = DbSettings()  # type: ignore
     auth: AuthSettings = AuthSettings()  # type: ignore
     brevo: BrevoSettings = BrevoSettings()
-    push: PushSettings = PushSettings()
+    push: PushSettings = PushSettings()  # type: ignore
 
     @property
     def auth_cookie_secure(self) -> bool:
+        print(f"self.environment: {self.environment}")
         return self.environment != "development"
 
     @property

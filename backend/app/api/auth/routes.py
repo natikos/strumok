@@ -14,9 +14,9 @@ from app.api.auth.schemas import (
     VerifyEmailIn,
 )
 from app.api.auth.service import (
-    InvalidOrExpiredTokenError,
     EmailAlreadyRegisteredError,
     InvalidCredentialsError,
+    InvalidOrExpiredTokenError,
     VerificationEmailRateLimitError,
     VerificationEmailSendFailedError,
     authenticate_user,
@@ -24,8 +24,8 @@ from app.api.auth.service import (
     create_access_token,
     get_user_from_token,
     list_user_households,
-    request_email_verification_link,
     register_user,
+    request_email_verification_link,
 )
 from app.api.deps import get_current_user
 from app.api.deps.auth import AUTH_CHALLENGE_HEADERS
@@ -126,6 +126,7 @@ def set_auth_cookie(response: Response, *, user: User) -> None:
         secure=settings.auth_cookie_secure,
     )
 
+
 @router.post(
     "/register",
     response_model=UserOut,
@@ -167,7 +168,9 @@ def login(
     session: Session = Depends(get_session),
 ) -> UserOut:
     try:
-        user = authenticate_user(session=session, email=payload.email, password=payload.password)
+        user = authenticate_user(
+            session=session, email=payload.email, password=payload.password
+        )
         set_auth_cookie(response, user=user)
 
         return UserOut.from_user(user)
@@ -181,7 +184,9 @@ def login(
 @router.post("/refresh", status_code=status.HTTP_204_NO_CONTENT)
 def refresh(
     response: Response,
-    access_token: str | None = Cookie(default=None, alias=settings.auth.auth_cookie_name),
+    access_token: str | None = Cookie(
+        default=None, alias=settings.auth.auth_cookie_name
+    ),
     session: Session = Depends(get_session),
 ) -> Response:
     if access_token is None:
