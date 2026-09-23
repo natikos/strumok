@@ -3,6 +3,7 @@ from decimal import Decimal
 from sqlalchemy.exc import IntegrityError
 from sqlmodel import Session, asc, desc, select
 
+from app.api.domain.billing import previous_period
 from app.api.electricity_rates.service import get_effective_rate
 from app.api.meter_readings.schemas import MeterReadingOut
 from app.core.time import utc_now
@@ -47,18 +48,6 @@ def get_user_household_id(*, session: Session, user: User) -> int:
     return household_id
 
 
-def _previous_period(period: str) -> str:
-    year, month = (int(part) for part in period.split("-"))
-    if month == 1:
-        return f"{year - 1}-12"
-    return f"{year}-{month - 1:02d}"
-
-
-def current_billing_period() -> str:
-    """The period residents currently submit a reading for (the prior calendar month)."""
-    return _previous_period(utc_now().strftime("%Y-%m"))
-
-
 def list_meter_readings(
     *, session: Session, household_id: int
 ) -> list[MeterReadingOut]:
@@ -80,7 +69,7 @@ def list_meter_readings(
     readings_by_period = {reading.period: reading for reading in readings}
 
     result: list[MeterReadingOut] = []
-    period = _previous_period(utc_now().strftime("%Y-%m"))
+    period = previous_period(utc_now().strftime("%Y-%m"))
     while period >= start_period:
         reading = readings_by_period.get(period)
         if reading is not None:
@@ -100,7 +89,7 @@ def list_meter_readings(
                     submitted_at=None,
                 )
             )
-        period = _previous_period(period)
+        period = previous_period(period)
 
     return result
 
