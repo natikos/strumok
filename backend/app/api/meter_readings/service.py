@@ -3,9 +3,9 @@ from decimal import Decimal
 from sqlalchemy.exc import IntegrityError
 from sqlmodel import Session, asc, desc, select
 
-from app.api.domain.billing import previous_period
 from app.api.electricity_rates.service import get_effective_rate
 from app.api.meter_readings.schemas import MeterReadingOut
+from app.core.domain.billing import previous_period
 from app.core.time import utc_now
 from app.db.models import Household, MeterReading, User
 

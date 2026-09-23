@@ -7,8 +7,8 @@ from typing import Literal
 from pywebpush import WebPushException, webpush
 from sqlmodel import Session, select
 
-from app.api.meter_readings.service import current_billing_period
 from app.core.config import settings
+from app.core.domain import current_billing_period
 from app.db.models import Household, MeterReading, PushSubscription, User
 
 logger = logging.getLogger(__name__)
@@ -73,7 +73,9 @@ def delete_subscription(*, session: Session, user: User, endpoint: str) -> None:
         session.commit()
 
 
-def _send_one(subscription: PushSubscription, payload: str) -> tuple[PushSubscription, str]:
+def _send_one(
+    subscription: PushSubscription, payload: str
+) -> tuple[PushSubscription, str]:
     """Send to a single subscription. Runs on a worker thread; must not touch the session."""
     try:
         webpush(

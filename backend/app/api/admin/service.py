@@ -7,7 +7,7 @@ from app.api.admin.schemas import (
     AdminDashboardOut,
     AdminUserSummaryOut,
 )
-from app.api.domain.billing import previous_period
+from app.core.domain.billing import previous_period
 from app.core.time import utc_now
 from app.db.models import Household, MeterReading, User
 
