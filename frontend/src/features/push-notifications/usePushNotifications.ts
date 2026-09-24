@@ -80,7 +80,9 @@ export function usePushNotifications() {
   async function disable(): Promise<void> {
     try {
       const endpoint = await unsubscribeFromWebPush();
-      await unsubscribeFromPush(endpoint);
+      if (endpoint) {
+        await unsubscribeFromPush(endpoint);
+      }
       state.value = "off";
     } catch (error) {
       await refreshState();

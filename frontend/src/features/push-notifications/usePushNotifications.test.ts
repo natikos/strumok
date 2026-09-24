@@ -1,116 +1,76 @@
-import { flushPromises, mount } from "@vue/test-utils";
+import { flushPromises, mount, type VueWrapper } from "@vue/test-utils";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { defineComponent, h } from "vue";
 
 import { usePushNotifications } from "./usePushNotifications";
 
 /**
- * `usePushNotifications` decides, from a handful of browser globals, whether a
- * resident can even be reminded (`unsupported`/`ios-not-installed`), whether
- * they've blocked it (`denied`), and whether a subscription already exists
- * (`on`/`off`). Each global is mocked individually here rather than assuming a
- * single "supported" bucket, because the composable branches on each one
- * independently and a bug in any single check (e.g. treating an installed iOS
- * PWA as "not installed") would otherwise go unnoticed.
+ * Unit tests for the `usePushNotifications` state machine.
+ *
+ * Strategy: the composable is pure orchestration on top of two collaborators:
+ *   - `./web-push`          (browser Push API wrappers)
+ *   - `@/shared/api/push`   (backend API)
+ * Both are mocked, so these tests verify the composable's own decisions:
+ * which state it reports, in which order it calls collaborators, and how it
+ * rolls back when a step fails. Browser-level behaviour (UA sniffing, feature
+ * detection, base64 decoding) belongs in `web-push.test.ts`.
+ *
+ * `Notification` is the only browser global the composable reads directly, so
+ * it is the only one stubbed here.
  */
 
-const { getVapidPublicKey, subscribeToPush, unsubscribeFromPush } = vi.hoisted(() => ({
+const api = vi.hoisted(() => ({
   getVapidPublicKey: vi.fn(),
   subscribeToPush: vi.fn(),
   unsubscribeFromPush: vi.fn(),
 }));
 
-vi.mock("@shared/api/push", () => ({
-  getVapidPublicKey,
-  subscribeToPush,
-  unsubscribeFromPush,
+const webPush = vi.hoisted(() => ({
+  base64ToUint8Array: vi.fn(),
+  getWebPushSubscription: vi.fn(),
+  isIosNotInstalled: vi.fn(),
+  isPushSupported: vi.fn(),
+  subscribeToWebPush: vi.fn(),
+  unsubscribeFromWebPush: vi.fn(),
 }));
 
-const DESKTOP_CHROME_UA =
-  "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 " +
-  "(KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36";
-const IPHONE_SAFARI_UA =
-  "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 " +
-  "(KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1";
+vi.mock("@/shared/api/push", () => api);
+vi.mock("./web-push", () => webPush);
 
-interface Registration {
-  pushManager: {
-    getSubscription: ReturnType<typeof vi.fn>;
-    subscribe: ReturnType<typeof vi.fn>;
+const APP_SERVER_KEY = new Uint8Array([1, 2, 3, 4]);
+const BROWSER_SUBSCRIPTION = {
+  endpoint: "https://push.example.com/new",
+  keys: { auth: "a-key", p256dh: "p-key" },
+};
+
+/** Minimal controllable stand-in for the global `Notification`. */
+function stubNotification(
+  initial: NotificationPermission,
+  onRequest: NotificationPermission = initial
+) {
+  const stub = {
+    permission: initial,
+    requestPermission: vi.fn(() => {
+      // A real browser updates `Notification.permission` when the user answers.
+      stub.permission = onRequest;
+      return Promise.resolve(onRequest);
+    }),
   };
+  vi.stubGlobal("Notification", stub);
+  return stub;
 }
 
-interface StubOptions {
-  hasNotification?: boolean;
-  hasPushManager?: boolean;
-  hasServiceWorker?: boolean;
-  matchesStandalone?: boolean;
-  navigatorStandalone?: boolean;
-  notificationPermission?: NotificationPermission;
-  userAgent?: string;
-}
-
-function makeRegistration(): Registration {
-  return {
-    pushManager: {
-      getSubscription: vi.fn().mockResolvedValue(null),
-      subscribe: vi.fn(),
-    },
-  };
-}
-
-/** Installs the browser globals the composable reads, and returns handles to control them per test. */
-function stubBrowserApis(options: StubOptions = {}) {
-  const {
-    hasNotification = true,
-    hasPushManager = true,
-    hasServiceWorker = true,
-    matchesStandalone = false,
-    navigatorStandalone = false,
-    notificationPermission = "default",
-    userAgent = DESKTOP_CHROME_UA,
-  } = options;
-
-  const requestPermission = vi.fn().mockResolvedValue(notificationPermission);
-  if (hasNotification) {
-    vi.stubGlobal("Notification", {
-      permission: notificationPermission,
-      requestPermission,
-    });
-  }
-
-  if (hasPushManager) {
-    vi.stubGlobal("PushManager", class {});
-  }
-
-  vi.stubGlobal(
-    "matchMedia",
-    vi.fn().mockImplementation((query: string) => ({
-      addEventListener: vi.fn(),
-      matches: query === "(display-mode: standalone)" && matchesStandalone,
-      removeEventListener: vi.fn(),
-    }))
-  );
-
-  Object.defineProperty(navigator, "userAgent", { configurable: true, value: userAgent });
-  Object.defineProperty(navigator, "standalone", {
-    configurable: true,
-    value: navigatorStandalone,
+function deferred<T>() {
+  let resolve!: (value: T) => void;
+  let reject!: (reason: unknown) => void;
+  const promise = new Promise<T>((res, rej) => {
+    resolve = res;
+    reject = rej;
   });
-
-  const registration = makeRegistration();
-  if (hasServiceWorker) {
-    // `"serviceWorker" in navigator` checks property *existence*, so the
-    // "unsupported" case must leave the property entirely absent rather than
-    // defined-with-undefined, or the composable would wrongly see it as present.
-    Object.defineProperty(navigator, "serviceWorker", {
-      configurable: true,
-      value: { ready: Promise.resolve(registration) },
-    });
-  }
-
-  return { registration, requestPermission };
+  return { promise, reject, resolve };
 }
+
+const wrappers: VueWrapper[] = [];
 
 function mountComposable() {
   let result!: ReturnType<typeof usePushNotifications>;
@@ -120,263 +80,344 @@ function mountComposable() {
       return () => h("div");
     },
   });
-  mount(Harness);
-  return {
-    get result() {
-      return result;
-    },
-  };
+  wrappers.push(mount(Harness));
+  return result;
 }
 
+/** Mounts and waits for the on-mount `refreshState()` to settle. */
+async function mountSettled() {
+  const result = mountComposable();
+  await flushPromises();
+  return result;
+}
+
+beforeEach(() => {
+  vi.resetAllMocks();
+
+  // Happy-path defaults; each test overrides only what it cares about.
+  webPush.isPushSupported.mockReturnValue(true);
+  webPush.isIosNotInstalled.mockReturnValue(false);
+  webPush.getWebPushSubscription.mockResolvedValue(null);
+  webPush.base64ToUint8Array.mockReturnValue(APP_SERVER_KEY);
+  webPush.subscribeToWebPush.mockResolvedValue(BROWSER_SUBSCRIPTION);
+  webPush.unsubscribeFromWebPush.mockResolvedValue("https://push.example.com/existing");
+  api.getVapidPublicKey.mockResolvedValue("vapid-public-key");
+  api.subscribeToPush.mockResolvedValue(undefined);
+  api.unsubscribeFromPush.mockResolvedValue(undefined);
+
+  stubNotification("default");
+});
+
+afterEach(() => {
+  wrappers.splice(0).forEach((wrapper) => wrapper.unmount());
+  vi.unstubAllGlobals();
+});
+
 describe("usePushNotifications", () => {
-  beforeEach(() => {
-    getVapidPublicKey.mockReset();
-    subscribeToPush.mockReset();
-    unsubscribeFromPush.mockReset();
-  });
-
-  afterEach(() => {
-    vi.unstubAllGlobals();
-    delete (navigator as { userAgent?: unknown }).userAgent;
-    delete (navigator as { standalone?: unknown }).standalone;
-    delete (navigator as { serviceWorker?: unknown }).serviceWorker;
-  });
-
   describe("initial state", () => {
-    it("is unsupported when the browser has no PushManager", async () => {
-      stubBrowserApis({ hasPushManager: false });
+    it("is unsupported when push is not supported", async () => {
+      webPush.isPushSupported.mockReturnValue(false);
 
-      const { result } = mountComposable();
-      await flushPromises();
+      const { state } = await mountSettled();
 
-      expect(result.state.value).toBe("unsupported");
+      expect(state.value).toBe("unsupported");
     });
 
-    it("is unsupported when the browser has no service worker support", async () => {
-      stubBrowserApis({ hasServiceWorker: false });
+    it("does not touch Notification when push is unsupported", async () => {
+      // On unsupported browsers (e.g. iOS Safari outside a PWA) the global
+      // `Notification` may not exist at all; reading it would throw.
+      webPush.isPushSupported.mockReturnValue(false);
+      vi.unstubAllGlobals();
 
-      const { result } = mountComposable();
-      await flushPromises();
+      const { state } = await mountSettled();
 
-      expect(result.state.value).toBe("unsupported");
+      expect(state.value).toBe("unsupported");
     });
 
-    it("is ios-not-installed for iPhone Safari not added to the home screen", async () => {
-      stubBrowserApis({
-        userAgent: IPHONE_SAFARI_UA,
-        matchesStandalone: false,
-        navigatorStandalone: false,
-      });
+    it("is ios-not-installed when supported but the iOS PWA is not installed", async () => {
+      webPush.isIosNotInstalled.mockReturnValue(true);
 
-      const { result } = mountComposable();
-      await flushPromises();
+      const { state } = await mountSettled();
 
-      expect(result.state.value).toBe("ios-not-installed");
+      expect(state.value).toBe("ios-not-installed");
     });
 
-    it("is not ios-not-installed once the iPhone PWA has been added to the home screen", async () => {
-      // Installed via navigator.standalone (older iOS API).
-      stubBrowserApis({
-        userAgent: IPHONE_SAFARI_UA,
-        navigatorStandalone: true,
-        notificationPermission: "default",
-      });
+    it("prefers unsupported over ios-not-installed", async () => {
+      webPush.isPushSupported.mockReturnValue(false);
+      webPush.isIosNotInstalled.mockReturnValue(true);
 
-      const { result } = mountComposable();
-      await flushPromises();
+      const { state } = await mountSettled();
 
-      expect(result.state.value).not.toBe("ios-not-installed");
+      expect(state.value).toBe("unsupported");
     });
 
-    it("is not ios-not-installed when installed detection comes from the display-mode media query", async () => {
-      stubBrowserApis({
-        userAgent: IPHONE_SAFARI_UA,
-        matchesStandalone: true,
-        notificationPermission: "default",
-      });
+    it("prefers ios-not-installed over a denied permission", async () => {
+      webPush.isIosNotInstalled.mockReturnValue(true);
+      stubNotification("denied");
 
-      const { result } = mountComposable();
-      await flushPromises();
+      const { state } = await mountSettled();
 
-      expect(result.state.value).not.toBe("ios-not-installed");
+      expect(state.value).toBe("ios-not-installed");
     });
 
     it("is denied when the user has blocked notifications", async () => {
-      stubBrowserApis({ notificationPermission: "denied" });
+      stubNotification("denied");
 
-      const { result } = mountComposable();
-      await flushPromises();
+      const { state } = await mountSettled();
 
-      expect(result.state.value).toBe("denied");
+      expect(state.value).toBe("denied");
     });
 
-    it("is off when permission has not been requested yet", async () => {
-      stubBrowserApis({ notificationPermission: "default" });
+    it("is off when permission has not been requested yet, without querying subscriptions", async () => {
+      stubNotification("default");
 
-      const { result } = mountComposable();
-      await flushPromises();
+      const { state } = await mountSettled();
 
-      expect(result.state.value).toBe("off");
+      expect(state.value).toBe("off");
+      expect(webPush.getWebPushSubscription).not.toHaveBeenCalled();
     });
 
-    it("is on when permission is granted and a push subscription already exists", async () => {
-      const { registration } = stubBrowserApis({ notificationPermission: "granted" });
-      registration.pushManager.getSubscription.mockResolvedValue({
-        endpoint: "https://push.example.com/x",
-      });
+    it("is on when permission is granted and a subscription exists", async () => {
+      stubNotification("granted");
+      webPush.getWebPushSubscription.mockResolvedValue({ endpoint: "https://push.example.com/x" });
 
-      const { result } = mountComposable();
-      await flushPromises();
+      const { state } = await mountSettled();
 
-      expect(result.state.value).toBe("on");
+      expect(state.value).toBe("on");
     });
 
-    it("is off when permission is granted but no push subscription exists", async () => {
-      const { registration } = stubBrowserApis({ notificationPermission: "granted" });
-      registration.pushManager.getSubscription.mockResolvedValue(null);
+    it("is off when permission is granted but there is no subscription (e.g. it expired)", async () => {
+      stubNotification("granted");
+      webPush.getWebPushSubscription.mockResolvedValue(null);
 
-      const { result } = mountComposable();
-      await flushPromises();
+      const { state } = await mountSettled();
 
-      expect(result.state.value).toBe("off");
+      expect(state.value).toBe("off");
     });
   });
 
   describe("enable()", () => {
-    it("is a no-op when unsupported", async () => {
-      stubBrowserApis({ hasPushManager: false });
-      const { result } = mountComposable();
-      await flushPromises();
+    it.each([
+      ["unsupported", () => webPush.isPushSupported.mockReturnValue(false)],
+      ["ios-not-installed", () => webPush.isIosNotInstalled.mockReturnValue(true)],
+    ] as const)("is a no-op when state is %s", async (expected, arrange) => {
+      arrange();
+      const notification = stubNotification("default");
+      const { enable, state } = await mountSettled();
 
-      await result.enable();
-      await flushPromises();
+      await enable();
 
-      expect(result.state.value).toBe("unsupported");
-      expect(getVapidPublicKey).not.toHaveBeenCalled();
+      expect(state.value).toBe(expected);
+      expect(notification.requestPermission).not.toHaveBeenCalled();
+      expect(api.getVapidPublicKey).not.toHaveBeenCalled();
+      expect(api.subscribeToPush).not.toHaveBeenCalled();
     });
 
-    it("is a no-op when the iOS PWA is not installed", async () => {
-      stubBrowserApis({ userAgent: IPHONE_SAFARI_UA });
-      const { result } = mountComposable();
-      await flushPromises();
+    it("reports requesting while the permission prompt is open", async () => {
+      const notification = stubNotification("default");
+      const prompt = deferred<NotificationPermission>();
+      notification.requestPermission.mockReturnValue(prompt.promise);
+      const { enable, state } = await mountSettled();
 
-      await result.enable();
-      await flushPromises();
+      const pending = enable();
 
-      expect(result.state.value).toBe("ios-not-installed");
-      expect(getVapidPublicKey).not.toHaveBeenCalled();
+      expect(state.value).toBe("requesting");
+
+      notification.permission = "denied";
+      prompt.resolve("denied");
+      await pending;
     });
 
-    it("flips to requesting immediately, then subscribes and reports the correct payload once permission is granted", async () => {
-      const { registration, requestPermission } = stubBrowserApis({
-        notificationPermission: "default",
-      });
-      requestPermission.mockResolvedValue("granted");
-      getVapidPublicKey.mockResolvedValue("AAECAw"); // base64url(no padding) of bytes [0,1,2,3]
-      const subscription = {
-        toJSON: () => ({
-          endpoint: "https://push.example.com/new",
-          keys: { p256dh: "p-key", auth: "a-key" },
-        }),
-      };
-      registration.pushManager.subscribe.mockResolvedValue(subscription);
-      subscribeToPush.mockResolvedValue(undefined);
+    it("subscribes the browser with the decoded VAPID key, registers it with the API, and reports on", async () => {
+      stubNotification("default", "granted");
+      const { enable, state } = await mountSettled();
 
-      const { result } = mountComposable();
-      await flushPromises();
+      await enable();
 
-      const enabling = result.enable();
-      expect(result.state.value).toBe("requesting");
-      await enabling;
-
-      expect(result.state.value).toBe("on");
-      expect(registration.pushManager.subscribe).toHaveBeenCalledWith(
-        expect.objectContaining({
-          applicationServerKey: new Uint8Array([0, 1, 2, 3]),
-          userVisibleOnly: true,
-        })
-      );
-      expect(subscribeToPush).toHaveBeenCalledWith({
-        endpoint: "https://push.example.com/new",
-        keys: { p256dh: "p-key", auth: "a-key" },
-      });
+      expect(api.getVapidPublicKey).toHaveBeenCalledOnce();
+      expect(webPush.base64ToUint8Array).toHaveBeenCalledWith("vapid-public-key");
+      expect(webPush.subscribeToWebPush).toHaveBeenCalledWith(APP_SERVER_KEY);
+      expect(api.subscribeToPush).toHaveBeenCalledWith(BROWSER_SUBSCRIPTION);
+      expect(state.value).toBe("on");
     });
 
-    it("does not subscribe over the API and falls back to off when permission is refused", async () => {
-      const { requestPermission } = stubBrowserApis({ notificationPermission: "default" });
-      requestPermission.mockResolvedValue("denied");
+    it("registers with the API only after the browser subscription exists", async () => {
+      stubNotification("default", "granted");
+      const order: string[] = [];
+      webPush.subscribeToWebPush.mockImplementation(() => {
+        order.push("browser");
+        return Promise.resolve(BROWSER_SUBSCRIPTION);
+      });
+      api.subscribeToPush.mockImplementation(() => {
+        order.push("api");
+        return Promise.resolve();
+      });
+      const { enable } = await mountSettled();
 
-      const { result } = mountComposable();
-      await flushPromises();
+      await enable();
 
-      await result.enable();
-      await flushPromises();
-
-      expect(subscribeToPush).not.toHaveBeenCalled();
-      expect(getVapidPublicKey).not.toHaveBeenCalled();
+      expect(order).toEqual(["browser", "api"]);
     });
 
-    it("unsubscribes locally and reports off without calling the API when the browser subscription is incomplete", async () => {
-      // A subscription missing its endpoint/keys can't be registered with the
-      // backend; the composable must clean it up locally rather than send a
-      // useless subscribe request.
-      const { registration, requestPermission } = stubBrowserApis({
-        notificationPermission: "default",
-      });
-      requestPermission.mockResolvedValue("granted");
-      getVapidPublicKey.mockResolvedValue("AAECAw");
-      const unsubscribe = vi.fn().mockResolvedValue(true);
-      registration.pushManager.subscribe.mockResolvedValue({
-        toJSON: () => ({ endpoint: "", keys: {} }),
-        unsubscribe,
-      });
+    it("does not report on before the API registration has finished", async () => {
+      stubNotification("default", "granted");
+      const registration = deferred<void>();
+      api.subscribeToPush.mockReturnValue(registration.promise);
+      const { enable, state } = await mountSettled();
 
-      const { result } = mountComposable();
+      const pending = enable();
       await flushPromises();
+      expect(state.value).toBe("requesting");
 
-      await result.enable();
-      await flushPromises();
+      registration.resolve();
+      await pending;
+      expect(state.value).toBe("on");
+    });
 
-      expect(unsubscribe).toHaveBeenCalledOnce();
-      expect(subscribeToPush).not.toHaveBeenCalled();
-      expect(result.state.value).toBe("off");
+    it("stops at the permission prompt and reflects denied when the user refuses", async () => {
+      stubNotification("default", "denied");
+      const { enable, state } = await mountSettled();
+
+      await enable();
+
+      expect(state.value).toBe("denied");
+      expect(api.getVapidPublicKey).not.toHaveBeenCalled();
+      expect(webPush.subscribeToWebPush).not.toHaveBeenCalled();
+      expect(api.subscribeToPush).not.toHaveBeenCalled();
+    });
+
+    it("returns to off when the user dismisses the prompt without choosing", async () => {
+      stubNotification("default", "default");
+      const { enable, state } = await mountSettled();
+
+      await enable();
+
+      expect(state.value).toBe("off");
+      expect(api.subscribeToPush).not.toHaveBeenCalled();
+    });
+
+    it("can retry from denied (browser may have been re-allowed) and subscribes if granted", async () => {
+      stubNotification("denied", "granted");
+      const { enable, state } = await mountSettled();
+      expect(state.value).toBe("denied");
+
+      await enable();
+
+      expect(api.subscribeToPush).toHaveBeenCalledWith(BROWSER_SUBSCRIPTION);
+      expect(state.value).toBe("on");
+    });
+
+    describe("failures", () => {
+      it("rolls back the browser subscription, reports off and rethrows when fetching the VAPID key fails", async () => {
+        stubNotification("default", "granted");
+        const error = new Error("vapid failed");
+        api.getVapidPublicKey.mockRejectedValue(error);
+        const { enable, state } = await mountSettled();
+
+        await expect(enable()).rejects.toBe(error);
+
+        expect(state.value).toBe("off");
+        expect(webPush.subscribeToWebPush).not.toHaveBeenCalled();
+        expect(webPush.unsubscribeFromWebPush).toHaveBeenCalledOnce();
+      });
+
+      it("rolls back and rethrows when the browser refuses to subscribe", async () => {
+        stubNotification("default", "granted");
+        const error = new Error("subscribe failed");
+        webPush.subscribeToWebPush.mockRejectedValue(error);
+        const { enable, state } = await mountSettled();
+
+        await expect(enable()).rejects.toBe(error);
+
+        expect(state.value).toBe("off");
+        expect(api.subscribeToPush).not.toHaveBeenCalled();
+        expect(webPush.unsubscribeFromWebPush).toHaveBeenCalledOnce();
+      });
+
+      it("removes the local subscription when the backend registration fails, so the browser and server don't drift apart", async () => {
+        stubNotification("default", "granted");
+        const error = new Error("backend 500");
+        api.subscribeToPush.mockRejectedValue(error);
+        const { enable, state } = await mountSettled();
+
+        await expect(enable()).rejects.toBe(error);
+
+        expect(webPush.unsubscribeFromWebPush).toHaveBeenCalledOnce();
+        expect(state.value).toBe("off");
+      });
+
+      it("can be retried after a failure", async () => {
+        stubNotification("default", "granted");
+        api.subscribeToPush.mockRejectedValueOnce(new Error("backend 500"));
+        const { enable, state } = await mountSettled();
+        await expect(enable()).rejects.toThrow("backend 500");
+        expect(state.value).toBe("off");
+
+        await enable();
+
+        expect(state.value).toBe("on");
+        expect(api.subscribeToPush).toHaveBeenCalledTimes(2);
+      });
     });
   });
 
   describe("disable()", () => {
-    it("unsubscribes both the API and the browser subscription, then reports off", async () => {
-      const { registration } = stubBrowserApis({ notificationPermission: "granted" });
-      const unsubscribe = vi.fn().mockResolvedValue(true);
-      registration.pushManager.getSubscription.mockResolvedValue({
+    async function mountEnabled() {
+      stubNotification("granted");
+      webPush.getWebPushSubscription.mockResolvedValue({
         endpoint: "https://push.example.com/existing",
-        unsubscribe,
       });
-      unsubscribeFromPush.mockResolvedValue(undefined);
+      const composable = await mountSettled();
+      expect(composable.state.value).toBe("on");
+      return composable;
+    }
 
-      const { result } = mountComposable();
-      await flushPromises();
-      expect(result.state.value).toBe("on");
+    it("removes the browser subscription, tells the API about that exact endpoint, and reports off", async () => {
+      webPush.unsubscribeFromWebPush.mockResolvedValue("https://push.example.com/existing");
+      const { disable, state } = await mountEnabled();
 
-      await result.disable();
-      await flushPromises();
+      await disable();
 
-      expect(unsubscribeFromPush).toHaveBeenCalledWith("https://push.example.com/existing");
-      expect(unsubscribe).toHaveBeenCalledOnce();
-      expect(result.state.value).toBe("off");
+      expect(webPush.unsubscribeFromWebPush).toHaveBeenCalledOnce();
+      expect(api.unsubscribeFromPush).toHaveBeenCalledWith("https://push.example.com/existing");
+      expect(state.value).toBe("off");
     });
 
-    it("does not call the API when there is no browser subscription to remove", async () => {
-      const { registration } = stubBrowserApis({ notificationPermission: "granted" });
-      registration.pushManager.getSubscription.mockResolvedValue(null);
+    it("does not call the API when there was no browser subscription to remove", async () => {
+      // Nothing local means nothing to deregister; calling the API with an
+      // empty endpoint would be a bad request at best.
+      stubNotification("granted");
+      webPush.getWebPushSubscription.mockResolvedValue(null);
+      webPush.unsubscribeFromWebPush.mockResolvedValue(null);
+      const { disable, state } = await mountSettled();
 
-      const { result } = mountComposable();
-      await flushPromises();
+      await disable();
 
-      await result.disable();
-      await flushPromises();
+      expect(api.unsubscribeFromPush).not.toHaveBeenCalled();
+      expect(state.value).toBe("off");
+    });
 
-      expect(unsubscribeFromPush).not.toHaveBeenCalled();
-      expect(result.state.value).toBe("off");
+    it("rethrows and re-syncs state with reality when the API call fails", async () => {
+      const error = new Error("backend 500");
+      api.unsubscribeFromPush.mockRejectedValue(error);
+      const { disable, state } = await mountEnabled();
+      // The browser subscription really was removed before the API call failed.
+      webPush.getWebPushSubscription.mockResolvedValue(null);
+
+      await expect(disable()).rejects.toBe(error);
+
+      expect(state.value).toBe("off");
+    });
+
+    it("keeps reporting on when the browser unsubscribe fails and the subscription is still there", async () => {
+      const error = new Error("unsubscribe failed");
+      webPush.unsubscribeFromWebPush.mockRejectedValue(error);
+      const { disable, state } = await mountEnabled();
+
+      await expect(disable()).rejects.toBe(error);
+
+      expect(api.unsubscribeFromPush).not.toHaveBeenCalled();
+      expect(state.value).toBe("on");
     });
   });
 });
