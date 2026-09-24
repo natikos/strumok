@@ -60,7 +60,6 @@ export function usePushNotifications() {
 
     try {
       const permission = await Notification.requestPermission();
-      console.log("pernission", permission);
 
       if (permission !== "granted") {
         await refreshState();
@@ -68,9 +67,7 @@ export function usePushNotifications() {
       }
 
       const appServerKey = base64ToUint8Array(await getVapidPublicKey());
-      console.log("appServerKey", appServerKey);
       const subscription = await subscribeToWebPush(appServerKey);
-      console.log(subscription);
       await subscribeToPush(subscription);
       state.value = "on";
     } catch (error) {
