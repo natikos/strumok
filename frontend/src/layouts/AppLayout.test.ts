@@ -1,11 +1,10 @@
-import { flushPromises, mount } from "@vue/test-utils";
-import { Button, Card } from "primevue";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-
 import { useCurrentHousehold } from "@/features/households/useCurrentHousehold";
 import { appPlugins } from "@/shared/testing/mount";
 import Typography from "@/shared/Typography.vue";
 import type { UserWithHouseholdsOut } from "@shared/api/auth";
+import { flushPromises, mount } from "@vue/test-utils";
+import { Button, Card } from "primevue";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type * as VueRouter from "vue-router";
 
 import AppLayout from "./AppLayout.vue";
@@ -50,14 +49,21 @@ async function mountLayout() {
   const wrapper = mount(AppLayout, {
     global: {
       plugins: appPlugins(),
-      components: { Typography, Button, Card },
+      components: {
+        Button,
+        Card,
+        Typography,
+      },
       stubs: {
         RouterView: true,
         Select: true,
-        AuthLayout: true,
+        AuthLayout: {
+          template: "<div><slot /></div>",
+        },
       },
     },
   });
+
   await flushPromises();
   return wrapper;
 }
