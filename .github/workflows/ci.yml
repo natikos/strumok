@@ -53,6 +53,10 @@ jobs:
 
       - uses: oven-sh/setup-bun@v2
 
+      - name: Bun version
+        run: bun --version
+        working-directory: frontend
+
       - name: Install dependencies
         run: bun install
         working-directory: frontend
