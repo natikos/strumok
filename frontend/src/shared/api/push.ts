@@ -5,9 +5,13 @@ import { appApiClient, buildApiError } from "./client";
 type PushSubscriptionIn = components["schemas"]["PushSubscriptionIn"];
 
 export async function getVapidPublicKey(): Promise<string> {
-  const { data } = await appApiClient.GET("/push/vapid-public-key");
+  const { error, data } = await appApiClient.GET("/push/vapid-public-key");
 
-  return data?.public_key ?? "";
+  if (!data?.public_key) {
+    throw new Error(`Failed to get VAPID public key: ${error}`);
+  }
+
+  return data.public_key;
 }
 
 export async function subscribeToPush(subscription: PushSubscriptionIn): Promise<void> {

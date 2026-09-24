@@ -4,1398 +4,1398 @@
  */
 
 export interface paths {
-  "/auth/register": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/auth/register": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Register */
+        post: operations["register_auth_register_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    get?: never;
-    put?: never;
-    /** Register */
-    post: operations["register_auth_register_post"];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/auth/login": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/auth/login": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Login */
+        post: operations["login_auth_login_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    get?: never;
-    put?: never;
-    /** Login */
-    post: operations["login_auth_login_post"];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/auth/refresh": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/auth/refresh": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Refresh */
+        post: operations["refresh_auth_refresh_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    get?: never;
-    put?: never;
-    /** Refresh */
-    post: operations["refresh_auth_refresh_post"];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/auth/logout": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/auth/logout": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Logout */
+        post: operations["logout_auth_logout_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    get?: never;
-    put?: never;
-    /** Logout */
-    post: operations["logout_auth_logout_post"];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/auth/me": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/auth/me": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Me */
+        get: operations["me_auth_me_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    /** Me */
-    get: operations["me_auth_me_get"];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/auth/preferences": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/auth/preferences": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Update Preferences */
+        patch: operations["update_preferences_auth_preferences_patch"];
+        trace?: never;
     };
-    get?: never;
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    /** Update Preferences */
-    patch: operations["update_preferences_auth_preferences_patch"];
-    trace?: never;
-  };
-  "/auth/verification-link": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/auth/verification-link": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Send Verification Link */
+        post: operations["send_verification_link_auth_verification_link_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    get?: never;
-    put?: never;
-    /** Send Verification Link */
-    post: operations["send_verification_link_auth_verification_link_post"];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/auth/verify-email": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/auth/verify-email": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Verify Email */
+        post: operations["verify_email_auth_verify_email_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    get?: never;
-    put?: never;
-    /** Verify Email */
-    post: operations["verify_email_auth_verify_email_post"];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/meter-readings": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/meter-readings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List My Meter Readings */
+        get: operations["list_my_meter_readings_meter_readings_get"];
+        put?: never;
+        /** Submit My Meter Reading */
+        post: operations["submit_my_meter_reading_meter_readings_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    /** List My Meter Readings */
-    get: operations["list_my_meter_readings_meter_readings_get"];
-    put?: never;
-    /** Submit My Meter Reading */
-    post: operations["submit_my_meter_reading_meter_readings_post"];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/admin/users": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/admin/users": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Admin Users */
+        get: operations["list_admin_users_admin_users_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    /** List Admin Users */
-    get: operations["list_admin_users_admin_users_get"];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/admin/dashboard": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/admin/dashboard": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Admin Dashboard Summary */
+        get: operations["get_admin_dashboard_summary_admin_dashboard_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    /** Get Admin Dashboard Summary */
-    get: operations["get_admin_dashboard_summary_admin_dashboard_get"];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/admin/households": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/admin/households": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Admin Households */
+        get: operations["list_admin_households_admin_households_get"];
+        put?: never;
+        /** Create Admin Household */
+        post: operations["create_admin_household_admin_households_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    /** List Admin Households */
-    get: operations["list_admin_households_admin_households_get"];
-    put?: never;
-    /** Create Admin Household */
-    post: operations["create_admin_household_admin_households_post"];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/admin/households/{household_id}/owner": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/admin/households/{household_id}/owner": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Assign Admin Household Owner */
+        patch: operations["assign_admin_household_owner_admin_households__household_id__owner_patch"];
+        trace?: never;
     };
-    get?: never;
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    /** Assign Admin Household Owner */
-    patch: operations["assign_admin_household_owner_admin_households__household_id__owner_patch"];
-    trace?: never;
-  };
-  "/electricity-rates": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/electricity-rates": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Electricity Rates */
+        get: operations["list_electricity_rates_electricity_rates_get"];
+        put?: never;
+        /** Create Electricity Rate */
+        post: operations["create_electricity_rate_electricity_rates_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    /** List Electricity Rates */
-    get: operations["list_electricity_rates_electricity_rates_get"];
-    put?: never;
-    /** Create Electricity Rate */
-    post: operations["create_electricity_rate_electricity_rates_post"];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/push/vapid-public-key": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/push/vapid-public-key": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Vapid Public Key */
+        get: operations["get_vapid_public_key_push_vapid_public_key_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    /** Get Vapid Public Key */
-    get: operations["get_vapid_public_key_push_vapid_public_key_get"];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/push/subscribe": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/push/subscribe": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Subscribe */
+        post: operations["subscribe_push_subscribe_post"];
+        /** Unsubscribe */
+        delete: operations["unsubscribe_push_subscribe_delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    get?: never;
-    put?: never;
-    /** Subscribe */
-    post: operations["subscribe_push_subscribe_post"];
-    /** Unsubscribe */
-    delete: operations["unsubscribe_push_subscribe_delete"];
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/push/test": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/push/test": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Send Test */
+        post: operations["send_test_push_test_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    get?: never;
-    put?: never;
-    /** Send Test */
-    post: operations["send_test_push_test_post"];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
 }
 export type webhooks = Record<string, never>;
 export interface components {
-  schemas: {
-    /** AdminDashboardHouseholdOut */
-    AdminDashboardHouseholdOut: {
-      /** Id */
-      id: number;
-      /** Name */
-      name: string;
-      owner?: components["schemas"]["AdminUserSummaryOut"] | null;
-      /**
-       * Submission Status
-       * @enum {string}
-       */
-      submission_status: "submitted" | "missing";
-      /** Submitted At */
-      submitted_at?: string | null;
-      /** Latest Period */
-      latest_period?: string | null;
-      /** Latest Usage Kwh */
-      latest_usage_kwh?: string | null;
-      /** Latest Amount Charged Uah */
-      latest_amount_charged_uah?: string | null;
+    schemas: {
+        /** AdminDashboardHouseholdOut */
+        AdminDashboardHouseholdOut: {
+            /** Id */
+            id: number;
+            /** Name */
+            name: string;
+            owner?: components["schemas"]["AdminUserSummaryOut"] | null;
+            /**
+             * Submission Status
+             * @enum {string}
+             */
+            submission_status: "submitted" | "missing";
+            /** Submitted At */
+            submitted_at?: string | null;
+            /** Latest Period */
+            latest_period?: string | null;
+            /** Latest Usage Kwh */
+            latest_usage_kwh?: string | null;
+            /** Latest Amount Charged Uah */
+            latest_amount_charged_uah?: string | null;
+        };
+        /** AdminDashboardOut */
+        AdminDashboardOut: {
+            /** Current Period */
+            current_period: string;
+            /** Households */
+            households: components["schemas"]["AdminDashboardHouseholdOut"][];
+        };
+        /** AdminHouseholdCreateIn */
+        AdminHouseholdCreateIn: {
+            /** Name */
+            name: string;
+            /** User Id */
+            user_id: number;
+        };
+        /** AdminHouseholdOut */
+        AdminHouseholdOut: {
+            /** Id */
+            id: number;
+            /** Name */
+            name: string;
+            /** User Id */
+            user_id: number | null;
+            /** Is Active */
+            is_active: boolean;
+            owner?: components["schemas"]["AdminUserSummaryOut"] | null;
+        };
+        /** AdminUserSummaryOut */
+        AdminUserSummaryOut: {
+            /** Id */
+            id: number;
+            /** Email */
+            email: string;
+            /** First Name */
+            first_name: string;
+            /** Last Name */
+            last_name: string;
+            /** Is Active */
+            is_active: boolean;
+        };
+        /** ElectricityRateCreateIn */
+        ElectricityRateCreateIn: {
+            /** Day Rate Uah */
+            day_rate_uah: number | string;
+            /** Night Rate Uah */
+            night_rate_uah: number | string;
+            /**
+             * Effective From
+             * @example 2026-07
+             */
+            effective_from: string;
+        };
+        /** ElectricityRateOut */
+        ElectricityRateOut: {
+            /** Id */
+            id: number;
+            /** Day Rate Uah */
+            day_rate_uah: string;
+            /** Night Rate Uah */
+            night_rate_uah: string;
+            /** Effective From */
+            effective_from: string;
+        };
+        /** ErrorOut */
+        ErrorOut: {
+            /** Detail */
+            detail: string;
+        };
+        /** HTTPValidationError */
+        HTTPValidationError: {
+            /** Detail */
+            detail?: components["schemas"]["ValidationError"][];
+        };
+        /** HouseholdOwnerAssignIn */
+        HouseholdOwnerAssignIn: {
+            /** User Id */
+            user_id: number | null;
+            /**
+             * Confirm Reassignment
+             * @default false
+             */
+            confirm_reassignment: boolean;
+        };
+        /** HouseholdSummary */
+        HouseholdSummary: {
+            /** Id */
+            id: number;
+            /** Name */
+            name: string;
+        };
+        /**
+         * LanguageCode
+         * @enum {string}
+         */
+        LanguageCode: "en" | "ua";
+        /** LoginIn */
+        LoginIn: {
+            /**
+             * Email
+             * Format: email
+             */
+            email: string;
+            /** Password */
+            password: string;
+        };
+        /** MeterReadingIn */
+        MeterReadingIn: {
+            /**
+             * Period
+             * @description YYYY-MM
+             * @example 2026-07
+             */
+            period: string;
+            /**
+             * Day Meter Value
+             * @example 3205.00
+             */
+            day_meter_value: number | string;
+            /**
+             * Night Meter Value
+             * @example 1820.00
+             */
+            night_meter_value: number | string;
+        };
+        /** MeterReadingOut */
+        MeterReadingOut: {
+            /**
+             * Id
+             * @example 1
+             */
+            id: number | null;
+            /**
+             * Household Id
+             * @example 1
+             */
+            household_id: number;
+            /**
+             * Submitted By User Id
+             * @example 1
+             */
+            submitted_by_user_id: number | null;
+            /**
+             * Period
+             * @example 2026-07
+             */
+            period: string;
+            /**
+             * Day Meter Value
+             * @example 3205.00
+             */
+            day_meter_value: string | null;
+            /**
+             * Night Meter Value
+             * @example 1820.00
+             */
+            night_meter_value: string | null;
+            /**
+             * Day Usage Kwh
+             * @example 145.50
+             */
+            day_usage_kwh: string;
+            /**
+             * Night Usage Kwh
+             * @example 98.20
+             */
+            night_usage_kwh: string;
+            /**
+             * Amount Charged Uah
+             * @example 987.65
+             */
+            amount_charged_uah: string;
+            /**
+             * Submitted At
+             * @example 2026-07-20T08:40:50.453Z
+             */
+            submitted_at: string | null;
+        };
+        /** PushSubscriptionIn */
+        PushSubscriptionIn: {
+            /** Endpoint */
+            endpoint: string;
+            keys: components["schemas"]["PushSubscriptionKeysIn"];
+        };
+        /** PushSubscriptionKeysIn */
+        PushSubscriptionKeysIn: {
+            /** P256Dh */
+            p256dh: string;
+            /** Auth */
+            auth: string;
+        };
+        /** PushUnsubscribeIn */
+        PushUnsubscribeIn: {
+            /** Endpoint */
+            endpoint: string;
+        };
+        /** RegisterIn */
+        RegisterIn: {
+            /**
+             * Email
+             * Format: email
+             */
+            email: string;
+            /** First Name */
+            first_name: string;
+            /** Last Name */
+            last_name: string;
+            /** Password */
+            password: string;
+        };
+        /** SendRemindersOut */
+        SendRemindersOut: {
+            /** Sent */
+            sent: number;
+            /** Removed */
+            removed: number;
+        };
+        /**
+         * ThemeMode
+         * @enum {string}
+         */
+        ThemeMode: "light" | "dark";
+        /** UserOut */
+        UserOut: {
+            /** Id */
+            id: number;
+            /** Email */
+            email: string;
+            /** First Name */
+            first_name: string;
+            /** Last Name */
+            last_name: string;
+            /** Is Admin */
+            is_admin: boolean;
+            /** Is Active */
+            is_active: boolean;
+            /** Email Verified */
+            email_verified: boolean;
+            /** Verification Email Retry After Seconds */
+            verification_email_retry_after_seconds: number;
+            theme: components["schemas"]["ThemeMode"];
+            language: components["schemas"]["LanguageCode"];
+        };
+        /** UserPreferencesIn */
+        UserPreferencesIn: {
+            theme?: components["schemas"]["ThemeMode"] | null;
+            language?: components["schemas"]["LanguageCode"] | null;
+        };
+        /** UserWithHouseholdsOut */
+        UserWithHouseholdsOut: {
+            /** Id */
+            id: number;
+            /** Email */
+            email: string;
+            /** First Name */
+            first_name: string;
+            /** Last Name */
+            last_name: string;
+            /** Is Admin */
+            is_admin: boolean;
+            /** Is Active */
+            is_active: boolean;
+            /** Email Verified */
+            email_verified: boolean;
+            /** Verification Email Retry After Seconds */
+            verification_email_retry_after_seconds: number;
+            theme: components["schemas"]["ThemeMode"];
+            language: components["schemas"]["LanguageCode"];
+            /** Households */
+            households: components["schemas"]["HouseholdSummary"][];
+        };
+        /** ValidationError */
+        ValidationError: {
+            /** Location */
+            loc: (string | number)[];
+            /** Message */
+            msg: string;
+            /** Error Type */
+            type: string;
+            /** Input */
+            input?: unknown;
+            /** Context */
+            ctx?: Record<string, never>;
+        };
+        /** VapidPublicKeyOut */
+        VapidPublicKeyOut: {
+            /** Public Key */
+            public_key: string;
+        };
+        /** VerifyEmailIn */
+        VerifyEmailIn: {
+            /** Token */
+            token: string;
+        };
     };
-    /** AdminDashboardOut */
-    AdminDashboardOut: {
-      /** Current Period */
-      current_period: string;
-      /** Households */
-      households: components["schemas"]["AdminDashboardHouseholdOut"][];
-    };
-    /** AdminHouseholdCreateIn */
-    AdminHouseholdCreateIn: {
-      /** Name */
-      name: string;
-      /** User Id */
-      user_id: number;
-    };
-    /** AdminHouseholdOut */
-    AdminHouseholdOut: {
-      /** Id */
-      id: number;
-      /** Name */
-      name: string;
-      /** User Id */
-      user_id: number | null;
-      /** Is Active */
-      is_active: boolean;
-      owner?: components["schemas"]["AdminUserSummaryOut"] | null;
-    };
-    /** AdminUserSummaryOut */
-    AdminUserSummaryOut: {
-      /** Id */
-      id: number;
-      /** Email */
-      email: string;
-      /** First Name */
-      first_name: string;
-      /** Last Name */
-      last_name: string;
-      /** Is Active */
-      is_active: boolean;
-    };
-    /** ElectricityRateCreateIn */
-    ElectricityRateCreateIn: {
-      /** Day Rate Uah */
-      day_rate_uah: number | string;
-      /** Night Rate Uah */
-      night_rate_uah: number | string;
-      /**
-       * Effective From
-       * @example 2026-07
-       */
-      effective_from: string;
-    };
-    /** ElectricityRateOut */
-    ElectricityRateOut: {
-      /** Id */
-      id: number;
-      /** Day Rate Uah */
-      day_rate_uah: string;
-      /** Night Rate Uah */
-      night_rate_uah: string;
-      /** Effective From */
-      effective_from: string;
-    };
-    /** ErrorOut */
-    ErrorOut: {
-      /** Detail */
-      detail: string;
-    };
-    /** HTTPValidationError */
-    HTTPValidationError: {
-      /** Detail */
-      detail?: components["schemas"]["ValidationError"][];
-    };
-    /** HouseholdOwnerAssignIn */
-    HouseholdOwnerAssignIn: {
-      /** User Id */
-      user_id: number | null;
-      /**
-       * Confirm Reassignment
-       * @default false
-       */
-      confirm_reassignment: boolean;
-    };
-    /** HouseholdSummary */
-    HouseholdSummary: {
-      /** Id */
-      id: number;
-      /** Name */
-      name: string;
-    };
-    /**
-     * LanguageCode
-     * @enum {string}
-     */
-    LanguageCode: "en" | "ua";
-    /** LoginIn */
-    LoginIn: {
-      /**
-       * Email
-       * Format: email
-       */
-      email: string;
-      /** Password */
-      password: string;
-    };
-    /** MeterReadingIn */
-    MeterReadingIn: {
-      /**
-       * Period
-       * @description YYYY-MM
-       * @example 2026-07
-       */
-      period: string;
-      /**
-       * Day Meter Value
-       * @example 3205.00
-       */
-      day_meter_value: number | string;
-      /**
-       * Night Meter Value
-       * @example 1820.00
-       */
-      night_meter_value: number | string;
-    };
-    /** MeterReadingOut */
-    MeterReadingOut: {
-      /**
-       * Id
-       * @example 1
-       */
-      id: number | null;
-      /**
-       * Household Id
-       * @example 1
-       */
-      household_id: number;
-      /**
-       * Submitted By User Id
-       * @example 1
-       */
-      submitted_by_user_id: number | null;
-      /**
-       * Period
-       * @example 2026-07
-       */
-      period: string;
-      /**
-       * Day Meter Value
-       * @example 3205.00
-       */
-      day_meter_value: string | null;
-      /**
-       * Night Meter Value
-       * @example 1820.00
-       */
-      night_meter_value: string | null;
-      /**
-       * Day Usage Kwh
-       * @example 145.50
-       */
-      day_usage_kwh: string;
-      /**
-       * Night Usage Kwh
-       * @example 98.20
-       */
-      night_usage_kwh: string;
-      /**
-       * Amount Charged Uah
-       * @example 987.65
-       */
-      amount_charged_uah: string;
-      /**
-       * Submitted At
-       * @example 2026-07-20T08:40:50.453Z
-       */
-      submitted_at: string | null;
-    };
-    /** PushSubscriptionIn */
-    PushSubscriptionIn: {
-      /** Endpoint */
-      endpoint: string;
-      keys: components["schemas"]["PushSubscriptionKeysIn"];
-    };
-    /** PushSubscriptionKeysIn */
-    PushSubscriptionKeysIn: {
-      /** P256Dh */
-      p256dh: string;
-      /** Auth */
-      auth: string;
-    };
-    /** PushUnsubscribeIn */
-    PushUnsubscribeIn: {
-      /** Endpoint */
-      endpoint: string;
-    };
-    /** RegisterIn */
-    RegisterIn: {
-      /**
-       * Email
-       * Format: email
-       */
-      email: string;
-      /** First Name */
-      first_name: string;
-      /** Last Name */
-      last_name: string;
-      /** Password */
-      password: string;
-    };
-    /** SendRemindersOut */
-    SendRemindersOut: {
-      /** Sent */
-      sent: number;
-      /** Removed */
-      removed: number;
-    };
-    /**
-     * ThemeMode
-     * @enum {string}
-     */
-    ThemeMode: "light" | "dark";
-    /** UserOut */
-    UserOut: {
-      /** Id */
-      id: number;
-      /** Email */
-      email: string;
-      /** First Name */
-      first_name: string;
-      /** Last Name */
-      last_name: string;
-      /** Is Admin */
-      is_admin: boolean;
-      /** Is Active */
-      is_active: boolean;
-      /** Email Verified */
-      email_verified: boolean;
-      /** Verification Email Retry After Seconds */
-      verification_email_retry_after_seconds: number;
-      theme: components["schemas"]["ThemeMode"];
-      language: components["schemas"]["LanguageCode"];
-    };
-    /** UserPreferencesIn */
-    UserPreferencesIn: {
-      theme?: components["schemas"]["ThemeMode"] | null;
-      language?: components["schemas"]["LanguageCode"] | null;
-    };
-    /** UserWithHouseholdsOut */
-    UserWithHouseholdsOut: {
-      /** Id */
-      id: number;
-      /** Email */
-      email: string;
-      /** First Name */
-      first_name: string;
-      /** Last Name */
-      last_name: string;
-      /** Is Admin */
-      is_admin: boolean;
-      /** Is Active */
-      is_active: boolean;
-      /** Email Verified */
-      email_verified: boolean;
-      /** Verification Email Retry After Seconds */
-      verification_email_retry_after_seconds: number;
-      theme: components["schemas"]["ThemeMode"];
-      language: components["schemas"]["LanguageCode"];
-      /** Households */
-      households: components["schemas"]["HouseholdSummary"][];
-    };
-    /** ValidationError */
-    ValidationError: {
-      /** Location */
-      loc: (string | number)[];
-      /** Message */
-      msg: string;
-      /** Error Type */
-      type: string;
-      /** Input */
-      input?: unknown;
-      /** Context */
-      ctx?: Record<string, never>;
-    };
-    /** VapidPublicKeyOut */
-    VapidPublicKeyOut: {
-      /** Public Key */
-      public_key: string;
-    };
-    /** VerifyEmailIn */
-    VerifyEmailIn: {
-      /** Token */
-      token: string;
-    };
-  };
-  responses: never;
-  parameters: never;
-  requestBodies: never;
-  headers: never;
-  pathItems: never;
+    responses: never;
+    parameters: never;
+    requestBodies: never;
+    headers: never;
+    pathItems: never;
 }
 export type $defs = Record<string, never>;
 export interface operations {
-  register_auth_register_post: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    register_auth_register_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RegisterIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UserOut"];
+                };
+            };
+            /** @description Email is already registered */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "detail": "emailAlreadyRegistered"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
     };
-    requestBody: {
-      content: {
-        "application/json": components["schemas"]["RegisterIn"];
-      };
+    login_auth_login_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LoginIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UserOut"];
+                };
+            };
+            /** @description Invalid credentials */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "detail": "invalidCredentials"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
     };
-    responses: {
-      /** @description Successful Response */
-      201: {
-        headers: {
-          [name: string]: unknown;
+    refresh_auth_refresh_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: {
+                access_token?: string | null;
+            };
         };
-        content: {
-          "application/json": components["schemas"]["UserOut"];
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
         };
-      };
-      /** @description Email is already registered */
-      409: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          /**
-           * @example {
-           *       "detail": "emailAlreadyRegistered"
-           *     }
-           */
-          "application/json": components["schemas"]["ErrorOut"];
-        };
-      };
-      /** @description Validation Error */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["HTTPValidationError"];
-        };
-      };
     };
-  };
-  login_auth_login_post: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    logout_auth_logout_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
     };
-    requestBody: {
-      content: {
-        "application/json": components["schemas"]["LoginIn"];
-      };
+    me_auth_me_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UserWithHouseholdsOut"];
+                };
+            };
+            /** @description Authentication failed */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
     };
-    responses: {
-      /** @description Successful Response */
-      200: {
-        headers: {
-          [name: string]: unknown;
+    update_preferences_auth_preferences_patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
         };
-        content: {
-          "application/json": components["schemas"]["UserOut"];
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UserPreferencesIn"];
+            };
         };
-      };
-      /** @description Invalid credentials */
-      401: {
-        headers: {
-          [name: string]: unknown;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UserOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
         };
-        content: {
-          /**
-           * @example {
-           *       "detail": "invalidCredentials"
-           *     }
-           */
-          "application/json": components["schemas"]["ErrorOut"];
-        };
-      };
-      /** @description Validation Error */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["HTTPValidationError"];
-        };
-      };
     };
-  };
-  refresh_auth_refresh_post: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: {
-        access_token?: string | null;
-      };
+    send_verification_link_auth_verification_link_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Verification email cooldown is active */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "detail": "verificationEmailCooldown"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Verification email could not be sent */
+            502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "detail": "verificationEmailSendFailed"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
     };
-    requestBody?: never;
-    responses: {
-      /** @description Successful Response */
-      204: {
-        headers: {
-          [name: string]: unknown;
+    verify_email_auth_verify_email_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
         };
-        content?: never;
-      };
-      /** @description Validation Error */
-      422: {
-        headers: {
-          [name: string]: unknown;
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["VerifyEmailIn"];
+            };
         };
-        content: {
-          "application/json": components["schemas"]["HTTPValidationError"];
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UserOut"];
+                };
+            };
+            /** @description Verification token is invalid or expired */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "detail": "invalidOrExpiredToken"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
         };
-      };
     };
-  };
-  logout_auth_logout_post: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    list_my_meter_readings_meter_readings_get: {
+        parameters: {
+            query?: {
+                household_id?: number | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MeterReadingOut"][];
+                };
+            };
+            /** @description User does not own this household */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "detail": "householdNotAccessible"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description User is not a member of any household */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "detail": "noHouseholdMembership"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
     };
-    requestBody?: never;
-    responses: {
-      /** @description Successful Response */
-      204: {
-        headers: {
-          [name: string]: unknown;
+    submit_my_meter_reading_meter_readings_post: {
+        parameters: {
+            query?: {
+                household_id?: number | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
         };
-        content?: never;
-      };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MeterReadingIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MeterReadingOut"];
+                };
+            };
+            /** @description User does not own this household */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "detail": "householdNotAccessible"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description User is not a member of any household */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "detail": "noHouseholdMembership"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Reading for this period already exists */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "detail": "periodAlreadySubmitted"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
     };
-  };
-  me_auth_me_get: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    list_admin_users_admin_users_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminUserSummaryOut"][];
+                };
+            };
+        };
     };
-    requestBody?: never;
-    responses: {
-      /** @description Successful Response */
-      200: {
-        headers: {
-          [name: string]: unknown;
+    get_admin_dashboard_summary_admin_dashboard_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
         };
-        content: {
-          "application/json": components["schemas"]["UserWithHouseholdsOut"];
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminDashboardOut"];
+                };
+            };
         };
-      };
-      /** @description Authentication failed */
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorOut"];
-        };
-      };
     };
-  };
-  update_preferences_auth_preferences_patch: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    list_admin_households_admin_households_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminHouseholdOut"][];
+                };
+            };
+        };
     };
-    requestBody: {
-      content: {
-        "application/json": components["schemas"]["UserPreferencesIn"];
-      };
+    create_admin_household_admin_households_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AdminHouseholdCreateIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminHouseholdOut"];
+                };
+            };
+            /** @description User does not exist */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "detail": "userNotFound"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description User is not active */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "detail": "userInactive"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
     };
-    responses: {
-      /** @description Successful Response */
-      200: {
-        headers: {
-          [name: string]: unknown;
+    assign_admin_household_owner_admin_households__household_id__owner_patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                household_id: number;
+            };
+            cookie?: never;
         };
-        content: {
-          "application/json": components["schemas"]["UserOut"];
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["HouseholdOwnerAssignIn"];
+            };
         };
-      };
-      /** @description Validation Error */
-      422: {
-        headers: {
-          [name: string]: unknown;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminHouseholdOut"];
+                };
+            };
+            /** @description Household or user does not exist */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Household already has a different owner, or user is not active */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
         };
-        content: {
-          "application/json": components["schemas"]["HTTPValidationError"];
-        };
-      };
     };
-  };
-  send_verification_link_auth_verification_link_post: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    list_electricity_rates_electricity_rates_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ElectricityRateOut"][];
+                };
+            };
+        };
     };
-    requestBody?: never;
-    responses: {
-      /** @description Successful Response */
-      204: {
-        headers: {
-          [name: string]: unknown;
+    create_electricity_rate_electricity_rates_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
         };
-        content?: never;
-      };
-      /** @description Verification email cooldown is active */
-      429: {
-        headers: {
-          [name: string]: unknown;
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ElectricityRateCreateIn"];
+            };
         };
-        content: {
-          /**
-           * @example {
-           *       "detail": "verificationEmailCooldown"
-           *     }
-           */
-          "application/json": components["schemas"]["ErrorOut"];
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ElectricityRateOut"];
+                };
+            };
+            /** @description A rate is already configured for this period */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "detail": "effectiveFromAlreadyExists"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
         };
-      };
-      /** @description Verification email could not be sent */
-      502: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          /**
-           * @example {
-           *       "detail": "verificationEmailSendFailed"
-           *     }
-           */
-          "application/json": components["schemas"]["ErrorOut"];
-        };
-      };
     };
-  };
-  verify_email_auth_verify_email_post: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    get_vapid_public_key_push_vapid_public_key_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VapidPublicKeyOut"];
+                };
+            };
+        };
     };
-    requestBody: {
-      content: {
-        "application/json": components["schemas"]["VerifyEmailIn"];
-      };
+    subscribe_push_subscribe_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PushSubscriptionIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
     };
-    responses: {
-      /** @description Successful Response */
-      200: {
-        headers: {
-          [name: string]: unknown;
+    unsubscribe_push_subscribe_delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
         };
-        content: {
-          "application/json": components["schemas"]["UserOut"];
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PushUnsubscribeIn"];
+            };
         };
-      };
-      /** @description Verification token is invalid or expired */
-      400: {
-        headers: {
-          [name: string]: unknown;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
         };
-        content: {
-          /**
-           * @example {
-           *       "detail": "invalidOrExpiredToken"
-           *     }
-           */
-          "application/json": components["schemas"]["ErrorOut"];
-        };
-      };
-      /** @description Validation Error */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["HTTPValidationError"];
-        };
-      };
     };
-  };
-  list_my_meter_readings_meter_readings_get: {
-    parameters: {
-      query?: {
-        household_id?: number | null;
-      };
-      header?: never;
-      path?: never;
-      cookie?: never;
+    send_test_push_test_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SendRemindersOut"];
+                };
+            };
+        };
     };
-    requestBody?: never;
-    responses: {
-      /** @description Successful Response */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["MeterReadingOut"][];
-        };
-      };
-      /** @description User does not own this household */
-      403: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          /**
-           * @example {
-           *       "detail": "householdNotAccessible"
-           *     }
-           */
-          "application/json": components["schemas"]["ErrorOut"];
-        };
-      };
-      /** @description User is not a member of any household */
-      404: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          /**
-           * @example {
-           *       "detail": "noHouseholdMembership"
-           *     }
-           */
-          "application/json": components["schemas"]["ErrorOut"];
-        };
-      };
-      /** @description Validation Error */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["HTTPValidationError"];
-        };
-      };
-    };
-  };
-  submit_my_meter_reading_meter_readings_post: {
-    parameters: {
-      query?: {
-        household_id?: number | null;
-      };
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        "application/json": components["schemas"]["MeterReadingIn"];
-      };
-    };
-    responses: {
-      /** @description Successful Response */
-      201: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["MeterReadingOut"];
-        };
-      };
-      /** @description User does not own this household */
-      403: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          /**
-           * @example {
-           *       "detail": "householdNotAccessible"
-           *     }
-           */
-          "application/json": components["schemas"]["ErrorOut"];
-        };
-      };
-      /** @description User is not a member of any household */
-      404: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          /**
-           * @example {
-           *       "detail": "noHouseholdMembership"
-           *     }
-           */
-          "application/json": components["schemas"]["ErrorOut"];
-        };
-      };
-      /** @description Reading for this period already exists */
-      409: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          /**
-           * @example {
-           *       "detail": "periodAlreadySubmitted"
-           *     }
-           */
-          "application/json": components["schemas"]["ErrorOut"];
-        };
-      };
-      /** @description Validation Error */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["HTTPValidationError"];
-        };
-      };
-    };
-  };
-  list_admin_users_admin_users_get: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Successful Response */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["AdminUserSummaryOut"][];
-        };
-      };
-    };
-  };
-  get_admin_dashboard_summary_admin_dashboard_get: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Successful Response */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["AdminDashboardOut"];
-        };
-      };
-    };
-  };
-  list_admin_households_admin_households_get: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Successful Response */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["AdminHouseholdOut"][];
-        };
-      };
-    };
-  };
-  create_admin_household_admin_households_post: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        "application/json": components["schemas"]["AdminHouseholdCreateIn"];
-      };
-    };
-    responses: {
-      /** @description Successful Response */
-      201: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["AdminHouseholdOut"];
-        };
-      };
-      /** @description User does not exist */
-      404: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          /**
-           * @example {
-           *       "detail": "userNotFound"
-           *     }
-           */
-          "application/json": components["schemas"]["ErrorOut"];
-        };
-      };
-      /** @description User is not active */
-      409: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          /**
-           * @example {
-           *       "detail": "userInactive"
-           *     }
-           */
-          "application/json": components["schemas"]["ErrorOut"];
-        };
-      };
-      /** @description Validation Error */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["HTTPValidationError"];
-        };
-      };
-    };
-  };
-  assign_admin_household_owner_admin_households__household_id__owner_patch: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        household_id: number;
-      };
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        "application/json": components["schemas"]["HouseholdOwnerAssignIn"];
-      };
-    };
-    responses: {
-      /** @description Successful Response */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["AdminHouseholdOut"];
-        };
-      };
-      /** @description Household or user does not exist */
-      404: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorOut"];
-        };
-      };
-      /** @description Household already has a different owner, or user is not active */
-      409: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ErrorOut"];
-        };
-      };
-      /** @description Validation Error */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["HTTPValidationError"];
-        };
-      };
-    };
-  };
-  list_electricity_rates_electricity_rates_get: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Successful Response */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ElectricityRateOut"][];
-        };
-      };
-    };
-  };
-  create_electricity_rate_electricity_rates_post: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        "application/json": components["schemas"]["ElectricityRateCreateIn"];
-      };
-    };
-    responses: {
-      /** @description Successful Response */
-      201: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ElectricityRateOut"];
-        };
-      };
-      /** @description A rate is already configured for this period */
-      409: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          /**
-           * @example {
-           *       "detail": "effectiveFromAlreadyExists"
-           *     }
-           */
-          "application/json": components["schemas"]["ErrorOut"];
-        };
-      };
-      /** @description Validation Error */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["HTTPValidationError"];
-        };
-      };
-    };
-  };
-  get_vapid_public_key_push_vapid_public_key_get: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Successful Response */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["VapidPublicKeyOut"];
-        };
-      };
-    };
-  };
-  subscribe_push_subscribe_post: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        "application/json": components["schemas"]["PushSubscriptionIn"];
-      };
-    };
-    responses: {
-      /** @description Successful Response */
-      204: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Validation Error */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["HTTPValidationError"];
-        };
-      };
-    };
-  };
-  unsubscribe_push_subscribe_delete: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        "application/json": components["schemas"]["PushUnsubscribeIn"];
-      };
-    };
-    responses: {
-      /** @description Successful Response */
-      204: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Validation Error */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["HTTPValidationError"];
-        };
-      };
-    };
-  };
-  send_test_push_test_post: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Successful Response */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["SendRemindersOut"];
-        };
-      };
-    };
-  };
 }

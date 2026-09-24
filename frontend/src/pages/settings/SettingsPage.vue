@@ -1,21 +1,21 @@
 <template>
   <div class="settings-page">
     <header class="settings-header">
-      <h1 class="settings-header__title">{{ $t("settings.title") }}</h1>
+      <h1 class="settings-header__title">{{ t("settings.title") }}</h1>
     </header>
 
     <div class="settings-body">
       <section class="settings-section">
-        <h2 class="settings-section__title">{{ $t("settings.appearance") }}</h2>
+        <h2 class="settings-section__title">{{ t("settings.appearance") }}</h2>
 
         <div class="settings-card">
           <div class="settings-row">
             <div class="settings-row__info">
               <i class="pi pi-palette settings-row__icon"></i>
               <div>
-                <span class="settings-row__label">{{ $t("settings.theme") }}</span>
+                <span class="settings-row__label">{{ t("settings.theme") }}</span>
                 <span class="settings-row__hint">{{
-                  isDarkTheme ? $t("settings.themeDark") : $t("settings.themeLight")
+                  isDarkTheme ? t("settings.themeDark") : t("settings.themeLight")
                 }}</span>
               </div>
             </div>
@@ -26,7 +26,7 @@
             <div class="settings-row__info">
               <i class="pi pi-language settings-row__icon"></i>
               <div>
-                <span class="settings-row__label">{{ $t("settings.language") }}</span>
+                <span class="settings-row__label">{{ t("settings.language") }}</span>
                 <span class="settings-row__hint">{{
                   currentLocale === "ua" ? "Українська" : "English"
                 }}</span>
@@ -38,7 +38,7 @@
       </section>
 
       <section class="settings-section">
-        <h2 class="settings-section__title">{{ $t("settings.notifications") }}</h2>
+        <h2 class="settings-section__title">{{ t("settings.notifications.title") }}</h2>
 
         <div class="settings-card">
           <div class="settings-row">
@@ -48,11 +48,11 @@
                 :class="pushState === 'requesting' ? 'pi pi-spin pi-spinner' : 'pi pi-bell'"
               ></i>
               <div>
-                <span class="settings-row__label">{{ $t("settings.remindMe") }}</span>
+                <span class="settings-row__label">{{ t("settings.notifications.label") }}</span>
                 <span
                   class="settings-row__hint"
                   :class="{ 'settings-row__hint--warning': pushState === 'denied' }"
-                  >{{ pushHint }}</span
+                  >{{ t(`settings.notifications.${pushState}`) }}</span
                 >
               </div>
             </div>
@@ -62,19 +62,10 @@
               :disabled="pushState === 'requesting' || pushState === 'denied'"
               @update:model-value="handlePushToggle"
             />
-            <span v-else class="settings-row__hint">{{ $t("settings.remindMeUnsupported") }}</span>
+            <span v-else class="settings-row__hint">{{
+              t("settings.notifications.unsupported")
+            }}</span>
           </div>
-
-          <!-- TEMPORARY: manual delivery check after a deploy; remove once push is confirmed working (#94). -->
-          <button
-            v-if="pushState === 'on'"
-            type="button"
-            class="settings-row__test-button"
-            :disabled="isSendingTestPush"
-            @click="handleSendTestPush"
-          >
-            {{ isSendingTestPush ? "Sending..." : "Send test notification" }}
-          </button>
         </div>
       </section>
     </div>
@@ -82,8 +73,6 @@
 </template>
 
 <script setup lang="ts">
-  import { useToast } from "primevue/usetoast";
-  import { computed, ref } from "vue";
   import { useI18n } from "vue-i18n";
 
   import { useLocale } from "@features/i18n/composables/useLocale";
@@ -91,7 +80,6 @@
   import { usePushNotifications } from "@features/push-notifications/usePushNotifications";
   import { useTheme } from "@features/theme/composables/useTheme";
   import { updateMyPreferences } from "@shared/api/auth";
-  import { sendTestPush } from "@shared/api/push";
   import LanguageToggleButton from "@shared/components/i18n/LanguageToggleButton.vue";
   import ThemeToggleButton from "@shared/components/theme/ThemeToggleButton.vue";
 
@@ -99,23 +87,6 @@
   const { setTheme, isDarkTheme } = useTheme();
   const { state: pushState, enable: enablePush, disable: disablePush } = usePushNotifications();
   const { t } = useI18n();
-  const toast = useToast();
-  const isSendingTestPush = ref(false);
-
-  const pushHint = computed(() => {
-    switch (pushState.value) {
-      case "requesting":
-        return t("settings.remindMeRequesting");
-      case "on":
-        return t("settings.remindMeOn");
-      case "denied":
-        return t("settings.remindMeDenied");
-      case "ios-not-installed":
-        return t("settings.remindMeIosNotInstalled");
-      default:
-        return t("settings.remindMeOff");
-    }
-  });
 
   async function handlePreferenceToggle(payload: {
     language?: LanguageCode;
@@ -130,34 +101,11 @@
     if (pushState.value === "ios-not-installed") {
       return;
     }
-    try {
-      if (next) {
-        await enablePush();
-      } else {
-        await disablePush();
-      }
-    } catch {
-      // API-level failures already surface a toast via the shared client; the
-      // composable itself resyncs `pushState` in a `finally`, so there's
-      // nothing left to reconcile here beyond not crashing the toggle.
-    }
-  }
 
-  // TEMPORARY: manual delivery check after a deploy; remove once push is
-  // confirmed working in production (#94).
-  async function handleSendTestPush(): Promise<void> {
-    isSendingTestPush.value = true;
-    try {
-      const { sent } = await sendTestPush();
-      toast.add({
-        life: 4000,
-        severity: sent > 0 ? "success" : "warn",
-        summary: sent > 0 ? `Sent to ${sent} device(s)` : "No active subscription to send to",
-      });
-    } catch {
-      // Shared client already shows an error toast.
-    } finally {
-      isSendingTestPush.value = false;
+    if (next) {
+      await enablePush();
+    } else {
+      await disablePush();
     }
   }
 </script>
