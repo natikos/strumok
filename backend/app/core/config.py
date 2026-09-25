@@ -90,7 +90,6 @@ class Settings(BaseSettings):
 
     @property
     def auth_cookie_secure(self) -> bool:
-        print(f"self.environment: {self.environment}")
         return self.environment != "development"
 
     @property
