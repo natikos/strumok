@@ -1,21 +1,21 @@
 <template>
   <div class="settings-page">
     <header class="settings-header">
-      <h1 class="settings-header__title">{{ $t("settings.title") }}</h1>
+      <h1 class="settings-header__title">{{ t("settings.title") }}</h1>
     </header>
 
     <div class="settings-body">
       <section class="settings-section">
-        <h2 class="settings-section__title">{{ $t("settings.appearance") }}</h2>
+        <h2 class="settings-section__title">{{ t("settings.appearance") }}</h2>
 
         <div class="settings-card">
           <div class="settings-row">
             <div class="settings-row__info">
               <Palette class="settings-row__icon" />
               <div>
-                <span class="settings-row__label">{{ $t("settings.theme") }}</span>
+                <span class="settings-row__label">{{ t("settings.theme") }}</span>
                 <span class="settings-row__hint">{{
-                  isDarkTheme ? $t("settings.themeDark") : $t("settings.themeLight")
+                  isDarkTheme ? t("settings.themeDark") : t("settings.themeLight")
                 }}</span>
               </div>
             </div>
@@ -26,7 +26,7 @@
             <div class="settings-row__info">
               <Language class="settings-row__icon" />
               <div>
-                <span class="settings-row__label">{{ $t("settings.language") }}</span>
+                <span class="settings-row__label">{{ t("settings.language") }}</span>
                 <span class="settings-row__hint">{{
                   currentLocale === "ua" ? "Українська" : "English"
                 }}</span>
@@ -36,15 +36,51 @@
           </div>
         </div>
       </section>
+
+      <section class="settings-section">
+        <h2 class="settings-section__title">{{ t("settings.notifications.title") }}</h2>
+
+        <div class="settings-card">
+          <div class="settings-row">
+            <div class="settings-row__info">
+              <component
+                :is="notificationIcon"
+                class="settings-row__icon"
+                :class="{ 'settings-row__icon--spin': pushState === 'requesting' }"
+              />
+              <div>
+                <span class="settings-row__label">{{ t("settings.notifications.label") }}</span>
+                <span
+                  class="settings-row__hint"
+                  :class="{ 'settings-row__hint--warning': pushState === 'denied' }"
+                  >{{ t(`settings.notifications.${pushState}`) }}</span
+                >
+              </div>
+            </div>
+            <ToggleSwitch
+              v-if="pushState !== 'unsupported'"
+              :model-value="pushState === 'on'"
+              :disabled="pushState === 'requesting' || pushState === 'denied'"
+              @update:model-value="handlePushToggle"
+            />
+            <span v-else class="settings-row__hint">{{
+              t("settings.notifications.unsupported")
+            }}</span>
+          </div>
+        </div>
+      </section>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-  import { Language, Palette } from "@primeicons/vue";
+  import { Bell, Language, Palette, Spinner } from "@primeicons/vue";
+  import { computed } from "vue";
+  import { useI18n } from "vue-i18n";
 
   import { useLocale } from "@features/i18n/composables/useLocale";
   import type { LanguageCode, ThemeMode } from "@features/preferences/preferences.storage";
+  import { usePushNotifications } from "@features/push-notifications/usePushNotifications";
   import { useTheme } from "@features/theme/composables/useTheme";
   import { updateMyPreferences } from "@shared/api/auth";
   import LanguageToggleButton from "@shared/components/i18n/LanguageToggleButton.vue";
@@ -52,6 +88,10 @@
 
   const { setLocale, currentLocale } = useLocale();
   const { setTheme, isDarkTheme } = useTheme();
+  const { state: pushState, enable: enablePush, disable: disablePush } = usePushNotifications();
+  const { t } = useI18n();
+
+  const notificationIcon = computed(() => (pushState.value === "requesting" ? Spinner : Bell));
 
   async function handlePreferenceToggle(payload: {
     language?: LanguageCode;
@@ -60,6 +100,18 @@
     const updated = await updateMyPreferences(payload);
     setLocale(updated.language);
     setTheme(updated.theme);
+  }
+
+  async function handlePushToggle(next: boolean): Promise<void> {
+    if (pushState.value === "ios-not-installed") {
+      return;
+    }
+
+    if (next) {
+      await enablePush();
+    } else {
+      await disablePush();
+    }
   }
 </script>
 
@@ -104,6 +156,15 @@
     }
   }
 
+  @keyframes spin {
+    from {
+      transform: rotate(0deg);
+    }
+    to {
+      transform: rotate(360deg);
+    }
+  }
+
   .settings-row {
     @include layout.row(var(--s-app-space-4), center, space-between);
     padding: var(--s-app-space-4);
@@ -121,6 +182,10 @@
       width: 1.1rem;
       height: 1.1rem;
       flex-shrink: 0;
+
+      &--spin {
+        animation: spin 1s linear infinite;
+      }
     }
 
     &__label {
@@ -135,6 +200,10 @@
       display: block;
       font-size: 0.8rem;
       margin-top: 0.1rem;
+
+      &--warning {
+        color: var(--s-amber-500);
+      }
     }
   }
 </style>

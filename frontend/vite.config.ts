@@ -44,6 +44,9 @@ export default defineConfig({
       resolvers: [PrimeVueResolver()],
     }),
     VitePWA({
+      strategies: "injectManifest",
+      srcDir: "src",
+      filename: "sw.ts",
       registerType: "autoUpdate",
       manifest: {
         name: "Strumok",

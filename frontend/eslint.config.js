@@ -7,7 +7,8 @@ import globals from "globals";
 
 export default defineConfigWithVueTs(
   // The design handoff bundle is vendored reference material, not app source.
-  { ignores: ["**/*.d.ts", "**/coverage", "**/dist", "design_handoff_*"] },
+  // src/sw.ts runs in the webworker lib, which conflicts with the app's DOM-lib tsconfig project.
+  { ignores: ["**/*.d.ts", "**/coverage", "**/dist", "design_handoff_*", "src/sw.ts"] },
   eslint.configs.recommended,
   ...eslintPluginVue.configs["flat/strongly-recommended"],
   vueTsConfigs.recommendedTypeChecked,
