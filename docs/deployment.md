@@ -23,6 +23,7 @@ git push origin v1.2.3
 ```
 
 The workflow (`.github/workflows/deployment.yml`) will:
+
 1. Build the frontend (`bun run build` inside `frontend/`)
 2. Deploy the backend to FastAPI Cloud (`uv run fastapi deploy` inside `backend/`)
 
@@ -30,20 +31,24 @@ You can also trigger a deployment manually from the GitHub Actions UI using the 
 
 ### Required GitHub Secrets
 
-| Secret | Description |
-|---|---|
-| `FASTAPI_CLOUD_TOKEN` | FastAPI Cloud deploy token |
-| `FASTAPI_CLOUD_APP_ID` | FastAPI Cloud app identifier |
+| Secret                 | Description                   |
+| ----------------------- | ------------------------------ |
+| `FASTAPI_CLOUD_TOKEN`   | FastAPI Cloud deploy token     |
+| `FASTAPI_CLOUD_APP_ID`  | FastAPI Cloud app identifier   |
 
 ## Environment Variables
 
-| Variable | Description |
-|---|---|
-| `DATABASE_URL` | PostgreSQL connection string |
-| `AUTH_SECRET_KEY` | JWT signing secret |
-| `AUTH_ALGORITHM` | JWT algorithm (default: `HS256`) |
-| `CORS_ORIGINS` | Comma-separated list of allowed origins |
-| `ENVIRONMENT` | `development` or `production` |
-| `BREVO_API_KEY` | Brevo transactional email API key |
-| `BREVO_SENDER_EMAIL` | Verified Brevo sender address |
-| `BREVO_APP_BASE_URL` | Public app origin used to build verification links |
+| Variable                 | Description                                               |
+| ------------------------- | ----------------------------------------------------------- |
+| `DATABASE_URL`            | PostgreSQL connection string                                |
+| `AUTH_SECRET_KEY`         | JWT signing secret                                           |
+| `AUTH_ALGORITHM`          | JWT algorithm (default: `HS256`)                              |
+| `AUTH_INTERNAL_SECRET`    | API secret for internal endpoints (push, webhooks, cron jobs) |
+| `CORS_ORIGINS`            | Comma-separated list of allowed origins                      |
+| `ENVIRONMENT`             | `development` or `production`                                |
+| `BREVO_API_KEY`           | Brevo transactional email API key                             |
+| `BREVO_SENDER_EMAIL`      | Verified Brevo sender address                                 |
+| `BREVO_APP_BASE_URL`      | Public app origin used to build verification links            |
+| `PUSH_VAPID_PUBLIC_KEY`   | VAPID public key for Web Push notifications                   |
+| `PUSH_VAPID_PRIVATE_KEY`  | VAPID private key for Web Push notifications                  |
+| `PUSH_VAPID_SUBJECT`      | Contact URI (`mailto:` or URL) sent with Web Push requests    |

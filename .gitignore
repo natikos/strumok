@@ -25,5 +25,8 @@ postgres-data/
 # OS
 .DS_Store
 
+# Local key material (e.g. VAPID keypairs) - never commit
+*.pem
+
 # Local dev config (not for public repo)
 .vscode/credentials.local.sh
