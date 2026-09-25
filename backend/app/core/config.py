@@ -35,6 +35,7 @@ class AuthSettings(BaseSettings):
     auth_cookie_name: str = "access_token"
     verify_email_resend_cooldown_seconds: int = 180  # 3 minutes
     verification_token_expiration: int = 60  # (min) 1 hour
+    internal_secret: SecretStr  # API secret for internal endpoints (push notifications, webhooks, cron jobs, etc.)
 
 
 class BrevoSettings(BaseSettings):
@@ -48,6 +49,18 @@ class BrevoSettings(BaseSettings):
     sender_email: str = ""
     sender_name: str = "Струмок (Електроенергія)"
     app_base_url: str = "http://localhost:5173"
+
+
+class PushSettings(BaseSettings):
+    model_config = SettingsConfigDict(
+        env_prefix="PUSH_",
+        extra="ignore",
+        env_file=".env",
+    )
+
+    vapid_public_key: str
+    vapid_private_key: SecretStr
+    vapid_subject: str
 
 
 class Settings(BaseSettings):
@@ -73,6 +86,7 @@ class Settings(BaseSettings):
     db: DbSettings = DbSettings()  # type: ignore
     auth: AuthSettings = AuthSettings()  # type: ignore
     brevo: BrevoSettings = BrevoSettings()
+    push: PushSettings = PushSettings()  # type: ignore
 
     @property
     def auth_cookie_secure(self) -> bool:

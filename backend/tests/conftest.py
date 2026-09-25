@@ -48,6 +48,10 @@ TEST_DATABASE_URL = urlunsplit(_parts._replace(path=f"/{TEST_DB_NAME}"))
 
 os.environ["DATABASE_URL"] = TEST_DATABASE_URL
 os.environ["AUTH_SECRET_KEY"] = "test-secret-key-not-used-anywhere-real"
+os.environ["AUTH_INTERNAL_SECRET"] = "test-internal-secret-not-used-anywhere-real"
+os.environ["PUSH_VAPID_PUBLIC_KEY"] = "test-vapid-public-key-not-used-anywhere-real"
+os.environ["PUSH_VAPID_PRIVATE_KEY"] = "test-vapid-private-key-not-used-anywhere-real"
+os.environ["PUSH_VAPID_SUBJECT"] = "mailto:test@example.com"
 # Must stay "development": `settings.auth_cookie_secure` is `environment !=
 # "development"`, and a Secure cookie is never sent back over the test client's
 # plain-http transport, so any other value breaks every authenticated request.
