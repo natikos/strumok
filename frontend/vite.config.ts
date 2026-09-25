@@ -10,6 +10,15 @@ export default defineConfig({
   build: {
     outDir: "../backend/dist",
     emptyOutDir: true,
+    rollupOptions: {
+      onwarn(warning, warn) {
+        // Suppress the "contains an annotation that Rollup cannot interpret" warning
+        if (warning.code === "INVALID_ANNOTATION") {
+          return;
+        }
+        warn(warning);
+      },
+    },
   },
   css: {
     preprocessorOptions: {
