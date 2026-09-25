@@ -18,6 +18,16 @@ export default defineConfig({
         }
         warn(warning);
       },
+      output: {
+        // @primeuix/themes/aura ships style tokens for every PrimeVue component
+        // regardless of usage and can't be tree-shaken, which was inflating the
+        // main chunk to 500K+ and tripping Vite's chunk-size warning. Splitting
+        // it out shrinks that chunk and lets the theme cache independently of
+        // app code that changes far more often.
+        manualChunks(id) {
+          return id.includes("@primeuix/themes") ? "primevue-theme" : undefined;
+        },
+      },
     },
   },
   css: {
