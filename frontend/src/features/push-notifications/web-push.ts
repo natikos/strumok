@@ -33,24 +33,17 @@ export async function getWebPushSubscription(): Promise<PushSubscriptionIn | nul
 export async function subscribeToWebPush(
   applicationServerKey: BufferSource
 ): Promise<PushSubscriptionIn> {
-  console.log(isPushSupported());
-  console.log("subscribing to web push notifications");
-  const registration = await navigator.serviceWorker.ready
-    .catch((e) => {
-      console.error(e);
-    })
-    .then((registration) => registration as ServiceWorkerRegistration);
-  console.log("registering service worker for push notifications");
-  await registration.pushManager
-    .subscribe({
-      applicationServerKey,
-      userVisibleOnly: true,
-    })
-    .catch((e) => {
-      console.error(e);
-    });
+  const registration = await navigator.serviceWorker.ready;
+  await registration.pushManager.subscribe({
+    applicationServerKey,
+    userVisibleOnly: true,
+  });
 
-  return (await getWebPushSubscription())!;
+  const subscription = await getWebPushSubscription();
+  if (!subscription) {
+    throw new Error("Push subscription succeeded but no subscription was found afterward");
+  }
+  return subscription;
 }
 
 export async function unsubscribeFromWebPush(): Promise<string> {
