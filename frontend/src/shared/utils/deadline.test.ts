@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 
 import {
   getDaysLeft,
@@ -204,5 +204,46 @@ describe("getDaysLeft", () => {
   it("goes negative once the window has passed", () => {
     freezeAt([2026, 6, 20]);
     expect(getDaysLeft()).toBe(-15);
+  });
+});
+
+/**
+ * Residents are in Kyiv (UTC+2/+3), and the API sends `submitted_at` as UTC with a
+ * `Z` suffix (#142). CI runs in UTC, where a UTC/local mix-up is invisible, so this
+ * block switches the process to Kyiv time itself and restores it afterwards.
+ */
+describe("getDeadlineStatus in Europe/Kyiv", () => {
+  const originalTz = process.env.TZ;
+
+  beforeAll(() => {
+    process.env.TZ = "Europe/Kyiv";
+  });
+  afterAll(() => {
+    if (originalTz === undefined) {
+      delete process.env.TZ;
+    } else {
+      process.env.TZ = originalTz;
+    }
+  });
+  beforeEach(() => vi.useFakeTimers());
+  afterEach(() => vi.useRealTimers());
+
+  it("runs with Kyiv's summer offset (guards the rest of this block)", () => {
+    expect(new Date(2026, 6, 5).getTimezoneOffset()).toBe(-180);
+  });
+
+  it("is submitted for a reading at 23:30 Kyiv on day 5", () => {
+    freezeAt([2026, 6, 6]);
+    expect(getDeadlineStatus("2026-07-05T20:30:00Z")).toBe("submitted");
+  });
+
+  it("is submitted-late for a reading at 00:30 Kyiv on day 6", () => {
+    freezeAt([2026, 6, 6]);
+    expect(getDeadlineStatus("2026-07-05T21:30:00Z")).toBe("submitted-late");
+  });
+
+  it("is submitted for a reading at 00:30 Kyiv on day 1, still the prior UTC day", () => {
+    freezeAt([2026, 6, 3]);
+    expect(getDeadlineStatus("2026-06-30T21:30:00Z")).toBe("submitted");
   });
 });
