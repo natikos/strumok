@@ -78,7 +78,11 @@
               }}</strong>
             </div>
           </component>
-          <Menu v-if="me?.is_admin" ref="profileMenu" :model="profileMenuItems" popup />
+          <Menu v-if="me?.is_admin" ref="profileMenu" :model="profileMenuItems" popup>
+            <template #itemicon="{ item }">
+              <component :is="item['iconComponent']" aria-hidden="true" />
+            </template>
+          </Menu>
         </div>
       </header>
 
@@ -171,7 +175,7 @@
 
   const profileMenuItems = computed(() => [
     {
-      icon: adminItem.value.icon,
+      iconComponent: adminItem.value.icon,
       label: adminItem.value.label,
       command: () => router.push(adminItem.value.route),
     },
