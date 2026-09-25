@@ -3,7 +3,7 @@
     <Card class="no-household-card">
       <template #content>
         <div class="no-household-card__content">
-          <i class="pi pi-home no-household-card__icon" aria-hidden="true"></i>
+          <Home class="no-household-card__icon" aria-hidden="true" />
 
           <Typography class="no-household-card__title" variant="h1">
             {{ $t("noHousehold.title") }}
@@ -41,6 +41,7 @@
 </template>
 
 <script setup lang="ts">
+  import { Home } from "@primeicons/vue";
   import { ref } from "vue";
   import { useRouter } from "vue-router";
 
@@ -112,7 +113,8 @@
   }
 
   .no-household-card__icon {
-    font-size: 2rem;
+    width: 2rem;
+    height: 2rem;
     color: color-mix(in srgb, var(--s-content-color), transparent 65%);
   }
 

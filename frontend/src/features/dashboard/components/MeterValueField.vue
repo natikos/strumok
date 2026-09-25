@@ -1,7 +1,7 @@
 <template>
   <div class="meter-value-field">
     <label :for="inputId" class="meter-value-field__label">
-      <i :class="icon" :data-part="part" aria-hidden="true"></i>
+      <component :is="icon" :data-part="part" aria-hidden="true" />
       {{ label }}
     </label>
     <InputNumber
@@ -33,6 +33,7 @@
 </template>
 
 <script setup lang="ts">
+  import { Moon, Sun } from "@primeicons/vue";
   import { computed } from "vue";
   import { useI18n } from "vue-i18n";
 
@@ -54,7 +55,7 @@
   const inputId = `submission-${props.part}`;
   const errorId = `${inputId}-error`;
 
-  const icon = computed(() => (props.part === "day" ? "pi pi-sun" : "pi pi-moon"));
+  const icon = computed(() => (props.part === "day" ? Sun : Moon));
   const label = computed(() => t(`meterReadings.${props.part}`));
 </script>
 
@@ -71,8 +72,9 @@
       font-weight: 600;
       color: var(--s-content-color);
 
-      .pi {
-        font-size: 1rem;
+      svg {
+        width: 1rem;
+        height: 1rem;
 
         &[data-part="day"] {
           color: var(--s-amber-500);

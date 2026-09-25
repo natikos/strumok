@@ -1,3 +1,4 @@
+import { CheckCircle, Clock, ExclamationTriangle, TimesCircle } from "@primeicons/vue";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { mountWithPlugins } from "@/shared/testing/mount";
@@ -30,7 +31,7 @@ describe("DeadlineBadge", () => {
     const wrapper = mountWithPlugins(DeadlineBadge, { props: { reading: null } });
 
     expect(wrapper.text()).toContain("Due");
-    expect(wrapper.find(".pi-clock").exists()).toBe(true);
+    expect(wrapper.findComponent(Clock).exists()).toBe(true);
     expect(wrapper.classes()).toContain("deadline-badge--due");
   });
 
@@ -39,7 +40,7 @@ describe("DeadlineBadge", () => {
     const wrapper = mountWithPlugins(DeadlineBadge, { props: { reading: undefined } });
 
     expect(wrapper.text()).toContain("Overdue");
-    expect(wrapper.find(".pi-times-circle").exists()).toBe(true);
+    expect(wrapper.findComponent(TimesCircle).exists()).toBe(true);
     expect(wrapper.classes()).toContain("deadline-badge--overdue");
   });
 
@@ -50,7 +51,7 @@ describe("DeadlineBadge", () => {
 
     expect(wrapper.text()).toContain("Submitted");
     expect(wrapper.text()).not.toContain("Submitted late");
-    expect(wrapper.find(".pi-check-circle").exists()).toBe(true);
+    expect(wrapper.findComponent(CheckCircle).exists()).toBe(true);
     expect(wrapper.classes()).toContain("deadline-badge--submitted");
   });
 
@@ -60,7 +61,7 @@ describe("DeadlineBadge", () => {
     const wrapper = mountWithPlugins(DeadlineBadge, { props: { reading } });
 
     expect(wrapper.text()).toContain("Submitted late");
-    expect(wrapper.find(".pi-exclamation-triangle").exists()).toBe(true);
+    expect(wrapper.findComponent(ExclamationTriangle).exists()).toBe(true);
     expect(wrapper.classes()).toContain("deadline-badge--submitted-late");
   });
 });

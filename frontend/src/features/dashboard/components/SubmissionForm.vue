@@ -21,12 +21,12 @@
 
     <div class="submission-form__actions">
       <p v-if="errors.form" class="submission__form-error" role="alert">
-        <i class="pi pi-times-circle" aria-hidden="true"></i>
+        <TimesCircle aria-hidden="true" />
         {{ t(errors.form) }}
       </p>
 
       <p v-if="isLate" class="submission__note">
-        <i class="pi pi-shield" aria-hidden="true"></i>
+        <Shield aria-hidden="true" />
         {{ t("meterReadings.lateApprovalNote") }}
       </p>
 
@@ -47,6 +47,7 @@
 </template>
 
 <script setup lang="ts">
+  import { Shield, TimesCircle } from "@primeicons/vue";
   import { useI18n } from "vue-i18n";
 
   import type { FieldErrors } from "@/features/dashboard/types";
@@ -157,8 +158,9 @@
       color: var(--s-red-700);
       flex-basis: 100%;
 
-      .pi {
-        font-size: 0.85rem;
+      svg {
+        width: 0.85rem;
+        height: 0.85rem;
         flex-shrink: 0;
         margin-top: 0.15em;
       }
@@ -173,8 +175,9 @@
       color: var(--s-content-secondary-color);
       flex-basis: 100%;
 
-      .pi {
-        font-size: 0.85rem;
+      svg {
+        width: 0.85rem;
+        height: 0.85rem;
         flex-shrink: 0;
         margin-top: 0.15em;
         color: var(--s-red-500);

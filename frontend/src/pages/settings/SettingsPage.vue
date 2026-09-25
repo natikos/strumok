@@ -11,7 +11,7 @@
         <div class="settings-card">
           <div class="settings-row">
             <div class="settings-row__info">
-              <i class="pi pi-palette settings-row__icon"></i>
+              <Palette class="settings-row__icon" />
               <div>
                 <span class="settings-row__label">{{ $t("settings.theme") }}</span>
                 <span class="settings-row__hint">{{
@@ -24,7 +24,7 @@
 
           <div class="settings-row">
             <div class="settings-row__info">
-              <i class="pi pi-language settings-row__icon"></i>
+              <Language class="settings-row__icon" />
               <div>
                 <span class="settings-row__label">{{ $t("settings.language") }}</span>
                 <span class="settings-row__hint">{{
@@ -41,6 +41,8 @@
 </template>
 
 <script setup lang="ts">
+  import { Language, Palette } from "@primeicons/vue";
+
   import { useLocale } from "@features/i18n/composables/useLocale";
   import type { LanguageCode, ThemeMode } from "@features/preferences/preferences.storage";
   import { useTheme } from "@features/theme/composables/useTheme";
@@ -116,9 +118,9 @@
 
     &__icon {
       color: var(--p-primary-color);
-      font-size: 1.1rem;
-      width: 1.25rem;
-      text-align: center;
+      width: 1.1rem;
+      height: 1.1rem;
+      flex-shrink: 0;
     }
 
     &__label {

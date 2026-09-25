@@ -1,3 +1,4 @@
+import { ArrowDown, ArrowUp } from "@primeicons/vue";
 import Skeleton from "primevue/skeleton";
 import { describe, expect, it } from "vitest";
 
@@ -71,7 +72,7 @@ describe("YearOverYearCard", () => {
 
     const pill = wrapper.find(".yoy-card__pill");
     expect(pill.classes()).toContain("yoy-card__pill--down");
-    expect(wrapper.find(".pi-arrow-down").exists()).toBe(true);
+    expect(wrapper.findComponent(ArrowDown).exists()).toBe(true);
     expect(pill.text()).toContain("50");
     expect(pill.text()).toContain("kWh");
   });
@@ -88,7 +89,7 @@ describe("YearOverYearCard", () => {
 
     const pill = wrapper.find(".yoy-card__pill");
     expect(pill.classes()).toContain("yoy-card__pill--up");
-    expect(wrapper.find(".pi-arrow-up").exists()).toBe(true);
+    expect(wrapper.findComponent(ArrowUp).exists()).toBe(true);
     expect(pill.text()).toContain("50");
     expect(pill.text()).toContain("kWh");
   });
