@@ -88,6 +88,22 @@ class MeterReading(SQLModel, table=True):
     submitted_at: datetime = Field(default_factory=utc_now)
 
 
+class PushSubscription(SQLModel, table=True):
+    """A browser's Web Push (VAPID) subscription for a user's device."""
+
+    __tablename__ = "push_subscriptions"  # type: ignore
+    __table_args__ = (
+        UniqueConstraint("endpoint", name="uq_push_subscription_endpoint"),
+    )
+
+    id: int = Field(default=None, primary_key=True)
+    user_id: int = Field(foreign_key="users.id", index=True)
+    endpoint: str
+    p256dh: str
+    auth: str
+    created_at: datetime = Field(default_factory=utc_now)
+
+
 class ElectricityRate(SQLModel, table=True):
     """Day/night per-kWh rate effective from a given billing period onward."""
 
