@@ -205,22 +205,5 @@
         color: var(--s-amber-500);
       }
     }
-
-    &__test-button {
-      background: none;
-      border: none;
-      border-top: 1px solid var(--s-content-border-color);
-      color: var(--p-primary-color);
-      cursor: pointer;
-      font-size: 0.85rem;
-      padding: var(--s-app-space-3) var(--s-app-space-4);
-      text-align: left;
-      width: 100%;
-
-      &:disabled {
-        cursor: not-allowed;
-        opacity: 0.6;
-      }
-    }
   }
 </style>
