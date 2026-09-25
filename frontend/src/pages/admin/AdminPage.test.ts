@@ -14,6 +14,17 @@ vi.mock("@shared/api/admin", () => ({
   getAdminDashboard,
 }));
 
+const stubs = {
+  Tabs: { template: "<div><slot /></div>" },
+  TabList: { template: "<div><slot /></div>" },
+  Tab: { template: "<div><slot /></div>" },
+  TabPanels: { template: "<div><slot /></div>" },
+  TabPanel: { template: "<div><slot /></div>" },
+  AdminHouseholdAssignment: true,
+  ElectricityRatesSettings: true,
+  ProgressSpinner: true,
+};
+
 function makeDashboard(): AdminDashboardOut {
   return {
     current_period: "2026-09",
@@ -58,11 +69,7 @@ describe("AdminPage submission overview", () => {
     const wrapper = mount(AdminPage, {
       global: {
         plugins: appPlugins(),
-        stubs: {
-          AdminHouseholdAssignment: true,
-          ElectricityRatesSettings: true,
-          ProgressSpinner: true,
-        },
+        stubs,
       },
     });
     await flushPromises();
@@ -87,11 +94,7 @@ describe("AdminPage submission overview", () => {
     const wrapper = mount(AdminPage, {
       global: {
         plugins: appPlugins(),
-        stubs: {
-          AdminHouseholdAssignment: true,
-          ElectricityRatesSettings: true,
-          ProgressSpinner: true,
-        },
+        stubs,
       },
     });
 
