@@ -28,7 +28,7 @@
     </div>
 
     <p v-if="isSparse" class="usage-chart__note">
-      <i class="pi pi-info-circle" aria-hidden="true"></i>
+      <InfoCircle aria-hidden="true" />
       {{ t("dashboard.trendSparseNote") }}
     </p>
 
@@ -39,6 +39,7 @@
 </template>
 
 <script setup lang="ts">
+  import { InfoCircle } from "@primeicons/vue";
   import { computed } from "vue";
   import { useI18n } from "vue-i18n";
 
@@ -256,8 +257,9 @@
       font-size: 0.75rem;
       color: var(--s-content-secondary-color);
 
-      .pi {
-        font-size: 0.85rem;
+      svg {
+        width: 0.85rem;
+        height: 0.85rem;
         flex-shrink: 0;
         margin-top: 0.1em;
       }

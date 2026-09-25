@@ -1,12 +1,13 @@
 <template>
   <section class="card empty-usage">
-    <i class="pi pi-chart-bar" aria-hidden="true"></i>
+    <ChartBar aria-hidden="true" />
     <h2 class="empty-usage__title">{{ t("dashboard.emptyChartTitle") }}</h2>
     <p class="empty-usage__body">{{ t("dashboard.emptyChartBody") }}</p>
   </section>
 </template>
 
 <script setup lang="ts">
+  import { ChartBar } from "@primeicons/vue";
   import { useI18n } from "vue-i18n";
 
   const { t } = useI18n();
@@ -19,8 +20,9 @@
     gap: var(--s-app-space-2);
     text-align: center;
 
-    .pi {
-      font-size: 1.5rem;
+    svg {
+      width: 1.5rem;
+      height: 1.5rem;
       color: color-mix(in srgb, var(--s-content-color), transparent 65%);
     }
 

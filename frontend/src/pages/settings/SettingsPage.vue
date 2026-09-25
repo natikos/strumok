@@ -11,7 +11,7 @@
         <div class="settings-card">
           <div class="settings-row">
             <div class="settings-row__info">
-              <i class="pi pi-palette settings-row__icon"></i>
+              <Palette class="settings-row__icon" />
               <div>
                 <span class="settings-row__label">{{ t("settings.theme") }}</span>
                 <span class="settings-row__hint">{{
@@ -24,7 +24,7 @@
 
           <div class="settings-row">
             <div class="settings-row__info">
-              <i class="pi pi-language settings-row__icon"></i>
+              <Language class="settings-row__icon" />
               <div>
                 <span class="settings-row__label">{{ t("settings.language") }}</span>
                 <span class="settings-row__hint">{{
@@ -43,10 +43,11 @@
         <div class="settings-card">
           <div class="settings-row">
             <div class="settings-row__info">
-              <i
+              <component
+                :is="notificationIcon"
                 class="settings-row__icon"
-                :class="pushState === 'requesting' ? 'pi pi-spin pi-spinner' : 'pi pi-bell'"
-              ></i>
+                :class="{ 'settings-row__icon--spin': pushState === 'requesting' }"
+              />
               <div>
                 <span class="settings-row__label">{{ t("settings.notifications.label") }}</span>
                 <span
@@ -73,6 +74,8 @@
 </template>
 
 <script setup lang="ts">
+  import { Bell, Language, Palette, Spinner } from "@primeicons/vue";
+  import { computed } from "vue";
   import { useI18n } from "vue-i18n";
 
   import { useLocale } from "@features/i18n/composables/useLocale";
@@ -87,6 +90,8 @@
   const { setTheme, isDarkTheme } = useTheme();
   const { state: pushState, enable: enablePush, disable: disablePush } = usePushNotifications();
   const { t } = useI18n();
+
+  const notificationIcon = computed(() => (pushState.value === "requesting" ? Spinner : Bell));
 
   async function handlePreferenceToggle(payload: {
     language?: LanguageCode;
@@ -151,6 +156,15 @@
     }
   }
 
+  @keyframes spin {
+    from {
+      transform: rotate(0deg);
+    }
+    to {
+      transform: rotate(360deg);
+    }
+  }
+
   .settings-row {
     @include layout.row(var(--s-app-space-4), center, space-between);
     padding: var(--s-app-space-4);
@@ -165,9 +179,13 @@
 
     &__icon {
       color: var(--p-primary-color);
-      font-size: 1.1rem;
-      width: 1.25rem;
-      text-align: center;
+      width: 1.1rem;
+      height: 1.1rem;
+      flex-shrink: 0;
+
+      &--spin {
+        animation: spin 1s linear infinite;
+      }
     }
 
     &__label {

@@ -13,26 +13,26 @@
       <nav class="app-sidebar__menu" aria-label="Main">
         <button
           v-for="item in mainItems"
-          :key="item.icon"
+          :key="item.label"
           class="app-sidebar__item"
           :class="{ 'app-sidebar__item--active': isActiveRoute(item.route) }"
           :aria-label="item.label"
           @click="item.route && router.push(item.route)"
         >
-          <i :class="item.icon" aria-hidden="true"></i>
+          <component :is="item.icon" aria-hidden="true" />
           <span class="app-sidebar__item-label">{{ item.label }}</span>
         </button>
       </nav>
       <div class="app-sidebar__bottom">
         <button
           v-for="item in bottomItems"
-          :key="item.icon"
+          :key="item.label"
           class="app-sidebar__item"
           :class="{ 'app-sidebar__item--active': isActiveRoute(item.route) }"
           :aria-label="item.label"
           @click="item.route && router.push(item.route)"
         >
-          <i :class="item.icon" aria-hidden="true"></i>
+          <component :is="item.icon" aria-hidden="true" />
           <span class="app-sidebar__item-label">{{ item.label }}</span>
         </button>
         <button
@@ -41,7 +41,7 @@
           :disabled="isLoggingOut"
           @click="handleLogout"
         >
-          <i class="pi pi-sign-out" aria-hidden="true"></i>
+          <SignOut aria-hidden="true" />
           <span class="app-sidebar__item-label">{{ $t("nav.logout") }}</span>
         </button>
       </div>
@@ -90,13 +90,13 @@
     <nav class="app-mobile-nav" aria-label="Main">
       <button
         v-for="item in mobileNavItems"
-        :key="item.icon"
+        :key="item.label"
         class="app-mobile-nav__item"
         :class="{ 'app-mobile-nav__item--active': isActiveRoute(item.route) }"
         :aria-label="item.label"
         @click="item.route && router.push(item.route)"
       >
-        <i :class="item.icon" aria-hidden="true"></i>
+        <component :is="item.icon" aria-hidden="true" />
         <span class="app-mobile-nav__label">{{ item.label }}</span>
       </button>
       <button
@@ -105,7 +105,7 @@
         :disabled="isLoggingOut"
         @click="handleLogout"
       >
-        <i class="pi pi-sign-out" aria-hidden="true"></i>
+        <SignOut aria-hidden="true" />
         <span class="app-mobile-nav__label">{{ $t("nav.logout") }}</span>
       </button>
     </nav>
@@ -113,6 +113,7 @@
 </template>
 
 <script setup lang="ts">
+  import { ChartLine, Cog, Home, Shield, SignOut } from "@primeicons/vue";
   import Menu from "primevue/menu";
   import { computed, onMounted, ref } from "vue";
   import { useI18n } from "vue-i18n";
@@ -141,18 +142,18 @@
   const hasNoHousehold = ref(false);
 
   const mainItems = computed(() => [
-    { icon: "pi pi-home", label: t("nav.home"), route: ROUTES.root },
-    { icon: "pi pi-chart-line", label: t("nav.history"), route: ROUTES.history },
+    { icon: Home, label: t("nav.home"), route: ROUTES.root },
+    { icon: ChartLine, label: t("nav.history"), route: ROUTES.history },
   ]);
 
   const settingsItem = computed(() => ({
-    icon: "pi pi-cog",
+    icon: Cog,
     label: t("nav.settings"),
     route: ROUTES.settings,
   }));
 
   const adminItem = computed(() => ({
-    icon: "pi pi-shield",
+    icon: Shield,
     label: t("nav.admin"),
     route: ROUTES.admin,
   }));
@@ -302,11 +303,10 @@
         cursor: not-allowed;
       }
 
-      i {
-        font-size: 1.05rem;
+      svg {
+        width: 1.05rem;
+        height: 1.05rem;
         flex-shrink: 0;
-        width: 1.25rem;
-        text-align: center;
       }
     }
 

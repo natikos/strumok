@@ -14,6 +14,7 @@
     "api:types": "bunx openapi-typescript \"${OPENAPI_URL:-http://localhost:8000/openapi.json}\" -o src/shared/api/generated/openapi.ts"
   },
   "dependencies": {
+    "@primeicons/vue": "^8.0.2",
     "@primeuix/themes": "^2.0.3",
     "@primevue/forms": "^4.5.5",
     "chart.js": "^4.5.1",
@@ -24,7 +25,7 @@
     "vue": "^3.5.32",
     "vue-i18n": "^11.3.2",
     "vue-router": "^5.0.4",
-    "zod": "^4.3.6"
+    "zod": "^4.6.5"
   },
   "devDependencies": {
     "@primevue/auto-import-resolver": "^4.5.5",

@@ -3,7 +3,7 @@
     <div class="submitted-values__tiles">
       <div v-for="tile in tiles" :key="tile.key" class="submitted-values__tile">
         <span class="submitted-values__label">
-          <i :class="tile.icon" :data-part="tile.key" aria-hidden="true"></i>
+          <component :is="tile.icon" :data-part="tile.key" aria-hidden="true" />
           {{ tile.label }}
         </span>
         <span class="submitted-values__num">{{ tile.meterValue }}</span>
@@ -14,7 +14,7 @@
     </div>
 
     <p v-if="chargedThisPeriod" class="submitted-values__charge">
-      <i class="pi pi-receipt" aria-hidden="true"></i>
+      <Receipt aria-hidden="true" />
       {{ t("dashboard.chargedThisPeriod") }}
       <strong class="submitted-values__charge-value">{{ chargedThisPeriod }}</strong>
     </p>
@@ -22,6 +22,7 @@
 </template>
 
 <script setup lang="ts">
+  import { Moon, Receipt, Sun } from "@primeicons/vue";
   import { computed } from "vue";
   import { useI18n } from "vue-i18n";
 
@@ -49,7 +50,7 @@
   const tiles = computed(() => [
     {
       key: "day",
-      icon: "pi pi-sun",
+      icon: Sun,
       label: t("meterReadings.day"),
       meterValue: meter(props.dayValue),
       usage: props.usage
@@ -60,7 +61,7 @@
     },
     {
       key: "night",
-      icon: "pi pi-moon",
+      icon: Moon,
       label: t("meterReadings.night"),
       meterValue: meter(props.nightValue),
       usage: props.usage
@@ -101,11 +102,11 @@
       font-weight: 600;
       color: var(--s-content-secondary-color);
 
-      .pi[data-part="day"] {
+      svg[data-part="day"] {
         color: var(--s-amber-500);
       }
 
-      .pi[data-part="night"] {
+      svg[data-part="night"] {
         color: var(--s-primary-900);
       }
     }
@@ -131,7 +132,7 @@
       font-size: 0.85rem;
       color: var(--s-content-secondary-color);
 
-      .pi {
+      svg {
         flex-shrink: 0;
         color: var(--s-primary-900);
       }

@@ -35,7 +35,7 @@
 
       <footer class="yoy-card__footer">
         <span class="yoy-card__pill" :class="`yoy-card__pill--${comparison.direction}`">
-          <i :class="deltaIcon" aria-hidden="true"></i>
+          <component :is="deltaIcon" aria-hidden="true" />
           {{ formatKwh(Math.abs(comparison.deltaKwh), intlLocale, t("units.kwh")) }}
         </span>
 
@@ -45,7 +45,7 @@
     </template>
 
     <div v-else class="yoy-card__empty">
-      <i class="pi pi-calendar" aria-hidden="true"></i>
+      <Calendar aria-hidden="true" />
       <p class="yoy-card__empty-text">
         {{ t("dashboard.yoyUnavailable", { month: emptyMonth, year: emptyYear }) }}
       </p>
@@ -54,6 +54,7 @@
 </template>
 
 <script setup lang="ts">
+  import { ArrowDown, ArrowUp, Calendar } from "@primeicons/vue";
   import { computed } from "vue";
   import { useI18n } from "vue-i18n";
 
@@ -102,7 +103,7 @@
   });
 
   const deltaIcon = computed(() =>
-    props.comparison?.direction === "down" ? "pi pi-arrow-down" : "pi pi-arrow-up"
+    props.comparison?.direction === "down" ? ArrowDown : ArrowUp
   );
 
   const deltaUahText = computed(() => {
@@ -214,8 +215,9 @@
       font-weight: 700;
       white-space: nowrap;
 
-      .pi {
-        font-size: 0.8em;
+      svg {
+        width: 0.8em;
+        height: 0.8em;
       }
 
       &--down {
@@ -243,8 +245,9 @@
       align-items: flex-start;
       gap: var(--s-app-space-2);
 
-      .pi {
-        font-size: 1.1rem;
+      svg {
+        width: 1.1rem;
+        height: 1.1rem;
         flex-shrink: 0;
         color: color-mix(in srgb, var(--s-content-color), transparent 65%);
       }

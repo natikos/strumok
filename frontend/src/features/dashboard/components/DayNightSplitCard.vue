@@ -18,7 +18,12 @@
 
       <div class="split-card__rows">
         <div v-for="row in rows" :key="row.key" class="split-card__row">
-          <i :class="row.icon" class="split-card__icon" :data-part="row.key" aria-hidden="true"></i>
+          <component
+            :is="row.icon"
+            class="split-card__icon"
+            :data-part="row.key"
+            aria-hidden="true"
+          />
           <span class="split-card__name">{{ row.name }}</span>
           <span class="split-card__value">{{ row.value }}</span>
           <span class="split-card__pct">{{ row.pct }}</span>
@@ -37,6 +42,7 @@
 </template>
 
 <script setup lang="ts">
+  import { Moon, Sun } from "@primeicons/vue";
   import { computed } from "vue";
   import { useI18n } from "vue-i18n";
 
@@ -92,14 +98,14 @@
     return [
       {
         key: "day",
-        icon: "pi pi-sun",
+        icon: Sun,
         name: t("meterReadings.day"),
         value: kwhOf(split.dayKwh),
         pct: pctOf(split.dayPct),
       },
       {
         key: "night",
-        icon: "pi pi-moon",
+        icon: Moon,
         name: t("meterReadings.night"),
         value: kwhOf(split.nightKwh),
         pct: pctOf(split.nightPct),
