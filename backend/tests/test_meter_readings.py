@@ -10,8 +10,6 @@ from datetime import datetime, timezone
 from decimal import Decimal
 
 import pytest
-from sqlmodel import Session
-
 from app.api.meter_readings.service import (
     HouseholdNotAccessibleError,
     NoHouseholdMembershipError,
@@ -21,8 +19,9 @@ from app.api.meter_readings.service import (
     list_meter_readings,
     submit_meter_reading,
 )
-from app.api.meter_readings.service import _previous_period
+from app.core.domain.billing import previous_period
 from app.core.time import utc_now
+from sqlmodel import Session
 from tests.factories import (
     authenticate,
     make_electricity_rate,
@@ -95,7 +94,9 @@ class TestGetOwnedHouseholdId:
         household = make_household(session, user_id=user.id)
 
         assert (
-            get_owned_household_id(session=session, user=user, household_id=household.id)
+            get_owned_household_id(
+                session=session, user=user, household_id=household.id
+            )
             == household.id
         )
 
@@ -349,7 +350,10 @@ class TestSubmitMeterReading:
         user = make_user(session)
         household = make_household(session, user_id=user.id)
         make_electricity_rate(
-            session, day_rate_uah="5.00", night_rate_uah="3.00", effective_from="2026-01"
+            session,
+            day_rate_uah="5.00",
+            night_rate_uah="3.00",
+            effective_from="2026-01",
         )
 
         reading = submit_meter_reading(
@@ -446,7 +450,7 @@ class TestListMeterReadings:
         # calendar month's submission window hasn't opened yet), so the
         # newest period present is whichever is greater: the newest real
         # submission or last month.
-        last_month = _previous_period(utc_now().strftime("%Y-%m"))
+        last_month = previous_period(utc_now().strftime("%Y-%m"))
         assert periods[0] == max("2026-01", last_month)
         assert periods[-1] == "2025-11"
 
@@ -470,7 +474,7 @@ class TestListMeterReadings:
 
         readings = list_meter_readings(session=session, household_id=household.id)
 
-        last_month = _previous_period(now.strftime("%Y-%m"))
+        last_month = previous_period(now.strftime("%Y-%m"))
         assert len(readings) == 2
         assert all(r.id is None for r in readings)
         assert all(r.day_meter_value is None for r in readings)
@@ -570,9 +574,7 @@ class TestRequireHouseholdIdRoute:
         household = make_household(session, name="Owned Plot", user_id=user.id)
         authenticate(client, user)
 
-        response = client.get(
-            "/meter-readings", params={"household_id": household.id}
-        )
+        response = client.get("/meter-readings", params={"household_id": household.id})
 
         assert response.status_code == 200, response.text
 
@@ -584,9 +586,7 @@ class TestRequireHouseholdIdRoute:
         household = make_household(session, user_id=owner.id)
         authenticate(client, intruder)
 
-        response = client.get(
-            "/meter-readings", params={"household_id": household.id}
-        )
+        response = client.get("/meter-readings", params={"household_id": household.id})
 
         assert response.status_code == 403
         assert response.json()["detail"] == "householdNotAccessible"
@@ -606,7 +606,7 @@ class TestRequireHouseholdIdRoute:
         self, client, session: Session
     ) -> None:
         now = utc_now()
-        last_month = _previous_period(now.strftime("%Y-%m"))
+        last_month = previous_period(now.strftime("%Y-%m"))
         last_month_year, last_month_month = (int(p) for p in last_month.split("-"))
         user = make_user(session, email="resolver@example.com")
         # Household created in the same month as the sole submitted reading
@@ -692,7 +692,7 @@ class TestMeterReadingRoutesHappyPath:
         self, client, session: Session
     ) -> None:
         now = utc_now()
-        period = _previous_period(now.strftime("%Y-%m"))
+        period = previous_period(now.strftime("%Y-%m"))
         period_year, period_month = (int(p) for p in period.split("-"))
         created_at = datetime(period_year, period_month, 1, tzinfo=timezone.utc)
         user = make_user(session, email="lister@example.com")
@@ -711,9 +711,7 @@ class TestMeterReadingRoutesHappyPath:
         make_meter_reading(session, household_id=other_household.id, period=period)
         authenticate(client, user)
 
-        response = client.get(
-            "/meter-readings", params={"household_id": household.id}
-        )
+        response = client.get("/meter-readings", params={"household_id": household.id})
 
         assert response.status_code == 200, response.text
         body = response.json()
