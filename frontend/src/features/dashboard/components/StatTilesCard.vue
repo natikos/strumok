@@ -14,7 +14,7 @@
         <span class="stat-tile__label">{{ tile.label }}</span>
 
         <span class="stat-tile__value" :class="tile.valueClass">
-          <i v-if="tile.icon" :class="tile.icon" aria-hidden="true"></i>
+          <component v-if="tile.icon" :is="tile.icon" aria-hidden="true" />
           <template v-if="tile.isEmpty">—</template>
           <template v-else>
             {{ tile.value }}
@@ -29,6 +29,7 @@
 </template>
 
 <script setup lang="ts">
+  import { ArrowDown, ArrowUp } from "@primeicons/vue";
   import { computed } from "vue";
   import { useI18n } from "vue-i18n";
 
@@ -68,7 +69,7 @@
     unit: string;
     sub: string;
     isEmpty: boolean;
-    icon?: string;
+    icon?: typeof ArrowDown;
     valueClass?: string;
   }
 
@@ -151,7 +152,7 @@
       unit: "",
       sub,
       isEmpty: false,
-      icon: mom.direction === "down" ? "pi pi-arrow-down" : "pi pi-arrow-up",
+      icon: mom.direction === "down" ? ArrowDown : ArrowUp,
       valueClass: mom.direction === "down" ? "stat-tile__value--down" : "stat-tile__value--up",
     };
   });
@@ -200,7 +201,7 @@
       unit: "",
       sub,
       isEmpty: false,
-      icon: comparison.direction === "down" ? "pi pi-arrow-down" : "pi pi-arrow-up",
+      icon: comparison.direction === "down" ? ArrowDown : ArrowUp,
       valueClass:
         comparison.direction === "down" ? "stat-tile__value--down" : "stat-tile__value--up",
     };
@@ -269,8 +270,9 @@
       color: var(--s-content-color);
       min-width: 0;
 
-      .pi {
-        font-size: 0.7em;
+      svg {
+        width: 0.7em;
+        height: 0.7em;
         flex-shrink: 0;
       }
 

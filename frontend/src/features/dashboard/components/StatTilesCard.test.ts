@@ -1,3 +1,4 @@
+import { ArrowDown, ArrowUp } from "@primeicons/vue";
 import Skeleton from "primevue/skeleton";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -141,7 +142,7 @@ describe("StatTilesCard", () => {
       expect(tile.text()).toContain("Summer");
       expect(tile.text()).toContain("last year");
       expect(tile.text()).toContain("150.4");
-      expect(tile.find(".pi-arrow-up").exists()).toBe(true);
+      expect(tile.findComponent(ArrowUp).exists()).toBe(true);
       expect(tile.find(".stat-tile__value--up").exists()).toBe(true);
     });
 
@@ -160,7 +161,7 @@ describe("StatTilesCard", () => {
 
       const tile = wrapper.findAll(".stat-tile")[2]!;
       expect(tile.text()).toContain("25.0%");
-      expect(tile.find(".pi-arrow-down").exists()).toBe(true);
+      expect(tile.findComponent(ArrowDown).exists()).toBe(true);
       expect(tile.find(".stat-tile__value--down").exists()).toBe(true);
     });
   });
@@ -172,8 +173,8 @@ describe("StatTilesCard", () => {
       });
 
       const comparisonTile = wrapper.findAll(".stat-tile")[1]!;
-      expect(comparisonTile.find(".pi-arrow-down").exists()).toBe(true);
-      expect(comparisonTile.find(".pi-arrow-up").exists()).toBe(false);
+      expect(comparisonTile.findComponent(ArrowDown).exists()).toBe(true);
+      expect(comparisonTile.findComponent(ArrowUp).exists()).toBe(false);
       expect(comparisonTile.find(".stat-tile__value--down").exists()).toBe(true);
     });
 
@@ -183,8 +184,8 @@ describe("StatTilesCard", () => {
       });
 
       const comparisonTile = wrapper.findAll(".stat-tile")[1]!;
-      expect(comparisonTile.find(".pi-arrow-up").exists()).toBe(true);
-      expect(comparisonTile.find(".pi-arrow-down").exists()).toBe(false);
+      expect(comparisonTile.findComponent(ArrowUp).exists()).toBe(true);
+      expect(comparisonTile.findComponent(ArrowDown).exists()).toBe(false);
       expect(comparisonTile.find(".stat-tile__value--up").exists()).toBe(true);
     });
   });

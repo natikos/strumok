@@ -50,14 +50,21 @@ async function mountLayout() {
   const wrapper = mount(AppLayout, {
     global: {
       plugins: appPlugins(),
-      components: { Typography, Button, Card },
+      components: {
+        Button,
+        Card,
+        Typography,
+      },
       stubs: {
         RouterView: true,
         Select: true,
-        AuthLayout: true,
+        AuthLayout: {
+          template: "<div><slot /></div>",
+        },
       },
     },
   });
+
   await flushPromises();
   return wrapper;
 }

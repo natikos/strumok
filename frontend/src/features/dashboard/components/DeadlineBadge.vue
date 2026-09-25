@@ -1,11 +1,12 @@
 <template>
   <div class="deadline-badge" :class="`deadline-badge--${status}`">
-    <i :class="icon" aria-hidden="true"></i>
+    <component :is="icon" aria-hidden="true" />
     {{ t(`statuses.meterReading.${toCamelCase(status)}`) }}
   </div>
 </template>
 
 <script setup lang="ts">
+  import { CheckCircle, Clock, ExclamationTriangle, TimesCircle } from "@primeicons/vue";
   import { toCamelCase } from "@utils/string";
   import { computed } from "vue";
   import { useI18n } from "vue-i18n";
@@ -24,11 +25,11 @@
   const status = computed(() => props.status ?? getDeadlineStatus(props.reading?.submitted_at));
 
   const icon = computed(() => {
-    const ICONS: Record<DeadlineStatus, string> = {
-      submitted: "pi pi-check-circle",
-      "submitted-late": "pi pi-exclamation-triangle",
-      overdue: "pi pi-times-circle",
-      due: "pi pi-clock",
+    const ICONS: Record<DeadlineStatus, typeof CheckCircle> = {
+      submitted: CheckCircle,
+      "submitted-late": ExclamationTriangle,
+      overdue: TimesCircle,
+      due: Clock,
     } as const;
     return ICONS[status.value];
   });

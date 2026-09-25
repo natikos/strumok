@@ -13,7 +13,7 @@
       <template v-else>
         <div class="submission__status" role="status" aria-live="polite">
           <h2 :id="headlineId" class="submission__headline">
-            <i v-if="showSubmittedView" class="pi pi-check-circle" aria-hidden="true"></i>
+            <CheckCircle v-if="showSubmittedView" aria-hidden="true" />
             {{ headline }}
           </h2>
           <p class="submission__subline">{{ subline }}</p>
@@ -51,6 +51,7 @@
 </template>
 
 <script setup lang="ts">
+  import { CheckCircle } from "@primeicons/vue";
   import { computed } from "vue";
   import { useI18n } from "vue-i18n";
 
@@ -290,8 +291,9 @@
       letter-spacing: -0.01em;
       color: var(--s-content-color);
 
-      .pi {
-        font-size: 0.7em;
+      svg {
+        width: 0.7em;
+        height: 0.7em;
         flex-shrink: 0;
       }
 

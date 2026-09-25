@@ -36,18 +36,18 @@
         v-if="submissionRecord.lastState === 'missing'"
         class="usage-history__record-status usage-history__record-status--warn"
       >
-        <i class="pi pi-exclamation-circle" aria-hidden="true"></i>
+        <ExclamationCircle aria-hidden="true" />
         {{ $t("usageHistory.recordMissedPeriods", { count: submissionRecord.trailingMissing }) }}
       </p>
       <p
         v-else-if="submissionRecord.lastState === 'late'"
         class="usage-history__record-status usage-history__record-status--warn"
       >
-        <i class="pi pi-exclamation-circle" aria-hidden="true"></i>
+        <ExclamationCircle aria-hidden="true" />
         {{ $t("usageHistory.recordLateThisMonth") }}
       </p>
       <p v-else-if="submissionRecord.streak >= 2" class="usage-history__record-status">
-        <i class="pi pi-check-circle" aria-hidden="true"></i>
+        <CheckCircle aria-hidden="true" />
         {{ $t("usageHistory.recordStreak", { count: submissionRecord.streak }) }}
       </p>
       <p v-else class="usage-history__record-status">
@@ -88,18 +88,17 @@
     </section>
 
     <div v-if="!isLoading && !summary" class="usage-history__empty">
-      <i class="pi pi-inbox usage-history__empty-icon" aria-hidden="true"></i>
+      <Inbox class="usage-history__empty-icon" aria-hidden="true" />
       <h2 class="usage-history__empty-title">{{ $t("usageHistory.emptyTitle") }}</h2>
       <p class="usage-history__empty-description">
         {{ $t("usageHistory.emptyDescription") }}
       </p>
-      <Button
-        as="router-link"
-        :to="ROUTES.root"
-        :label="$t('usageHistory.emptyCta')"
-        icon="pi pi-arrow-right"
-        icon-pos="right"
-      />
+      <div class="usage-history__empty-button">
+        <Button as="router-link" :to="ROUTES.root" class="usage-history__empty-link">
+          {{ $t("usageHistory.emptyCta") }}
+          <ArrowRight aria-hidden="true" />
+        </Button>
+      </div>
     </div>
 
     <template v-else>
@@ -136,7 +135,7 @@
                   'usage-history__not-submitted-tag--due': entry.period === currentBillingPeriod,
                 }"
               >
-                <i class="pi pi-clock" aria-hidden="true"></i>
+                <Clock aria-hidden="true" />
                 {{
                   entry.period === currentBillingPeriod
                     ? $t("usageHistory.notSubmitted")
@@ -152,7 +151,7 @@
                   :class="{ 'usage-history__metric--negative': entry.dayUsage < 0 }"
                 >
                   <span class="usage-history__metric-label">
-                    <i class="pi pi-sun" aria-hidden="true"></i>
+                    <Sun class="metric-icon--day" aria-hidden="true" />
                     {{ $t("usageHistory.day") }}
                   </span>
                   <span class="usage-history__metric-value">
@@ -164,7 +163,7 @@
                   :class="{ 'usage-history__metric--negative': entry.nightUsage < 0 }"
                 >
                   <span class="usage-history__metric-label">
-                    <i class="pi pi-moon" aria-hidden="true"></i>
+                    <Moon class="metric-icon--night" aria-hidden="true" />
                     {{ $t("usageHistory.night") }}
                   </span>
                   <span class="usage-history__metric-value">
@@ -209,12 +208,12 @@
               v-if="!entry.submitted && entry.period === currentBillingPeriod"
               as="router-link"
               :to="ROUTES.root"
-              :label="$t('usageHistory.notSubmittedCta')"
-              icon="pi pi-arrow-right"
-              icon-pos="right"
               size="small"
               class="usage-history__not-submitted-cta"
-            />
+            >
+              {{ $t("usageHistory.notSubmittedCta") }}
+              <ArrowRight aria-hidden="true" />
+            </Button>
           </li>
         </ol>
       </section>
@@ -223,6 +222,7 @@
 </template>
 
 <script setup lang="ts">
+  import { ArrowRight, CheckCircle, Clock, ExclamationCircle, Inbox, Moon, Sun } from "@primeicons/vue";
   import { format, subMonths } from "date-fns";
   import { computed, onMounted, ref, watch } from "vue";
   import { useI18n } from "vue-i18n";
@@ -762,8 +762,9 @@
       color: var(--s-amber-500, #f59e0b);
     }
 
-    i {
-      font-size: 0.8rem;
+    svg {
+      width: 0.8rem;
+      height: 0.8rem;
     }
   }
 
@@ -794,16 +795,17 @@
     font-size: 0.75rem;
     text-transform: uppercase;
 
-    i {
-      font-size: 0.85rem;
+    svg {
+      width: 0.85rem;
+      height: 0.85rem;
     }
   }
 
-  .usage-history__metric-label i.pi-sun {
+  .metric-icon--day {
     color: var(--s-amber-500, #f59e0b);
   }
 
-  .usage-history__metric-label i.pi-moon {
+  .metric-icon--night {
     color: var(--s-primary-900);
   }
 
