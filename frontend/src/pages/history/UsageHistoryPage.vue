@@ -94,10 +94,10 @@
         {{ $t("usageHistory.emptyDescription") }}
       </p>
       <div class="usage-history__empty-button">
-        <router-link :to="ROUTES.root" class="usage-history__empty-link">
+        <Button as="router-link" :to="ROUTES.root" class="usage-history__empty-link">
           {{ $t("usageHistory.emptyCta") }}
           <ArrowRight aria-hidden="true" />
-        </router-link>
+        </Button>
       </div>
     </div>
 
@@ -204,14 +204,16 @@
               }}
             </p>
 
-            <router-link
+            <Button
               v-if="!entry.submitted && entry.period === currentBillingPeriod"
+              as="router-link"
               :to="ROUTES.root"
+              size="small"
               class="usage-history__not-submitted-cta"
             >
               {{ $t("usageHistory.notSubmittedCta") }}
               <ArrowRight aria-hidden="true" />
-            </router-link>
+            </Button>
           </li>
         </ol>
       </section>
