@@ -13,12 +13,12 @@ and "this failure was transient, keep it".
 from unittest.mock import MagicMock, patch
 
 import pytest
-from app.api.meter_readings.service import current_billing_period
 from app.api.push.service import (
     delete_subscription,
     send_reminders,
     upsert_subscription,
 )
+from app.core.domain import current_billing_period
 from app.core.config import settings
 from app.db.models import PushSubscription
 from pydantic import SecretStr
@@ -431,7 +431,7 @@ class TestSendRemindersInternalRoute:
         self, client, monkeypatch: pytest.MonkeyPatch
     ) -> None:
         monkeypatch.setattr(
-            settings.push, "reminder_secret", SecretStr("correct-secret")
+            settings.auth, "internal_secret", SecretStr("correct-secret")
         )
 
         response = client.post(
@@ -447,7 +447,7 @@ class TestSendRemindersInternalRoute:
         self, client, session: Session, monkeypatch: pytest.MonkeyPatch
     ) -> None:
         monkeypatch.setattr(
-            settings.push, "reminder_secret", SecretStr("correct-secret")
+            settings.auth, "internal_secret", SecretStr("correct-secret")
         )
         user = make_user(session)
         make_household(session, user_id=user.id)

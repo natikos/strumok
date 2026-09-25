@@ -10,7 +10,6 @@ from datetime import datetime, timezone
 from decimal import Decimal
 
 import pytest
-from app.api.domain.billing import previous_period
 from app.api.meter_readings.service import (
     HouseholdNotAccessibleError,
     NoHouseholdMembershipError,
@@ -20,6 +19,7 @@ from app.api.meter_readings.service import (
     list_meter_readings,
     submit_meter_reading,
 )
+from app.core.domain.billing import previous_period
 from app.core.time import utc_now
 from sqlmodel import Session
 from tests.factories import (
