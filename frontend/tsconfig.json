@@ -29,6 +29,7 @@
     "noPropertyAccessFromIndexSignature": true,
     "noUncheckedIndexedAccess": true
   },
+  "exclude": ["src/sw.ts"],
   "extends": "@vue/tsconfig/tsconfig.dom.json",
   "include": [
     "src/**/*.ts",
