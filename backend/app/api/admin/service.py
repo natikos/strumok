@@ -7,8 +7,7 @@ from app.api.admin.schemas import (
     AdminDashboardOut,
     AdminUserSummaryOut,
 )
-from app.core.domain.billing import previous_period
-from app.core.time import utc_now
+from app.core.domain import current_billing_period
 from app.db.models import Household, MeterReading, User
 
 
@@ -60,7 +59,7 @@ def list_households_with_owners(
 
 
 def get_admin_dashboard(*, session: Session) -> AdminDashboardOut:
-    current_period = previous_period(utc_now().strftime("%Y-%m"))
+    current_period = current_billing_period()
     readings = session.exec(
         select(MeterReading).order_by(
             MeterReading.household_id, MeterReading.period.desc()

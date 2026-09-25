@@ -5,8 +5,8 @@ from sqlmodel import Session, asc, desc, select
 
 from app.api.electricity_rates.service import get_effective_rate
 from app.api.meter_readings.schemas import MeterReadingOut
+from app.core.domain import current_billing_period
 from app.core.domain.billing import previous_period
-from app.core.time import utc_now
 from app.db.models import Household, MeterReading, User
 
 
@@ -69,7 +69,7 @@ def list_meter_readings(
     readings_by_period = {reading.period: reading for reading in readings}
 
     result: list[MeterReadingOut] = []
-    period = previous_period(utc_now().strftime("%Y-%m"))
+    period = current_billing_period()
     while period >= start_period:
         reading = readings_by_period.get(period)
         if reading is not None:
