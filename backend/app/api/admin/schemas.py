@@ -1,9 +1,9 @@
-from datetime import datetime
 from decimal import Decimal
 from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from app.core.time import UtcDatetime
 from app.db.models import Household, User
 
 
@@ -57,7 +57,7 @@ class AdminDashboardHouseholdOut(BaseModel):
     name: str
     owner: AdminUserSummaryOut | None = None
     submission_status: Literal["submitted", "missing"]
-    submitted_at: datetime | None = None
+    submitted_at: UtcDatetime | None = None
     latest_period: str | None = None
     latest_usage_kwh: Decimal | None = Field(default=None, decimal_places=2)
     latest_amount_charged_uah: Decimal | None = Field(default=None, decimal_places=2)
