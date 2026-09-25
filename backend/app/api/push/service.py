@@ -98,6 +98,14 @@ def _send_one(
             return subscription, "remove"
         logger.exception("Push send failed for subscription %s", subscription.id)
         return subscription, "error"
+    except Exception:
+        # Anything else (network errors, malformed stored keys, ...) must not
+        # escape the worker thread: executor.map() re-raises it at this item's
+        # position while send_reminders() iterates results, which would abort
+        # the whole batch and roll back every deletion already staged for
+        # subscriptions handled earlier in the same run.
+        logger.exception("Push send failed for subscription %s", subscription.id)
+        return subscription, "error"
     return subscription, "sent"
 
 
