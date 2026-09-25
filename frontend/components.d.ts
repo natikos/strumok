@@ -58,7 +58,6 @@ declare module 'vue' {
     ThemeToggleButton: typeof import('./src/shared/components/theme/ThemeToggleButton.vue')['default']
     Toast: typeof import('primevue/toast')['default']
     Typography: typeof import('./src/shared/Typography.vue')['default']
-    UpdatePrompt: typeof import('./src/core/serviceWorker/UpdatePrompt.vue')['default']
     UsageChartCard: typeof import('./src/features/dashboard/components/UsageChartCard.vue')['default']
     UsageHistoryPage: typeof import('./src/pages/history/UsageHistoryPage.vue')['default']
     VerifyEmailPage: typeof import('./src/pages/auth/VerifyEmailPage.vue')['default']

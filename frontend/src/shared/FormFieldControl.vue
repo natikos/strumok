@@ -63,6 +63,8 @@
   withDefaults(defineProps<FormFieldControlProps>(), {
     disabled: false,
     type: "text",
+    autocomplete: "off",
+    inputProps: () => ({}),
   });
 </script>
 
