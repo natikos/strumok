@@ -124,7 +124,7 @@
   import { useTheme } from "@features/theme/composables/useTheme";
   import { getMe, logoutUser } from "@shared/api/auth";
   import type { components } from "@shared/api/generated/openapi";
-  import { type AppRoutePath, ROUTES } from "@shared/routing/routes";
+  import { ROUTES } from "@shared/routing/routes";
 
   type UserOut = components["schemas"]["UserWithHouseholdsOut"];
 
@@ -148,13 +148,13 @@
   const settingsItem = computed(() => ({
     icon: "pi pi-cog",
     label: t("nav.settings"),
-    route: ROUTES.settings as AppRoutePath,
+    route: ROUTES.settings,
   }));
 
   const adminItem = computed(() => ({
     icon: "pi pi-shield",
     label: t("nav.admin"),
-    route: ROUTES.admin as AppRoutePath,
+    route: ROUTES.admin,
   }));
 
   // Desktop sidebar has room for every item; mobile keeps the bottom nav to
