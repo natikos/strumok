@@ -54,15 +54,18 @@ describe("SettingsPage notifications section", () => {
   });
 
   it.each([
-    ["off", "Get a notification on the 1st and 5th of the month"],
-    ["on", "On · reminders arrive on the 1st and 5th"],
+    ["off", "Notifications will arrive on the 1st and 5th of each month"],
+    ["on", "Enabled · reminders on the 1st and 5th"],
     ["requesting", "Requesting permission…"],
-    ["denied", "Blocked in your browser settings — enable notifications for this app, then reload"],
+    [
+      "denied",
+      "Blocked in browser settings — enable notifications for the app and reload the page",
+    ],
     [
       "ios-not-installed",
-      "On iPhone, add Strumok to your Home Screen first (Share → Add to Home Screen), then turn this on",
+      "On iPhone, first add the app to the home screen (Share → Add to Home Screen), then enable this",
     ],
-    ["unsupported", "Not available in this browser"],
+    ["unsupported", "Unavailable in this browser"],
   ] as [PushToggleState, string][])(
     "shows the %s hint for push state %s",
     (state, expectedHint) => {
