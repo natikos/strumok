@@ -1,3 +1,4 @@
+import { CheckCircle } from "@primeicons/vue";
 import Button from "primevue/button";
 import InputNumber from "primevue/inputnumber";
 import Skeleton from "primevue/skeleton";
@@ -168,7 +169,7 @@ describe("SubmissionCard", () => {
       });
 
       expect(wrapper.find(".submission__headline").text()).toContain("Reading submitted");
-      expect(wrapper.find(".pi-check-circle").exists()).toBe(true);
+      expect(wrapper.findComponent(CheckCircle).exists()).toBe(true);
     });
   });
 
