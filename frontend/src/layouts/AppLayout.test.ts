@@ -3,9 +3,11 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { useCurrentHousehold } from "@/features/households/useCurrentHousehold";
 import { appPlugins } from "@/shared/testing/mount";
+import Typography from "@/shared/Typography.vue";
 import type { UserWithHouseholdsOut } from "@shared/api/auth";
 import type * as VueRouter from "vue-router";
 
+import { Button, Card } from "primevue";
 import AppLayout from "./AppLayout.vue";
 
 const { getMe, logoutUser } = vi.hoisted(() => ({
@@ -48,9 +50,11 @@ async function mountLayout() {
   const wrapper = mount(AppLayout, {
     global: {
       plugins: appPlugins(),
+      components: { Typography, Button, Card },
       stubs: {
         RouterView: true,
         Select: true,
+        AuthLayout: true,
       },
     },
   });
