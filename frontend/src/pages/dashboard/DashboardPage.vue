@@ -12,7 +12,6 @@
         :is-submitting="isSubmitting"
         :is-loading="isLoading"
         :is-first-period="isFirstPeriod"
-        :is-editing="isEditing"
         :submitted-at="currentSlot?.reading?.submitted_at"
         :submitted-day-value="currentSlot?.reading?.day_meter_value"
         :submitted-night-value="currentSlot?.reading?.night_meter_value"
@@ -22,7 +21,6 @@
         @update:day-meter-value="dayMeterValue = $event"
         @update:night-meter-value="nightMeterValue = $event"
         @submit="submitReading"
-        @edit="startEdit"
       />
 
       <StatTilesCard
@@ -67,7 +65,7 @@
 </template>
 
 <script setup lang="ts">
-  import { computed, onMounted, ref, watch } from "vue";
+  import { computed, onMounted, watch } from "vue";
   import { useI18n } from "vue-i18n";
   import { useRouter } from "vue-router";
 
@@ -113,8 +111,6 @@
     missedPeriods,
   } = useMeterReadings();
 
-  const isEditing = ref(false);
-
   const hasAnyReading = computed(() => submittedPeriods.value.length > 0);
 
   const showFirstRunGuide = computed(() => !isLoading.value && !hasAnyReading.value);
@@ -146,33 +142,13 @@
     void router.push(ROUTES.history);
   }
 
-  /** Editing re-opens the form pre-filled with the values already submitted. */
-  function startEdit(): void {
-    const reading = currentSlot.value?.reading;
-    if (!reading) {
-      return;
-    }
-
-    dayMeterValue.value = reading.day_meter_value == null ? null : Number(reading.day_meter_value);
-    nightMeterValue.value =
-      reading.night_meter_value == null ? null : Number(reading.night_meter_value);
-    isEditing.value = true;
-  }
-
   async function submitReading(): Promise<void> {
     await handleSubmit();
-
-    // Only leave edit mode once the submission actually landed; on a validation
-    // or API failure the form has to stay open with the resident's input.
-    if (Object.keys(errors.value).length === 0) {
-      isEditing.value = false;
-    }
   }
 
   onMounted(loadHistory);
 
   watch(currentId, () => {
-    isEditing.value = false;
     void loadHistory();
   });
 </script>

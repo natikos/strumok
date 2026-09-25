@@ -13,16 +13,6 @@
       </div>
     </div>
 
-    <p v-if="canEdit" class="submission__edit-btn-wrap">
-      <Button
-        class="submission__edit-btn"
-        :label="t('dashboard.edit')"
-        severity="secondary"
-        outlined
-        @click="$emit('edit')"
-      />
-    </p>
-
     <p v-if="chargedThisPeriod" class="submitted-values__charge">
       <i class="pi pi-receipt" aria-hidden="true"></i>
       {{ t("dashboard.chargedThisPeriod") }}
@@ -43,16 +33,9 @@
     dayValue: number | string | null | undefined;
     nightValue: number | string | null | undefined;
     usage: PeriodUsage | null | undefined;
-    canEdit?: boolean | undefined;
   }
 
-  const props = withDefaults(defineProps<Props>(), {
-    canEdit: false,
-  });
-
-  defineEmits<{
-    edit: [];
-  }>();
+  const props = defineProps<Props>();
 
   const { t } = useI18n();
   const { intlLocale } = useLocale();

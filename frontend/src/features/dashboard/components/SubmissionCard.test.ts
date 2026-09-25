@@ -21,8 +21,6 @@ interface MountOverrides {
   isSubmitting?: boolean;
   isLoading?: boolean;
   isFirstPeriod?: boolean;
-  isEditing?: boolean;
-  canEdit?: boolean;
   submittedAt?: string | null;
   submittedDayValue?: number | string | null;
   submittedNightValue?: number | string | null;
@@ -172,49 +170,6 @@ describe("SubmissionCard", () => {
       expect(wrapper.find(".submission__headline").text()).toContain("Reading submitted");
       expect(wrapper.find(".pi-check-circle").exists()).toBe(true);
     });
-
-    // Editing needs a backend update endpoint (#57). Until it exists the button
-    // would only ever 409, so it stays hidden unless explicitly enabled.
-    it("hides the Edit button and its lock note while editing is unsupported", () => {
-      vi.setSystemTime(new Date(2026, 5, 20));
-      const wrapper = mountCard({
-        status: "submitted",
-        submittedAt: new Date(2026, 5, 3, 9, 0).toISOString(),
-      });
-
-      expect(wrapper.find(".submission__edit-btn").exists()).toBe(false);
-      expect(wrapper.find(".submission__lock-note").exists()).toBe(false);
-    });
-
-    it("renders an outlined Edit button that emits edit on click when canEdit", async () => {
-      vi.setSystemTime(new Date(2026, 5, 20));
-      const wrapper = mountCard({
-        status: "submitted",
-        submittedAt: new Date(2026, 5, 3, 9, 0).toISOString(),
-        canEdit: true,
-      });
-
-      const editButton = wrapper.find(".submission__edit-btn");
-      expect(editButton.exists()).toBe(true);
-
-      await wrapper.findComponent(Button).trigger("click");
-      expect(wrapper.emitted("edit")).toHaveLength(1);
-    });
-
-    it("reopens the prefilled form instead of the submitted values when editing", () => {
-      vi.setSystemTime(new Date(2026, 5, 3));
-      const wrapper = mountCard({
-        status: "submitted",
-        submittedAt: new Date(2026, 5, 3, 9, 0).toISOString(),
-        canEdit: true,
-        isEditing: true,
-        dayMeterValue: 12666,
-        nightMeterValue: 4269,
-      });
-
-      expect(wrapper.findAllComponents(InputNumber)).toHaveLength(2);
-      expect(wrapper.find(".submission__values").exists()).toBe(false);
-    });
   });
 
   describe("submitted-late", () => {
@@ -231,17 +186,6 @@ describe("SubmissionCard", () => {
       expect(wrapper.find(".submission__subline").text()).toContain("Submitted late");
       expect(wrapper.find(".submission__values").exists()).toBe(true);
       expect(wrapper.findAllComponents(InputNumber)).toHaveLength(0);
-    });
-
-    it("still offers an Edit button when editing is enabled", () => {
-      vi.setSystemTime(new Date(2026, 5, 20));
-      const wrapper = mountCard({
-        status: "submitted-late",
-        submittedAt: new Date(2026, 5, 10, 9, 0).toISOString(),
-        canEdit: true,
-      });
-
-      expect(wrapper.find(".submission__edit-btn").exists()).toBe(true);
     });
   });
 
