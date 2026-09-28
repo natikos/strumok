@@ -1,7 +1,8 @@
-from datetime import datetime
 from decimal import Decimal
 
 from pydantic import BaseModel, ConfigDict, Field
+
+from app.core.time import UtcDatetime
 
 
 PERIOD_PATTERN = r"^\d{4}-(0[1-9]|1[0-2])$"
@@ -33,4 +34,4 @@ class MeterReadingOut(BaseModel):
     day_usage_kwh: Decimal = Field(max_digits=12, decimal_places=2, examples=["145.50"])
     night_usage_kwh: Decimal = Field(max_digits=12, decimal_places=2, examples=["98.20"])
     amount_charged_uah: Decimal = Field(max_digits=12, decimal_places=2, examples=["987.65"])
-    submitted_at: datetime | None = Field(examples=["2026-07-20T08:40:50.453Z"])
+    submitted_at: UtcDatetime | None = Field(examples=["2026-07-20T08:40:50.453Z"])
