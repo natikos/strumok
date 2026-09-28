@@ -127,6 +127,7 @@
   "errors": {
     "adminPrivilegesRequired": "You don't have permission to do that",
     "emailAlreadyRegistered": "Email is already registered",
+    "householdInactive": "This household is no longer active",
     "householdNotFound": "This household no longer exists",
     "userInactive": "This user's account is inactive",
     "userNotFound": "This user no longer exists",

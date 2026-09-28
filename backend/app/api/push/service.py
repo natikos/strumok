@@ -117,7 +117,11 @@ def send_reminders(*, session: Session, variant: ReminderVariant) -> tuple[int, 
 
     households_by_user: dict[int, list[int]] = defaultdict(list)
     for household_id, user_id in session.exec(
-        select(Household.id, Household.user_id).where(Household.user_id.is_not(None))
+        select(Household.id, Household.user_id)
+        .join(User, User.id == Household.user_id)
+        .where(Household.user_id.is_not(None))
+        .where(Household.is_active == True)  # noqa: E712
+        .where(User.is_active == True)  # noqa: E712
     ).all():
         households_by_user[user_id].append(household_id)
 
