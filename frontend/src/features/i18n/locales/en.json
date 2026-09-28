@@ -127,7 +127,9 @@
   "errors": {
     "adminPrivilegesRequired": "You don't have permission to do that",
     "emailAlreadyRegistered": "Email is already registered",
+    "householdNotAccessible": "You don't have access to this household",
     "householdNotFound": "This household no longer exists",
+    "internalServerError": "Something went wrong on our end. Please try again later",
     "userInactive": "This user's account is inactive",
     "userNotFound": "This user no longer exists",
     "invalidCredentials": "Invalid email or password",
@@ -140,7 +142,8 @@
     "tooManyRequests": "Too many requests. Please wait and try again",
     "unauthorized": "Please sign in and try again",
     "validationError": "Please check your data and try again",
-    "verificationEmailCooldown": "Please wait before requesting another verification email"
+    "verificationEmailCooldown": "Please wait before requesting another verification email",
+    "verificationEmailSendFailed": "We couldn't send the verification email. Please try again later"
   },
   "household": {
     "switchAria": "Switch household"
