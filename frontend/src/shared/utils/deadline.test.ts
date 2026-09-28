@@ -213,16 +213,16 @@ describe("getDaysLeft", () => {
  * block switches the process to Kyiv time itself and restores it afterwards.
  */
 describe("getDeadlineStatus in Europe/Kyiv", () => {
-  const originalTz = process.env.TZ;
+  const originalTz = process.env["TZ"];
 
   beforeAll(() => {
-    process.env.TZ = "Europe/Kyiv";
+    process.env["TZ"] = "Europe/Kyiv";
   });
   afterAll(() => {
     if (originalTz === undefined) {
-      delete process.env.TZ;
+      delete process.env["TZ"];
     } else {
-      process.env.TZ = originalTz;
+      process.env["TZ"] = originalTz;
     }
   });
   beforeEach(() => vi.useFakeTimers());
