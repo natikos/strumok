@@ -16,7 +16,8 @@ import pytest
 # --- Environment must be configured before importing anything from `app`. ------
 
 ADMIN_DATABASE_URL = os.environ.get(
-    "TEST_DATABASE_URL", "postgresql+psycopg://postgres:postgres@localhost:5432/postgres"
+    "TEST_DATABASE_URL",
+    "postgresql+psycopg://postgres:postgres@localhost:5432/postgres",
 )
 
 LOCAL_HOSTNAMES = {"localhost", "127.0.0.1", "::1", "postgres"}
@@ -166,6 +167,10 @@ def client(session: Session) -> object:
     try:
         # No context manager: entering it would run the lifespan, whose init_db()
         # create_all would commit DDL outside our rolled-back transaction.
-        yield TestClient(app)
+        # X-Requested-With mirrors what the real frontend client always sends
+        # (see frontend/src/shared/api/client.ts) so existing tests exercise the
+        # app's actual traffic shape rather than tripping CsrfMiddleware; a test
+        # for the middleware itself overrides headers to omit it.
+        yield TestClient(app, headers={"X-Requested-With": "XMLHttpRequest"})
     finally:
         app.dependency_overrides.clear()
