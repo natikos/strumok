@@ -87,22 +87,25 @@
       </ul>
     </section>
 
-    <div v-if="!isLoading && !summary" class="usage-history__empty">
-      <Inbox class="usage-history__empty-icon" aria-hidden="true" />
-      <h2 class="usage-history__empty-title">{{ $t("usageHistory.emptyTitle") }}</h2>
-      <p class="usage-history__empty-description">
-        {{ $t("usageHistory.emptyDescription") }}
-      </p>
-      <div class="usage-history__empty-button">
-        <Button as="router-link" :to="ROUTES.root" class="usage-history__empty-link">
-          {{ $t("usageHistory.emptyCta") }}
-          <ArrowRight aria-hidden="true" />
-        </Button>
-      </div>
-    </div>
+    <ErrorState v-if="loadError" :message-key="loadError" @retry="loadReadings" />
 
     <template v-else>
-      <section v-for="group in groups" :key="group.year" class="usage-history__group">
+      <div v-if="!isLoading && !summary" class="usage-history__empty">
+        <Inbox class="usage-history__empty-icon" aria-hidden="true" />
+        <h2 class="usage-history__empty-title">{{ $t("usageHistory.emptyTitle") }}</h2>
+        <p class="usage-history__empty-description">
+          {{ $t("usageHistory.emptyDescription") }}
+        </p>
+        <div class="usage-history__empty-button">
+          <Button as="router-link" :to="ROUTES.root" class="usage-history__empty-link">
+            {{ $t("usageHistory.emptyCta") }}
+            <ArrowRight aria-hidden="true" />
+          </Button>
+        </div>
+      </div>
+
+      <template v-else>
+        <section v-for="group in groups" :key="group.year" class="usage-history__group">
         <div class="usage-history__group-head">
           <h2 class="usage-history__group-year">{{ group.year }}</h2>
           <span class="usage-history__group-summary">
@@ -217,6 +220,7 @@
           </li>
         </ol>
       </section>
+      </template>
     </template>
   </div>
 </template>
@@ -263,6 +267,7 @@
 
   const readings = ref<MeterReadingOut[]>([]);
   const isLoading = ref(true);
+  const loadError = ref<string | null>(null);
 
   const { t } = useI18n();
   const { intlLocale } = useLocale();
@@ -422,8 +427,11 @@
 
   async function loadReadings(): Promise<void> {
     isLoading.value = true;
+    loadError.value = null;
     try {
       readings.value = await listMyMeterReadings(currentId.value);
+    } catch {
+      loadError.value = "errors.requestFailed";
     } finally {
       isLoading.value = false;
     }

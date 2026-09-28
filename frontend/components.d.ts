@@ -28,6 +28,7 @@ declare module 'vue' {
     DeadlineBadge: typeof import('./src/features/dashboard/components/DeadlineBadge.vue')['default']
     ElectricityRatesSettings: typeof import('./src/features/admin/ElectricityRatesSettings.vue')['default']
     EmptyUsageCard: typeof import('./src/features/dashboard/components/EmptyUsageCard.vue')['default']
+    ErrorState: typeof import('./src/shared/components/ErrorState.vue')['default']
     FirstRunGuideCard: typeof import('./src/features/dashboard/components/FirstRunGuideCard.vue')['default']
     FormFieldControl: typeof import('./src/shared/FormFieldControl.vue')['default']
     InputMask: typeof import('primevue/inputmask')['default']

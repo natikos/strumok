@@ -136,6 +136,7 @@
     "noHouseholdMembership": "You are not a member of any household yet",
     "periodAlreadySubmitted": "A reading for this period has already been submitted",
     "requestFailed": "Something went wrong. Please try again",
+    "retry": "Retry",
     "serverError": "Something went wrong. Please try again",
     "tooManyRequests": "Too many requests. Please wait and try again",
     "unauthorized": "Please sign in and try again",
