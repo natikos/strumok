@@ -1,5 +1,9 @@
 <template>
   <div class="electricity-rates">
+    <Message v-if="uncoveredPeriodWarning" severity="warn" class="electricity-rates__warning">
+      {{ uncoveredPeriodWarning }}
+    </Message>
+
     <ul v-if="rates.length > 0" class="electricity-rates__list">
       <li v-for="rate in rates" :key="rate.id" class="electricity-rates__item">
         <span class="electricity-rates__period">{{ rate.effective_from }}</span>
@@ -117,7 +121,7 @@
 
 <script setup lang="ts">
   import { useToast } from "primevue/usetoast";
-  import { onMounted, ref } from "vue";
+  import { computed, onMounted, ref } from "vue";
   import { useI18n } from "vue-i18n";
   import { z } from "zod";
 
@@ -129,6 +133,7 @@
     type ElectricityRateOut,
     listElectricityRates,
   } from "@shared/api/electricity-rates";
+  import { currentBillingPeriod, nextBillingPeriod } from "@shared/utils/billing-period";
   import { formatUah } from "@shared/utils/format";
 
   interface FieldErrors {
@@ -159,6 +164,30 @@
   const effectiveFrom = ref("");
   const dayRateUah = ref<number | null>(null);
   const nightRateUah = ref<number | null>(null);
+
+  function isPeriodCovered(period: string): boolean {
+    return rates.value.some((rate) => rate.effective_from <= period);
+  }
+
+  function monthLabel(period: string): string {
+    const [year = 0, month = 1] = period.split("-").map(Number);
+    return new Intl.DateTimeFormat(currentLocale.value, { month: "long", year: "numeric" }).format(
+      new Date(year, month - 1, 1)
+    );
+  }
+
+  const uncoveredPeriodWarning = computed<string | null>(() => {
+    const current = currentBillingPeriod();
+    const next = nextBillingPeriod();
+
+    if (!isPeriodCovered(current)) {
+      return t("admin.noRateForPeriod", { period: monthLabel(current) });
+    }
+    if (!isPeriodCovered(next)) {
+      return t("admin.noRateForPeriod", { period: monthLabel(next) });
+    }
+    return null;
+  });
 
   onMounted(async () => {
     isLoading.value = true;

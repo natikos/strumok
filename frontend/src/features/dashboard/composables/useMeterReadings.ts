@@ -17,6 +17,7 @@ import { ApiError } from "@shared/api/client";
 import {
   listMyMeterReadings,
   type MeterReadingOut,
+  NO_RATE_CONFIGURED_ERROR_CODE,
   submitMyMeterReading,
 } from "@shared/api/meter-readings";
 
@@ -195,7 +196,14 @@ export function useMeterReadings() {
       // to an i18n key. Surfacing it matters most for periodAlreadySubmitted:
       // the submit endpoint only inserts, so re-submitting an existing period
       // 409s, and swallowing that left the form looking like nothing happened.
-      if (error instanceof ApiError) {
+      //
+      // noRateConfigured isn't the resident's fault (the head hasn't set a
+      // rate yet), so it goes through `info` rather than `form` — the form
+      // renders that as a neutral notice instead of an error toast, and
+      // never clears the values the resident just typed.
+      if (error instanceof ApiError && error.message === NO_RATE_CONFIGURED_ERROR_CODE) {
+        errors.value = { info: `errors.${error.message}` };
+      } else if (error instanceof ApiError) {
         errors.value = { form: `errors.${error.message}` };
       } else if (error instanceof Error) {
         console.error(error);
