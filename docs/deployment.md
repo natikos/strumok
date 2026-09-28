@@ -45,7 +45,7 @@ You can also trigger a deployment manually from the GitHub Actions UI using the 
 | `AUTH_ALGORITHM`          | JWT algorithm (default: `HS256`)                              |
 | `AUTH_INTERNAL_SECRET`    | API secret for internal endpoints (push, webhooks, cron jobs) |
 | `CORS_ORIGINS`            | Comma-separated list of allowed origins                      |
-| `ENVIRONMENT`             | `development` or `production`                                |
+| `ENVIRONMENT`             | **Required.** `development` or `production` — no default, startup fails otherwise |
 | `BREVO_API_KEY`           | Brevo transactional email API key                             |
 | `BREVO_SENDER_EMAIL`      | Verified Brevo sender address                                 |
 | `BREVO_APP_BASE_URL`      | Public app origin used to build verification links            |

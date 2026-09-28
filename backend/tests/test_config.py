@@ -7,9 +7,10 @@ behavior is pydantic's guarantee, not ours to re-test — what we assert here is
 that these two fields are actually typed as SecretStr.
 """
 
-from pydantic import SecretStr
+import pytest
+from pydantic import SecretStr, ValidationError
 
-from app.core.config import AuthSettings, BrevoSettings
+from app.core.config import AuthSettings, BrevoSettings, Settings
 
 
 def test_auth_secret_key_is_a_secret_str() -> None:
@@ -18,3 +19,16 @@ def test_auth_secret_key_is_a_secret_str() -> None:
 
 def test_brevo_api_key_is_a_secret_str() -> None:
     assert BrevoSettings.model_fields["api_key"].annotation is SecretStr
+
+
+def test_missing_environment_fails_startup(monkeypatch: pytest.MonkeyPatch) -> None:
+    """A deploy that forgets to set ENVIRONMENT must not silently run as development (#139)."""
+    monkeypatch.delenv("ENVIRONMENT", raising=False)
+    with pytest.raises(ValidationError):
+        Settings()
+
+
+def test_invalid_environment_fails_startup(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("ENVIRONMENT", "staging")
+    with pytest.raises(ValidationError):
+        Settings()
