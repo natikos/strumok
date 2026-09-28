@@ -1,5 +1,5 @@
 from functools import lru_cache
-from typing import Annotated
+from typing import Annotated, Literal
 
 from pydantic import SecretStr, field_validator
 from pydantic_settings import BaseSettings, NoDecode, SettingsConfigDict
@@ -71,7 +71,7 @@ class Settings(BaseSettings):
         extra="ignore",
     )
 
-    environment: str = "development"
+    environment: Literal["development", "production"]
     app_name: str = "Strumok"
     app_port: int = 8000
     cors_origins: Annotated[list[str], NoDecode] = ["http://localhost:5173"]
