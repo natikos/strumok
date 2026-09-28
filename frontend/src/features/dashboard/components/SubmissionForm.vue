@@ -20,8 +20,14 @@
     </div>
 
     <div class="submission-form__actions">
-      <p v-if="errors.form" class="submission__form-error" role="alert">
-        <TimesCircle aria-hidden="true" />
+      <p
+        v-if="errors.form"
+        class="submission__form-error"
+        :class="{ 'submission__form-error--info': errors.formSeverity === 'info' }"
+        :role="errors.formSeverity === 'info' ? 'status' : 'alert'"
+      >
+        <InfoCircle v-if="errors.formSeverity === 'info'" aria-hidden="true" />
+        <TimesCircle v-else aria-hidden="true" />
         {{ t(errors.form) }}
       </p>
 
@@ -47,7 +53,7 @@
 </template>
 
 <script setup lang="ts">
-  import { Shield, TimesCircle } from "@primeicons/vue";
+  import { InfoCircle, Shield, TimesCircle } from "@primeicons/vue";
   import { useI18n } from "vue-i18n";
 
   import type { FieldErrors } from "@/features/dashboard/types";

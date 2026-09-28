@@ -4,6 +4,7 @@ import { defineComponent, h, nextTick } from "vue";
 
 import { useCurrentHousehold } from "@/features/households/useCurrentHousehold";
 import { appPlugins } from "@/shared/testing/mount";
+import { ApiError } from "@shared/api/client";
 import type { MeterReadingOut } from "@shared/api/meter-readings";
 
 import { useMeterReadings } from "./useMeterReadings";
@@ -251,6 +252,48 @@ describe("useMeterReadings", () => {
       await flushPromises();
 
       expect(result.latestReading.value).toEqual(created);
+    });
+  });
+
+  describe("handleSubmit when no electricity rate covers the period", () => {
+    it("surfaces an info-severity form error and keeps the typed values", async () => {
+      listMyMeterReadings.mockResolvedValue([]);
+      submitMyMeterReading.mockRejectedValue(new ApiError("noRateConfigured", 409));
+
+      const { result } = mountComposable();
+      await result.loadHistory();
+      await flushPromises();
+
+      result.dayMeterValue.value = 120;
+      result.nightMeterValue.value = 60;
+
+      await result.handleSubmit();
+      await flushPromises();
+
+      expect(result.errors.value.form).toBe("errors.noRateConfigured");
+      expect(result.errors.value.formSeverity).toBe("info");
+      // The resident's own co-op is missing a rate, not something they can fix
+      // by retyping -- their entered values must survive the rejection.
+      expect(result.dayMeterValue.value).toBe(120);
+      expect(result.nightMeterValue.value).toBe(60);
+    });
+
+    it("marks a different rejection as error severity, not info", async () => {
+      listMyMeterReadings.mockResolvedValue([]);
+      submitMyMeterReading.mockRejectedValue(new ApiError("periodAlreadySubmitted", 409));
+
+      const { result } = mountComposable();
+      await result.loadHistory();
+      await flushPromises();
+
+      result.dayMeterValue.value = 10;
+      result.nightMeterValue.value = 5;
+
+      await result.handleSubmit();
+      await flushPromises();
+
+      expect(result.errors.value.form).toBe("errors.periodAlreadySubmitted");
+      expect(result.errors.value.formSeverity).toBe("error");
     });
   });
 

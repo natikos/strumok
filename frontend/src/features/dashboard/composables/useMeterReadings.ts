@@ -196,7 +196,10 @@ export function useMeterReadings() {
       // the submit endpoint only inserts, so re-submitting an existing period
       // 409s, and swallowing that left the form looking like nothing happened.
       if (error instanceof ApiError) {
-        errors.value = { form: `errors.${error.message}` };
+        errors.value = {
+          form: `errors.${error.message}`,
+          formSeverity: error.message === "noRateConfigured" ? "info" : "error",
+        };
       } else if (error instanceof Error) {
         console.error(error);
         errors.value = { form: "errors.requestFailed" };

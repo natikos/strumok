@@ -258,6 +258,22 @@ describe("SubmissionCard", () => {
       expect(alert.attributes("role")).toBe("alert");
       expect(alert.text()).toContain("already been submitted");
     });
+
+    // noRateConfigured means the co-op hasn't set a rate yet -- nothing the
+    // resident did wrong -- so it must read as informational, not an error
+    // the resident needs to fix, for both sighted users (icon) and
+    // screen-reader users (role="status" instead of "alert").
+    it("announces a missing-rate form error as an informational status, not an alert", () => {
+      vi.setSystemTime(new Date(2026, 5, 2));
+      const wrapper = mountCard({
+        errors: { form: "errors.noRateConfigured", formSeverity: "info" },
+      });
+
+      const notice = wrapper.find(".submission__form-error");
+      expect(notice.exists()).toBe(true);
+      expect(notice.attributes("role")).toBe("status");
+      expect(wrapper.find('[role="alert"].submission__form-error').exists()).toBe(false);
+    });
   });
 
   describe("emitted events", () => {

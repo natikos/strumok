@@ -21,7 +21,8 @@ from app.api.meter_readings.service import (
 )
 from app.core.domain.billing import previous_period
 from app.core.time import utc_now
-from sqlmodel import Session
+from app.db.models import ElectricityRate
+from sqlmodel import Session, select
 from tests.factories import (
     authenticate,
     make_electricity_rate,
@@ -718,3 +719,31 @@ class TestMeterReadingRoutesHappyPath:
         assert len(body) == 1
         assert body[0]["household_id"] == household.id
         assert body[0]["id"] is not None
+
+    def test_post_with_no_rate_configured_returns_409_not_500(
+        self, client, session: Session
+    ) -> None:
+        # The autouse fixture seeds a rate covering every period; remove it
+        # here to reproduce a co-op that hasn't configured any electricity
+        # rate yet. Before the fix this uncaught NoRateConfiguredError
+        # surfaced as a bare 500, which is what a resident actually hit.
+        for rate in session.exec(select(ElectricityRate)).all():
+            session.delete(rate)
+        session.commit()
+
+        user = make_user(session, email="norate@example.com")
+        household = make_household(session, user_id=user.id)
+        authenticate(client, user)
+
+        response = client.post(
+            "/meter-readings",
+            params={"household_id": household.id},
+            json={
+                "period": "2026-07",
+                "day_meter_value": "100.00",
+                "night_meter_value": "50.00",
+            },
+        )
+
+        assert response.status_code == 409, response.text
+        assert response.json()["detail"] == "noRateConfigured"

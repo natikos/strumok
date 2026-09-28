@@ -1,5 +1,14 @@
 <template>
   <div class="electricity-rates">
+    <p
+      v-for="period in uncoveredPeriods"
+      :key="period"
+      class="electricity-rates__warning"
+      role="status"
+    >
+      {{ t("admin.noRateForPeriod", { period }) }}
+    </p>
+
     <ul v-if="rates.length > 0" class="electricity-rates__list">
       <li v-for="rate in rates" :key="rate.id" class="electricity-rates__item">
         <span class="electricity-rates__period">{{ rate.effective_from }}</span>
@@ -116,8 +125,9 @@
 </template>
 
 <script setup lang="ts">
+  import { format, subMonths } from "date-fns";
   import { useToast } from "primevue/usetoast";
-  import { onMounted, ref } from "vue";
+  import { computed, onMounted, ref } from "vue";
   import { useI18n } from "vue-i18n";
   import { z } from "zod";
 
@@ -168,6 +178,20 @@
     } finally {
       isLoading.value = false;
     }
+  });
+
+  // Residents submit for the prior calendar month, so "current" here means
+  // the period a submission would be for right now, not this calendar month.
+  const currentSubmissionPeriod = format(subMonths(new Date(), 1), "yyyy-MM");
+  const nextSubmissionPeriod = format(new Date(), "yyyy-MM");
+
+  function isCovered(period: string): boolean {
+    return rates.value.some((rate) => rate.effective_from <= period);
+  }
+
+  const uncoveredPeriods = computed(() => {
+    const periods = [currentSubmissionPeriod, nextSubmissionPeriod];
+    return periods.filter((period) => !isCovered(period));
   });
 
   function resetForm(): void {
@@ -275,6 +299,16 @@
     color: color-mix(in srgb, var(--s-content-color), transparent 45%);
     font-size: 0.85rem;
     margin: 0;
+  }
+
+  .electricity-rates__warning {
+    background: color-mix(in srgb, var(--s-amber-500), transparent 90%);
+    border: 1px solid color-mix(in srgb, var(--s-amber-500), transparent 65%);
+    border-radius: var(--s-app-radius-md);
+    color: var(--s-content-color);
+    font-size: 0.85rem;
+    margin: 0 0 var(--s-app-space-3);
+    padding: var(--s-app-space-2) var(--s-app-space-3);
   }
 
   .electricity-rates__field {
