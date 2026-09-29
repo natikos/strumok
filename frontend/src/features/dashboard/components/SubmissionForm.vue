@@ -25,6 +25,10 @@
         {{ t(errors.form) }}
       </p>
 
+      <Message v-if="errors.info" severity="info" class="submission-form__info">
+        {{ t(errors.info) }}
+      </Message>
+
       <p v-if="isLate" class="submission__note">
         <Shield aria-hidden="true" />
         {{ t("meterReadings.lateApprovalNote") }}
@@ -133,6 +137,10 @@
         width: auto;
         min-height: 2.75rem;
       }
+    }
+
+    &__info {
+      flex-basis: 100%;
     }
 
     &__caption {

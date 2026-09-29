@@ -65,6 +65,7 @@
 </template>
 
 <script setup lang="ts">
+  import { getYear } from "date-fns";
   import { computed, onMounted, watch } from "vue";
   import { useI18n } from "vue-i18n";
   import { useRouter } from "vue-router";
@@ -80,6 +81,7 @@
   import { useMeterReadings } from "@/features/dashboard/composables/useMeterReadings.ts";
   import { useCurrentHousehold } from "@/features/households/useCurrentHousehold";
   import { ROUTES } from "@shared/routing/routes";
+  import { periodToDate } from "@shared/utils/billing-period";
 
   const { currentId } = useCurrentHousehold();
   const router = useRouter();
@@ -134,7 +136,7 @@
 
   const yoyEmptyYear = computed(() => {
     const period = lastSubmittedPeriod.value?.period;
-    const year = period ? Number(period.split("-")[0]) : new Date().getFullYear();
+    const year = getYear(period ? periodToDate(period) : new Date());
     return year - 1;
   });
 
