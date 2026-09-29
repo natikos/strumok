@@ -185,19 +185,11 @@ export function useMeterReadings() {
       dayMeterValue.value = null;
       nightMeterValue.value = null;
     } catch (error) {
-      // An ApiError's message is the stable camelCase detail code, which maps
-      // to an i18n key. Surfacing it matters most for periodAlreadySubmitted:
-      // the submit endpoint only inserts, so re-submitting an existing period
-      // 409s, and swallowing that left the form looking like nothing happened.
-      //
-      // noRateConfigured isn't the resident's fault (the head hasn't set a
-      // rate yet), so it goes through `info` rather than `form` — the form
-      // renders that as a neutral notice instead of an error toast, and
-      // never clears the values the resident just typed.
-      if (error instanceof ApiError && error.message === NO_RATE_CONFIGURED_ERROR_CODE) {
-        errors.value = { info: `errors.${error.message}` };
-      } else if (error instanceof ApiError) {
-        errors.value = { form: `errors.${error.message}` };
+      // noRateConfigured isn't the resident's fault, so it's a neutral `info` notice, not a `form` error.
+      if (error instanceof ApiError) {
+        const key = `errors.${error.message}`;
+        errors.value =
+          error.message === NO_RATE_CONFIGURED_ERROR_CODE ? { info: key } : { form: key };
       } else if (error instanceof Error) {
         console.error(error);
         errors.value = { form: "errors.requestFailed" };
