@@ -31,11 +31,18 @@ class AuthSettings(BaseSettings):
 
     secret_key: SecretStr
     algorithm: str = "HS256"
-    access_token_expiration: int = 1440  # (min) 24 hours
+    access_token_expiration: int = 60  # (min) 1 hour -- refreshed via /auth/refresh
     auth_cookie_name: str = "access_token"
     verify_email_resend_cooldown_seconds: int = 180  # 3 minutes
     verification_token_expiration: int = 60  # (min) 1 hour
     internal_secret: SecretStr  # API secret for internal endpoints (push notifications, webhooks, cron jobs, etc.)
+    # /auth/refresh accepts a token whose *exp* is this stale at most -- an
+    # honest resident who opens the app once a month stays signed in.
+    refresh_idle_window_days: int = 45
+    # /auth/refresh accepts a token at most this long after the original
+    # login (auth_time), even if refreshed continuously -- a hard session cap
+    # independent of activity.
+    refresh_absolute_window_days: int = 180
 
 
 class BrevoSettings(BaseSettings):
@@ -94,7 +101,12 @@ class Settings(BaseSettings):
 
     @property
     def auth_token_ttl_seconds(self) -> int:
-        return self.auth.access_token_expiration * 60
+        """Cookie max_age: must cover the whole possible session window (up
+        to the absolute cap), not the short-lived JWT's own exp -- otherwise
+        the cookie is gone long before an idle-but-still-valid session would
+        refresh. The idle window is what actually cuts a stale session off;
+        this is just how long the browser is asked to hold the cookie."""
+        return self.auth.refresh_absolute_window_days * 24 * 60 * 60
 
 
 @lru_cache
