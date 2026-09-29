@@ -8,8 +8,8 @@
       <li v-for="rate in rates" :key="rate.id" class="electricity-rates__item">
         <span class="electricity-rates__period">{{ rate.effective_from }}</span>
         <span class="electricity-rates__values">
-          {{ t("admin.dayRateShort") }} {{ formatUah(rate.day_rate_uah, currentLocale) }} ·
-          {{ t("admin.nightRateShort") }} {{ formatUah(rate.night_rate_uah, currentLocale) }}
+          {{ t("admin.dayRateShort") }} {{ formatUah(rate.day_rate_uah, intlLocale) }} ·
+          {{ t("admin.nightRateShort") }} {{ formatUah(rate.night_rate_uah, intlLocale) }}
         </span>
       </li>
     </ul>
@@ -154,7 +154,7 @@
   });
 
   const { t } = useI18n();
-  const { currentLocale } = useLocale();
+  const { intlLocale } = useLocale();
   const toast = useToast();
 
   const rates = ref<ElectricityRateOut[]>([]);
@@ -171,7 +171,7 @@
 
   function monthLabel(period: string): string {
     const [year = 0, month = 1] = period.split("-").map(Number);
-    return new Intl.DateTimeFormat(currentLocale.value, { month: "long", year: "numeric" }).format(
+    return new Intl.DateTimeFormat(intlLocale.value, { month: "long", year: "numeric" }).format(
       new Date(year, month - 1, 1)
     );
   }
