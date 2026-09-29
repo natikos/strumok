@@ -36,6 +36,7 @@
     "rateMustBePositive": "Rate must be greater than zero",
     "submissionOverview": "Submission overview",
     "currentPeriod": "Current period: {period}",
+    "reminderSent": "Reminder sent {date} to {count} resident(s)",
     "owner": "Owner",
     "status": "Status",
     "latestUsage": "Latest usage",
@@ -127,6 +128,7 @@
   "errors": {
     "adminPrivilegesRequired": "You don't have permission to do that",
     "emailAlreadyRegistered": "Email is already registered",
+    "householdInactive": "This household is no longer active",
     "householdNotFound": "This household no longer exists",
     "userInactive": "This user's account is inactive",
     "userNotFound": "This user no longer exists",

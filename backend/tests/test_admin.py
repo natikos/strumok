@@ -10,6 +10,9 @@ missing or bypassed `require_admin` check.
 from decimal import Decimal
 
 from app.api.admin.service import _summed_usage_kwh
+from app.core.domain import current_billing_period
+from app.core.time import utc_now
+from app.db.models import ReminderDispatch
 from sqlmodel import Session
 from tests.factories import authenticate, make_household, make_meter_reading, make_user
 
@@ -161,6 +164,47 @@ class TestAdminDashboard:
         assert row["submission_status"] == "missing"
         assert row["latest_period"] == "2026-07"
         assert row["latest_usage_kwh"] == "4.00"
+
+    def test_includes_a_finished_dispatch_for_the_current_period(
+        self, client, session: Session
+    ) -> None:
+        admin = make_user(session, email="dashboard-admin3@example.com", is_admin=True)
+        authenticate(client, admin)
+        current_period = current_billing_period()
+
+        finished = ReminderDispatch(
+            period=current_period,
+            variant="opening",
+            sent=3,
+            finished_at=utc_now(),
+        )
+        # In progress: no finished_at yet, must not appear.
+        in_progress = ReminderDispatch(
+            period=current_period,
+            variant="final",
+            sent=0,
+            finished_at=None,
+        )
+        # A different, older period's finished dispatch must not leak in.
+        other_period = ReminderDispatch(
+            period="2000-01",
+            variant="opening",
+            sent=5,
+            finished_at=utc_now(),
+        )
+        session.add(finished)
+        session.add(in_progress)
+        session.add(other_period)
+        session.commit()
+
+        response = client.get("/admin/dashboard")
+
+        assert response.status_code == 200, response.text
+        dispatches = response.json()["reminder_dispatches"]
+        assert len(dispatches) == 1
+        assert dispatches[0]["variant"] == "opening"
+        assert dispatches[0]["sent"] == 3
+        assert dispatches[0]["finished_at"] is not None
 
 
 class TestCreateHousehold:

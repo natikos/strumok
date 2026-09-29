@@ -16,6 +16,7 @@ frontend/.env
 pg_data/
 postgres-data/
 *.sql
+!backend/migrations/*.sql
 *.dump
 
 # Data files

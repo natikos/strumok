@@ -63,6 +63,13 @@ class AdminDashboardHouseholdOut(BaseModel):
     latest_amount_charged_uah: Decimal | None = Field(default=None, decimal_places=2)
 
 
+class AdminReminderDispatchOut(BaseModel):
+    variant: str
+    sent: int
+    finished_at: UtcDatetime | None = None
+
+
 class AdminDashboardOut(BaseModel):
     current_period: str
     households: list[AdminDashboardHouseholdOut]
+    reminder_dispatches: list[AdminReminderDispatchOut] = Field(default_factory=list)

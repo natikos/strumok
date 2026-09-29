@@ -14,13 +14,14 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 from app.api.push.service import (
+    _get_or_create_dispatch,
     delete_subscription,
     send_reminders,
     upsert_subscription,
 )
 from app.core.domain import current_billing_period
 from app.core.config import settings
-from app.db.models import PushSubscription
+from app.db.models import NotificationLog, PushSubscription, ReminderDispatch
 from pydantic import SecretStr
 from pywebpush import WebPushException
 from sqlmodel import Session, select
@@ -239,6 +240,52 @@ class TestSendReminders:
         assert (sent, removed) == (0, 0)
         mock_webpush.assert_not_called()
 
+    def test_excludes_an_inactive_household_from_recipients(
+        self, session: Session
+    ) -> None:
+        # A household taken out of service (e.g. plot sold, resident left)
+        # must stop generating reminders even though its owner is still an
+        # active, subscribed user.
+        user = make_user(session)
+        make_household(session, user_id=user.id, is_active=False)
+        make_push_subscription(session, user_id=user.id)
+
+        with patch("app.api.push.service.webpush") as mock_webpush:
+            sent, removed = send_reminders(session=session, variant="opening")
+
+        assert (sent, removed) == (0, 0)
+        mock_webpush.assert_not_called()
+
+    def test_excludes_an_inactive_user_from_recipients(self, session: Session) -> None:
+        # A deactivated account shouldn't keep receiving reminders even if
+        # its household and push subscription rows are still present.
+        user = make_user(session, is_active=False)
+        make_household(session, user_id=user.id)
+        make_push_subscription(session, user_id=user.id)
+
+        with patch("app.api.push.service.webpush") as mock_webpush:
+            sent, removed = send_reminders(session=session, variant="opening")
+
+        assert (sent, removed) == (0, 0)
+        mock_webpush.assert_not_called()
+
+    def test_reminds_for_an_active_household_while_a_sibling_inactive_one_is_excluded(
+        self, session: Session
+    ) -> None:
+        # A resident with one active, unsubmitted household and one retired
+        # household must still be reminded -- the inactive household must not
+        # be attributed to them (skipped) nor block the active one's reminder.
+        user = make_user(session)
+        make_household(session, user_id=user.id, name="Active plot", is_active=True)
+        make_household(session, user_id=user.id, name="Retired plot", is_active=False)
+        make_push_subscription(session, user_id=user.id)
+
+        with patch("app.api.push.service.webpush") as mock_webpush:
+            sent, removed = send_reminders(session=session, variant="opening")
+
+        assert (sent, removed) == (1, 0)
+        mock_webpush.assert_called_once()
+
     @pytest.mark.parametrize("status_code", [404, 410])
     def test_removes_a_subscription_the_push_service_reports_as_gone(
         self, session: Session, status_code: int
@@ -311,6 +358,128 @@ class TestSendReminders:
             sent, removed = send_reminders(session=session, variant="opening")
 
         assert (sent, removed) == (1, 1)
+
+
+class TestSendRemindersIdempotency:
+    """Issue #159: a reminder trigger firing more than once for the same
+    (period, variant) -- an external cron retrying, or two overlapping runs --
+    must not double-notify a resident, and the ReminderDispatch bookkeeping
+    must reflect that accurately."""
+
+    def test_repeated_calls_deliver_a_push_to_the_same_due_user_only_once(
+        self, session: Session
+    ) -> None:
+        user = make_user(session)
+        make_household(session, user_id=user.id)
+        make_push_subscription(session, user_id=user.id)
+
+        with patch("app.api.push.service.webpush") as mock_webpush:
+            first = send_reminders(session=session, variant="opening")
+            second = send_reminders(session=session, variant="opening")
+            third = send_reminders(session=session, variant="opening")
+
+        assert mock_webpush.call_count == 1
+        assert first == (1, 0)
+        assert second == (0, 0)
+        assert third == (0, 0)
+
+    def test_first_call_creates_a_dispatch_row_and_a_no_op_repeat_leaves_sent_unchanged(
+        self, session: Session
+    ) -> None:
+        period = current_billing_period()
+        user = make_user(session)
+        make_household(session, user_id=user.id)
+        make_push_subscription(session, user_id=user.id)
+
+        with patch("app.api.push.service.webpush"):
+            send_reminders(session=session, variant="opening")
+            dispatch_after_first = session.exec(
+                select(ReminderDispatch)
+                .where(ReminderDispatch.period == period)
+                .where(ReminderDispatch.variant == "opening")
+            ).one()
+            first_finished_at = dispatch_after_first.finished_at
+            assert dispatch_after_first.sent == 1
+
+            send_reminders(session=session, variant="opening")
+
+        session.expire_all()
+        dispatch_after_second = session.exec(
+            select(ReminderDispatch)
+            .where(ReminderDispatch.period == period)
+            .where(ReminderDispatch.variant == "opening")
+        ).one()
+        assert dispatch_after_second.sent == 1
+        assert dispatch_after_second.finished_at is not None
+        assert dispatch_after_second.finished_at >= first_finished_at
+
+    def test_a_newly_due_user_between_calls_adds_to_the_accumulated_sent_total(
+        self, session: Session
+    ) -> None:
+        period = current_billing_period()
+        first_user = make_user(session, email="first@example.com")
+        make_household(session, user_id=first_user.id)
+        make_push_subscription(session, user_id=first_user.id)
+
+        with patch("app.api.push.service.webpush"):
+            send_reminders(session=session, variant="opening")
+
+            second_user = make_user(session, email="second@example.com")
+            make_household(session, user_id=second_user.id)
+            make_push_subscription(session, user_id=second_user.id)
+
+            send_reminders(session=session, variant="opening")
+
+        dispatch = session.exec(
+            select(ReminderDispatch)
+            .where(ReminderDispatch.period == period)
+            .where(ReminderDispatch.variant == "opening")
+        ).one()
+        assert dispatch.sent == 2
+
+    def test_notification_log_has_one_sent_row_per_notified_user(
+        self, session: Session
+    ) -> None:
+        period = current_billing_period()
+        user = make_user(session)
+        make_household(session, user_id=user.id)
+        make_push_subscription(session, user_id=user.id)
+
+        with patch("app.api.push.service.webpush"):
+            send_reminders(session=session, variant="opening")
+            send_reminders(session=session, variant="opening")
+
+        rows = session.exec(
+            select(NotificationLog)
+            .where(NotificationLog.user_id == user.id)
+            .where(NotificationLog.period == period)
+            .where(NotificationLog.variant == "opening")
+            .where(NotificationLog.channel == "push")
+        ).all()
+        assert len(rows) == 1
+        assert rows[0].status == "sent"
+
+
+class TestGetOrCreateDispatch:
+    def test_two_calls_for_the_same_period_and_variant_return_the_same_row(
+        self, session: Session
+    ) -> None:
+        period = current_billing_period()
+
+        first = _get_or_create_dispatch(
+            session=session, period=period, variant="opening"
+        )
+        second = _get_or_create_dispatch(
+            session=session, period=period, variant="opening"
+        )
+
+        assert first.id == second.id
+        rows = session.exec(
+            select(ReminderDispatch)
+            .where(ReminderDispatch.period == period)
+            .where(ReminderDispatch.variant == "opening")
+        ).all()
+        assert len(rows) == 1
 
 
 class TestGetVapidPublicKeyRoute:

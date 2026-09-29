@@ -56,6 +56,17 @@
                 </button>
               </div>
 
+              <ul v-if="reminderDispatches.length > 0" class="admin-reminder-status">
+                <li v-for="dispatch in reminderDispatches" :key="dispatch.variant">
+                  {{
+                    $t("admin.reminderSent", {
+                      date: formatReminderDate(dispatch.finished_at),
+                      count: dispatch.sent,
+                    })
+                  }}
+                </li>
+              </ul>
+
               <div class="admin-card admin-card--table">
                 <div v-if="dashboard" class="admin-table-wrap">
                   <table class="admin-table">
@@ -96,7 +107,8 @@
 </template>
 
 <script setup lang="ts">
-  import { onMounted, ref } from "vue";
+  import { format } from "date-fns";
+  import { computed, onMounted, ref } from "vue";
 
   import AdminHouseholdAssignment from "@features/admin/AdminHouseholdAssignment.vue";
   import ElectricityRatesSettings from "@features/admin/ElectricityRatesSettings.vue";
@@ -104,6 +116,7 @@
   import { formatKwh, formatUah } from "@shared/utils/format";
 
   const dashboard = ref<AdminDashboardOut | null>(null);
+  const reminderDispatches = computed(() => dashboard.value?.reminder_dispatches ?? []);
   const dashboardError = ref<string | null>(null);
   const activeTab = ref("households");
   const isLoadingDashboard = ref(true);
@@ -126,6 +139,10 @@
   onMounted(() => {
     void loadDashboard();
   });
+
+  function formatReminderDate(finishedAt: string | null | undefined): string {
+    return finishedAt ? format(new Date(finishedAt), "MMM d") : "";
+  }
 
   function ownerLabel(household: AdminDashboardOut["households"][number]): string {
     return household.owner ? `${household.owner.first_name} ${household.owner.last_name}` : "—";
@@ -245,6 +262,15 @@
       font-weight: 600;
       padding: 0.5rem 0.75rem;
     }
+  }
+
+  .admin-reminder-status {
+    @include layout.stack(var(--s-app-space-1));
+    color: color-mix(in srgb, var(--s-content-color), transparent 30%);
+    font-size: 0.85rem;
+    list-style: none;
+    margin: 0;
+    padding: 0;
   }
 
   .admin-section {

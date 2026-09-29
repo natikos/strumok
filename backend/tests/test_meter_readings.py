@@ -11,6 +11,7 @@ from decimal import Decimal
 
 import pytest
 from app.api.meter_readings.service import (
+    HouseholdInactiveError,
     HouseholdNotAccessibleError,
     NoHouseholdMembershipError,
     PeriodAlreadySubmittedError,
@@ -87,6 +88,30 @@ class TestGetUserHouseholdId:
         with pytest.raises(NoHouseholdMembershipError):
             get_user_household_id(session=session, user=user)
 
+    def test_skips_an_inactive_oldest_household_for_the_next_oldest_active_one(
+        self, session: Session
+    ) -> None:
+        user = make_user(session)
+        inactive_oldest = make_household(
+            session,
+            name="Retired Plot",
+            user_id=user.id,
+            is_active=False,
+            created_at=datetime(2023, 1, 1, tzinfo=timezone.utc),
+        )
+        active_second_oldest = make_household(
+            session,
+            name="Active Plot",
+            user_id=user.id,
+            is_active=True,
+            created_at=datetime(2024, 1, 1, tzinfo=timezone.utc),
+        )
+
+        result = get_user_household_id(session=session, user=user)
+
+        assert result == active_second_oldest.id
+        assert result != inactive_oldest.id
+
 
 class TestGetOwnedHouseholdId:
     def test_returns_id_when_caller_owns_it(self, session: Session) -> None:
@@ -115,6 +140,32 @@ class TestGetOwnedHouseholdId:
 
         with pytest.raises(HouseholdNotAccessibleError):
             get_owned_household_id(session=session, user=user, household_id=999999)
+
+    def test_raises_household_inactive_for_an_owned_inactive_household(
+        self, session: Session
+    ) -> None:
+        user = make_user(session)
+        household = make_household(session, user_id=user.id, is_active=False)
+
+        with pytest.raises(HouseholdInactiveError):
+            get_owned_household_id(
+                session=session, user=user, household_id=household.id
+            )
+
+    def test_not_accessible_takes_priority_over_inactive_for_an_unowned_household(
+        self, session: Session
+    ) -> None:
+        # Ownership must be checked before activity status: an inactive
+        # household owned by someone else should still read as "not yours",
+        # not leak the fact that it happens to be inactive.
+        owner = make_user(session, email="owner-inactive@example.com")
+        intruder = make_user(session, email="intruder-inactive@example.com")
+        household = make_household(session, user_id=owner.id, is_active=False)
+
+        with pytest.raises(HouseholdNotAccessibleError):
+            get_owned_household_id(
+                session=session, user=intruder, household_id=household.id
+            )
 
 
 class TestSubmitMeterReading:
@@ -633,6 +684,78 @@ class TestRequireHouseholdIdRoute:
         assert body[0]["household_id"] == household.id
         assert body[0]["period"] == period
         assert body[0]["id"] is not None
+
+    def test_get_explicit_household_id_owned_but_inactive_is_forbidden(
+        self, client, session: Session
+    ) -> None:
+        user = make_user(session, email="owner-inactive-get@example.com")
+        household = make_household(
+            session, name="Retired Plot", user_id=user.id, is_active=False
+        )
+        authenticate(client, user)
+
+        response = client.get("/meter-readings", params={"household_id": household.id})
+
+        assert response.status_code == 403
+        assert response.json()["detail"] == "householdInactive"
+
+    def test_post_explicit_household_id_owned_but_inactive_is_forbidden(
+        self, client, session: Session
+    ) -> None:
+        user = make_user(session, email="owner-inactive-post@example.com")
+        household = make_household(
+            session, name="Retired Plot", user_id=user.id, is_active=False
+        )
+        authenticate(client, user)
+
+        response = client.post(
+            "/meter-readings",
+            params={"household_id": household.id},
+            json={
+                "period": "2026-07",
+                "day_meter_value": "100.00",
+                "night_meter_value": "50.00",
+            },
+        )
+
+        assert response.status_code == 403
+        assert response.json()["detail"] == "householdInactive"
+
+    def test_no_household_id_param_routes_past_an_inactive_oldest_household(
+        self, client, session: Session
+    ) -> None:
+        user = make_user(session, email="mixed-households@example.com")
+        make_household(
+            session,
+            name="Retired Plot",
+            user_id=user.id,
+            is_active=False,
+            created_at=datetime(2023, 1, 1, tzinfo=timezone.utc),
+        )
+        active_household = make_household(
+            session,
+            name="Active Plot",
+            user_id=user.id,
+            is_active=True,
+            created_at=datetime(2024, 1, 1, tzinfo=timezone.utc),
+        )
+        authenticate(client, user)
+
+        get_response = client.get("/meter-readings")
+        assert get_response.status_code == 200, get_response.text
+        body = get_response.json()
+        assert all(entry["household_id"] == active_household.id for entry in body)
+
+        post_response = client.post(
+            "/meter-readings",
+            json={
+                "period": "2026-07",
+                "day_meter_value": "100.00",
+                "night_meter_value": "50.00",
+            },
+        )
+        assert post_response.status_code == 201, post_response.text
+        assert post_response.json()["household_id"] == active_household.id
 
 
 class TestMeterReadingRoutesHappyPath:

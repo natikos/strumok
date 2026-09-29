@@ -36,6 +36,7 @@
     "rateMustBePositive": "Тариф має бути більшим за нуль",
     "submissionOverview": "Стан подання показників",
     "currentPeriod": "Поточний період: {period}",
+    "reminderSent": "Нагадування надіслано {date} для {count} мешканців",
     "owner": "Власник",
     "status": "Стан",
     "latestUsage": "Останнє споживання",
@@ -127,6 +128,7 @@
   "errors": {
     "adminPrivilegesRequired": "У вас немає прав для цієї дії",
     "emailAlreadyRegistered": "Ця електронна скринька вже зареєстрована",
+    "householdInactive": "Це господарство більше не активне",
     "householdNotFound": "Це господарство більше не існує",
     "userInactive": "Обліковий запис цього користувача неактивний",
     "userNotFound": "Цього користувача більше не існує",

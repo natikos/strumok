@@ -328,6 +328,8 @@ export interface components {
             current_period: string;
             /** Households */
             households: components["schemas"]["AdminDashboardHouseholdOut"][];
+            /** Reminder Dispatches */
+            reminder_dispatches?: components["schemas"]["AdminReminderDispatchOut"][];
         };
         /** AdminHouseholdCreateIn */
         AdminHouseholdCreateIn: {
@@ -347,6 +349,15 @@ export interface components {
             /** Is Active */
             is_active: boolean;
             owner?: components["schemas"]["AdminUserSummaryOut"] | null;
+        };
+        /** AdminReminderDispatchOut */
+        AdminReminderDispatchOut: {
+            /** Variant */
+            variant: string;
+            /** Sent */
+            sent: number;
+            /** Finished At */
+            finished_at?: string | null;
         };
         /** AdminUserSummaryOut */
         AdminUserSummaryOut: {
@@ -939,17 +950,12 @@ export interface operations {
                     "application/json": components["schemas"]["MeterReadingOut"][];
                 };
             };
-            /** @description User does not own this household */
+            /** @description User does not own this household, or it is inactive */
             403: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    /**
-                     * @example {
-                     *       "detail": "householdNotAccessible"
-                     *     }
-                     */
                     "application/json": components["schemas"]["ErrorOut"];
                 };
             };
@@ -1002,17 +1008,12 @@ export interface operations {
                     "application/json": components["schemas"]["MeterReadingOut"];
                 };
             };
-            /** @description User does not own this household */
+            /** @description User does not own this household, or it is inactive */
             403: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    /**
-                     * @example {
-                     *       "detail": "householdNotAccessible"
-                     *     }
-                     */
                     "application/json": components["schemas"]["ErrorOut"];
                 };
             };
