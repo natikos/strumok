@@ -133,7 +133,11 @@
     type ElectricityRateOut,
     listElectricityRates,
   } from "@shared/api/electricity-rates";
-  import { currentBillingPeriod, nextBillingPeriod } from "@shared/utils/billing-period";
+  import {
+    currentBillingPeriod,
+    formatPeriodMonth,
+    nextBillingPeriod,
+  } from "@shared/utils/billing-period";
   import { formatUah } from "@shared/utils/format";
 
   interface FieldErrors {
@@ -170,10 +174,7 @@
   }
 
   function monthLabel(period: string): string {
-    const [year = 0, month = 1] = period.split("-").map(Number);
-    return new Intl.DateTimeFormat(intlLocale.value, { month: "long", year: "numeric" }).format(
-      new Date(year, month - 1, 1)
-    );
+    return formatPeriodMonth(period, intlLocale.value, { month: "long", year: "numeric" });
   }
 
   const uncoveredPeriodWarning = computed<string | null>(() => {

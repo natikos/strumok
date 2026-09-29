@@ -231,6 +231,7 @@
   import { useLocale } from "@features/i18n/composables/useLocale";
   import { listMyMeterReadings, type MeterReadingOut } from "@shared/api/meter-readings";
   import { ROUTES } from "@shared/routing/routes";
+  import { formatPeriodMonth, periodToDate } from "@shared/utils/billing-period";
   import { DEADLINE_DAY } from "@shared/utils/deadline";
   import {
     formatKwh as formatKwhShared,
@@ -268,11 +269,6 @@
   const { intlLocale } = useLocale();
   const { currentId } = useCurrentHousehold();
 
-  function periodToDate(period: string): Date {
-    const [yearStr, monthStr] = period.split("-");
-    return new Date(Number(yearStr), Number(monthStr) - 1, 1);
-  }
-
   const currentBillingPeriod = computed(() => format(subMonths(new Date(), 1), "yyyy-MM"));
 
   const sortedEntries = computed<HistoryEntry[]>(() => {
@@ -284,7 +280,7 @@
       return {
         period: reading.period,
         year: String(date.getFullYear()),
-        monthLabel: new Intl.DateTimeFormat(intlLocale.value, { month: "long" }).format(date),
+        monthLabel: formatPeriodMonth(reading.period, intlLocale.value),
         dayUsage,
         nightUsage,
         totalUsage: dayUsage + nightUsage,
