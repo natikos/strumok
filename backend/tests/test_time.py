@@ -13,6 +13,7 @@ from fastapi.routing import APIRoute
 from pydantic import BaseModel, TypeAdapter
 from sqlmodel import Session
 
+from app.core.domain.billing import current_billing_period
 from app.core.time import to_utc_iso
 from app.main import app
 from tests.factories import (
@@ -126,7 +127,7 @@ def test_submitted_at_in_meter_reading_response_ends_in_z(
         "/meter-readings",
         params={"household_id": household.id},
         json={
-            "period": "2026-07",
+            "period": current_billing_period(),
             "day_meter_value": "100.00",
             "night_meter_value": "50.00",
         },

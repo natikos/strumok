@@ -176,7 +176,12 @@ export function useMeterReadings() {
     try {
       const created = await submitMyMeterReading(
         {
-          period: currentBillingPeriod,
+          // Prefer the server's own period (GET /billing/window) over the
+          // device-clock estimate: the backend only accepts the period it
+          // considers current, and a device with a wrong clock or in a
+          // different timezone must never submit a period the server will
+          // reject as periodNotOpen when the server's own value is known.
+          period: billingWindow.value?.period ?? currentBillingPeriod,
           day_meter_value: parsed.data.dayMeterValue,
           night_meter_value: parsed.data.nightMeterValue,
         },
