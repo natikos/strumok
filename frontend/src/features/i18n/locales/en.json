@@ -141,6 +141,7 @@
     "noHouseholdMembership": "You are not a member of any household yet",
     "noRateConfigured": "The co-op hasn't set an electricity rate for this period yet. Your entered values are kept — try submitting again once it's set",
     "periodAlreadySubmitted": "A reading for this period has already been submitted",
+    "periodNotOpen": "This period isn't open for submissions right now. Refresh and try again",
     "requestFailed": "Something went wrong. Please try again",
     "retry": "Retry",
     "serverError": "Something went wrong. Please try again",

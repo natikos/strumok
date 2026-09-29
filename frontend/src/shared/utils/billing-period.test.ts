@@ -1,6 +1,24 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { formatPeriodMonth, periodToDate } from "./billing-period";
+import { currentBillingPeriod, formatPeriodMonth, periodToDate } from "./billing-period";
+
+describe("currentBillingPeriod", () => {
+  beforeEach(() => vi.useFakeTimers());
+  afterEach(() => vi.useRealTimers());
+
+  it("is the prior month once it is the 1st in Kyiv, even while still the 30th in UTC", () => {
+    // 2026-06-30 22:00 UTC is 2026-07-01 01:00 in Kyiv (EEST).
+    vi.setSystemTime("2026-06-30T22:00:00Z");
+
+    expect(currentBillingPeriod()).toBe("2026-06");
+  });
+
+  it("is still two months back one second before midnight Kyiv on the 1st", () => {
+    vi.setSystemTime("2026-06-30T20:59:59Z");
+
+    expect(currentBillingPeriod()).toBe("2026-05");
+  });
+});
 
 describe("periodToDate", () => {
   it("returns the first day of the month in local time", () => {

@@ -12,6 +12,7 @@ from app.api.meter_readings.service import (
     HouseholdNotAccessibleError,
     NoHouseholdMembershipError,
     PeriodAlreadySubmittedError,
+    PeriodNotOpenError,
     get_owned_household_id,
     get_user_household_id,
     list_meter_readings,
@@ -51,7 +52,10 @@ NO_HOUSEHOLD_RESPONSES: dict[int | str, dict[str, Any]] = {
 SUBMIT_RESPONSES: dict[int | str, dict[str, Any]] = {
     **NO_HOUSEHOLD_RESPONSES,
     status.HTTP_409_CONFLICT: {
-        "description": "Reading for this period already exists, or no rate covers it",
+        "description": (
+            "Reading for this period already exists, the period isn't open, "
+            "or no rate covers it"
+        ),
         "model": ErrorOut,
         "content": {
             "application/json": {
@@ -59,6 +63,10 @@ SUBMIT_RESPONSES: dict[int | str, dict[str, Any]] = {
                     "periodAlreadySubmitted": {
                         "summary": "Reading for this period already exists",
                         "value": {"detail": "periodAlreadySubmitted"},
+                    },
+                    "periodNotOpen": {
+                        "summary": "Period is not the one currently open",
+                        "value": {"detail": "periodNotOpen"},
                     },
                     "noRateConfigured": {
                         "summary": "No electricity rate covers this period",
@@ -132,6 +140,11 @@ def submit_my_meter_reading(
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
             detail="periodAlreadySubmitted",
+        ) from exc
+    except PeriodNotOpenError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="periodNotOpen",
         ) from exc
     except NoRateConfiguredError as exc:
         raise HTTPException(

@@ -1,12 +1,18 @@
 import { format, parse, subMonths } from "date-fns";
 
-/** Period residents currently submit a reading for (the prior calendar month), as YYYY-MM. */
-export function currentBillingPeriod(now: Date = new Date()): string {
+import { kyivNow } from "./deadline";
+
+/**
+ * Period residents currently submit a reading for (the prior calendar month), as
+ * YYYY-MM. Follows Kyiv time, matching the backend's `current_billing_period()`,
+ * which rejects any other period.
+ */
+export function currentBillingPeriod(now: Date = kyivNow()): string {
   return format(subMonths(now, 1), "yyyy-MM");
 }
 
 /** The billing period after the current one, as YYYY-MM. */
-export function nextBillingPeriod(now: Date = new Date()): string {
+export function nextBillingPeriod(now: Date = kyivNow()): string {
   return format(now, "yyyy-MM");
 }
 
