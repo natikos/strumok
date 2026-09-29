@@ -36,6 +36,7 @@
     "rateMustBePositive": "Rate must be greater than zero",
     "submissionOverview": "Submission overview",
     "currentPeriod": "Current period: {period}",
+    "reminderSent": "Reminder sent {date} to {count} resident(s)",
     "owner": "Owner",
     "status": "Status",
     "latestUsage": "Latest usage",

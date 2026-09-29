@@ -5,11 +5,20 @@ from concurrent.futures import ThreadPoolExecutor
 from typing import Literal
 
 from pywebpush import WebPushException, webpush
+from sqlalchemy.dialects.postgresql import insert
 from sqlmodel import Session, select
 
 from app.core.config import settings
 from app.core.domain import current_billing_period
-from app.db.models import Household, MeterReading, PushSubscription, User
+from app.core.time import utc_now
+from app.db.models import (
+    Household,
+    MeterReading,
+    NotificationLog,
+    PushSubscription,
+    ReminderDispatch,
+    User,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -109,11 +118,51 @@ def _send_one(
     return subscription, "sent"
 
 
+def _get_or_create_dispatch(
+    *, session: Session, period: str, variant: ReminderVariant
+) -> ReminderDispatch:
+    """A repeated call for the same (period, variant) must reuse the same
+    dispatch row rather than erroring on the unique constraint -- an external
+    cron retrying, or two overlapping runs, are exactly the case this exists
+    to make safe."""
+    stmt = (
+        insert(ReminderDispatch)
+        .values(period=period, variant=variant, started_at=utc_now())
+        .on_conflict_do_nothing(index_elements=["period", "variant"])
+    )
+    session.exec(stmt)
+    session.commit()
+
+    dispatch = session.exec(
+        select(ReminderDispatch)
+        .where(ReminderDispatch.period == period)
+        .where(ReminderDispatch.variant == variant)
+    ).one()
+    return dispatch
+
+
 def send_reminders(*, session: Session, variant: ReminderVariant) -> tuple[int, int]:
-    """Send a push reminder to every subscribed user with an unsubmitted household
-    reading for the current period. Returns (sent, removed) counts."""
+    """Send a push reminder to every subscribed, active user with an active,
+    unsubmitted household reading for the current period, skipping anyone
+    already notified for this (period, variant, channel) -- so calling this
+    more than once for the same period and variant (an external cron
+    retrying, or two overlapping runs) delivers at most one notification per
+    user. Returns (sent, removed) counts for this call."""
     content = _NOTIFICATION_CONTENT[variant]
     period = current_billing_period()
+    channel = "push"
+
+    dispatch = _get_or_create_dispatch(session=session, period=period, variant=variant)
+
+    already_notified_user_ids = set(
+        session.exec(
+            select(NotificationLog.user_id)
+            .where(NotificationLog.period == period)
+            .where(NotificationLog.variant == variant)
+            .where(NotificationLog.channel == channel)
+            .where(NotificationLog.status == "sent")
+        ).all()
+    )
 
     households_by_user: dict[int, list[int]] = defaultdict(list)
     for household_id, user_id in session.exec(
@@ -135,8 +184,10 @@ def send_reminders(*, session: Session, variant: ReminderVariant) -> tuple[int, 
     for subscription in session.exec(select(PushSubscription)).all():
         subscriptions_by_user[subscription.user_id].append(subscription)
 
-    due_subscriptions: list[PushSubscription] = []
+    due_user_ids: list[int] = []
     for user_id, subscriptions in subscriptions_by_user.items():
+        if user_id in already_notified_user_ids:
+            continue
         household_ids = households_by_user.get(user_id, [])
         if not household_ids:
             continue
@@ -144,23 +195,58 @@ def send_reminders(*, session: Session, variant: ReminderVariant) -> tuple[int, 
             household_id in submitted_household_ids for household_id in household_ids
         ):
             continue
-        due_subscriptions.extend(subscriptions)
+        due_user_ids.append(user_id)
 
     payload = _notification_payload(content)
+    due_items = [
+        (user_id, subscription)
+        for user_id in due_user_ids
+        for subscription in subscriptions_by_user[user_id]
+    ]
+
     sent = 0
     removed = 0
+    notified_user_ids: set[int] = set()
     # Bounded concurrency: each webpush() call is a blocking HTTP request, and a serial
     # loop over hundreds of subscriptions could stall the whole request for one slow push
     # service. A thread pool keeps requests in flight without unbounded concurrency.
     with ThreadPoolExecutor(max_workers=_MAX_CONCURRENT_SENDS) as executor:
-        for subscription, outcome in executor.map(
-            lambda subscription: _send_one(subscription, payload), due_subscriptions
+        for user_id, subscription, outcome in executor.map(
+            lambda item: (item[0], *_send_one(item[1], payload)), due_items
         ):
             if outcome == "sent":
                 sent += 1
+                notified_user_ids.add(user_id)
             elif outcome == "remove":
                 session.delete(subscription)
                 removed += 1
+
+    if notified_user_ids:
+        log_stmt = (
+            insert(NotificationLog)
+            .values(
+                [
+                    {
+                        "user_id": user_id,
+                        "period": period,
+                        "variant": variant,
+                        "channel": channel,
+                        "status": "sent",
+                        "sent_at": utc_now(),
+                    }
+                    for user_id in notified_user_ids
+                ]
+            )
+            .on_conflict_do_nothing(
+                index_elements=["user_id", "period", "variant", "channel"]
+            )
+        )
+        session.exec(log_stmt)
+
+    dispatch.finished_at = utc_now()
+    dispatch.sent += len(notified_user_ids)
+    dispatch.removed += removed
+    session.add(dispatch)
 
     session.commit()
     return sent, removed

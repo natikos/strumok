@@ -56,6 +56,20 @@
                 </button>
               </div>
 
+              <ul
+                v-if="dashboard && dashboard.reminder_dispatches.length > 0"
+                class="admin-reminder-status"
+              >
+                <li v-for="dispatch in dashboard.reminder_dispatches" :key="dispatch.variant">
+                  {{
+                    $t("admin.reminderSent", {
+                      date: formatReminderDate(dispatch.finished_at),
+                      count: dispatch.sent,
+                    })
+                  }}
+                </li>
+              </ul>
+
               <div class="admin-card admin-card--table">
                 <div v-if="dashboard" class="admin-table-wrap">
                   <table class="admin-table">
@@ -96,6 +110,7 @@
 </template>
 
 <script setup lang="ts">
+  import { format } from "date-fns";
   import { onMounted, ref } from "vue";
 
   import AdminHouseholdAssignment from "@features/admin/AdminHouseholdAssignment.vue";
@@ -126,6 +141,10 @@
   onMounted(() => {
     void loadDashboard();
   });
+
+  function formatReminderDate(finishedAt: string | null): string {
+    return finishedAt ? format(new Date(finishedAt), "MMM d") : "";
+  }
 
   function ownerLabel(household: AdminDashboardOut["households"][number]): string {
     return household.owner ? `${household.owner.first_name} ${household.owner.last_name}` : "—";
@@ -245,6 +264,15 @@
       font-weight: 600;
       padding: 0.5rem 0.75rem;
     }
+  }
+
+  .admin-reminder-status {
+    @include layout.stack(var(--s-app-space-1));
+    color: color-mix(in srgb, var(--s-content-color), transparent 30%);
+    font-size: 0.85rem;
+    list-style: none;
+    margin: 0;
+    padding: 0;
   }
 
   .admin-section {
