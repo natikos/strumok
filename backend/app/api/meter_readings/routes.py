@@ -10,6 +10,7 @@ from app.api.meter_readings.service import (
     HouseholdNotAccessibleError,
     NoHouseholdMembershipError,
     PeriodAlreadySubmittedError,
+    PeriodNotOpenError,
     get_owned_household_id,
     get_user_household_id,
     list_meter_readings,
@@ -44,11 +45,16 @@ NO_HOUSEHOLD_RESPONSES: dict[int | str, dict[str, Any]] = {
 SUBMIT_RESPONSES: dict[int | str, dict[str, Any]] = {
     **NO_HOUSEHOLD_RESPONSES,
     status.HTTP_409_CONFLICT: {
-        "description": "Reading for this period already exists",
+        "description": "Reading for this period already exists, or the period isn't open",
         "model": ErrorOut,
         "content": {
             "application/json": {
-                "example": {"detail": "periodAlreadySubmitted"},
+                "examples": {
+                    "periodAlreadySubmitted": {
+                        "value": {"detail": "periodAlreadySubmitted"}
+                    },
+                    "periodNotOpen": {"value": {"detail": "periodNotOpen"}},
+                }
             }
         },
     },
@@ -111,6 +117,11 @@ def submit_my_meter_reading(
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
             detail="periodAlreadySubmitted",
+        ) from exc
+    except PeriodNotOpenError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="periodNotOpen",
         ) from exc
 
     return MeterReadingOut.model_validate(reading)

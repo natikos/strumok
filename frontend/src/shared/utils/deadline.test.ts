@@ -137,6 +137,31 @@ describe("getDeadlineStatus", () => {
   });
 });
 
+describe("getDeadlineStatus / isOverdue / isPending with an explicit server isOpen", () => {
+  beforeEach(() => vi.useFakeTimers());
+  afterEach(() => vi.useRealTimers());
+
+  it("trusts a server isOpen=false even while the device clock thinks the window is open", () => {
+    // Device clock is inside the window (day 3), but the server -- the
+    // authoritative Kyiv-time source -- says it's already closed.
+    freezeAt([2026, 6, 3]);
+
+    expect(isOverdue(null, false)).toBe(true);
+    expect(isPending(null, false)).toBe(false);
+    expect(getDeadlineStatus(null, false)).toBe("overdue");
+  });
+
+  it("trusts a server isOpen=true even while the device clock thinks the window is closed", () => {
+    // Device clock is past the window (day 20), but the server says it's
+    // still open -- e.g. the device clock itself is wrong.
+    freezeAt([2026, 6, 20]);
+
+    expect(isOverdue(null, true)).toBe(false);
+    expect(isPending(null, true)).toBe(true);
+    expect(getDeadlineStatus(null, true)).toBe("due");
+  });
+});
+
 describe("isOverdue", () => {
   beforeEach(() => vi.useFakeTimers());
   afterEach(() => vi.useRealTimers());

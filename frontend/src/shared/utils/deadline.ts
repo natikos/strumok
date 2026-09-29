@@ -31,14 +31,25 @@ export function getDeadlineMonthIndex(now: Date = new Date()): number {
   return getMonth(getSubmitWindow(now).end);
 }
 
-export function getDeadlineStatus(submittedAt: string | null | undefined): DeadlineStatus {
+/**
+ * `isOpen`, when given, is the server's authoritative answer (from
+ * GET /billing/window, computed in Kyiv time) to whether today falls in the
+ * submit window. Without it, openness falls back to comparing the device
+ * clock against a window computed from the device's own local time -- which
+ * can disagree with the server right at the boundary, or if the device clock
+ * itself is wrong. Prefer passing it whenever the server window is available.
+ */
+export function getDeadlineStatus(
+  submittedAt: string | null | undefined,
+  isOpen?: boolean
+): DeadlineStatus {
   const window = getSubmitWindow();
 
-  if (isOverdue(submittedAt)) {
+  if (isOverdue(submittedAt, isOpen)) {
     return "overdue";
   }
 
-  if (isPending(submittedAt)) {
+  if (isPending(submittedAt, isOpen)) {
     return "due";
   }
 
@@ -46,21 +57,22 @@ export function getDeadlineStatus(submittedAt: string | null | undefined): Deadl
   return isWithinInterval(submittedAt!, window) ? "submitted" : "submitted-late";
 }
 
-export function isOverdue(submittedAt: string | null | undefined): boolean {
+export function isOverdue(submittedAt: string | null | undefined, isOpen?: boolean): boolean {
   const window = getSubmitWindow();
+  const windowClosed = isOpen === undefined ? isAfter(new Date(), window.end) : !isOpen;
 
   if (!submittedAt) {
-    return isAfter(new Date(), window.end);
+    return windowClosed;
   }
 
-  return isBefore(submittedAt, window.start) && isAfter(new Date(), window.end);
+  return isBefore(submittedAt, window.start) && windowClosed;
 }
 
-export function isPending(submittedAt: string | null | undefined): boolean {
+export function isPending(submittedAt: string | null | undefined, isOpen?: boolean): boolean {
   const window = getSubmitWindow();
 
   if (!submittedAt) {
-    return isWithinInterval(new Date(), window);
+    return isOpen === undefined ? isWithinInterval(new Date(), window) : isOpen;
   }
 
   return isBefore(submittedAt, window.start);

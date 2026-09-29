@@ -135,6 +135,7 @@
     "missingAuthenticationToken": "Please sign in and try again",
     "noHouseholdMembership": "You are not a member of any household yet",
     "periodAlreadySubmitted": "A reading for this period has already been submitted",
+    "periodNotOpen": "This period isn't open for submissions right now. Refresh and try again",
     "requestFailed": "Something went wrong. Please try again",
     "serverError": "Something went wrong. Please try again",
     "tooManyRequests": "Too many requests. Please wait and try again",

@@ -18,6 +18,12 @@ vi.mock("@shared/api/meter-readings", () => ({
   submitMyMeterReading,
 }));
 
+const { getBillingWindow } = vi.hoisted(() => ({
+  getBillingWindow: vi.fn(),
+}));
+
+vi.mock("@shared/api/billing", () => ({ getBillingWindow }));
+
 function makeReading(overrides: Partial<MeterReadingOut> = {}): MeterReadingOut {
   return {
     id: 1,
@@ -63,6 +69,11 @@ describe("useMeterReadings", () => {
   beforeEach(() => {
     listMyMeterReadings.mockReset();
     submitMyMeterReading.mockReset();
+    getBillingWindow.mockReset();
+    // Default: never resolves, so deadlineStatus keeps falling back to the
+    // device-clock computation (isOpen undefined) unless a test explicitly
+    // wants to observe the server value arriving.
+    getBillingWindow.mockReturnValue(new Promise(() => {}));
     useCurrentHousehold().setHouseholds([]);
   });
 
@@ -275,6 +286,42 @@ describe("useMeterReadings", () => {
       await nextTick();
 
       expect(result.isOverdue).toBe(false);
+    });
+  });
+
+  describe("deadlineStatus reactivity to the server billing window", () => {
+    it("flips from due to overdue once the server window resolves as closed", async () => {
+      // Device clock is inside the window (day 3), so before the server
+      // response arrives deadlineStatus falls back to the device-clock
+      // reading of "due". Once GET /billing/window resolves saying Kyiv
+      // time has actually already closed it, deadlineStatus must update --
+      // unlike the pinned `isOverdue` snapshot above, this field is a
+      // computed and must track the async load.
+      vi.useFakeTimers();
+      vi.setSystemTime(new Date(2026, 6, 3));
+      listMyMeterReadings.mockResolvedValue([]);
+      let resolveWindow!: (value: unknown) => void;
+      getBillingWindow.mockReturnValue(
+        new Promise((resolve) => {
+          resolveWindow = resolve;
+        })
+      );
+
+      const { result } = mountComposable();
+      await result.loadHistory();
+      await flushPromises();
+
+      expect(result.deadlineStatus.value).toBe("due");
+
+      resolveWindow({
+        period: "2026-06",
+        opens_at: "2026-07-01T00:00:00Z",
+        closes_at: "2026-07-05T23:59:59.999999Z",
+        is_open: false,
+      });
+      await flushPromises();
+
+      expect(result.deadlineStatus.value).toBe("overdue");
     });
   });
 });
