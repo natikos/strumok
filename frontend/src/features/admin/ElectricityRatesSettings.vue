@@ -173,21 +173,25 @@
     return rates.value.some((rate) => rate.effective_from <= period);
   }
 
-  function monthLabel(period: string): string {
-    return formatPeriodMonth(period, intlLocale.value, { month: "long", year: "numeric" });
-  }
-
   const uncoveredPeriodWarning = computed<string | null>(() => {
     const current = currentBillingPeriod();
     const next = nextBillingPeriod();
 
+    let uncoveredPeriod: string | null = null;
     if (!isPeriodCovered(current)) {
-      return t("admin.noRateForPeriod", { period: monthLabel(current) });
+      uncoveredPeriod = current;
+    } else if (!isPeriodCovered(next)) {
+      uncoveredPeriod = next;
     }
-    if (!isPeriodCovered(next)) {
-      return t("admin.noRateForPeriod", { period: monthLabel(next) });
+    if (!uncoveredPeriod) {
+      return null;
     }
-    return null;
+
+    const period = formatPeriodMonth(uncoveredPeriod, intlLocale.value, {
+      month: "long",
+      year: "numeric",
+    });
+    return t("admin.noRateForPeriod", { period });
   });
 
   onMounted(async () => {
