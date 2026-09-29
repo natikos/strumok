@@ -56,11 +56,8 @@
                 </button>
               </div>
 
-              <ul
-                v-if="dashboard && dashboard.reminder_dispatches.length > 0"
-                class="admin-reminder-status"
-              >
-                <li v-for="dispatch in dashboard.reminder_dispatches" :key="dispatch.variant">
+              <ul v-if="reminderDispatches.length > 0" class="admin-reminder-status">
+                <li v-for="dispatch in reminderDispatches" :key="dispatch.variant">
                   {{
                     $t("admin.reminderSent", {
                       date: formatReminderDate(dispatch.finished_at),
@@ -111,7 +108,7 @@
 
 <script setup lang="ts">
   import { format } from "date-fns";
-  import { onMounted, ref } from "vue";
+  import { computed, onMounted, ref } from "vue";
 
   import AdminHouseholdAssignment from "@features/admin/AdminHouseholdAssignment.vue";
   import ElectricityRatesSettings from "@features/admin/ElectricityRatesSettings.vue";
@@ -119,6 +116,7 @@
   import { formatKwh, formatUah } from "@shared/utils/format";
 
   const dashboard = ref<AdminDashboardOut | null>(null);
+  const reminderDispatches = computed(() => dashboard.value?.reminder_dispatches ?? []);
   const dashboardError = ref<string | null>(null);
   const activeTab = ref("households");
   const isLoadingDashboard = ref(true);
@@ -142,7 +140,7 @@
     void loadDashboard();
   });
 
-  function formatReminderDate(finishedAt: string | null): string {
+  function formatReminderDate(finishedAt: string | null | undefined): string {
     return finishedAt ? format(new Date(finishedAt), "MMM d") : "";
   }
 
