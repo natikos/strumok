@@ -15,6 +15,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 from app.api.push.service import (
+    ReminderVariant,
     _content_for,
     delete_subscription,
     send_reminders,
@@ -383,7 +384,7 @@ class TestReminderContentLocalization:
     def test_a_ukrainian_default_user_receives_ukrainian_content(
         self,
         session: Session,
-        variant: str,
+        variant: ReminderVariant,
         expected_title: str,
         expected_body: str,
     ) -> None:
@@ -417,7 +418,7 @@ class TestReminderContentLocalization:
     def test_an_english_language_user_receives_english_content(
         self,
         session: Session,
-        variant: str,
+        variant: ReminderVariant,
         expected_title: str,
         expected_body: str,
     ) -> None:
