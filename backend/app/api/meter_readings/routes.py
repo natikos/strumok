@@ -5,6 +5,7 @@ from sqlmodel import Session
 
 from app.api.auth.schemas import ErrorOut
 from app.api.deps import get_current_user
+from app.api.electricity_rates.service import NoRateConfiguredError
 from app.api.meter_readings.schemas import MeterReadingIn, MeterReadingOut
 from app.api.meter_readings.service import (
     HouseholdInactiveError,
@@ -50,11 +51,20 @@ NO_HOUSEHOLD_RESPONSES: dict[int | str, dict[str, Any]] = {
 SUBMIT_RESPONSES: dict[int | str, dict[str, Any]] = {
     **NO_HOUSEHOLD_RESPONSES,
     status.HTTP_409_CONFLICT: {
-        "description": "Reading for this period already exists",
+        "description": "Reading for this period already exists, or no rate covers it",
         "model": ErrorOut,
         "content": {
             "application/json": {
-                "example": {"detail": "periodAlreadySubmitted"},
+                "examples": {
+                    "periodAlreadySubmitted": {
+                        "summary": "Reading for this period already exists",
+                        "value": {"detail": "periodAlreadySubmitted"},
+                    },
+                    "noRateConfigured": {
+                        "summary": "No electricity rate covers this period",
+                        "value": {"detail": "noRateConfigured"},
+                    },
+                },
             }
         },
     },
@@ -122,6 +132,11 @@ def submit_my_meter_reading(
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
             detail="periodAlreadySubmitted",
+        ) from exc
+    except NoRateConfiguredError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="noRateConfigured",
         ) from exc
 
     return MeterReadingOut.model_validate(reading)

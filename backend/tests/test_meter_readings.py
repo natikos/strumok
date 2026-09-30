@@ -10,6 +10,7 @@ from datetime import datetime, timezone
 from decimal import Decimal
 
 import pytest
+from app.api.electricity_rates.service import NoRateConfiguredError
 from app.api.meter_readings.service import (
     HouseholdInactiveError,
     HouseholdNotAccessibleError,
@@ -22,7 +23,8 @@ from app.api.meter_readings.service import (
 )
 from app.core.domain.billing import previous_period
 from app.core.time import utc_now
-from sqlmodel import Session
+from app.db.models import ElectricityRate
+from sqlmodel import Session, select
 from tests.factories import (
     authenticate,
     make_electricity_rate,
@@ -418,6 +420,53 @@ class TestSubmitMeterReading:
 
         assert reading.amount_charged_uah == Decimal("0.00")
 
+    def test_submitting_with_no_electricity_rate_configured_raises(
+        self, session: Session
+    ) -> None:
+        # The autouse fixture seeds a rate covering every period; remove it so
+        # the household genuinely has none configured, matching a fresh
+        # cooperative before the head has ever set a rate.
+        for rate in session.exec(select(ElectricityRate)).all():
+            session.delete(rate)
+        session.flush()
+
+        user = make_user(session)
+        household = make_household(session, user_id=user.id)
+
+        with pytest.raises(NoRateConfiguredError):
+            submit_meter_reading(
+                session=session,
+                user=user,
+                household_id=household.id,
+                period="2026-07",
+                day_meter_value=Decimal("100.00"),
+                night_meter_value=Decimal("50.00"),
+            )
+
+    def test_submitting_when_only_a_future_rate_exists_raises(
+        self, session: Session
+    ) -> None:
+        # A rate exists, but it only takes effect after the period being
+        # submitted -- e.g. the head configured next month's rate but the
+        # cooperative never had one for the period in question.
+        for rate in session.exec(select(ElectricityRate)).all():
+            session.delete(rate)
+        session.flush()
+        make_electricity_rate(session, effective_from="2026-08")
+
+        user = make_user(session)
+        household = make_household(session, user_id=user.id)
+
+        with pytest.raises(NoRateConfiguredError):
+            submit_meter_reading(
+                session=session,
+                user=user,
+                household_id=household.id,
+                period="2026-07",
+                day_meter_value=Decimal("100.00"),
+                night_meter_value=Decimal("50.00"),
+            )
+
     def test_duplicate_period_for_the_same_household_is_rejected(
         self, session: Session
     ) -> None:
@@ -810,6 +859,30 @@ class TestMeterReadingRoutesHappyPath:
 
         assert second.status_code == 409
         assert second.json()["detail"] == "periodAlreadySubmitted"
+
+    def test_post_with_no_electricity_rate_configured_returns_409_not_500(
+        self, client, session: Session
+    ) -> None:
+        for rate in session.exec(select(ElectricityRate)).all():
+            session.delete(rate)
+        session.flush()
+
+        user = make_user(session, email="norate@example.com")
+        household = make_household(session, user_id=user.id)
+        authenticate(client, user)
+
+        response = client.post(
+            "/meter-readings",
+            params={"household_id": household.id},
+            json={
+                "period": "2026-07",
+                "day_meter_value": "100.00",
+                "night_meter_value": "50.00",
+            },
+        )
+
+        assert response.status_code == 409, response.text
+        assert response.json()["detail"] == "noRateConfigured"
 
     def test_get_lists_readings_for_the_caller_household_only(
         self, client, session: Session
