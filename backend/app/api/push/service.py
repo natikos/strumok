@@ -5,11 +5,11 @@ from concurrent.futures import ThreadPoolExecutor
 from typing import Literal
 
 from pywebpush import WebPushException, webpush
-from sqlmodel import Session, select
+from sqlmodel import Session, col, select
 
 from app.core.config import settings
 from app.core.domain import current_billing_period
-from app.db.models import Household, MeterReading, PushSubscription, User
+from app.db.models import Household, LanguageCode, MeterReading, PushSubscription, User
 
 logger = logging.getLogger(__name__)
 
@@ -21,16 +21,37 @@ ReminderVariant = Literal["opening", "final"]
 _REMINDER_TTL_SECONDS = 5 * 24 * 60 * 60
 _MAX_CONCURRENT_SENDS = 10
 
-_NOTIFICATION_CONTENT: dict[ReminderVariant, dict[str, str]] = {
-    "opening": {
-        "title": "Meter reading window is open",
-        "body": "Submit your day/night reading by the 5th.",
+# Keyed by language so this stays separate from the frontend's vue-i18n JSON:
+# the service worker renders the payload as-is, with no client-side lookup.
+_NOTIFICATION_CONTENT: dict[LanguageCode, dict[ReminderVariant, dict[str, str]]] = {
+    LanguageCode.EN: {
+        "opening": {
+            "title": "Meter reading window is open",
+            "body": "Submit your day/night reading by the 5th.",
+        },
+        "final": {
+            "title": "Last day to submit your reading",
+            "body": "Today's the deadline — submit before midnight.",
+        },
     },
-    "final": {
-        "title": "Last day to submit your reading",
-        "body": "Today's the deadline — submit before midnight.",
+    LanguageCode.UA: {
+        "opening": {
+            "title": "Відкрито подання показників лічильника",
+            "body": "Подайте денний/нічний показник до 5 числа.",
+        },
+        "final": {
+            "title": "Останній день подання показників",
+            "body": "Сьогодні дедлайн — подайте показники до півночі.",
+        },
     },
 }
+
+
+def _content_for(user: User, variant: ReminderVariant) -> dict[str, str]:
+    catalog = _NOTIFICATION_CONTENT.get(
+        user.language, _NOTIFICATION_CONTENT[LanguageCode.UA]
+    )
+    return catalog[variant]
 
 
 def upsert_subscription(
@@ -112,7 +133,6 @@ def _send_one(
 def send_reminders(*, session: Session, variant: ReminderVariant) -> tuple[int, int]:
     """Send a push reminder to every subscribed user with an unsubmitted household
     reading for the current period. Returns (sent, removed) counts."""
-    content = _NOTIFICATION_CONTENT[variant]
     period = current_billing_period()
 
     households_by_user: dict[int, list[int]] = defaultdict(list)
@@ -138,7 +158,14 @@ def send_reminders(*, session: Session, variant: ReminderVariant) -> tuple[int, 
     for subscription in session.exec(select(PushSubscription)).all():
         subscriptions_by_user[subscription.user_id].append(subscription)
 
-    due_subscriptions: list[PushSubscription] = []
+    users_by_id = {
+        user.id: user
+        for user in session.exec(
+            select(User).where(col(User.id).in_(subscriptions_by_user.keys()))
+        ).all()
+    }
+
+    due_subscriptions: list[tuple[PushSubscription, str]] = []
     for user_id, subscriptions in subscriptions_by_user.items():
         household_ids = households_by_user.get(user_id, [])
         if not household_ids:
@@ -147,9 +174,14 @@ def send_reminders(*, session: Session, variant: ReminderVariant) -> tuple[int, 
             household_id in submitted_household_ids for household_id in household_ids
         ):
             continue
-        due_subscriptions.extend(subscriptions)
+        user = users_by_id.get(user_id)
+        if user is None:
+            continue
+        payload = _notification_payload(_content_for(user, variant))
+        due_subscriptions.extend(
+            (subscription, payload) for subscription in subscriptions
+        )
 
-    payload = _notification_payload(content)
     sent = 0
     removed = 0
     # Bounded concurrency: each webpush() call is a blocking HTTP request, and a serial
@@ -157,7 +189,7 @@ def send_reminders(*, session: Session, variant: ReminderVariant) -> tuple[int, 
     # service. A thread pool keeps requests in flight without unbounded concurrency.
     with ThreadPoolExecutor(max_workers=_MAX_CONCURRENT_SENDS) as executor:
         for subscription, outcome in executor.map(
-            lambda subscription: _send_one(subscription, payload), due_subscriptions
+            lambda item: _send_one(item[0], item[1]), due_subscriptions
         ):
             if outcome == "sent":
                 sent += 1
