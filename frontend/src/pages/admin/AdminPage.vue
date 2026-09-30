@@ -49,12 +49,11 @@
                 />
               </div>
 
-              <div v-if="dashboardError" class="admin-error" role="alert">
-                <p class="admin-error__message">{{ $t(dashboardError) }}</p>
-                <button class="admin-error__retry" type="button" @click="loadDashboard">
-                  {{ $t("errors.requestFailed") }}
-                </button>
-              </div>
+              <ErrorState
+                v-if="dashboardError"
+                :message-key="dashboardError"
+                @retry="loadDashboard"
+              />
 
               <div class="admin-card admin-card--table">
                 <div v-if="dashboard" class="admin-table-wrap">
@@ -216,34 +215,6 @@
     :deep(.p-tabpanels) {
       background: transparent;
       padding: 0;
-    }
-  }
-
-  .admin-error {
-    align-items: center;
-    background: color-mix(in srgb, var(--s-red-500), transparent 92%);
-    border: 1px solid color-mix(in srgb, var(--s-red-500), transparent 65%);
-    border-radius: var(--s-app-radius-md);
-    display: flex;
-    flex-wrap: wrap;
-    gap: var(--s-app-space-3);
-    justify-content: space-between;
-    padding: var(--s-app-space-3) var(--s-app-space-4);
-
-    &__message {
-      color: var(--s-content-color);
-      margin: 0;
-    }
-
-    &__retry {
-      background: var(--s-primary-color);
-      border: 0;
-      border-radius: var(--s-app-radius-sm);
-      color: white;
-      cursor: pointer;
-      font: inherit;
-      font-weight: 600;
-      padding: 0.5rem 0.75rem;
     }
   }
 

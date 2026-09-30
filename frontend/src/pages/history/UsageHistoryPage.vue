@@ -5,7 +5,7 @@
     </header>
 
     <section
-      v-if="!isLoading && summary"
+      v-if="status === 'ready' && summary"
       class="usage-history__summary"
       :aria-label="$t('usageHistory.summaryAria')"
     >
@@ -27,7 +27,7 @@
       </div>
     </section>
 
-    <section v-if="!isLoading && submissionRecord.total > 0" class="usage-history__record">
+    <section v-if="status === 'ready' && submissionRecord.total > 0" class="usage-history__record">
       <header class="usage-history__record-header">
         <h2 class="usage-history__record-title">{{ $t("usageHistory.recordTitle") }}</h2>
       </header>
@@ -87,22 +87,25 @@
       </ul>
     </section>
 
-    <div v-if="!isLoading && !summary" class="usage-history__empty">
-      <Inbox class="usage-history__empty-icon" aria-hidden="true" />
-      <h2 class="usage-history__empty-title">{{ $t("usageHistory.emptyTitle") }}</h2>
-      <p class="usage-history__empty-description">
-        {{ $t("usageHistory.emptyDescription") }}
-      </p>
-      <div class="usage-history__empty-button">
-        <Button as="router-link" :to="ROUTES.root" class="usage-history__empty-link">
-          {{ $t("usageHistory.emptyCta") }}
-          <ArrowRight aria-hidden="true" />
-        </Button>
-      </div>
-    </div>
+    <ErrorState v-if="status === 'error'" message-key="errors.requestFailed" @retry="loadReadings" />
 
     <template v-else>
-      <section v-for="group in groups" :key="group.year" class="usage-history__group">
+      <div v-if="status === 'ready' && !summary" class="usage-history__empty">
+        <Inbox class="usage-history__empty-icon" aria-hidden="true" />
+        <h2 class="usage-history__empty-title">{{ $t("usageHistory.emptyTitle") }}</h2>
+        <p class="usage-history__empty-description">
+          {{ $t("usageHistory.emptyDescription") }}
+        </p>
+        <div class="usage-history__empty-button">
+          <Button as="router-link" :to="ROUTES.root" class="usage-history__empty-link">
+            {{ $t("usageHistory.emptyCta") }}
+            <ArrowRight aria-hidden="true" />
+          </Button>
+        </div>
+      </div>
+
+      <template v-else>
+        <section v-for="group in groups" :key="group.year" class="usage-history__group">
         <div class="usage-history__group-head">
           <h2 class="usage-history__group-year">{{ group.year }}</h2>
           <span class="usage-history__group-summary">
@@ -217,6 +220,7 @@
           </li>
         </ol>
       </section>
+      </template>
     </template>
   </div>
 </template>
@@ -267,7 +271,7 @@
   }
 
   const readings = ref<MeterReadingOut[]>([]);
-  const isLoading = ref(true);
+  const status = ref<"loading" | "error" | "ready">("loading");
 
   const { t } = useI18n();
   const { intlLocale } = useLocale();
@@ -420,11 +424,12 @@
   }
 
   async function loadReadings(): Promise<void> {
-    isLoading.value = true;
+    status.value = "loading";
     try {
       readings.value = await listMyMeterReadings(currentId.value);
-    } finally {
-      isLoading.value = false;
+      status.value = "ready";
+    } catch {
+      status.value = "error";
     }
   }
 
@@ -758,7 +763,7 @@
     font-weight: 500;
 
     &--due {
-      color: var(--s-amber-500, #f59e0b);
+      color: var(--s-amber-500);
     }
 
     svg {
@@ -801,7 +806,7 @@
   }
 
   .metric-icon--day {
-    color: var(--s-amber-500, #f59e0b);
+    color: var(--s-amber-500);
   }
 
   .metric-icon--night {
