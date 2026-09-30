@@ -8,6 +8,7 @@ from app.api.deps import get_current_user
 from app.api.electricity_rates.service import NoRateConfiguredError
 from app.api.meter_readings.schemas import MeterReadingIn, MeterReadingOut
 from app.api.meter_readings.service import (
+    HouseholdInactiveError,
     HouseholdNotAccessibleError,
     NoHouseholdMembershipError,
     PeriodAlreadySubmittedError,
@@ -32,11 +33,16 @@ NO_HOUSEHOLD_RESPONSES: dict[int | str, dict[str, Any]] = {
         },
     },
     status.HTTP_403_FORBIDDEN: {
-        "description": "User does not own this household",
+        "description": "User does not own this household, or it is inactive",
         "model": ErrorOut,
         "content": {
             "application/json": {
-                "example": {"detail": "householdNotAccessible"},
+                "examples": {
+                    "householdNotAccessible": {
+                        "value": {"detail": "householdNotAccessible"}
+                    },
+                    "householdInactive": {"value": {"detail": "householdInactive"}},
+                }
             }
         },
     },
@@ -85,6 +91,11 @@ def require_household_id(
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="householdNotAccessible",
+        ) from exc
+    except HouseholdInactiveError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="householdInactive",
         ) from exc
 
 
