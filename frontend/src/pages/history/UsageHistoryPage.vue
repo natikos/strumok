@@ -766,7 +766,7 @@
     font-weight: 500;
 
     &--due {
-      color: var(--s-amber-500, #f59e0b);
+      color: var(--s-amber-500);
     }
 
     svg {
@@ -809,7 +809,7 @@
   }
 
   .metric-icon--day {
-    color: var(--s-amber-500, #f59e0b);
+    color: var(--s-amber-500);
   }
 
   .metric-icon--night {
