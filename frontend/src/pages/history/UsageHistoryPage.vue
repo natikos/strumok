@@ -227,7 +227,7 @@
 
 <script setup lang="ts">
   import { ArrowRight, CheckCircle, Clock, ExclamationCircle, Inbox, Moon, Sun } from "@primeicons/vue";
-  import { format, subMonths } from "date-fns";
+  import { addMonths } from "date-fns";
   import { computed, onMounted, ref, watch } from "vue";
   import { useI18n } from "vue-i18n";
 
@@ -235,6 +235,11 @@
   import { useLocale } from "@features/i18n/composables/useLocale";
   import { listMyMeterReadings, type MeterReadingOut } from "@shared/api/meter-readings";
   import { ROUTES } from "@shared/routing/routes";
+  import {
+    formatPeriodMonth,
+    currentBillingPeriod as getCurrentBillingPeriod,
+    periodToDate,
+  } from "@shared/utils/billing-period";
   import { DEADLINE_DAY } from "@shared/utils/deadline";
   import {
     formatKwh as formatKwhShared,
@@ -273,12 +278,7 @@
   const { intlLocale } = useLocale();
   const { currentId } = useCurrentHousehold();
 
-  function periodToDate(period: string): Date {
-    const [yearStr, monthStr] = period.split("-");
-    return new Date(Number(yearStr), Number(monthStr) - 1, 1);
-  }
-
-  const currentBillingPeriod = computed(() => format(subMonths(new Date(), 1), "yyyy-MM"));
+  const currentBillingPeriod = getCurrentBillingPeriod();
 
   const sortedEntries = computed<HistoryEntry[]>(() => {
     const entries = readings.value.map((reading) => {
@@ -289,7 +289,7 @@
       return {
         period: reading.period,
         year: String(date.getFullYear()),
-        monthLabel: new Intl.DateTimeFormat(intlLocale.value, { month: "long" }).format(date),
+        monthLabel: formatPeriodMonth(reading.period, intlLocale.value),
         dayUsage,
         nightUsage,
         totalUsage: dayUsage + nightUsage,
@@ -339,8 +339,7 @@
       // even closed, or long after) still counts as late — there's no month
       // it could have landed in on time.
       const submittedAt = new Date(reading.submitted_at);
-      const [year, month] = reading.period.split("-").map(Number);
-      const dueMonth = new Date(year!, month!, 1);
+      const dueMonth = addMonths(periodToDate(reading.period), 1);
       const onTime =
         submittedAt.getFullYear() === dueMonth.getFullYear() &&
         submittedAt.getMonth() === dueMonth.getMonth() &&

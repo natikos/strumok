@@ -1,4 +1,5 @@
 import { capitalize } from "@utils/string";
+import { format, subMonths } from "date-fns";
 import { computed, ref, watch } from "vue";
 import { z } from "zod";
 
@@ -7,6 +8,10 @@ import type { FieldErrors } from "@/features/dashboard/types";
 import { useCurrentHousehold } from "@/features/households/useCurrentHousehold";
 import { useLocale } from "@/features/i18n/composables/useLocale";
 import { useAsyncData } from "@/shared/composables/useAsyncData";
+import {
+  formatPeriodMonth,
+  currentBillingPeriod as getCurrentBillingPeriod,
+} from "@/shared/utils/billing-period";
 import {
   getDaysLeft,
   getDeadlineMonthIndex,
@@ -17,6 +22,7 @@ import { ApiError } from "@shared/api/client";
 import {
   listMyMeterReadings,
   type MeterReadingOut,
+  NO_RATE_CONFIGURED_ERROR_CODE,
   submitMyMeterReading,
 } from "@shared/api/meter-readings";
 
@@ -27,10 +33,6 @@ export interface MeterPeriod {
   monthLong: string;
   isCurrent: boolean;
   reading: MeterReadingOut | undefined;
-}
-
-function periodKey(date: Date): string {
-  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
 }
 
 const schema = z.object({
@@ -61,10 +63,7 @@ export function useMeterReadings() {
   currentMonthStart.setDate(1);
   currentMonthStart.setHours(0, 0, 0, 0);
 
-  const previousMonthStart = new Date(currentMonthStart);
-  previousMonthStart.setMonth(previousMonthStart.getMonth() - 1);
-
-  const currentBillingPeriod = periodKey(previousMonthStart);
+  const currentBillingPeriod = getCurrentBillingPeriod();
 
   const readingsByPeriod = computed(() => {
     const map = new Map<string, MeterReadingOut>();
@@ -83,18 +82,13 @@ export function useMeterReadings() {
     const result: MeterPeriod[] = [];
 
     for (let offset = HISTORY_MONTHS; offset >= 1; offset -= 1) {
-      const date = new Date(currentMonthStart);
-      date.setMonth(date.getMonth() - offset);
-      const period = periodKey(date);
+      const date = subMonths(currentMonthStart, offset);
+      const period = format(date, "yyyy-MM");
       result.push({
         period,
         date,
-        monthLabel: capitalize(
-          new Intl.DateTimeFormat(intlLocale.value, { month: "short" }).format(date)
-        ),
-        monthLong: capitalize(
-          new Intl.DateTimeFormat(intlLocale.value, { month: "long" }).format(date)
-        ),
+        monthLabel: capitalize(formatPeriodMonth(period, intlLocale.value, { month: "short" })),
+        monthLong: capitalize(formatPeriodMonth(period, intlLocale.value)),
         isCurrent: period === currentBillingPeriod,
         reading: readingsByPeriod.value.get(period),
       });
@@ -191,12 +185,11 @@ export function useMeterReadings() {
       dayMeterValue.value = null;
       nightMeterValue.value = null;
     } catch (error) {
-      // An ApiError's message is the stable camelCase detail code, which maps
-      // to an i18n key. Surfacing it matters most for periodAlreadySubmitted:
-      // the submit endpoint only inserts, so re-submitting an existing period
-      // 409s, and swallowing that left the form looking like nothing happened.
+      // noRateConfigured isn't the resident's fault, so it's a neutral `info` notice, not a `form` error.
       if (error instanceof ApiError) {
-        errors.value = { form: `errors.${error.message}` };
+        const key = `errors.${error.message}`;
+        errors.value =
+          error.message === NO_RATE_CONFIGURED_ERROR_CODE ? { info: key } : { form: key };
       } else if (error instanceof Error) {
         console.error(error);
         errors.value = { form: "errors.requestFailed" };
