@@ -272,7 +272,7 @@
     return new Date(Number(yearStr), Number(monthStr) - 1, 1);
   }
 
-  const currentBillingPeriod = computed(() => getBillingPeriod());
+  const currentBillingPeriod = getBillingPeriod();
 
   const sortedEntries = computed<HistoryEntry[]>(() => {
     const entries = readings.value.map((reading) => {
