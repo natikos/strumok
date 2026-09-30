@@ -5,7 +5,7 @@ from concurrent.futures import ThreadPoolExecutor
 from typing import Literal
 
 from pywebpush import WebPushException, webpush
-from sqlmodel import Session, select
+from sqlmodel import Session, col, select
 
 from app.core.config import settings
 from app.core.domain import current_billing_period
@@ -161,7 +161,7 @@ def send_reminders(*, session: Session, variant: ReminderVariant) -> tuple[int, 
     users_by_id = {
         user.id: user
         for user in session.exec(
-            select(User).where(User.id.in_(subscriptions_by_user.keys()))
+            select(User).where(col(User.id).in_(subscriptions_by_user.keys()))
         ).all()
     }
 
