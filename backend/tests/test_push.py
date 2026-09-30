@@ -241,6 +241,52 @@ class TestSendReminders:
         assert (sent, removed) == (0, 0)
         mock_webpush.assert_not_called()
 
+    def test_excludes_an_inactive_household_from_recipients(
+        self, session: Session
+    ) -> None:
+        # A household taken out of service (e.g. plot sold, resident left)
+        # must stop generating reminders even though its owner is still an
+        # active, subscribed user.
+        user = make_user(session)
+        make_household(session, user_id=user.id, is_active=False)
+        make_push_subscription(session, user_id=user.id)
+
+        with patch("app.api.push.service.webpush") as mock_webpush:
+            sent, removed = send_reminders(session=session, variant="opening")
+
+        assert (sent, removed) == (0, 0)
+        mock_webpush.assert_not_called()
+
+    def test_excludes_an_inactive_user_from_recipients(self, session: Session) -> None:
+        # A deactivated account shouldn't keep receiving reminders even if
+        # its household and push subscription rows are still present.
+        user = make_user(session, is_active=False)
+        make_household(session, user_id=user.id)
+        make_push_subscription(session, user_id=user.id)
+
+        with patch("app.api.push.service.webpush") as mock_webpush:
+            sent, removed = send_reminders(session=session, variant="opening")
+
+        assert (sent, removed) == (0, 0)
+        mock_webpush.assert_not_called()
+
+    def test_reminds_for_an_active_household_while_a_sibling_inactive_one_is_excluded(
+        self, session: Session
+    ) -> None:
+        # A resident with one active, unsubmitted household and one retired
+        # household must still be reminded -- the inactive household must not
+        # be attributed to them (skipped) nor block the active one's reminder.
+        user = make_user(session)
+        make_household(session, user_id=user.id, name="Active plot", is_active=True)
+        make_household(session, user_id=user.id, name="Retired plot", is_active=False)
+        make_push_subscription(session, user_id=user.id)
+
+        with patch("app.api.push.service.webpush") as mock_webpush:
+            sent, removed = send_reminders(session=session, variant="opening")
+
+        assert (sent, removed) == (1, 0)
+        mock_webpush.assert_called_once()
+
     @pytest.mark.parametrize("status_code", [404, 410])
     def test_removes_a_subscription_the_push_service_reports_as_gone(
         self, session: Session, status_code: int
