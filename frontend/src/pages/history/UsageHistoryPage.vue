@@ -223,7 +223,6 @@
 
 <script setup lang="ts">
   import { ArrowRight, CheckCircle, Clock, ExclamationCircle, Inbox, Moon, Sun } from "@primeicons/vue";
-  import { format, subMonths } from "date-fns";
   import { computed, onMounted, ref, watch } from "vue";
   import { useI18n } from "vue-i18n";
 
@@ -231,7 +230,7 @@
   import { useLocale } from "@features/i18n/composables/useLocale";
   import { listMyMeterReadings, type MeterReadingOut } from "@shared/api/meter-readings";
   import { ROUTES } from "@shared/routing/routes";
-  import { DEADLINE_DAY } from "@shared/utils/deadline";
+  import { DEADLINE_DAY, getBillingPeriod } from "@shared/utils/deadline";
   import {
     formatKwh as formatKwhShared,
     formatUah as formatUahShared,
@@ -273,7 +272,7 @@
     return new Date(Number(yearStr), Number(monthStr) - 1, 1);
   }
 
-  const currentBillingPeriod = computed(() => format(subMonths(new Date(), 1), "yyyy-MM"));
+  const currentBillingPeriod = computed(() => getBillingPeriod());
 
   const sortedEntries = computed<HistoryEntry[]>(() => {
     const entries = readings.value.map((reading) => {

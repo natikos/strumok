@@ -125,7 +125,7 @@
 </template>
 
 <script setup lang="ts">
-  import { format, subMonths } from "date-fns";
+  import { format } from "date-fns";
   import { useToast } from "primevue/usetoast";
   import { computed, onMounted, ref } from "vue";
   import { useI18n } from "vue-i18n";
@@ -139,6 +139,7 @@
     type ElectricityRateOut,
     listElectricityRates,
   } from "@shared/api/electricity-rates";
+  import { getBillingPeriod } from "@shared/utils/deadline";
   import { formatUah } from "@shared/utils/format";
 
   interface FieldErrors {
@@ -180,17 +181,15 @@
     }
   });
 
-  // Residents submit for the prior calendar month, so "current" here means
-  // the period a submission would be for right now, not this calendar month.
-  const currentSubmissionPeriod = format(subMonths(new Date(), 1), "yyyy-MM");
-  const nextSubmissionPeriod = format(new Date(), "yyyy-MM");
+  const currentBillingPeriod = getBillingPeriod();
+  const upcomingBillingPeriod = format(new Date(), "yyyy-MM");
 
   function isCovered(period: string): boolean {
     return rates.value.some((rate) => rate.effective_from <= period);
   }
 
   const uncoveredPeriods = computed(() => {
-    const periods = [currentSubmissionPeriod, nextSubmissionPeriod];
+    const periods = [currentBillingPeriod, upcomingBillingPeriod];
     return periods.filter((period) => !isCovered(period));
   });
 
