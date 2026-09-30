@@ -17,6 +17,7 @@ const { listMyMeterReadings, submitMyMeterReading } = vi.hoisted(() => ({
 vi.mock("@shared/api/meter-readings", () => ({
   listMyMeterReadings,
   submitMyMeterReading,
+  NO_RATE_CONFIGURED_ERROR_CODE: "noRateConfigured",
 }));
 
 function makeReading(overrides: Partial<MeterReadingOut> = {}): MeterReadingOut {
@@ -255,30 +256,8 @@ describe("useMeterReadings", () => {
     });
   });
 
-  describe("handleSubmit when no electricity rate covers the period", () => {
-    it("surfaces an info-severity form error and keeps the typed values", async () => {
-      listMyMeterReadings.mockResolvedValue([]);
-      submitMyMeterReading.mockRejectedValue(new ApiError("noRateConfigured", 409));
-
-      const { result } = mountComposable();
-      await result.loadHistory();
-      await flushPromises();
-
-      result.dayMeterValue.value = 120;
-      result.nightMeterValue.value = 60;
-
-      await result.handleSubmit();
-      await flushPromises();
-
-      expect(result.errors.value.form).toBe("errors.noRateConfigured");
-      expect(result.errors.value.formSeverity).toBe("info");
-      // The resident's own co-op is missing a rate, not something they can fix
-      // by retyping -- their entered values must survive the rejection.
-      expect(result.dayMeterValue.value).toBe(120);
-      expect(result.nightMeterValue.value).toBe(60);
-    });
-
-    it("marks a different rejection as error severity, not info", async () => {
+  describe("handleSubmit error routing", () => {
+    it("routes periodAlreadySubmitted to errors.form", async () => {
       listMyMeterReadings.mockResolvedValue([]);
       submitMyMeterReading.mockRejectedValue(new ApiError("periodAlreadySubmitted", 409));
 
@@ -286,14 +265,38 @@ describe("useMeterReadings", () => {
       await result.loadHistory();
       await flushPromises();
 
-      result.dayMeterValue.value = 10;
-      result.nightMeterValue.value = 5;
+      result.dayMeterValue.value = 100;
+      result.nightMeterValue.value = 50;
 
       await result.handleSubmit();
       await flushPromises();
 
       expect(result.errors.value.form).toBe("errors.periodAlreadySubmitted");
-      expect(result.errors.value.formSeverity).toBe("error");
+      expect(result.errors.value.info).toBeUndefined();
+    });
+
+    it("routes noRateConfigured to errors.info and leaves the entered values untouched", async () => {
+      // The head hasn't set a rate yet -- not the resident's fault, so this
+      // must not land in the generic `form` error path, and the values the
+      // resident just typed must survive so they don't have to retype them
+      // once the rate is configured and they retry.
+      listMyMeterReadings.mockResolvedValue([]);
+      submitMyMeterReading.mockRejectedValue(new ApiError("noRateConfigured", 409));
+
+      const { result } = mountComposable();
+      await result.loadHistory();
+      await flushPromises();
+
+      result.dayMeterValue.value = 123.45;
+      result.nightMeterValue.value = 67.89;
+
+      await result.handleSubmit();
+      await flushPromises();
+
+      expect(result.errors.value.info).toBe("errors.noRateConfigured");
+      expect(result.errors.value.form).toBeUndefined();
+      expect(result.dayMeterValue.value).toBe(123.45);
+      expect(result.nightMeterValue.value).toBe(67.89);
     });
   });
 

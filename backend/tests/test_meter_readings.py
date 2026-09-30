@@ -10,7 +10,9 @@ from datetime import datetime, timezone
 from decimal import Decimal
 
 import pytest
+from app.api.electricity_rates.service import NoRateConfiguredError
 from app.api.meter_readings.service import (
+    HouseholdInactiveError,
     HouseholdNotAccessibleError,
     NoHouseholdMembershipError,
     PeriodAlreadySubmittedError,
@@ -88,6 +90,30 @@ class TestGetUserHouseholdId:
         with pytest.raises(NoHouseholdMembershipError):
             get_user_household_id(session=session, user=user)
 
+    def test_skips_an_inactive_oldest_household_for_the_next_oldest_active_one(
+        self, session: Session
+    ) -> None:
+        user = make_user(session)
+        inactive_oldest = make_household(
+            session,
+            name="Retired Plot",
+            user_id=user.id,
+            is_active=False,
+            created_at=datetime(2023, 1, 1, tzinfo=timezone.utc),
+        )
+        active_second_oldest = make_household(
+            session,
+            name="Active Plot",
+            user_id=user.id,
+            is_active=True,
+            created_at=datetime(2024, 1, 1, tzinfo=timezone.utc),
+        )
+
+        result = get_user_household_id(session=session, user=user)
+
+        assert result == active_second_oldest.id
+        assert result != inactive_oldest.id
+
 
 class TestGetOwnedHouseholdId:
     def test_returns_id_when_caller_owns_it(self, session: Session) -> None:
@@ -116,6 +142,32 @@ class TestGetOwnedHouseholdId:
 
         with pytest.raises(HouseholdNotAccessibleError):
             get_owned_household_id(session=session, user=user, household_id=999999)
+
+    def test_raises_household_inactive_for_an_owned_inactive_household(
+        self, session: Session
+    ) -> None:
+        user = make_user(session)
+        household = make_household(session, user_id=user.id, is_active=False)
+
+        with pytest.raises(HouseholdInactiveError):
+            get_owned_household_id(
+                session=session, user=user, household_id=household.id
+            )
+
+    def test_not_accessible_takes_priority_over_inactive_for_an_unowned_household(
+        self, session: Session
+    ) -> None:
+        # Ownership must be checked before activity status: an inactive
+        # household owned by someone else should still read as "not yours",
+        # not leak the fact that it happens to be inactive.
+        owner = make_user(session, email="owner-inactive@example.com")
+        intruder = make_user(session, email="intruder-inactive@example.com")
+        household = make_household(session, user_id=owner.id, is_active=False)
+
+        with pytest.raises(HouseholdNotAccessibleError):
+            get_owned_household_id(
+                session=session, user=intruder, household_id=household.id
+            )
 
 
 class TestSubmitMeterReading:
@@ -367,6 +419,53 @@ class TestSubmitMeterReading:
         )
 
         assert reading.amount_charged_uah == Decimal("0.00")
+
+    def test_submitting_with_no_electricity_rate_configured_raises(
+        self, session: Session
+    ) -> None:
+        # The autouse fixture seeds a rate covering every period; remove it so
+        # the household genuinely has none configured, matching a fresh
+        # cooperative before the head has ever set a rate.
+        for rate in session.exec(select(ElectricityRate)).all():
+            session.delete(rate)
+        session.flush()
+
+        user = make_user(session)
+        household = make_household(session, user_id=user.id)
+
+        with pytest.raises(NoRateConfiguredError):
+            submit_meter_reading(
+                session=session,
+                user=user,
+                household_id=household.id,
+                period="2026-07",
+                day_meter_value=Decimal("100.00"),
+                night_meter_value=Decimal("50.00"),
+            )
+
+    def test_submitting_when_only_a_future_rate_exists_raises(
+        self, session: Session
+    ) -> None:
+        # A rate exists, but it only takes effect after the period being
+        # submitted -- e.g. the head configured next month's rate but the
+        # cooperative never had one for the period in question.
+        for rate in session.exec(select(ElectricityRate)).all():
+            session.delete(rate)
+        session.flush()
+        make_electricity_rate(session, effective_from="2026-08")
+
+        user = make_user(session)
+        household = make_household(session, user_id=user.id)
+
+        with pytest.raises(NoRateConfiguredError):
+            submit_meter_reading(
+                session=session,
+                user=user,
+                household_id=household.id,
+                period="2026-07",
+                day_meter_value=Decimal("100.00"),
+                night_meter_value=Decimal("50.00"),
+            )
 
     def test_duplicate_period_for_the_same_household_is_rejected(
         self, session: Session
@@ -635,6 +734,78 @@ class TestRequireHouseholdIdRoute:
         assert body[0]["period"] == period
         assert body[0]["id"] is not None
 
+    def test_get_explicit_household_id_owned_but_inactive_is_forbidden(
+        self, client, session: Session
+    ) -> None:
+        user = make_user(session, email="owner-inactive-get@example.com")
+        household = make_household(
+            session, name="Retired Plot", user_id=user.id, is_active=False
+        )
+        authenticate(client, user)
+
+        response = client.get("/meter-readings", params={"household_id": household.id})
+
+        assert response.status_code == 403
+        assert response.json()["detail"] == "householdInactive"
+
+    def test_post_explicit_household_id_owned_but_inactive_is_forbidden(
+        self, client, session: Session
+    ) -> None:
+        user = make_user(session, email="owner-inactive-post@example.com")
+        household = make_household(
+            session, name="Retired Plot", user_id=user.id, is_active=False
+        )
+        authenticate(client, user)
+
+        response = client.post(
+            "/meter-readings",
+            params={"household_id": household.id},
+            json={
+                "period": "2026-07",
+                "day_meter_value": "100.00",
+                "night_meter_value": "50.00",
+            },
+        )
+
+        assert response.status_code == 403
+        assert response.json()["detail"] == "householdInactive"
+
+    def test_no_household_id_param_routes_past_an_inactive_oldest_household(
+        self, client, session: Session
+    ) -> None:
+        user = make_user(session, email="mixed-households@example.com")
+        make_household(
+            session,
+            name="Retired Plot",
+            user_id=user.id,
+            is_active=False,
+            created_at=datetime(2023, 1, 1, tzinfo=timezone.utc),
+        )
+        active_household = make_household(
+            session,
+            name="Active Plot",
+            user_id=user.id,
+            is_active=True,
+            created_at=datetime(2024, 1, 1, tzinfo=timezone.utc),
+        )
+        authenticate(client, user)
+
+        get_response = client.get("/meter-readings")
+        assert get_response.status_code == 200, get_response.text
+        body = get_response.json()
+        assert all(entry["household_id"] == active_household.id for entry in body)
+
+        post_response = client.post(
+            "/meter-readings",
+            json={
+                "period": "2026-07",
+                "day_meter_value": "100.00",
+                "night_meter_value": "50.00",
+            },
+        )
+        assert post_response.status_code == 201, post_response.text
+        assert post_response.json()["household_id"] == active_household.id
+
 
 class TestMeterReadingRoutesHappyPath:
     def test_post_creates_a_reading_with_the_expected_response_shape(
@@ -689,6 +860,30 @@ class TestMeterReadingRoutesHappyPath:
         assert second.status_code == 409
         assert second.json()["detail"] == "periodAlreadySubmitted"
 
+    def test_post_with_no_electricity_rate_configured_returns_409_not_500(
+        self, client, session: Session
+    ) -> None:
+        for rate in session.exec(select(ElectricityRate)).all():
+            session.delete(rate)
+        session.flush()
+
+        user = make_user(session, email="norate@example.com")
+        household = make_household(session, user_id=user.id)
+        authenticate(client, user)
+
+        response = client.post(
+            "/meter-readings",
+            params={"household_id": household.id},
+            json={
+                "period": "2026-07",
+                "day_meter_value": "100.00",
+                "night_meter_value": "50.00",
+            },
+        )
+
+        assert response.status_code == 409, response.text
+        assert response.json()["detail"] == "noRateConfigured"
+
     def test_get_lists_readings_for_the_caller_household_only(
         self, client, session: Session
     ) -> None:
@@ -719,31 +914,3 @@ class TestMeterReadingRoutesHappyPath:
         assert len(body) == 1
         assert body[0]["household_id"] == household.id
         assert body[0]["id"] is not None
-
-    def test_post_with_no_rate_configured_returns_409_not_500(
-        self, client, session: Session
-    ) -> None:
-        # The autouse fixture seeds a rate covering every period; remove it
-        # here to reproduce a co-op that hasn't configured any electricity
-        # rate yet. Before the fix this uncaught NoRateConfiguredError
-        # surfaced as a bare 500, which is what a resident actually hit.
-        for rate in session.exec(select(ElectricityRate)).all():
-            session.delete(rate)
-        session.commit()
-
-        user = make_user(session, email="norate@example.com")
-        household = make_household(session, user_id=user.id)
-        authenticate(client, user)
-
-        response = client.post(
-            "/meter-readings",
-            params={"household_id": household.id},
-            json={
-                "period": "2026-07",
-                "day_meter_value": "100.00",
-                "night_meter_value": "50.00",
-            },
-        )
-
-        assert response.status_code == 409, response.text
-        assert response.json()["detail"] == "noRateConfigured"

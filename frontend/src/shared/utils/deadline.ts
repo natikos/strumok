@@ -1,7 +1,6 @@
 import {
   differenceInCalendarDays,
   endOfDay,
-  format,
   getMonth,
   isAfter,
   isBefore,
@@ -9,7 +8,6 @@ import {
   setDate,
   startOfDay,
   startOfToday,
-  subMonths,
 } from "date-fns";
 
 export const DEADLINE_DAY = 5;
@@ -31,11 +29,6 @@ export function getSubmitWindow(now: Date = new Date()): DeadlineRange {
 /** Month the submit window closes in, not the billing period being reported on. */
 export function getDeadlineMonthIndex(now: Date = new Date()): number {
   return getMonth(getSubmitWindow(now).end);
-}
-
-/** Billing period (yyyy-MM) that residents are submitting readings for at `now`. */
-export function getBillingPeriod(now: Date = new Date()): string {
-  return format(subMonths(now, 1), "yyyy-MM");
 }
 
 export function getDeadlineStatus(submittedAt: string | null | undefined): DeadlineStatus {

@@ -28,14 +28,7 @@ function getStatusMessageKey(status: number): string {
 // would be redundant. noHouseholdMembership: AppLayout blocks the whole app
 // behind a dedicated "no household yet" screen for it. householdAlreadyAssigned:
 // the admin household-assignment form triggers a confirmation dialog instead.
-// noRateConfigured: SubmissionForm shows an info-tone inline message -- an
-// error-styled toast would misattribute the co-op's missing rate to the
-// resident.
-const SILENCED_DETAILS = new Set([
-  "noHouseholdMembership",
-  "householdAlreadyAssigned",
-  "noRateConfigured",
-]);
+const SILENCED_DETAILS = new Set(["noHouseholdMembership", "householdAlreadyAssigned"]);
 
 function toErrorMessageKey(body: unknown, fallbackMessageKey: string): string {
   if (!body || typeof body !== "object" || !("detail" in body)) {

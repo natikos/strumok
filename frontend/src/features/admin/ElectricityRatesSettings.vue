@@ -1,20 +1,15 @@
 <template>
   <div class="electricity-rates">
-    <p
-      v-for="period in uncoveredPeriods"
-      :key="period"
-      class="electricity-rates__warning"
-      role="status"
-    >
-      {{ t("admin.noRateForPeriod", { period }) }}
-    </p>
+    <Message v-if="uncoveredPeriodWarning" severity="warn" class="electricity-rates__warning">
+      {{ uncoveredPeriodWarning }}
+    </Message>
 
     <ul v-if="rates.length > 0" class="electricity-rates__list">
       <li v-for="rate in rates" :key="rate.id" class="electricity-rates__item">
         <span class="electricity-rates__period">{{ rate.effective_from }}</span>
         <span class="electricity-rates__values">
-          {{ t("admin.dayRateShort") }} {{ formatUah(rate.day_rate_uah, currentLocale) }} ·
-          {{ t("admin.nightRateShort") }} {{ formatUah(rate.night_rate_uah, currentLocale) }}
+          {{ t("admin.dayRateShort") }} {{ formatUah(rate.day_rate_uah, intlLocale) }} ·
+          {{ t("admin.nightRateShort") }} {{ formatUah(rate.night_rate_uah, intlLocale) }}
         </span>
       </li>
     </ul>
@@ -125,7 +120,6 @@
 </template>
 
 <script setup lang="ts">
-  import { format } from "date-fns";
   import { useToast } from "primevue/usetoast";
   import { computed, onMounted, ref } from "vue";
   import { useI18n } from "vue-i18n";
@@ -139,7 +133,11 @@
     type ElectricityRateOut,
     listElectricityRates,
   } from "@shared/api/electricity-rates";
-  import { getBillingPeriod } from "@shared/utils/deadline";
+  import {
+    currentBillingPeriod,
+    formatPeriodMonth,
+    nextBillingPeriod,
+  } from "@shared/utils/billing-period";
   import { formatUah } from "@shared/utils/format";
 
   interface FieldErrors {
@@ -160,7 +158,7 @@
   });
 
   const { t } = useI18n();
-  const { currentLocale } = useLocale();
+  const { intlLocale } = useLocale();
   const toast = useToast();
 
   const rates = ref<ElectricityRateOut[]>([]);
@@ -171,6 +169,31 @@
   const dayRateUah = ref<number | null>(null);
   const nightRateUah = ref<number | null>(null);
 
+  function isPeriodCovered(period: string): boolean {
+    return rates.value.some((rate) => rate.effective_from <= period);
+  }
+
+  const uncoveredPeriodWarning = computed<string | null>(() => {
+    const current = currentBillingPeriod();
+    const next = nextBillingPeriod();
+
+    let uncoveredPeriod: string | null = null;
+    if (!isPeriodCovered(current)) {
+      uncoveredPeriod = current;
+    } else if (!isPeriodCovered(next)) {
+      uncoveredPeriod = next;
+    }
+    if (!uncoveredPeriod) {
+      return null;
+    }
+
+    const period = formatPeriodMonth(uncoveredPeriod, intlLocale.value, {
+      month: "long",
+      year: "numeric",
+    });
+    return t("admin.noRateForPeriod", { period });
+  });
+
   onMounted(async () => {
     isLoading.value = true;
 
@@ -179,18 +202,6 @@
     } finally {
       isLoading.value = false;
     }
-  });
-
-  const currentBillingPeriod = getBillingPeriod();
-  const upcomingBillingPeriod = format(new Date(), "yyyy-MM");
-
-  function isCovered(period: string): boolean {
-    return rates.value.some((rate) => rate.effective_from <= period);
-  }
-
-  const uncoveredPeriods = computed(() => {
-    const periods = [currentBillingPeriod, upcomingBillingPeriod];
-    return periods.filter((period) => !isCovered(period));
   });
 
   function resetForm(): void {
@@ -298,16 +309,6 @@
     color: color-mix(in srgb, var(--s-content-color), transparent 45%);
     font-size: 0.85rem;
     margin: 0;
-  }
-
-  .electricity-rates__warning {
-    background: color-mix(in srgb, var(--s-amber-500), transparent 90%);
-    border: 1px solid color-mix(in srgb, var(--s-amber-500), transparent 65%);
-    border-radius: var(--s-app-radius-md);
-    color: var(--s-content-color);
-    font-size: 0.85rem;
-    margin: 0 0 var(--s-app-space-3);
-    padding: var(--s-app-space-2) var(--s-app-space-3);
   }
 
   .electricity-rates__field {
