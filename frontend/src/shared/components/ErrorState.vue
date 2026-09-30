@@ -1,13 +1,17 @@
 <template>
   <div class="error-state" role="alert">
-    <p class="error-state__message">{{ $t(messageKey) }}</p>
+    <p class="error-state__message">{{ t(messageKey) }}</p>
     <button class="error-state__retry" type="button" @click="$emit('retry')">
-      {{ $t("errors.retry") }}
+      {{ t("errors.retry") }}
     </button>
   </div>
 </template>
 
 <script setup lang="ts">
+  import { useI18n } from "vue-i18n";
+
+  const { t } = useI18n();
+
   defineProps<{ messageKey: string }>();
   defineEmits<{ retry: [] }>();
 </script>
