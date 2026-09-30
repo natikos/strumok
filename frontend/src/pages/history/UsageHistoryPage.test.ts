@@ -4,6 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { useCurrentHousehold } from "@/features/households/useCurrentHousehold";
 import { appPlugins } from "@/shared/testing/mount";
 import type { MeterReadingOut } from "@shared/api/meter-readings";
+import ErrorState from "@shared/components/ErrorState.vue";
 
 import UsageHistoryPage from "./UsageHistoryPage.vue";
 
@@ -41,6 +42,7 @@ async function mountPage() {
     global: {
       plugins: appPlugins(),
       stubs: { Button: true },
+      components: { ErrorState },
     },
   });
   await flushPromises();
@@ -214,5 +216,67 @@ describe("UsageHistoryPage submissionRecord", () => {
     expect(record.strip).toHaveLength(12);
     expect(record.strip[0]!.period).toBe(periods[3]);
     expect(record.strip.at(-1)!.period).toBe(periods.at(-1));
+  });
+});
+
+describe("UsageHistoryPage load error handling", () => {
+  beforeEach(() => {
+    listMyMeterReadings.mockReset();
+    useCurrentHousehold().setHouseholds([]);
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it("shows a retryable alert instead of the empty state when the load fails", async () => {
+    listMyMeterReadings.mockRejectedValueOnce(new Error("network down"));
+
+    const wrapper = await mountPage();
+
+    const alert = wrapper.find('[role="alert"]');
+    expect(alert.exists()).toBe(true);
+    expect(alert.text()).toContain("Something went wrong. Please try again");
+
+    // A failed load must never be mistaken for a household with no history.
+    expect(wrapper.text()).not.toContain("No readings yet");
+
+    const retryButton = wrapper.find('[role="alert"] button');
+    expect(retryButton.exists()).toBe(true);
+  });
+
+  it("reloads readings when the retry button is clicked", async () => {
+    listMyMeterReadings.mockRejectedValueOnce(new Error("network down"));
+
+    const wrapper = await mountPage();
+    expect(listMyMeterReadings).toHaveBeenCalledTimes(1);
+    expect(wrapper.find('[role="alert"]').exists()).toBe(true);
+
+    listMyMeterReadings.mockResolvedValueOnce([]);
+    await wrapper.find('[role="alert"] button').trigger("click");
+    await flushPromises();
+
+    expect(listMyMeterReadings).toHaveBeenCalledTimes(2);
+    expect(wrapper.find('[role="alert"]').exists()).toBe(false);
+  });
+
+  it("recovers to normal content after a failed load followed by a successful retry", async () => {
+    listMyMeterReadings.mockRejectedValueOnce(new Error("network down"));
+
+    const wrapper = await mountPage();
+    expect(wrapper.find('[role="alert"]').exists()).toBe(true);
+    expect(wrapper.text()).not.toContain("No readings yet");
+
+    listMyMeterReadings.mockResolvedValueOnce([
+      makeReading({ id: 1, period: "2026-06", submitted_at: "2026-07-02T09:00:00.000Z" }),
+    ]);
+    await wrapper.find('[role="alert"] button').trigger("click");
+    await flushPromises();
+
+    expect(wrapper.find('[role="alert"]').exists()).toBe(false);
+    expect(wrapper.text()).not.toContain("No readings yet");
+    // The successful retry's data actually renders: the June entry's day
+    // usage from the readings we just resolved.
+    expect(wrapper.text()).toContain("10");
   });
 });

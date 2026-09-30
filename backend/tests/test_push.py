@@ -10,17 +10,20 @@ because it's the difference between "this subscription is dead, forget it"
 and "this failure was transient, keep it".
 """
 
+import json
 from unittest.mock import MagicMock, patch
 
 import pytest
 from app.api.push.service import (
+    ReminderVariant,
+    _content_for,
     delete_subscription,
     send_reminders,
     upsert_subscription,
 )
 from app.core.domain import current_billing_period
 from app.core.config import settings
-from app.db.models import PushSubscription
+from app.db.models import LanguageCode, PushSubscription
 from pydantic import SecretStr
 from pywebpush import WebPushException
 from sqlmodel import Session, select
@@ -239,6 +242,52 @@ class TestSendReminders:
         assert (sent, removed) == (0, 0)
         mock_webpush.assert_not_called()
 
+    def test_excludes_an_inactive_household_from_recipients(
+        self, session: Session
+    ) -> None:
+        # A household taken out of service (e.g. plot sold, resident left)
+        # must stop generating reminders even though its owner is still an
+        # active, subscribed user.
+        user = make_user(session)
+        make_household(session, user_id=user.id, is_active=False)
+        make_push_subscription(session, user_id=user.id)
+
+        with patch("app.api.push.service.webpush") as mock_webpush:
+            sent, removed = send_reminders(session=session, variant="opening")
+
+        assert (sent, removed) == (0, 0)
+        mock_webpush.assert_not_called()
+
+    def test_excludes_an_inactive_user_from_recipients(self, session: Session) -> None:
+        # A deactivated account shouldn't keep receiving reminders even if
+        # its household and push subscription rows are still present.
+        user = make_user(session, is_active=False)
+        make_household(session, user_id=user.id)
+        make_push_subscription(session, user_id=user.id)
+
+        with patch("app.api.push.service.webpush") as mock_webpush:
+            sent, removed = send_reminders(session=session, variant="opening")
+
+        assert (sent, removed) == (0, 0)
+        mock_webpush.assert_not_called()
+
+    def test_reminds_for_an_active_household_while_a_sibling_inactive_one_is_excluded(
+        self, session: Session
+    ) -> None:
+        # A resident with one active, unsubmitted household and one retired
+        # household must still be reminded -- the inactive household must not
+        # be attributed to them (skipped) nor block the active one's reminder.
+        user = make_user(session)
+        make_household(session, user_id=user.id, name="Active plot", is_active=True)
+        make_household(session, user_id=user.id, name="Retired plot", is_active=False)
+        make_push_subscription(session, user_id=user.id)
+
+        with patch("app.api.push.service.webpush") as mock_webpush:
+            sent, removed = send_reminders(session=session, variant="opening")
+
+        assert (sent, removed) == (1, 0)
+        mock_webpush.assert_called_once()
+
     @pytest.mark.parametrize("status_code", [404, 410])
     def test_removes_a_subscription_the_push_service_reports_as_gone(
         self, session: Session, status_code: int
@@ -311,6 +360,136 @@ class TestSendReminders:
             sent, removed = send_reminders(session=session, variant="opening")
 
         assert (sent, removed) == (1, 1)
+
+
+class TestReminderContentLocalization:
+    """Most residents default to Ukrainian; a hardcoded English payload
+    (issue #148) meant those residents never understood the reminder."""
+
+    @pytest.mark.parametrize(
+        "variant,expected_title,expected_body",
+        [
+            (
+                "opening",
+                "Відкрито подання показників лічильника",
+                "Подайте денний/нічний показник до 5 числа.",
+            ),
+            (
+                "final",
+                "Останній день подання показників",
+                "Сьогодні дедлайн — подайте показники до півночі.",
+            ),
+        ],
+    )
+    def test_a_ukrainian_default_user_receives_ukrainian_content(
+        self,
+        session: Session,
+        variant: ReminderVariant,
+        expected_title: str,
+        expected_body: str,
+    ) -> None:
+        user = make_user(session)
+        assert user.language == LanguageCode.UA  # confirms the default we're testing
+        make_household(session, user_id=user.id)
+        make_push_subscription(session, user_id=user.id)
+
+        with patch("app.api.push.service.webpush") as mock_webpush:
+            send_reminders(session=session, variant=variant)
+
+        payload = json.loads(mock_webpush.call_args.kwargs["data"])
+        assert payload["title"] == expected_title
+        assert payload["body"] == expected_body
+
+    @pytest.mark.parametrize(
+        "variant,expected_title,expected_body",
+        [
+            (
+                "opening",
+                "Meter reading window is open",
+                "Submit your day/night reading by the 5th.",
+            ),
+            (
+                "final",
+                "Last day to submit your reading",
+                "Today's the deadline — submit before midnight.",
+            ),
+        ],
+    )
+    def test_an_english_language_user_receives_english_content(
+        self,
+        session: Session,
+        variant: ReminderVariant,
+        expected_title: str,
+        expected_body: str,
+    ) -> None:
+        user = make_user(session)
+        user.language = LanguageCode.EN
+        session.add(user)
+        session.flush()
+        make_household(session, user_id=user.id)
+        make_push_subscription(session, user_id=user.id)
+
+        with patch("app.api.push.service.webpush") as mock_webpush:
+            send_reminders(session=session, variant=variant)
+
+        payload = json.loads(mock_webpush.call_args.kwargs["data"])
+        assert payload["title"] == expected_title
+        assert payload["body"] == expected_body
+
+    def test_two_households_users_with_different_languages_each_get_their_own_language(
+        self, session: Session
+    ) -> None:
+        # A shared batch run must not leak one user's language into another's
+        # payload -- each due user's push must reflect their own preference.
+        ua_user = make_user(session, email="ua-resident@example.com")
+        make_household(session, user_id=ua_user.id)
+        make_push_subscription(
+            session, user_id=ua_user.id, endpoint="https://push.example.com/ua-device"
+        )
+
+        en_user = make_user(session, email="en-resident@example.com")
+        en_user.language = LanguageCode.EN
+        session.add(en_user)
+        session.flush()
+        make_household(session, user_id=en_user.id)
+        make_push_subscription(
+            session, user_id=en_user.id, endpoint="https://push.example.com/en-device"
+        )
+
+        sent_payloads: dict[str, dict] = {}
+
+        def side_effect(
+            *, subscription_info: dict, data: str, **_kwargs: object
+        ) -> None:
+            sent_payloads[subscription_info["endpoint"]] = json.loads(data)
+
+        with patch("app.api.push.service.webpush", side_effect=side_effect):
+            sent, removed = send_reminders(session=session, variant="opening")
+
+        assert (sent, removed) == (2, 0)
+        assert (
+            sent_payloads["https://push.example.com/ua-device"]["title"]
+            == "Відкрито подання показників лічильника"
+        )
+        assert (
+            sent_payloads["https://push.example.com/en-device"]["title"]
+            == "Meter reading window is open"
+        )
+
+    def test_content_for_falls_back_to_ukrainian_for_an_unrecognized_language(
+        self, session: Session
+    ) -> None:
+        # LanguageCode.language is a non-nullable column with a UA default, so
+        # a real User row can never carry an invalid value in practice; this
+        # exercises the fallback branch directly against a fabricated value
+        # that reaches _content_for the same way stale/foreign data would.
+        user = make_user(session)
+        user.language = "fr"  # type: ignore[assignment]
+
+        content = _content_for(user, "opening")
+
+        assert content["title"] == "Відкрито подання показників лічильника"
+        assert content["body"] == "Подайте денний/нічний показник до 5 числа."
 
 
 class TestGetVapidPublicKeyRoute:

@@ -1,6 +1,7 @@
 import { CheckCircle } from "@primeicons/vue";
 import Button from "primevue/button";
 import InputNumber from "primevue/inputnumber";
+import Message from "primevue/message";
 import Skeleton from "primevue/skeleton";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -47,7 +48,7 @@ function mountCard(overrides: MountOverrides = {}) {
     },
     locale,
     global: {
-      components: { Skeleton, InputNumber, Button },
+      components: { Skeleton, InputNumber, Button, Message },
     },
   });
 }
