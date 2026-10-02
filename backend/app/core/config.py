@@ -71,7 +71,7 @@ class Settings(BaseSettings):
         extra="ignore",
     )
 
-    environment: Literal["development", "production"]
+    environment: Literal["development", "production"] = "development"
     app_name: str = "Strumok"
     app_port: int = 8000
     cors_origins: Annotated[list[str], NoDecode] = ["http://localhost:5173"]

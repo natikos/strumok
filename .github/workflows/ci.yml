@@ -37,6 +37,10 @@ jobs:
         run: uv run ruff check .
         working-directory: backend
 
+      - name: Type check
+        run: uv run pyright app
+        working-directory: backend
+
       - name: Test
         # The suite creates and drops its own throwaway database on this server.
         run: uv run pytest
