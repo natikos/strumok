@@ -32,9 +32,13 @@ dependencies = [
 entrypoint = "app.main:app"
 
 [project.optional-dependencies]
-dev = ["ruff>=0.15.1", "pytest>=9.1"]
+dev = ["ruff>=0.15.1", "pytest>=9.1", "pyright>=1.1.414"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 pythonpath = ["."]
 addopts = "-q --strict-markers"
+
+[tool.pyright]
+include = ["app"]
+pythonVersion = "3.14"
