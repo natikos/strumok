@@ -71,7 +71,7 @@ class Settings(BaseSettings):
         extra="ignore",
     )
 
-    environment: Literal["development", "production"] = "development"
+    environment: Literal["development", "production"]
     app_name: str = "Strumok"
     app_port: int = 8000
     cors_origins: Annotated[list[str], NoDecode] = ["http://localhost:5173"]
@@ -99,7 +99,7 @@ class Settings(BaseSettings):
 
 @lru_cache
 def get_settings() -> Settings:
-    return Settings()
+    return Settings()  # type: ignore
 
 
 settings: Settings = get_settings()
