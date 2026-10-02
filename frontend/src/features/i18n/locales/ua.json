@@ -127,6 +127,7 @@
   },
   "errors": {
     "adminPrivilegesRequired": "У вас немає прав для цієї дії",
+    "csrfCheckFailed": "Щось пішло не так. Оновіть сторінку та спробуйте ще раз",
     "emailAlreadyRegistered": "Ця електронна скринька вже зареєстрована",
     "householdInactive": "Це господарство більше не активне",
     "householdNotAccessible": "У вас немає доступу до цього господарства",
