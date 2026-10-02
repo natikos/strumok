@@ -140,6 +140,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/billing/window": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Billing Window */
+        get: operations["get_billing_window_billing_window_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/meter-readings": {
         parameters: {
             query?: never;
@@ -344,6 +361,17 @@ export interface components {
             last_name: string;
             /** Is Active */
             is_active: boolean;
+        };
+        /** BillingWindowOut */
+        BillingWindowOut: {
+            /** Period */
+            period: string;
+            /** Opens At */
+            opens_at: string;
+            /** Closes At */
+            closes_at: string;
+            /** Is Open */
+            is_open: boolean;
         };
         /** ElectricityRateCreateIn */
         ElectricityRateCreateIn: {
@@ -892,6 +920,26 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_billing_window_billing_window_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BillingWindowOut"];
                 };
             };
         };

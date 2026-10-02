@@ -8,6 +8,7 @@ import type { FieldErrors } from "@/features/dashboard/types";
 import { useCurrentHousehold } from "@/features/households/useCurrentHousehold";
 import { useLocale } from "@/features/i18n/composables/useLocale";
 import { useAsyncData } from "@/shared/composables/useAsyncData";
+import { useBillingWindow } from "@/shared/composables/useBillingWindow";
 import {
   formatPeriodMonth,
   currentBillingPeriod as getCurrentBillingPeriod,
@@ -52,6 +53,7 @@ export function useMeterReadings() {
 
   const { currentId } = useCurrentHousehold();
   const { intlLocale } = useLocale();
+  const { window: billingWindow, load: loadBillingWindow } = useBillingWindow();
 
   const {
     data: readings,
@@ -116,7 +118,7 @@ export function useMeterReadings() {
   const deadlineMonthIndex = computed<number>(() => getDeadlineMonthIndex());
 
   const deadlineStatus = computed(() =>
-    getDeadlineStatus(currentMeterPeriod.value?.reading?.submitted_at)
+    getDeadlineStatus(currentMeterPeriod.value?.reading?.submitted_at, billingWindow.value?.is_open)
   );
 
   const isFirstPeriod = computed(
@@ -203,6 +205,8 @@ export function useMeterReadings() {
     void loadHistory();
   });
 
+  void loadBillingWindow();
+
   return {
     isLoading,
     isSubmitting,
@@ -212,7 +216,7 @@ export function useMeterReadings() {
     currentSlot: currentMeterPeriod,
     slots,
     billingMonthIndex,
-    isOverdue: isOverdue(currentMeterPeriod.value?.reading?.submitted_at),
+    isOverdue: isOverdue(currentMeterPeriod.value?.reading?.submitted_at, billingWindow.value?.is_open),
     latestReading: latestSubmittedReading,
     daysLeft,
     deadlineMonthIndex,
