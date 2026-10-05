@@ -10,12 +10,9 @@ _EXEMPT_PATH_PREFIXES = ("/internal/",)
 
 
 def _is_allowed(request: Request) -> bool:
-    """Allowlist, not denylist: a request is let through only if it's one an HTML
-    form, sendBeacon(), or a no-cors fetch() cannot produce on its own -- i.e. one
-    that forces the browser to run a CORS preflight first. That's exactly
-    application/json, or any custom header such as X-Requested-With. Everything a
-    plain cross-origin (or, since cookies here are SameSite=lax, same-site)
-    attacker's form can send is rejected."""
+    """Allow only requests a plain HTML form can't produce: an X-Requested-With
+    header or a JSON content type. Both force a CORS preflight, which blocks
+    untrusted origins. Relies on CORS_ORIGINS never containing "*"."""
     if "x-requested-with" in request.headers:
         return True
 
