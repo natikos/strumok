@@ -127,6 +127,7 @@
   },
   "errors": {
     "adminPrivilegesRequired": "You don't have permission to do that",
+    "csrfCheckFailed": "Something went wrong. Please refresh the page and try again",
     "emailAlreadyRegistered": "Email is already registered",
     "householdInactive": "This household is no longer active",
     "householdNotAccessible": "You don't have access to this household",

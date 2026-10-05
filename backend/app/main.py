@@ -18,6 +18,7 @@ from app.api import (
 )
 from app.api.push.scheduler import start_reminder_scheduler, stop_reminder_scheduler
 from app.core.config import settings
+from app.core.csrf import CsrfMiddleware
 from app.db.engine import init_db
 
 logger = logging.getLogger(__name__)
@@ -34,12 +35,13 @@ async def lifespan(_: FastAPI):
 
 
 app = FastAPI(title=settings.app_name, lifespan=lifespan)
+app.add_middleware(CsrfMiddleware)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.cors_origins,
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-    allow_headers=["Authorization", "Content-Type", "Accept"],
+    allow_headers=["Authorization", "Content-Type", "Accept", "X-Requested-With"],
 )
 app.include_router(auth_router)
 app.include_router(meter_readings_router)
