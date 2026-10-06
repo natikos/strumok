@@ -30,7 +30,7 @@
   import { computed } from "vue";
   import { useI18n } from "vue-i18n";
 
-  import { DEADLINE_DAY } from "@shared/utils/deadline";
+  import { DEADLINE_DAY, kyivNow } from "@shared/utils/deadline";
 
   interface Props {
     isOverdue?: boolean;
@@ -43,7 +43,7 @@
   type SegmentState = "elapsed" | "today" | "future";
 
   const segments = computed(() => {
-    const today = new Date().getDate();
+    const today = kyivNow().getDate();
 
     return Array.from({ length: DEADLINE_DAY }, (_, index) => {
       const day = index + 1;
