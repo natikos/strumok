@@ -56,10 +56,8 @@ def create_access_token(user: User, *, auth_time: datetime | None = None) -> str
     it, which starts a new session at the current time."""
     now = utc_now()
     expires = now + timedelta(minutes=settings.auth.access_token_expiration)
-    # utc_now() is naive (see app/core/time.py); .timestamp() reads a naive
-    # value as *local* time, which would skew auth_time by the host's UTC
-    # offset -- tag it explicitly before converting, same as auth_time when
-    # a caller (refresh) passes one through, which is already tz-aware.
+    # utc_now() is naive, and .timestamp() would treat it as local time.
+    # Mark it as UTC first so auth_time is correct on any server timezone.
     auth_time_value = auth_time or now.replace(tzinfo=timezone.utc)
     payload = {
         "sub": str(user.id),
