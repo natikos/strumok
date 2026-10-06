@@ -115,12 +115,6 @@ def submit_meter_reading(
     day_meter_value: Decimal,
     night_meter_value: Decimal,
 ) -> MeterReading:
-    # A resident may only submit for the period currently open for
-    # submission -- not a future period, not an arbitrary past one, and not
-    # an older period after a newer one was already recorded (which would
-    # silently corrupt the newer reading's derived usage without
-    # recomputing it). Backfilling an old period is an admin-only action
-    # (out of scope here; see issue #157).
     if period != current_billing_period():
         raise PeriodNotOpenError
 
