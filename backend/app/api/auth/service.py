@@ -51,10 +51,9 @@ class VerificationEmailSendFailedError(Exception):
 
 
 def create_access_token(user: User, *, auth_time: datetime | None = None) -> str:
-    """`auth_time` is the original login instant, carried through refreshes
-    unchanged so the absolute session cap can be enforced against it -- pass
-    it explicitly when refreshing; omit it to start a fresh session (login,
-    register)."""
+    """`auth_time` is when the user originally logged in. Refresh passes the
+    old value through so the 180-day cap isn't reset; login and register omit
+    it, which starts a new session at the current time."""
     now = utc_now()
     expires = now + timedelta(minutes=settings.auth.access_token_expiration)
     # utc_now() is naive (see app/core/time.py); .timestamp() reads a naive
