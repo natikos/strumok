@@ -25,6 +25,7 @@ dependencies = [
   "psycopg[binary]>=3.3.2",
   "httpx>=0.28",
   "pywebpush>=2.5.0",
+  "apscheduler>=3.11.0",
 ]
 
 [tool.fastapi]

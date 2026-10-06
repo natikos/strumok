@@ -38,26 +38,17 @@ You can also trigger a deployment manually from the GitHub Actions UI using the 
 
 ## Push Reminders
 
-Deadline push reminders run outside the web process, as a scheduled GitHub
-Actions workflow (`.github/workflows/reminders.yml`) rather than an
-in-process scheduler — FastAPI Cloud may run more than one instance or scale
-to zero, and an in-process scheduler would duplicate or silently skip a run.
-The workflow calls `POST /internal/push/send-reminders` a few times per
-reminder day (day 1 and day 5, Kyiv morning); the endpoint is idempotent per
-`(period, variant)`, so a repeated or overlapping call never double-sends.
+Deadline push reminders run on an in-process APScheduler
+(`backend/app/api/push/scheduler.py`), started from the app's lifespan. It
+fires the `opening` variant on day 1 and the `final` variant on day 5, at
+06:00, 07:00 and 09:00 UTC (Kyiv morning). The repeated runs cover a restart
+or deploy at one of the times. `send_reminders` is idempotent per
+`(period, variant)`, so repeated runs and multiple instances never
+double-send.
 
-### Required GitHub Secrets (reminders workflow)
-
-| Secret               | Description                                                        |
-| --------------------- | -------------------------------------------------------------------- |
-| `AUTH_INTERNAL_SECRET` | Same value as the backend's `AUTH_INTERNAL_SECRET` env var           |
-| `APP_BASE_URL`         | Public origin of the deployed app, e.g. `https://strumok.example.com` |
-
-If a scheduled run fails, GitHub's own workflow-failure notification is the
-only alert — turn on "Notify me for failed workflows" in GitHub notification
-settings for this repo. GitHub also disables a scheduled workflow after 60
-days of repo inactivity; a push or manual `workflow_dispatch` run re-enables
-it.
+Known gap: the scheduler can't fire while the app is scaled to zero, so
+reminders depend on an instance being awake at one of those times. Failures
+are logged by the app; there is no external run history.
 
 ## Environment Variables
 
