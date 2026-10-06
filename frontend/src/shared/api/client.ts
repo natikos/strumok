@@ -18,15 +18,22 @@ export class ApiError extends Error {
   }
 }
 
+// Sent on every request so a mutating one always forces a CORS preflight --
+// a plain cross-site HTML form can't set a custom header, so its POST never
+// carries this and the backend's CsrfMiddleware rejects it (see #147).
+const CSRF_HEADERS = { "X-Requested-With": "XMLHttpRequest" };
+
 // Main API client for app requests: includes middleware (refresh, retry, global error toasts).
 export const appApiClient = createClient<paths>({
   baseUrl: API_BASE_URL,
+  headers: CSRF_HEADERS,
   fetch: (request) => fetch(request, { credentials: "include" }),
 });
 
 // Internal auth client: no middleware to avoid recursive refresh/retry loops.
 export const authApiClient = createClient<paths>({
   baseUrl: API_BASE_URL,
+  headers: CSRF_HEADERS,
   fetch: (request) => fetch(request, { credentials: "include" }),
 });
 

@@ -18,27 +18,39 @@ class HouseholdNotAccessibleError(Exception):
     pass
 
 
+class HouseholdInactiveError(Exception):
+    pass
+
+
 class PeriodAlreadySubmittedError(Exception):
     pass
 
 
+class PeriodNotOpenError(Exception):
+    pass
+
+
 def get_owned_household_id(*, session: Session, user: User, household_id: int) -> int:
-    owned = session.exec(
-        select(Household.id)
+    household = session.exec(
+        select(Household)
         .where(Household.user_id == user.id)
         .where(Household.id == household_id)
     ).first()
 
-    if owned is None:
+    if household is None:
         raise HouseholdNotAccessibleError
 
-    return owned
+    if not household.is_active:
+        raise HouseholdInactiveError
+
+    return household.id
 
 
 def get_user_household_id(*, session: Session, user: User) -> int:
     household_id = session.exec(
         select(Household.id)
         .where(Household.user_id == user.id)
+        .where(Household.is_active)
         .order_by(asc(Household.created_at))
     ).first()
 
@@ -103,6 +115,9 @@ def submit_meter_reading(
     day_meter_value: Decimal,
     night_meter_value: Decimal,
 ) -> MeterReading:
+    if period != current_billing_period():
+        raise PeriodNotOpenError
+
     previous = session.exec(
         select(MeterReading)
         .where(MeterReading.household_id == household_id)

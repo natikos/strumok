@@ -9,6 +9,8 @@ missing or bypassed `require_admin` check.
 
 from decimal import Decimal
 
+import pytest
+
 from app.api.admin.service import _summed_usage_kwh
 from sqlmodel import Session
 from tests.factories import authenticate, make_household, make_meter_reading, make_user
@@ -103,8 +105,12 @@ def test_summed_usage_kwh_handles_missing_values() -> None:
 
 class TestAdminDashboard:
     def test_returns_submission_status_and_latest_reading(
-        self, client, session: Session
+        self, client, session: Session, monkeypatch: pytest.MonkeyPatch
     ) -> None:
+        # Pin the period: it's derived from the real clock and rolls over monthly.
+        monkeypatch.setattr(
+            "app.api.admin.service.current_billing_period", lambda: "2026-08"
+        )
         admin = make_user(session, email="dashboard-admin@example.com", is_admin=True)
         owner = make_user(session, email="dashboard-owner@example.com")
         submitted = make_household(session, name="Submitted Plot", user_id=owner.id)

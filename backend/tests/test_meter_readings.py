@@ -10,18 +10,22 @@ from datetime import datetime, timezone
 from decimal import Decimal
 
 import pytest
+from app.api.electricity_rates.service import NoRateConfiguredError
 from app.api.meter_readings.service import (
+    HouseholdInactiveError,
     HouseholdNotAccessibleError,
     NoHouseholdMembershipError,
     PeriodAlreadySubmittedError,
+    PeriodNotOpenError,
     get_owned_household_id,
     get_user_household_id,
     list_meter_readings,
     submit_meter_reading,
 )
-from app.core.domain.billing import previous_period
+from app.core.domain.billing import current_billing_period, previous_period
 from app.core.time import utc_now
-from sqlmodel import Session
+from app.db.models import ElectricityRate
+from sqlmodel import Session, select
 from tests.factories import (
     authenticate,
     make_electricity_rate,
@@ -29,6 +33,16 @@ from tests.factories import (
     make_meter_reading,
     make_user,
 )
+
+
+def shift_period(period: str, months: int) -> str:
+    """`period` (YYYY-MM) shifted by `months` (positive = future, negative =
+    past), used so tests derive periods relative to the live current billing
+    period instead of hardcoding absolute months that go stale."""
+    year, month = (int(part) for part in period.split("-"))
+    index = year * 12 + (month - 1) + months
+    year, month = divmod(index, 12)
+    return f"{year}-{month + 1:02d}"
 
 
 @pytest.fixture(autouse=True)
@@ -87,6 +101,30 @@ class TestGetUserHouseholdId:
         with pytest.raises(NoHouseholdMembershipError):
             get_user_household_id(session=session, user=user)
 
+    def test_skips_an_inactive_oldest_household_for_the_next_oldest_active_one(
+        self, session: Session
+    ) -> None:
+        user = make_user(session)
+        inactive_oldest = make_household(
+            session,
+            name="Retired Plot",
+            user_id=user.id,
+            is_active=False,
+            created_at=datetime(2023, 1, 1, tzinfo=timezone.utc),
+        )
+        active_second_oldest = make_household(
+            session,
+            name="Active Plot",
+            user_id=user.id,
+            is_active=True,
+            created_at=datetime(2024, 1, 1, tzinfo=timezone.utc),
+        )
+
+        result = get_user_household_id(session=session, user=user)
+
+        assert result == active_second_oldest.id
+        assert result != inactive_oldest.id
+
 
 class TestGetOwnedHouseholdId:
     def test_returns_id_when_caller_owns_it(self, session: Session) -> None:
@@ -116,6 +154,32 @@ class TestGetOwnedHouseholdId:
         with pytest.raises(HouseholdNotAccessibleError):
             get_owned_household_id(session=session, user=user, household_id=999999)
 
+    def test_raises_household_inactive_for_an_owned_inactive_household(
+        self, session: Session
+    ) -> None:
+        user = make_user(session)
+        household = make_household(session, user_id=user.id, is_active=False)
+
+        with pytest.raises(HouseholdInactiveError):
+            get_owned_household_id(
+                session=session, user=user, household_id=household.id
+            )
+
+    def test_not_accessible_takes_priority_over_inactive_for_an_unowned_household(
+        self, session: Session
+    ) -> None:
+        # Ownership must be checked before activity status: an inactive
+        # household owned by someone else should still read as "not yours",
+        # not leak the fact that it happens to be inactive.
+        owner = make_user(session, email="owner-inactive@example.com")
+        intruder = make_user(session, email="intruder-inactive@example.com")
+        household = make_household(session, user_id=owner.id, is_active=False)
+
+        with pytest.raises(HouseholdNotAccessibleError):
+            get_owned_household_id(
+                session=session, user=intruder, household_id=household.id
+            )
+
 
 class TestSubmitMeterReading:
     def test_first_ever_reading_has_zero_usage(self, session: Session) -> None:
@@ -126,7 +190,7 @@ class TestSubmitMeterReading:
             session=session,
             user=user,
             household_id=household.id,
-            period="2026-07",
+            period=current_billing_period(),
             day_meter_value=Decimal("3205.00"),
             night_meter_value=Decimal("1820.00"),
         )
@@ -137,12 +201,13 @@ class TestSubmitMeterReading:
     def test_usage_is_diffed_against_the_most_recent_prior_reading(
         self, session: Session
     ) -> None:
+        current_period = current_billing_period()
         user = make_user(session)
         household = make_household(session, user_id=user.id)
         make_meter_reading(
             session,
             household_id=household.id,
-            period="2026-06",
+            period=previous_period(current_period),
             day_meter_value="3000.00",
             night_meter_value="1700.00",
         )
@@ -151,7 +216,7 @@ class TestSubmitMeterReading:
             session=session,
             user=user,
             household_id=household.id,
-            period="2026-07",
+            period=current_period,
             day_meter_value=Decimal("3205.50"),
             night_meter_value=Decimal("1820.25"),
         )
@@ -165,26 +230,27 @@ class TestSubmitMeterReading:
         # Three unsorted prior readings: if the service picked "first row
         # inserted" or "smallest meter value" instead of "latest period", this
         # would diff against the wrong baseline and silently corrupt usage.
+        current_period = current_billing_period()
         user = make_user(session)
         household = make_household(session, user_id=user.id)
         make_meter_reading(
             session,
             household_id=household.id,
-            period="2026-03",
+            period=shift_period(current_period, -3),
             day_meter_value="2000.00",
             night_meter_value="1000.00",
         )
         make_meter_reading(
             session,
             household_id=household.id,
-            period="2026-05",
+            period=shift_period(current_period, -1),
             day_meter_value="2900.00",
             night_meter_value="1600.00",
         )
         make_meter_reading(
             session,
             household_id=household.id,
-            period="2026-04",
+            period=shift_period(current_period, -2),
             day_meter_value="2500.00",
             night_meter_value="1300.00",
         )
@@ -193,35 +259,40 @@ class TestSubmitMeterReading:
             session=session,
             user=user,
             household_id=household.id,
-            period="2026-06",
+            period=current_period,
             day_meter_value=Decimal("3000.00"),
             night_meter_value=Decimal("1700.00"),
         )
 
-        # Baseline must be period "2026-05" (lexicographically-latest YYYY-MM),
-        # not "2026-04" (highest meter value) or "2026-03" (first inserted).
+        # Baseline must be the immediately-prior period (lexicographically
+        # latest YYYY-MM), not the -2 (highest meter value) or -3 (first
+        # inserted) period.
         assert reading.day_usage_kwh == Decimal("100.00")
         assert reading.night_usage_kwh == Decimal("100.00")
 
     def test_backfilling_an_older_period_diffs_against_the_immediately_prior_one(
         self, session: Session
     ) -> None:
-        # A household already has readings for 2026-05 and 2026-07; backfilling
-        # 2026-06 must diff against 2026-05 (immediately prior), not 2026-07
-        # (globally latest) which would produce a nonsensical negative usage.
+        # A household already has readings immediately before and after the
+        # period being submitted (only reachable here via the factory, which
+        # bypasses the "period must be currently open" check the service now
+        # enforces); the submission must diff against the immediately-prior
+        # period, not the globally-latest one, which would produce a
+        # nonsensical negative usage.
+        current_period = current_billing_period()
         user = make_user(session)
         household = make_household(session, user_id=user.id)
         make_meter_reading(
             session,
             household_id=household.id,
-            period="2026-05",
+            period=shift_period(current_period, -1),
             day_meter_value="2000.00",
             night_meter_value="1000.00",
         )
         make_meter_reading(
             session,
             household_id=household.id,
-            period="2026-07",
+            period=shift_period(current_period, 1),
             day_meter_value="3000.00",
             night_meter_value="1700.00",
         )
@@ -230,7 +301,7 @@ class TestSubmitMeterReading:
             session=session,
             user=user,
             household_id=household.id,
-            period="2026-06",
+            period=current_period,
             day_meter_value=Decimal("2500.00"),
             night_meter_value=Decimal("1300.00"),
         )
@@ -243,12 +314,13 @@ class TestSubmitMeterReading:
     ) -> None:
         # Meter replacement, typo, or rollover: usage is clamped to zero,
         # matching both recalculation scripts (GREATEST/max(..., 0)).
+        current_period = current_billing_period()
         user = make_user(session)
         household = make_household(session, user_id=user.id)
         make_meter_reading(
             session,
             household_id=household.id,
-            period="2026-06",
+            period=previous_period(current_period),
             day_meter_value="5000.00",
             night_meter_value="3000.00",
         )
@@ -257,7 +329,7 @@ class TestSubmitMeterReading:
             session=session,
             user=user,
             household_id=household.id,
-            period="2026-07",
+            period=current_period,
             day_meter_value=Decimal("100.00"),
             night_meter_value=Decimal("50.00"),
         )
@@ -271,12 +343,13 @@ class TestSubmitMeterReading:
         # Values chosen so day/night usage times rate produces a
         # three-decimal intermediate, exercising the rounding step rather
         # than a coincidentally-exact result.
+        current_period = current_billing_period()
         user = make_user(session)
         household = make_household(session, user_id=user.id)
         make_meter_reading(
             session,
             household_id=household.id,
-            period="2026-06",
+            period=previous_period(current_period),
             day_meter_value="1000.00",
             night_meter_value="500.00",
         )
@@ -284,14 +357,14 @@ class TestSubmitMeterReading:
             session,
             day_rate_uah="4.3250",
             night_rate_uah="2.1750",
-            effective_from="2026-01",
+            effective_from=shift_period(current_period, -6),
         )
 
         reading = submit_meter_reading(
             session=session,
             user=user,
             household_id=household.id,
-            period="2026-07",
+            period=current_period,
             day_meter_value=Decimal("1123.70"),
             night_meter_value=Decimal("611.30"),
         )
@@ -311,12 +384,13 @@ class TestSubmitMeterReading:
         # Two rates on file; the period being submitted falls under the
         # earlier one, so submitting must not pick up the later rate just
         # because it exists in the table.
+        current_period = current_billing_period()
         user = make_user(session)
         household = make_household(session, user_id=user.id)
         make_meter_reading(
             session,
             household_id=household.id,
-            period="2026-02",
+            period=previous_period(current_period),
             day_meter_value="0.00",
             night_meter_value="0.00",
         )
@@ -324,20 +398,21 @@ class TestSubmitMeterReading:
             session,
             day_rate_uah="3.0000",
             night_rate_uah="1.5000",
-            effective_from="2026-01",
+            effective_from=shift_period(current_period, -6),
         )
         make_electricity_rate(
             session,
             day_rate_uah="99.0000",
             night_rate_uah="88.0000",
-            effective_from="2026-06",
+            # Future-dated: not yet effective for the period being submitted.
+            effective_from=shift_period(current_period, 1),
         )
 
         reading = submit_meter_reading(
             session=session,
             user=user,
             household_id=household.id,
-            period="2026-03",
+            period=current_period,
             day_meter_value=Decimal("100.00"),
             night_meter_value=Decimal("100.00"),
         )
@@ -347,36 +422,87 @@ class TestSubmitMeterReading:
     def test_first_ever_reading_has_zero_usage_and_zero_amount_charged(
         self, session: Session
     ) -> None:
+        current_period = current_billing_period()
         user = make_user(session)
         household = make_household(session, user_id=user.id)
         make_electricity_rate(
             session,
             day_rate_uah="5.00",
             night_rate_uah="3.00",
-            effective_from="2026-01",
+            effective_from=shift_period(current_period, -6),
         )
 
         reading = submit_meter_reading(
             session=session,
             user=user,
             household_id=household.id,
-            period="2026-07",
+            period=current_period,
             day_meter_value=Decimal("3205.00"),
             night_meter_value=Decimal("1820.00"),
         )
 
         assert reading.amount_charged_uah == Decimal("0.00")
 
+    def test_submitting_with_no_electricity_rate_configured_raises(
+        self, session: Session
+    ) -> None:
+        # The autouse fixture seeds a rate covering every period; remove it so
+        # the household genuinely has none configured, matching a fresh
+        # cooperative before the head has ever set a rate.
+        for rate in session.exec(select(ElectricityRate)).all():
+            session.delete(rate)
+        session.flush()
+
+        user = make_user(session)
+        household = make_household(session, user_id=user.id)
+
+        with pytest.raises(NoRateConfiguredError):
+            submit_meter_reading(
+                session=session,
+                user=user,
+                household_id=household.id,
+                period=current_billing_period(),
+                day_meter_value=Decimal("100.00"),
+                night_meter_value=Decimal("50.00"),
+            )
+
+    def test_submitting_when_only_a_future_rate_exists_raises(
+        self, session: Session
+    ) -> None:
+        # A rate exists, but it only takes effect after the period being
+        # submitted -- e.g. the head configured next month's rate but the
+        # cooperative never had one for the period in question.
+        for rate in session.exec(select(ElectricityRate)).all():
+            session.delete(rate)
+        session.flush()
+        make_electricity_rate(
+            session, effective_from=shift_period(current_billing_period(), 1)
+        )
+
+        user = make_user(session)
+        household = make_household(session, user_id=user.id)
+
+        with pytest.raises(NoRateConfiguredError):
+            submit_meter_reading(
+                session=session,
+                user=user,
+                household_id=household.id,
+                period=current_billing_period(),
+                day_meter_value=Decimal("100.00"),
+                night_meter_value=Decimal("50.00"),
+            )
+
     def test_duplicate_period_for_the_same_household_is_rejected(
         self, session: Session
     ) -> None:
+        current_period = current_billing_period()
         user = make_user(session)
         household = make_household(session, user_id=user.id)
         submit_meter_reading(
             session=session,
             user=user,
             household_id=household.id,
-            period="2026-07",
+            period=current_period,
             day_meter_value=Decimal("100.00"),
             night_meter_value=Decimal("50.00"),
         )
@@ -386,7 +512,7 @@ class TestSubmitMeterReading:
                 session=session,
                 user=user,
                 household_id=household.id,
-                period="2026-07",
+                period=current_period,
                 day_meter_value=Decimal("110.00"),
                 night_meter_value=Decimal("55.00"),
             )
@@ -394,6 +520,7 @@ class TestSubmitMeterReading:
     def test_same_period_is_allowed_for_different_households(
         self, session: Session
     ) -> None:
+        current_period = current_billing_period()
         user = make_user(session)
         household_a = make_household(session, name="Plot A", user_id=user.id)
         household_b = make_household(session, name="Plot B", user_id=user.id)
@@ -401,7 +528,7 @@ class TestSubmitMeterReading:
             session=session,
             user=user,
             household_id=household_a.id,
-            period="2026-07",
+            period=current_period,
             day_meter_value=Decimal("100.00"),
             night_meter_value=Decimal("50.00"),
         )
@@ -411,12 +538,60 @@ class TestSubmitMeterReading:
             session=session,
             user=user,
             household_id=household_b.id,
-            period="2026-07",
+            period=current_period,
             day_meter_value=Decimal("200.00"),
             night_meter_value=Decimal("90.00"),
         )
 
         assert reading_b.household_id == household_b.id
+
+
+class TestSubmitMeterReadingPeriodNotOpen:
+    """A resident may only submit for the single period the backend
+    considers currently open -- no future period, no arbitrary past period,
+    no backfilling (deferred to an admin-only action, issue #157)."""
+
+    def test_rejects_the_next_period(self, session: Session) -> None:
+        user = make_user(session)
+        household = make_household(session, user_id=user.id)
+
+        with pytest.raises(PeriodNotOpenError):
+            submit_meter_reading(
+                session=session,
+                user=user,
+                household_id=household.id,
+                period=shift_period(current_billing_period(), 1),
+                day_meter_value=Decimal("100.00"),
+                night_meter_value=Decimal("50.00"),
+            )
+
+    def test_rejects_a_period_two_months_in_the_past(self, session: Session) -> None:
+        user = make_user(session)
+        household = make_household(session, user_id=user.id)
+
+        with pytest.raises(PeriodNotOpenError):
+            submit_meter_reading(
+                session=session,
+                user=user,
+                household_id=household.id,
+                period=shift_period(current_billing_period(), -2),
+                day_meter_value=Decimal("100.00"),
+                night_meter_value=Decimal("50.00"),
+            )
+
+    def test_rejects_an_absurdly_old_period(self, session: Session) -> None:
+        user = make_user(session)
+        household = make_household(session, user_id=user.id)
+
+        with pytest.raises(PeriodNotOpenError):
+            submit_meter_reading(
+                session=session,
+                user=user,
+                household_id=household.id,
+                period="2019-01",
+                day_meter_value=Decimal("100.00"),
+                night_meter_value=Decimal("50.00"),
+            )
 
 
 class TestListMeterReadings:
@@ -634,11 +809,89 @@ class TestRequireHouseholdIdRoute:
         assert body[0]["period"] == period
         assert body[0]["id"] is not None
 
+    def test_get_explicit_household_id_owned_but_inactive_is_forbidden(
+        self, client, session: Session
+    ) -> None:
+        user = make_user(session, email="owner-inactive-get@example.com")
+        household = make_household(
+            session, name="Retired Plot", user_id=user.id, is_active=False
+        )
+        authenticate(client, user)
+
+        response = client.get("/meter-readings", params={"household_id": household.id})
+
+        assert response.status_code == 403
+        assert response.json()["detail"] == "householdInactive"
+
+    def test_post_explicit_household_id_owned_but_inactive_is_forbidden(
+        self, client, session: Session
+    ) -> None:
+        user = make_user(session, email="owner-inactive-post@example.com")
+        household = make_household(
+            session, name="Retired Plot", user_id=user.id, is_active=False
+        )
+        authenticate(client, user)
+
+        response = client.post(
+            "/meter-readings",
+            params={"household_id": household.id},
+            json={
+                "period": "2026-07",
+                "day_meter_value": "100.00",
+                "night_meter_value": "50.00",
+            },
+        )
+
+        assert response.status_code == 403
+        assert response.json()["detail"] == "householdInactive"
+
+    def test_no_household_id_param_routes_past_an_inactive_oldest_household(
+        self, client, session: Session
+    ) -> None:
+        user = make_user(session, email="mixed-households@example.com")
+        make_household(
+            session,
+            name="Retired Plot",
+            user_id=user.id,
+            is_active=False,
+            created_at=datetime(2023, 1, 1, tzinfo=timezone.utc),
+        )
+        active_household = make_household(
+            session,
+            name="Active Plot",
+            user_id=user.id,
+            is_active=True,
+            created_at=datetime(2024, 1, 1, tzinfo=timezone.utc),
+        )
+        authenticate(client, user)
+
+        get_response = client.get("/meter-readings")
+        assert get_response.status_code == 200, get_response.text
+        body = get_response.json()
+        assert all(entry["household_id"] == active_household.id for entry in body)
+
+        post_response = client.post(
+            "/meter-readings",
+            json={
+                "period": current_billing_period(),
+                "day_meter_value": "100.00",
+                "night_meter_value": "50.00",
+            },
+        )
+        assert post_response.status_code == 201, post_response.text
+        assert post_response.json()["household_id"] == active_household.id
+
 
 class TestMeterReadingRoutesHappyPath:
     def test_post_creates_a_reading_with_the_expected_response_shape(
         self, client, session: Session
     ) -> None:
+        # Submitting for the live current period must always succeed,
+        # regardless of what day of the month the test happens to run on --
+        # lateness (past day 5) doesn't block submission, only a period
+        # mismatch does. There's no `now`-override plumbing reaching this
+        # route to simulate a specific "day 8" literally.
+        current_period = current_billing_period()
         user = make_user(session, email="submitter@example.com")
         household = make_household(session, user_id=user.id)
         authenticate(client, user)
@@ -647,7 +900,7 @@ class TestMeterReadingRoutesHappyPath:
             "/meter-readings",
             params={"household_id": household.id},
             json={
-                "period": "2026-07",
+                "period": current_period,
                 "day_meter_value": "3205.00",
                 "night_meter_value": "1820.00",
             },
@@ -655,7 +908,7 @@ class TestMeterReadingRoutesHappyPath:
 
         assert response.status_code == 201, response.text
         body = response.json()
-        assert body["period"] == "2026-07"
+        assert body["period"] == current_period
         assert body["household_id"] == household.id
         assert body["day_meter_value"] == "3205.00"
         assert body["night_meter_value"] == "1820.00"
@@ -671,7 +924,7 @@ class TestMeterReadingRoutesHappyPath:
         household = make_household(session, user_id=user.id)
         authenticate(client, user)
         payload = {
-            "period": "2026-07",
+            "period": current_billing_period(),
             "day_meter_value": "100.00",
             "night_meter_value": "50.00",
         }
@@ -687,6 +940,92 @@ class TestMeterReadingRoutesHappyPath:
 
         assert second.status_code == 409
         assert second.json()["detail"] == "periodAlreadySubmitted"
+
+    def test_post_with_no_electricity_rate_configured_returns_409_not_500(
+        self, client, session: Session
+    ) -> None:
+        for rate in session.exec(select(ElectricityRate)).all():
+            session.delete(rate)
+        session.flush()
+
+        user = make_user(session, email="norate@example.com")
+        household = make_household(session, user_id=user.id)
+        authenticate(client, user)
+
+        response = client.post(
+            "/meter-readings",
+            params={"household_id": household.id},
+            json={
+                "period": current_billing_period(),
+                "day_meter_value": "100.00",
+                "night_meter_value": "50.00",
+            },
+        )
+
+        assert response.status_code == 409, response.text
+        assert response.json()["detail"] == "noRateConfigured"
+
+
+class TestMeterReadingRoutesPeriodNotOpen:
+    def test_post_next_period_returns_409_period_not_open(
+        self, client, session: Session
+    ) -> None:
+        user = make_user(session, email="future@example.com")
+        household = make_household(session, user_id=user.id)
+        authenticate(client, user)
+
+        response = client.post(
+            "/meter-readings",
+            params={"household_id": household.id},
+            json={
+                "period": shift_period(current_billing_period(), 1),
+                "day_meter_value": "100.00",
+                "night_meter_value": "50.00",
+            },
+        )
+
+        assert response.status_code == 409
+        assert response.json()["detail"] == "periodNotOpen"
+
+    def test_post_period_two_months_back_returns_409_period_not_open(
+        self, client, session: Session
+    ) -> None:
+        user = make_user(session, email="stale@example.com")
+        household = make_household(session, user_id=user.id)
+        authenticate(client, user)
+
+        response = client.post(
+            "/meter-readings",
+            params={"household_id": household.id},
+            json={
+                "period": shift_period(current_billing_period(), -2),
+                "day_meter_value": "100.00",
+                "night_meter_value": "50.00",
+            },
+        )
+
+        assert response.status_code == 409
+        assert response.json()["detail"] == "periodNotOpen"
+
+    def test_post_absurdly_old_period_returns_409_period_not_open(
+        self, client, session: Session
+    ) -> None:
+        user = make_user(session, email="ancient@example.com")
+        household = make_household(session, user_id=user.id)
+        authenticate(client, user)
+
+        response = client.post(
+            "/meter-readings",
+            params={"household_id": household.id},
+            json={
+                "period": "2019-01",
+                "day_meter_value": "100.00",
+                "night_meter_value": "50.00",
+            },
+        )
+
+        assert response.status_code == 409
+        assert response.json()["detail"] == "periodNotOpen"
 
     def test_get_lists_readings_for_the_caller_household_only(
         self, client, session: Session
