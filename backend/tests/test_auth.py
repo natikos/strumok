@@ -221,9 +221,8 @@ class TestRefresh:
         self, client: TestClient, session
     ) -> None:
         """/auth/refresh accepts a token whose `exp` has already passed -- that's
-        the whole point of refresh -- as long as it's still within the idle and
-        absolute windows. `auth_time` here is "now", well within both windows;
-        only `exp` is stale."""
+        the whole point of refresh -- as long as the session is within the
+        absolute cap. Here `auth_time` is "now"; only `exp` is stale."""
         user = make_user(session, email="resident@example.com")
         expired_token = jwt.encode(
             {
@@ -420,8 +419,8 @@ class TestRefresh:
         self, client: TestClient, session
     ) -> None:
         """The core usability fix: a resident who last opened the app 30 days ago
-        -- well within both the 45-day idle window and the 180-day absolute cap
-        -- must be refreshed transparently, not sent back to the login screen."""
+        -- well within the 180-day absolute cap -- must be refreshed
+        transparently, not sent back to the login screen."""
         user = make_user(session, email="resident@example.com")
         month_old_token = jwt.encode(
             {
