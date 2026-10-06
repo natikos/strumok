@@ -43,6 +43,7 @@ You can also trigger a deployment manually from the GitHub Actions UI using the 
 | `DATABASE_URL`            | PostgreSQL connection string                                |
 | `AUTH_SECRET_KEY`         | JWT signing secret                                           |
 | `AUTH_ALGORITHM`          | JWT algorithm (default: `HS256`)                              |
+| `AUTH_ACCESS_TOKEN_EXPIRATION` | Access token lifetime in minutes (default: `60`); refreshed via `/auth/refresh` |
 | `AUTH_INTERNAL_SECRET`    | API secret for internal endpoints (push, webhooks, cron jobs) |
 | `CORS_ORIGINS`            | Comma-separated list of allowed origins                      |
 | `ENVIRONMENT`             | **Required.** `development` or `production` — no default, startup fails otherwise |

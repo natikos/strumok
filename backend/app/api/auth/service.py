@@ -1,4 +1,4 @@
-from datetime import timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Any
 
 from jose import JWTError, jwt
@@ -50,16 +50,27 @@ class VerificationEmailSendFailedError(Exception):
     pass
 
 
-def create_access_token(user: User) -> str:
-    expires = utc_now() + timedelta(minutes=settings.auth.access_token_expiration)
+def create_access_token(user: User, *, auth_time: datetime | None = None) -> str:
+    """`auth_time` is when the user originally logged in. Refresh passes the
+    old value through so the 180-day cap isn't reset; login and register omit
+    it, which starts a new session at the current time."""
+    now = utc_now()
+    expires = now + timedelta(minutes=settings.auth.access_token_expiration)
+    # utc_now() is naive, and .timestamp() would treat it as local time.
+    # Mark it as UTC first so auth_time is correct on any server timezone.
+    auth_time_value = auth_time or now.replace(tzinfo=timezone.utc)
     payload = {
         "sub": str(user.id),
         "email": user.email,
         "exp": expires,
+        "auth_time": auth_time_value.timestamp(),
+        "ver": user.token_version,
         "type": "access",
     }
     return jwt.encode(
-        payload, settings.auth.secret_key.get_secret_value(), algorithm=settings.auth.algorithm
+        payload,
+        settings.auth.secret_key.get_secret_value(),
+        algorithm=settings.auth.algorithm,
     )
 
 
@@ -74,12 +85,7 @@ def authenticate_user(*, session: Session, email: str, password: str) -> User:
     return user
 
 
-def get_user_from_token(
-    *,
-    session: Session,
-    token: str,
-    verify_expiration: bool = True,
-) -> User:
+def _decode_access_token(*, token: str, verify_expiration: bool) -> dict[str, Any]:
     try:
         payload = jwt.decode(
             token,
@@ -91,13 +97,25 @@ def get_user_from_token(
         if payload.get("type") != "access":
             raise ValueError("Unexpected token type")
 
-        subject = payload.get("sub")
-
-        if subject is None:
+        if payload.get("sub") is None:
             raise ValueError("Token subject is missing")
+    except (JWTError, ValueError) as exc:
+        raise InvalidOrExpiredTokenError from exc
 
-        user_id = int(subject)
-    except (JWTError, ValueError, TypeError) as exc:
+    return payload
+
+
+def get_user_from_token(
+    *,
+    session: Session,
+    token: str,
+    verify_expiration: bool = True,
+) -> User:
+    payload = _decode_access_token(token=token, verify_expiration=verify_expiration)
+
+    try:
+        user_id = int(payload["sub"])
+    except (ValueError, TypeError) as exc:
         raise InvalidOrExpiredTokenError from exc
 
     user = session.get(User, user_id)
@@ -105,7 +123,45 @@ def get_user_from_token(
     if user is None or not user.is_active:
         raise InvalidOrExpiredTokenError
 
+    # A stale token_version means the user logged out (or a future password
+    # reset/change, deactivation, or email change) since this token was
+    # issued -- every outstanding token for them must stop working immediately.
+    if payload.get("ver") != user.token_version:
+        raise InvalidOrExpiredTokenError
+
     return user
+
+
+def refresh_access_token(*, session: Session, token: str) -> str:
+    """Validates an access token for refresh -- signature, type, subject, and
+    token_version exactly like get_user_from_token(verify_expiration=False),
+    plus the session's original auth_time must not be older than
+    refresh_absolute_window_days. Returns a new token that carries the
+    original auth_time forward unchanged."""
+    payload = _decode_access_token(token=token, verify_expiration=False)
+
+    try:
+        user_id = int(payload["sub"])
+        auth_time = payload["auth_time"]
+    except (KeyError, ValueError, TypeError) as exc:
+        raise InvalidOrExpiredTokenError from exc
+
+    user = session.get(User, user_id)
+
+    if user is None or not user.is_active:
+        raise InvalidOrExpiredTokenError
+
+    if payload.get("ver") != user.token_version:
+        raise InvalidOrExpiredTokenError
+
+    now = utc_now().replace(tzinfo=timezone.utc)
+    auth_time_at = datetime.fromtimestamp(auth_time, tz=timezone.utc)
+
+    session_age = now - auth_time_at
+    if session_age > timedelta(days=settings.auth.refresh_absolute_window_days):
+        raise InvalidOrExpiredTokenError
+
+    return create_access_token(user, auth_time=auth_time_at)
 
 
 def register_user(
@@ -136,9 +192,22 @@ def register_user(
     return user
 
 
-def login_user(*, session: Session, email: str, password: str) -> str:
-    user = authenticate_user(session=session, email=email, password=password)
-    return create_access_token(user)
+def get_user_id_and_version_for_logout(token: str) -> tuple[int, int] | None:
+    """Returns (user_id, ver) from the token, even if expired, or None if it's
+    unusable. Checks the signature only -- callers must compare ver with the
+    user's current token_version."""
+    try:
+        payload = _decode_access_token(token=token, verify_expiration=False)
+        return int(payload["sub"]), int(payload["ver"])
+    except InvalidOrExpiredTokenError, KeyError, ValueError, TypeError:
+        return None
+
+
+def bump_token_version(*, session: Session, user: User) -> None:
+    """Invalidates every outstanding token for this user (all devices)."""
+    user.token_version += 1
+    session.add(user)
+    session.commit()
 
 
 def create_email_verification_token(user: User) -> str:
@@ -150,7 +219,9 @@ def create_email_verification_token(user: User) -> str:
         "type": VERIFICATION_TOKEN_TYPE,
     }
     return jwt.encode(
-        payload, settings.auth.secret_key.get_secret_value(), algorithm=settings.auth.algorithm
+        payload,
+        settings.auth.secret_key.get_secret_value(),
+        algorithm=settings.auth.algorithm,
     )
 
 

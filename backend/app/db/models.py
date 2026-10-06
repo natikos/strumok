@@ -32,6 +32,8 @@ class User(SQLModel, table=True):
     is_admin: bool = Field(default=False)
     is_active: bool = Field(default=True)
     email_verified: bool = Field(default=False)
+    # Bumped on logout to invalidate all of the user's outstanding tokens.
+    token_version: int = Field(default=0)
     theme: ThemeMode = Field(default=ThemeMode.LIGHT, max_length=16)
     language: LanguageCode = Field(default=LanguageCode.UA, max_length=16)
     verification_email_last_sent_at: datetime | None = Field(default=None)
