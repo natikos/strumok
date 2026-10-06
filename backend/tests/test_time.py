@@ -6,7 +6,7 @@ submission to "late" (issue #142).
 """
 
 from datetime import datetime, timedelta, timezone
-from typing import get_args, get_origin
+from typing import Annotated, get_args, get_origin
 
 import pytest
 from fastapi.routing import APIRoute
@@ -82,7 +82,17 @@ def test_sweep_finds_the_known_datetime_fields() -> None:
 def test_every_response_datetime_serializes_as_utc_with_z(
     model: type[BaseModel], field_name: str
 ) -> None:
-    adapter = TypeAdapter(model.model_fields[field_name].annotation)
+    # For a non-Optional Annotated field (e.g. `UtcDatetime`, not `UtcDatetime |
+    # None`), Pydantic splits the PlainSerializer out of `.annotation` into
+    # `.metadata` rather than keeping it in a Union like the Optional case does,
+    # so it has to be reassembled here to pick up the same serializer under test.
+    field = model.model_fields[field_name]
+    annotation = (
+        Annotated[(field.annotation, *field.metadata)]
+        if field.metadata
+        else field.annotation
+    )
+    adapter = TypeAdapter(annotation)
 
     assert adapter.dump_python(NAIVE_UTC, mode="json") == "2026-07-05T20:30:00Z"
 

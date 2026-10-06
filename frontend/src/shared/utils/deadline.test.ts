@@ -1,3 +1,4 @@
+import { TZDate } from "@date-fns/tz";
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 
 import {
@@ -7,18 +8,22 @@ import {
   getSubmitWindow,
   isOverdue,
   isPending,
+  KYIV_TZ,
 } from "./deadline";
 
 /**
- * `now` is always constructed from local components (`new Date(y, m, d, ...)`),
- * never a UTC ISO string, so these assertions don't flip depending on the CI
- * runner's timezone.
+ * Instants are built from Kyiv wall-clock components, since that's the zone the
+ * deadline logic works in. They never depend on the runner's own timezone.
  */
+function kyiv([year, monthIndex, day]: [number, number, number], hour = 0): TZDate {
+  return new TZDate(year, monthIndex, day, hour, 0, 0, KYIV_TZ);
+}
+
 function freezeAt(
   [year, monthIndex, day]: [year: number, monthIndex: number, day: number],
   hour = 12
 ): void {
-  vi.setSystemTime(new Date(year, monthIndex, day, hour, 0, 0));
+  vi.setSystemTime(kyiv([year, monthIndex, day], hour));
 }
 
 describe("getSubmitWindow", () => {
@@ -30,7 +35,7 @@ describe("getSubmitWindow", () => {
 
     const { start, end } = getSubmitWindow();
 
-    expect(start).toEqual(new Date(2026, 6, 1, 0, 0, 0, 0));
+    expect(start.getTime()).toBe(kyiv([2026, 6, 1]).getTime());
     expect(end.getDate()).toBe(5);
     expect(end.getHours()).toBe(23);
     expect(end.getMinutes()).toBe(59);
@@ -42,7 +47,7 @@ describe("getSubmitWindow", () => {
 
     const { start, end } = getSubmitWindow();
 
-    expect(start).toEqual(new Date(2026, 0, 1, 0, 0, 0, 0));
+    expect(start.getTime()).toBe(kyiv([2026, 0, 1]).getTime());
     expect(end.getMonth()).toBe(0);
     expect(end.getFullYear()).toBe(2026);
   });
@@ -52,17 +57,17 @@ describe("getSubmitWindow", () => {
 
     const { start, end } = getSubmitWindow();
 
-    expect(start).toEqual(new Date(2026, 11, 1, 0, 0, 0, 0));
+    expect(start.getTime()).toBe(kyiv([2026, 11, 1]).getTime());
     expect(end.getMonth()).toBe(11);
     expect(end.getFullYear()).toBe(2026);
   });
 
   it("does not mutate the date it is given", () => {
-    const now = new Date(2026, 8, 17);
+    const now = kyiv([2026, 8, 17]);
 
     getSubmitWindow(now);
 
-    expect(now).toEqual(new Date(2026, 8, 17));
+    expect(now.getTime()).toBe(kyiv([2026, 8, 17]).getTime());
   });
 });
 
@@ -115,12 +120,12 @@ describe("getDeadlineStatus", () => {
 
   it("is submitted when submittedAt falls within this month's window", () => {
     freezeAt([2026, 6, 3]);
-    expect(getDeadlineStatus(new Date(2026, 6, 2, 9, 0).toISOString())).toBe("submitted");
+    expect(getDeadlineStatus(kyiv([2026, 6, 2], 9).toISOString())).toBe("submitted");
   });
 
   it("is submitted-late when submittedAt falls after this month's window", () => {
     freezeAt([2026, 6, 20]);
-    expect(getDeadlineStatus(new Date(2026, 6, 10, 9, 0).toISOString())).toBe("submitted-late");
+    expect(getDeadlineStatus(kyiv([2026, 6, 10], 9).toISOString())).toBe("submitted-late");
   });
 
   it("treats a submission from a prior period as overdue once past this month's deadline", () => {
@@ -128,12 +133,12 @@ describe("getDeadlineStatus", () => {
     // deadline with nothing submitted for July: the prior submittedAt predates
     // this month's window start, so isOverdue's own branch fires.
     freezeAt([2026, 6, 20]);
-    expect(getDeadlineStatus(new Date(2026, 5, 3, 9, 0).toISOString())).toBe("overdue");
+    expect(getDeadlineStatus(kyiv([2026, 5, 3], 9).toISOString())).toBe("overdue");
   });
 
   it("treats a submission from a prior period as due while still inside this month's window", () => {
     freezeAt([2026, 6, 3]);
-    expect(getDeadlineStatus(new Date(2026, 5, 3, 9, 0).toISOString())).toBe("due");
+    expect(getDeadlineStatus(kyiv([2026, 5, 3], 9).toISOString())).toBe("due");
   });
 });
 
@@ -153,12 +158,12 @@ describe("isOverdue", () => {
 
   it("is false for a submission made within the current window even after it closes", () => {
     freezeAt([2026, 6, 20]);
-    expect(isOverdue(new Date(2026, 6, 3, 9, 0).toISOString())).toBe(false);
+    expect(isOverdue(kyiv([2026, 6, 3], 9).toISOString())).toBe(false);
   });
 
   it("is true for a submission that predates the window once the window has closed", () => {
     freezeAt([2026, 6, 20]);
-    expect(isOverdue(new Date(2026, 5, 3, 9, 0).toISOString())).toBe(true);
+    expect(isOverdue(kyiv([2026, 5, 3], 9).toISOString())).toBe(true);
   });
 });
 
@@ -178,12 +183,12 @@ describe("isPending", () => {
 
   it("is true when a submission predates the current window (regardless of today)", () => {
     freezeAt([2026, 6, 3]);
-    expect(isPending(new Date(2026, 5, 3, 9, 0).toISOString())).toBe(true);
+    expect(isPending(kyiv([2026, 5, 3], 9).toISOString())).toBe(true);
   });
 
   it("is false when a submission falls within the current window", () => {
     freezeAt([2026, 6, 3]);
-    expect(isPending(new Date(2026, 6, 2, 9, 0).toISOString())).toBe(false);
+    expect(isPending(kyiv([2026, 6, 2], 9).toISOString())).toBe(false);
   });
 });
 
@@ -209,14 +214,15 @@ describe("getDaysLeft", () => {
 
 /**
  * Residents are in Kyiv (UTC+2/+3), and the API sends `submitted_at` as UTC with a
- * `Z` suffix (#142). CI runs in UTC, where a UTC/local mix-up is invisible, so this
- * block switches the process to Kyiv time itself and restores it afterwards.
+ * `Z` suffix (#142). These run with the process in a far-off timezone to prove the
+ * result follows Kyiv time, not the device's; CI runs in UTC, where a UTC/local
+ * mix-up would be invisible.
  */
-describe("getDeadlineStatus in Europe/Kyiv", () => {
+describe("deadline logic with the device outside Kyiv", () => {
   const originalTz = process.env["TZ"];
 
   beforeAll(() => {
-    process.env["TZ"] = "Europe/Kyiv";
+    process.env["TZ"] = "America/Los_Angeles";
   });
   afterAll(() => {
     if (originalTz === undefined) {
@@ -228,8 +234,23 @@ describe("getDeadlineStatus in Europe/Kyiv", () => {
   beforeEach(() => vi.useFakeTimers());
   afterEach(() => vi.useRealTimers());
 
-  it("runs with Kyiv's summer offset (guards the rest of this block)", () => {
-    expect(new Date(2026, 6, 5).getTimezoneOffset()).toBe(-180);
+  it("runs with a non-Kyiv device offset (guards the rest of this block)", () => {
+    expect(new Date(2026, 6, 5).getTimezoneOffset()).toBe(420);
+  });
+
+  it("is still due at 23:30 Kyiv on day 5, though it's already day 5 afternoon in LA", () => {
+    vi.setSystemTime("2026-07-05T20:30:00Z");
+    expect(getDeadlineStatus(null)).toBe("due");
+  });
+
+  it("is overdue at 00:30 Kyiv on day 6, though it's still day 5 evening in LA", () => {
+    vi.setSystemTime("2026-07-05T21:30:00Z");
+    expect(getDeadlineStatus(null)).toBe("overdue");
+  });
+
+  it("names the Kyiv month at 00:30 Kyiv on the 1st, still the prior month in LA", () => {
+    vi.setSystemTime("2026-06-30T21:30:00Z");
+    expect(getDeadlineMonthIndex()).toBe(6);
   });
 
   it("is submitted for a reading at 23:30 Kyiv on day 5", () => {

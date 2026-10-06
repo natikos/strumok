@@ -16,11 +16,14 @@ Electricity billing for a garden cooperative on one shared utility bill. Residen
 ## Domain
 
 A `User` owns zero or more `Household`s (garden plots on the shared bill). Each month, on
-days 1–5 (`frontend/src/features/meter-readings/deadline.ts`), a resident submits one
-`MeterReading` per household for the prior period — cumulative day/night meter values, from
-which usage is derived. The head uses these across all households to reconcile the one shared
-utility bill. A user can hold multiple households (frontend tracks a "current household" in
-localStorage), but a household has at most one owning user.
+days 1–5 Kyiv time, a resident submits one `MeterReading` per household for the prior period —
+cumulative day/night meter values, from which usage is derived. The submission window is
+computed client-side in Kyiv time (`frontend/src/shared/utils/deadline.ts`), not the device's
+timezone; the backend (`backend/app/core/domain/billing.py`) uses Kyiv time for the current
+period but does not enforce the window. The head uses these across all households to reconcile
+the one shared utility bill. A user can
+hold multiple households (frontend tracks a "current household" in localStorage), but a
+household has at most one owning user.
 
 Per-household billing (turning usage into `amount_charged_uah`) is unimplemented — see
 [Known limitations](docs/known-limitations.md).

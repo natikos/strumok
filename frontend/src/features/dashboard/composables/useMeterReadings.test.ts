@@ -65,6 +65,9 @@ describe("useMeterReadings", () => {
   beforeEach(() => {
     listMyMeterReadings.mockReset();
     submitMyMeterReading.mockReset();
+    // Default: never resolves, so deadlineStatus keeps falling back to the
+    // device-clock computation (isOpen undefined) unless a test explicitly
+    // wants to observe the server value arriving.
     useCurrentHousehold().setHouseholds([]);
   });
 
