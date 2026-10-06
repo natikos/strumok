@@ -219,11 +219,6 @@ def bump_token_version(*, session: Session, user: User) -> None:
     session.commit()
 
 
-def login_user(*, session: Session, email: str, password: str) -> str:
-    user = authenticate_user(session=session, email=email, password=password)
-    return create_access_token(user)
-
-
 def create_email_verification_token(user: User) -> str:
     expires = utc_now() + timedelta(minutes=settings.auth.verification_token_expiration)
     payload = {
