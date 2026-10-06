@@ -32,9 +32,7 @@ class User(SQLModel, table=True):
     is_admin: bool = Field(default=False)
     is_active: bool = Field(default=True)
     email_verified: bool = Field(default=False)
-    # Bumped on logout (and any future password reset/change, deactivation, or
-    # email change) to invalidate every outstanding access/refresh token for
-    # this user immediately, without a separate sessions table.
+    # Bumped on logout to invalidate all of the user's outstanding tokens.
     token_version: int = Field(default=0)
     theme: ThemeMode = Field(default=ThemeMode.LIGHT, max_length=16)
     language: LanguageCode = Field(default=LanguageCode.UA, max_length=16)
