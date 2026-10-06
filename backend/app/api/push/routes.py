@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, status
 from sqlmodel import Session
 
-from app.api.deps import get_current_user, require_internal_secret
+from app.api.deps import get_current_user
 from app.api.push.schemas import (
     PushSubscriptionIn,
     PushUnsubscribeIn,
@@ -9,9 +9,7 @@ from app.api.push.schemas import (
     VapidPublicKeyOut,
 )
 from app.api.push.service import (
-    ReminderVariant,
     delete_subscription,
-    send_reminders,
     send_test_notification,
     upsert_subscription,
 )
@@ -20,12 +18,6 @@ from app.db import get_session
 from app.db.models import User
 
 router = APIRouter(prefix="/push", tags=["push"])
-internal_router = APIRouter(
-    prefix="/internal/push",
-    tags=["push-internal"],
-    dependencies=[Depends(require_internal_secret)],
-    include_in_schema=False,
-)
 
 
 @router.get("/vapid-public-key", response_model=VapidPublicKeyOut)
@@ -64,13 +56,4 @@ def send_test(
     session: Session = Depends(get_session),
 ) -> SendRemindersOut:
     sent, removed = send_test_notification(session=session, user=current_user)
-    return SendRemindersOut(sent=sent, removed=removed)
-
-
-@internal_router.post("/send-reminders", response_model=SendRemindersOut)
-def trigger_send_reminders(
-    variant: ReminderVariant = "opening",
-    session: Session = Depends(get_session),
-) -> SendRemindersOut:
-    sent, removed = send_reminders(session=session, variant=variant)
     return SendRemindersOut(sent=sent, removed=removed)

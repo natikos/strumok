@@ -57,7 +57,6 @@ are logged by the app; there is no external run history.
 | `DATABASE_URL`            | PostgreSQL connection string                                |
 | `AUTH_SECRET_KEY`         | JWT signing secret                                           |
 | `AUTH_ALGORITHM`          | JWT algorithm (default: `HS256`)                              |
-| `AUTH_INTERNAL_SECRET`    | API secret for internal endpoints (push, webhooks, cron jobs) |
 | `CORS_ORIGINS`            | Comma-separated list of allowed origins                      |
 | `ENVIRONMENT`             | **Required.** `development` or `production` — no default, startup fails otherwise |
 | `BREVO_API_KEY`           | Brevo transactional email API key                             |

@@ -22,7 +22,6 @@ from app.api.push.service import (
 from app.core.domain import current_billing_period
 from app.core.config import settings
 from app.db.models import NotificationLog, PushSubscription, ReminderDispatch
-from pydantic import SecretStr
 from pywebpush import WebPushException
 from sqlmodel import Session, select
 from tests.factories import (
@@ -585,56 +584,3 @@ class TestUnsubscribeRoute:
             ).first()
             is None
         )
-
-
-class TestSendRemindersInternalRoute:
-    def test_rejects_a_missing_secret(self, client) -> None:
-        response = client.post(
-            "/internal/push/send-reminders", params={"variant": "opening"}
-        )
-
-        assert response.status_code == 401
-        assert response.json()["detail"] == "invalidInternalSecret"
-
-    def test_rejects_a_wrong_secret(
-        self, client, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
-        monkeypatch.setattr(
-            settings.auth, "internal_secret", SecretStr("correct-secret")
-        )
-
-        response = client.post(
-            "/internal/push/send-reminders",
-            params={"variant": "opening"},
-            headers={"X-Internal-Secret": "wrong-secret"},
-        )
-
-        assert response.status_code == 401
-        assert response.json()["detail"] == "invalidInternalSecret"
-
-    def test_accepts_the_correct_secret_and_reports_send_counts(
-        self, client, session: Session, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
-        monkeypatch.setattr(
-            settings.auth, "internal_secret", SecretStr("correct-secret")
-        )
-        user = make_user(session)
-        make_household(session, user_id=user.id)
-        make_push_subscription(session, user_id=user.id)
-
-        with patch("app.api.push.service.webpush"):
-            response = client.post(
-                "/internal/push/send-reminders",
-                params={"variant": "opening"},
-                headers={"X-Internal-Secret": "correct-secret"},
-            )
-
-        assert response.status_code == 200
-        assert response.json() == {"sent": 1, "removed": 0}
-
-    def test_is_not_exposed_in_the_public_openapi_schema(self, client) -> None:
-        # Reachable but deliberately undocumented -- it's an internal endpoint
-        # for a scheduler, not part of the public API surface.
-        schema = client.app.openapi()
-
-        assert "/internal/push/send-reminders" not in schema["paths"]

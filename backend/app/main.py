@@ -13,7 +13,6 @@ from app.api import (
     auth_router,
     electricity_rates_router,
     meter_readings_router,
-    push_internal_router,
     push_router,
 )
 from app.api.push.scheduler import start_reminder_scheduler, stop_reminder_scheduler
@@ -46,7 +45,6 @@ app.include_router(meter_readings_router)
 app.include_router(admin_router)
 app.include_router(electricity_rates_router)
 app.include_router(push_router)
-app.include_router(push_internal_router)
 
 
 @app.exception_handler(Exception)

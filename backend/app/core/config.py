@@ -35,7 +35,6 @@ class AuthSettings(BaseSettings):
     auth_cookie_name: str = "access_token"
     verify_email_resend_cooldown_seconds: int = 180  # 3 minutes
     verification_token_expiration: int = 60  # (min) 1 hour
-    internal_secret: SecretStr  # API secret for internal endpoints (push notifications, webhooks, cron jobs, etc.)
 
 
 class BrevoSettings(BaseSettings):
