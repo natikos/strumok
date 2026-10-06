@@ -193,16 +193,9 @@ def register_user(
 
 
 def get_user_id_and_version_for_logout(token: str) -> tuple[int, int] | None:
-    """Best-effort (user_id, ver) extraction for logout: an expired token
-    still identifies whose session to invalidate. Returns None for anything
-    unusable (missing, garbage, wrong signature/type) -- logout is a no-op
-    success in that case, not an error.
-
-    Callers must still check the returned ver against the user's current
-    token_version before bumping it: without that, a copy of an
-    already-revoked or ancient cookie could be replayed against /auth/logout
-    forever to force-log-out every other session the user has since started,
-    since this function itself only verifies the signature, not freshness."""
+    """Returns (user_id, ver) from the token, even if expired, or None if it's
+    unusable. Checks the signature only -- callers must compare ver with the
+    user's current token_version."""
     try:
         payload = _decode_access_token(token=token, verify_expiration=False)
         return int(payload["sub"]), int(payload["ver"])
