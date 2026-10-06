@@ -138,16 +138,13 @@ def get_user_from_token(
 def refresh_access_token(*, session: Session, token: str) -> str:
     """Validates an access token for refresh -- signature, type, subject, and
     token_version exactly like get_user_from_token(verify_expiration=False),
-    plus two windows a merely-expired token doesn't have to satisfy: it must
-    not have been idle (past its own exp) for more than
-    refresh_idle_window_days, and the session's original auth_time must not
-    be older than refresh_absolute_window_days. Returns a new token that
-    carries the original auth_time forward unchanged."""
+    plus the session's original auth_time must not be older than
+    refresh_absolute_window_days. Returns a new token that carries the
+    original auth_time forward unchanged."""
     payload = _decode_access_token(token=token, verify_expiration=False)
 
     try:
         user_id = int(payload["sub"])
-        exp = payload["exp"]
         auth_time = payload["auth_time"]
     except (KeyError, ValueError, TypeError) as exc:
         raise InvalidOrExpiredTokenError from exc
@@ -161,12 +158,7 @@ def refresh_access_token(*, session: Session, token: str) -> str:
         raise InvalidOrExpiredTokenError
 
     now = utc_now().replace(tzinfo=timezone.utc)
-    exp_at = datetime.fromtimestamp(exp, tz=timezone.utc)
     auth_time_at = datetime.fromtimestamp(auth_time, tz=timezone.utc)
-
-    idle_for = now - exp_at
-    if idle_for > timedelta(days=settings.auth.refresh_idle_window_days):
-        raise InvalidOrExpiredTokenError
 
     session_age = now - auth_time_at
     if session_age > timedelta(days=settings.auth.refresh_absolute_window_days):

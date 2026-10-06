@@ -36,9 +36,6 @@ class AuthSettings(BaseSettings):
     verify_email_resend_cooldown_seconds: int = 180  # 3 minutes
     verification_token_expiration: int = 60  # (min) 1 hour
     internal_secret: SecretStr  # API secret for internal endpoints (push notifications, webhooks, cron jobs, etc.)
-    # /auth/refresh accepts a token whose *exp* is this stale at most -- an
-    # honest resident who opens the app once a month stays signed in.
-    refresh_idle_window_days: int = 45
     # /auth/refresh accepts a token at most this long after the original
     # login (auth_time), even if refreshed continuously -- a hard session cap
     # independent of activity.

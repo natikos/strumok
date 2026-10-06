@@ -386,36 +386,6 @@ class TestRefresh:
         assert response.status_code == 401
         assert response.json()["detail"] == "invalidOrExpiredToken"
 
-    def test_refresh_idle_more_than_45_days_returns_401(
-        self, client: TestClient, session
-    ) -> None:
-        """A token whose `exp` passed more than the 45-day idle window ago can no
-        longer be refreshed -- a leaked/stolen cookie must eventually die even if
-        nobody ever explicitly logs out."""
-        user = make_user(session, email="resident@example.com")
-        idle_token = jwt.encode(
-            {
-                "sub": str(user.id),
-                "email": user.email,
-                "exp": utc_now()
-                - timedelta(days=settings.auth.refresh_idle_window_days + 1),
-                "auth_time": (
-                    utc_now()
-                    - timedelta(days=settings.auth.refresh_idle_window_days + 1)
-                ).timestamp(),
-                "ver": user.token_version,
-                "type": "access",
-            },
-            settings.auth.secret_key.get_secret_value(),
-            algorithm=settings.auth.algorithm,
-        )
-        client.cookies.set(settings.auth.auth_cookie_name, idle_token)
-
-        response = client.post("/auth/refresh")
-
-        assert response.status_code == 401
-        assert response.json()["detail"] == "invalidOrExpiredToken"
-
     def test_refresh_session_older_than_180_days_returns_401(
         self, client: TestClient, session
     ) -> None:
