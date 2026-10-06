@@ -20,6 +20,7 @@
     "reassignConfirmReject": "Скасувати",
     "electricityRates": "Тарифи на електроенергію",
     "noRatesConfigured": "Тарифи ще не налаштовано",
+    "noRateForPeriod": "Тариф на {period} не встановлено — мешканці, що подають показники за цей період, побачать помилку",
     "dayRateShort": "День",
     "nightRateShort": "Ніч",
     "effectiveFrom": "Діє з",
@@ -126,21 +127,28 @@
   },
   "errors": {
     "adminPrivilegesRequired": "У вас немає прав для цієї дії",
+    "csrfCheckFailed": "Щось пішло не так. Оновіть сторінку та спробуйте ще раз",
     "emailAlreadyRegistered": "Ця електронна скринька вже зареєстрована",
+    "householdInactive": "Це господарство більше не активне",
+    "householdNotAccessible": "У вас немає доступу до цього господарства",
     "householdNotFound": "Це господарство більше не існує",
+    "internalServerError": "Щось пішло не так на нашому боці. Спробуйте пізніше",
     "userInactive": "Обліковий запис цього користувача неактивний",
     "userNotFound": "Цього користувача більше не існує",
     "invalidCredentials": "Невірна електронна скринька або пароль",
     "invalidOrExpiredToken": "Увійдіть у систему та спробуйте ще раз",
     "missingAuthenticationToken": "Увійдіть у систему та спробуйте ще раз",
     "noHouseholdMembership": "Ви ще не належите до жодного господарства",
+    "noRateConfigured": "Кооператив ще не встановив тариф на електроенергію за цей період. Введені значення збережено — спробуйте надіслати ще раз пізніше",
     "periodAlreadySubmitted": "Показники за цей місяць уже надіслано",
     "requestFailed": "Щось пішло не так. Спробуйте ще раз",
+    "retry": "Повторити",
     "serverError": "Щось пішло не так. Спробуйте ще раз",
     "tooManyRequests": "Забагато запитів. Зачекайте та спробуйте ще раз",
     "unauthorized": "Увійдіть у систему та спробуйте ще раз",
     "validationError": "Перевірте введені дані та спробуйте ще раз",
-    "verificationEmailCooldown": "Зачекайте перед повторним надсиланням листа підтвердження"
+    "verificationEmailCooldown": "Зачекайте перед повторним надсиланням листа підтвердження",
+    "verificationEmailSendFailed": "Не вдалося надіслати лист підтвердження. Спробуйте пізніше"
   },
   "household": {
     "switchAria": "Обрати домогосподарство"

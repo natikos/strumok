@@ -4,6 +4,7 @@ import { defineComponent, h, nextTick } from "vue";
 
 import { useCurrentHousehold } from "@/features/households/useCurrentHousehold";
 import { appPlugins } from "@/shared/testing/mount";
+import { ApiError } from "@shared/api/client";
 import type { MeterReadingOut } from "@shared/api/meter-readings";
 
 import { useMeterReadings } from "./useMeterReadings";
@@ -16,6 +17,7 @@ const { listMyMeterReadings, submitMyMeterReading } = vi.hoisted(() => ({
 vi.mock("@shared/api/meter-readings", () => ({
   listMyMeterReadings,
   submitMyMeterReading,
+  NO_RATE_CONFIGURED_ERROR_CODE: "noRateConfigured",
 }));
 
 function makeReading(overrides: Partial<MeterReadingOut> = {}): MeterReadingOut {
@@ -254,6 +256,50 @@ describe("useMeterReadings", () => {
       await flushPromises();
 
       expect(result.latestReading.value).toEqual(created);
+    });
+  });
+
+  describe("handleSubmit error routing", () => {
+    it("routes periodAlreadySubmitted to errors.form", async () => {
+      listMyMeterReadings.mockResolvedValue([]);
+      submitMyMeterReading.mockRejectedValue(new ApiError("periodAlreadySubmitted", 409));
+
+      const { result } = mountComposable();
+      await result.loadHistory();
+      await flushPromises();
+
+      result.dayMeterValue.value = 100;
+      result.nightMeterValue.value = 50;
+
+      await result.handleSubmit();
+      await flushPromises();
+
+      expect(result.errors.value.form).toBe("errors.periodAlreadySubmitted");
+      expect(result.errors.value.info).toBeUndefined();
+    });
+
+    it("routes noRateConfigured to errors.info and leaves the entered values untouched", async () => {
+      // The head hasn't set a rate yet -- not the resident's fault, so this
+      // must not land in the generic `form` error path, and the values the
+      // resident just typed must survive so they don't have to retype them
+      // once the rate is configured and they retry.
+      listMyMeterReadings.mockResolvedValue([]);
+      submitMyMeterReading.mockRejectedValue(new ApiError("noRateConfigured", 409));
+
+      const { result } = mountComposable();
+      await result.loadHistory();
+      await flushPromises();
+
+      result.dayMeterValue.value = 123.45;
+      result.nightMeterValue.value = 67.89;
+
+      await result.handleSubmit();
+      await flushPromises();
+
+      expect(result.errors.value.info).toBe("errors.noRateConfigured");
+      expect(result.errors.value.form).toBeUndefined();
+      expect(result.dayMeterValue.value).toBe(123.45);
+      expect(result.nightMeterValue.value).toBe(67.89);
     });
   });
 
