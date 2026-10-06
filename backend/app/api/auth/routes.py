@@ -225,12 +225,9 @@ def logout(
         if identity is not None:
             user_id, token_version = identity
             user = session.get(User, user_id)
-            # Only a token matching the user's CURRENT version can trigger a
-            # bump. Without this, a copy of an already-revoked or stale
-            # cookie could be replayed against /auth/logout forever to
-            # force-log-out every session the user has started since --
-            # a permanent targeted denial of service from a single leaked
-            # cookie, which is exactly the scenario this fix exists to close.
+            # Ignore tokens that are already revoked (version doesn't match).
+            # Otherwise someone holding an old stolen cookie could keep
+            # calling /auth/logout and log the user out of every new session.
             if user is not None and token_version == user.token_version:
                 bump_token_version(session=session, user=user)
 
