@@ -95,17 +95,13 @@ class Settings(BaseSettings):
 
     @property
     def auth_token_ttl_seconds(self) -> int:
-        """Cookie max_age: must cover the whole possible session window (up
-        to the absolute cap), not the short-lived JWT's own exp -- otherwise
-        the cookie is gone long before an idle-but-still-valid session would
-        refresh. The idle window is what actually cuts a stale session off;
-        this is just how long the browser is asked to hold the cookie."""
+        """Cookie max_age: the full session cap, not the short JWT lifetime."""
         return self.auth.refresh_absolute_window_days * 24 * 60 * 60
 
 
 @lru_cache
 def get_settings() -> Settings:
-    return Settings()
+    return Settings()  # type: ignore
 
 
 settings: Settings = get_settings()
