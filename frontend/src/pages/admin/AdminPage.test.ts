@@ -28,7 +28,6 @@ const stubs = {
 function makeDashboard(): AdminDashboardOut {
   return {
     current_period: "2026-09",
-    reminder_dispatches: [],
     households: [
       {
         id: 10,
@@ -103,42 +102,5 @@ describe("AdminPage submission overview", () => {
 
     expect(wrapper.text()).toContain("Something went wrong. Please try again");
     expect(wrapper.find("button").exists()).toBe(true);
-  });
-
-  it("does not render the reminder-status list when no dispatch has finished yet", async () => {
-    const wrapper = mount(AdminPage, {
-      global: {
-        plugins: appPlugins(),
-        stubs,
-      },
-    });
-    await flushPromises();
-
-    expect(wrapper.find("ul.admin-reminder-status").exists()).toBe(false);
-  });
-
-  it("renders one reminder-status line per finished dispatch", async () => {
-    getAdminDashboard.mockResolvedValue({
-      ...makeDashboard(),
-      reminder_dispatches: [
-        { variant: "opening", sent: 4, finished_at: "2026-09-01T10:00:00.000Z" },
-        { variant: "final", sent: 2, finished_at: "2026-09-05T21:00:00.000Z" },
-      ],
-    });
-
-    const wrapper = mount(AdminPage, {
-      global: {
-        plugins: appPlugins(),
-        stubs,
-      },
-    });
-    await flushPromises();
-
-    const list = wrapper.find("ul.admin-reminder-status");
-    expect(list.exists()).toBe(true);
-    const items = list.findAll("li");
-    expect(items).toHaveLength(2);
-    expect(items[0]!.text()).toContain("4");
-    expect(items[1]!.text()).toContain("2");
   });
 });

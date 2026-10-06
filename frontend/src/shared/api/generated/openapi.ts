@@ -328,8 +328,6 @@ export interface components {
             current_period: string;
             /** Households */
             households: components["schemas"]["AdminDashboardHouseholdOut"][];
-            /** Reminder Dispatches */
-            reminder_dispatches?: components["schemas"]["AdminReminderDispatchOut"][];
         };
         /** AdminHouseholdCreateIn */
         AdminHouseholdCreateIn: {
@@ -349,15 +347,6 @@ export interface components {
             /** Is Active */
             is_active: boolean;
             owner?: components["schemas"]["AdminUserSummaryOut"] | null;
-        };
-        /** AdminReminderDispatchOut */
-        AdminReminderDispatchOut: {
-            /** Variant */
-            variant: string;
-            /** Sent */
-            sent: number;
-            /** Finished At */
-            finished_at?: string | null;
         };
         /** AdminUserSummaryOut */
         AdminUserSummaryOut: {

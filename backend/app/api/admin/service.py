@@ -5,11 +5,10 @@ from sqlmodel import Session, select
 from app.api.admin.schemas import (
     AdminDashboardHouseholdOut,
     AdminDashboardOut,
-    AdminReminderDispatchOut,
     AdminUserSummaryOut,
 )
 from app.core.domain import current_billing_period
-from app.db.models import Household, MeterReading, ReminderDispatch, User
+from app.db.models import Household, MeterReading, User
 
 
 def _summed_usage_kwh(
@@ -100,25 +99,9 @@ def get_admin_dashboard(*, session: Session) -> AdminDashboardOut:
             )
         )
 
-    dispatches = session.exec(
-        select(ReminderDispatch)
-        .where(ReminderDispatch.period == current_period)
-        .where(ReminderDispatch.finished_at.is_not(None))
-        .order_by(ReminderDispatch.variant)
-    ).all()
-    reminder_dispatches = [
-        AdminReminderDispatchOut(
-            variant=dispatch.variant,
-            sent=dispatch.sent,
-            finished_at=dispatch.finished_at,
-        )
-        for dispatch in dispatches
-    ]
-
     return AdminDashboardOut(
         current_period=current_period,
         households=households,
-        reminder_dispatches=reminder_dispatches,
     )
 
 

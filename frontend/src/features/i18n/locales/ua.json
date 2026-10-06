@@ -36,7 +36,6 @@
     "rateMustBePositive": "Тариф має бути більшим за нуль",
     "submissionOverview": "Стан подання показників",
     "currentPeriod": "Поточний період: {period}",
-    "reminderSent": "Нагадування надіслано {date} для {count} мешканців",
     "owner": "Власник",
     "status": "Стан",
     "latestUsage": "Останнє споживання",
