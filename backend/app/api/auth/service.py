@@ -204,9 +204,7 @@ def get_user_id_and_version_for_logout(token: str) -> tuple[int, int] | None:
 
 
 def bump_token_version(*, session: Session, user: User) -> None:
-    """Invalidates every outstanding access/refresh token for this user
-    immediately -- there's no per-device sessions table (not worth it for
-    ~30 users), so logout signs the user out everywhere at once."""
+    """Invalidates every outstanding token for this user (all devices)."""
     user.token_version += 1
     session.add(user)
     session.commit()
