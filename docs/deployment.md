@@ -31,37 +31,32 @@ You can also trigger a deployment manually from the GitHub Actions UI using the 
 
 ### Required GitHub Secrets
 
-| Secret                 | Description                   |
-| ----------------------- | ------------------------------ |
-| `FASTAPI_CLOUD_TOKEN`   | FastAPI Cloud deploy token     |
-| `FASTAPI_CLOUD_APP_ID`  | FastAPI Cloud app identifier   |
+| Secret                 | Description                  |
+| ---------------------- | ---------------------------- |
+| `FASTAPI_CLOUD_TOKEN`  | FastAPI Cloud deploy token   |
+| `FASTAPI_CLOUD_APP_ID` | FastAPI Cloud app identifier |
 
 ## Push Reminders
 
 Deadline push reminders run on an in-process APScheduler
 (`backend/app/api/push/scheduler.py`), started from the app's lifespan. It
 fires the `opening` variant on day 1 and the `final` variant on day 5, at
-06:00, 07:00 and 09:00 UTC (Kyiv morning). The repeated runs cover a restart
-or deploy at one of the times. `send_reminders` is idempotent per
-`(period, variant)`, so repeated runs and multiple instances never
-double-send.
-
-Known gap: the scheduler can't fire while the app is scaled to zero, so
-reminders depend on an instance being awake at one of those times. Failures
-are logged by the app; there is no external run history.
+06:00 UTC (Kyiv morning). The instance must be awake on those days; if it is
+put to sleep after the 10th, wake it before the 1st. `send_reminders` is
+idempotent per `(period, variant)`.
 
 ## Environment Variables
 
-| Variable                 | Description                                               |
-| ------------------------- | ----------------------------------------------------------- |
-| `DATABASE_URL`            | PostgreSQL connection string                                |
-| `AUTH_SECRET_KEY`         | JWT signing secret                                           |
-| `AUTH_ALGORITHM`          | JWT algorithm (default: `HS256`)                              |
-| `CORS_ORIGINS`            | Comma-separated list of allowed origins                      |
-| `ENVIRONMENT`             | **Required.** `development` or `production` — no default, startup fails otherwise |
-| `BREVO_API_KEY`           | Brevo transactional email API key                             |
-| `BREVO_SENDER_EMAIL`      | Verified Brevo sender address                                 |
-| `BREVO_APP_BASE_URL`      | Public app origin used to build verification links            |
-| `PUSH_VAPID_PUBLIC_KEY`   | VAPID public key for Web Push notifications                   |
-| `PUSH_VAPID_PRIVATE_KEY`  | VAPID private key for Web Push notifications                  |
-| `PUSH_VAPID_SUBJECT`      | Contact URI (`mailto:` or URL) sent with Web Push requests    |
+| Variable                 | Description                                                                       |
+| ------------------------ | --------------------------------------------------------------------------------- |
+| `DATABASE_URL`           | PostgreSQL connection string                                                      |
+| `AUTH_SECRET_KEY`        | JWT signing secret                                                                |
+| `AUTH_ALGORITHM`         | JWT algorithm (default: `HS256`)                                                  |
+| `CORS_ORIGINS`           | Comma-separated list of allowed origins                                           |
+| `ENVIRONMENT`            | **Required.** `development` or `production` — no default, startup fails otherwise |
+| `BREVO_API_KEY`          | Brevo transactional email API key                                                 |
+| `BREVO_SENDER_EMAIL`     | Verified Brevo sender address                                                     |
+| `BREVO_APP_BASE_URL`     | Public app origin used to build verification links                                |
+| `PUSH_VAPID_PUBLIC_KEY`  | VAPID public key for Web Push notifications                                       |
+| `PUSH_VAPID_PRIVATE_KEY` | VAPID private key for Web Push notifications                                      |
+| `PUSH_VAPID_SUBJECT`     | Contact URI (`mailto:` or URL) sent with Web Push requests                        |

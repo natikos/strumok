@@ -104,35 +104,10 @@ class PushSubscription(SQLModel, table=True):
     created_at: datetime = Field(default_factory=utc_now)
 
 
-class ReminderDispatch(SQLModel, table=True):
-    """One row per (period, variant) reminder run, so a reminder trigger that
-    fires more than once for the same period/variant (e.g. an external cron
-    retrying, or two overlapping runs) is visible and idempotent -- see
-    NotificationLog for the per-user dedup this coordinates with."""
-
-    __tablename__ = "reminder_dispatches"  # type: ignore
-    __table_args__ = (
-        UniqueConstraint(
-            "period", "variant", name="uq_reminder_dispatch_period_variant"
-        ),
-    )
-
-    id: int = Field(default=None, primary_key=True)
-    period: str
-    variant: str
-    started_at: datetime = Field(default_factory=utc_now)
-    finished_at: datetime | None = Field(default=None)
-    # Distinct residents newly notified / dead subscriptions removed,
-    # accumulated across every call for this (period, variant).
-    sent: int = Field(default=0)
-    removed: int = Field(default=0)
-
-
 class NotificationLog(SQLModel, table=True):
-    """One row per (user, period, variant, channel) actually notified.
-    A repeated reminder trigger consults this to skip anyone already sent
-    to, so calling the trigger endpoint more than once for the same period
-    and variant delivers at most one notification per user per channel."""
+    """One row per (user, period, variant) actually notified. The reminder
+    job consults this to skip anyone already sent to, so a repeated or
+    overlapping run delivers at most one notification per user."""
 
     __tablename__ = "notification_log"  # type: ignore
     __table_args__ = (
@@ -140,8 +115,7 @@ class NotificationLog(SQLModel, table=True):
             "user_id",
             "period",
             "variant",
-            "channel",
-            name="uq_notification_log_user_period_variant_channel",
+            name="uq_notification_log_user_period_variant",
         ),
     )
 
@@ -149,8 +123,6 @@ class NotificationLog(SQLModel, table=True):
     user_id: int = Field(foreign_key="users.id", index=True)
     period: str
     variant: str
-    channel: str = Field(default="push")
-    status: str = Field(default="sent")
     sent_at: datetime = Field(default_factory=utc_now)
 
 
