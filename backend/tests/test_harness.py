@@ -10,6 +10,7 @@ from decimal import Decimal
 
 from sqlmodel import Session, func, select
 
+from app.core.domain.billing import current_billing_period
 from app.db.models import Household, MeterReading, User
 from tests.factories import (
     DEFAULT_PASSWORD,
@@ -60,7 +61,7 @@ class TestIsolationSurvivesServiceCommit:
             "/meter-readings",
             params={"household_id": household.id},
             json={
-                "period": "2026-07",
+                "period": current_billing_period(),
                 "day_meter_value": "1000.00",
                 "night_meter_value": "500.00",
             },

@@ -124,3 +124,45 @@ describe("appApiClient 401 refresh-and-retry middleware", () => {
     expect(response.status).toBe(401);
   });
 });
+
+/**
+ * The backend's CsrfMiddleware (#147) lets a request through only if it forces a
+ * CORS preflight -- application/json, or a custom header. Every client request
+ * must carry X-Requested-With so a body-less mutation like logout/refresh still
+ * clears that check without depending on a JSON body being present.
+ */
+describe("appApiClient and authApiClient CSRF header", () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+    vi.unstubAllGlobals();
+  });
+
+  it("sends X-Requested-With on every appApiClient request, including the retry after refresh", async () => {
+    const fetchMock = vi
+      .fn<typeof fetch>()
+      .mockResolvedValueOnce(jsonResponse(401, { detail: "invalidOrExpiredToken" }))
+      .mockResolvedValueOnce(jsonResponse(204))
+      .mockResolvedValueOnce(jsonResponse(200, { id: 1, email: "resident@example.com" }));
+    vi.stubGlobal("fetch", fetchMock);
+
+    const { appApiClient } = await loadClient();
+    await appApiClient.GET("/auth/me");
+
+    expect(fetchMock).toHaveBeenCalledTimes(3);
+    for (const call of fetchMock.mock.calls) {
+      const request = call[0] as Request;
+      expect(request.headers.get("X-Requested-With")).toBe("XMLHttpRequest");
+    }
+  });
+
+  it("sends X-Requested-With on an authApiClient request", async () => {
+    const fetchMock = vi.fn<typeof fetch>().mockResolvedValue(jsonResponse(204));
+    vi.stubGlobal("fetch", fetchMock);
+
+    const { authApiClient } = await loadClient();
+    await authApiClient.POST("/auth/refresh");
+
+    const request = fetchMock.mock.calls[0]?.[0] as Request;
+    expect(request.headers.get("X-Requested-With")).toBe("XMLHttpRequest");
+  });
+});

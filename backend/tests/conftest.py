@@ -59,14 +59,13 @@ os.environ["ENVIRONMENT"] = "development"
 
 # --- Now safe to import the application. --------------------------------------
 
+from app.core.config import settings  # noqa: E402
+from app.db import engine as engine_module  # noqa: E402
+from app.main import app  # noqa: E402
 from sqlalchemy import event, text  # noqa: E402
 from sqlalchemy.engine import Engine  # noqa: E402
 from sqlmodel import Session, SQLModel, create_engine  # noqa: E402
 from starlette.testclient import TestClient  # noqa: E402
-
-from app.core.config import settings  # noqa: E402
-from app.db import engine as engine_module  # noqa: E402
-from app.main import app  # noqa: E402
 
 
 def _admin_engine() -> Engine:
@@ -159,13 +158,11 @@ def client(session: Session) -> object:
     def _override_get_session():
         yield session
 
-    # `app.api.deps.auth` imports get_session from `app.db.engine` while the routes
-    # import it from `app.db`; both re-export the same function object, so a single
-    # override by identity covers both call sites.
+    # Auth and routes import the same get_session object, so one override covers both.
     app.dependency_overrides[engine_module.get_session] = _override_get_session
     try:
-        # No context manager: entering it would run the lifespan, whose init_db()
-        # create_all would commit DDL outside our rolled-back transaction.
-        yield TestClient(app)
+        # No `with`: the lifespan's create_all would commit outside our rollback.
+        # X-Requested-With is what the real frontend sends; keeps CsrfMiddleware happy.
+        yield TestClient(app, headers={"X-Requested-With": "XMLHttpRequest"})
     finally:
         app.dependency_overrides.clear()

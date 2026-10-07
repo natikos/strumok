@@ -1,3 +1,4 @@
+import { TZDate } from "@date-fns/tz";
 import {
   differenceInCalendarDays,
   endOfDay,
@@ -7,10 +8,21 @@ import {
   isWithinInterval,
   setDate,
   startOfDay,
-  startOfToday,
 } from "date-fns";
 
 export const DEADLINE_DAY = 5;
+
+/**
+ * Residents are in Kyiv, so every date decision here is made in Kyiv regardless
+ * of the device's timezone. The backend doesn't enforce the window, so this is the
+ * only place the day 1-5 rule lives.
+ */
+export const KYIV_TZ = "Europe/Kyiv";
+
+/** The current instant, as a Kyiv-zoned date. date-fns functions preserve the zone. */
+export function kyivNow(): TZDate {
+  return new TZDate(Date.now(), KYIV_TZ);
+}
 
 export type DeadlineStatus = "due" | "overdue" | "submitted" | "submitted-late";
 
@@ -19,19 +31,22 @@ export interface DeadlineRange {
   end: Date;
 }
 
-export function getSubmitWindow(now: Date = new Date()): DeadlineRange {
+export function getSubmitWindow(now: Date = kyivNow()): DeadlineRange {
+  const kyiv = new TZDate(now, KYIV_TZ);
   return {
-    start: startOfDay(setDate(now, 1)),
-    end: endOfDay(setDate(now, DEADLINE_DAY)),
+    start: startOfDay(setDate(kyiv, 1)),
+    end: endOfDay(setDate(kyiv, DEADLINE_DAY)),
   };
 }
 
 /** Month the submit window closes in, not the billing period being reported on. */
-export function getDeadlineMonthIndex(now: Date = new Date()): number {
+export function getDeadlineMonthIndex(now: Date = kyivNow()): number {
   return getMonth(getSubmitWindow(now).end);
 }
 
-export function getDeadlineStatus(submittedAt: string | null | undefined): DeadlineStatus {
+export function getDeadlineStatus(
+  submittedAt: string | null | undefined
+): DeadlineStatus {
   const window = getSubmitWindow();
 
   if (isOverdue(submittedAt)) {
@@ -48,19 +63,20 @@ export function getDeadlineStatus(submittedAt: string | null | undefined): Deadl
 
 export function isOverdue(submittedAt: string | null | undefined): boolean {
   const window = getSubmitWindow();
+  const windowClosed = isAfter(kyivNow(), window.end);
 
   if (!submittedAt) {
-    return isAfter(new Date(), window.end);
+    return windowClosed;
   }
 
-  return isBefore(submittedAt, window.start) && isAfter(new Date(), window.end);
+  return isBefore(submittedAt, window.start) && windowClosed;
 }
 
 export function isPending(submittedAt: string | null | undefined): boolean {
   const window = getSubmitWindow();
 
   if (!submittedAt) {
-    return isWithinInterval(new Date(), window);
+    return isWithinInterval(kyivNow(), window);
   }
 
   return isBefore(submittedAt, window.start);
@@ -68,5 +84,5 @@ export function isPending(submittedAt: string | null | undefined): boolean {
 
 export function getDaysLeft(): number {
   const { end } = getSubmitWindow();
-  return differenceInCalendarDays(end, startOfToday());
+  return differenceInCalendarDays(end, kyivNow());
 }

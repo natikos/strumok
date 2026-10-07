@@ -16,6 +16,7 @@ from app.core.domain import current_billing_period
 from app.core.time import utc_now
 from app.db.models import (
     Household,
+    LanguageCode,
     MeterReading,
     NotificationLog,
     PushSubscription,
@@ -25,6 +26,38 @@ from app.db.models import (
 logger = logging.getLogger(__name__)
 
 ReminderVariant = Literal["opening", "final"]
+
+# Keyed by language so this stays separate from the frontend's vue-i18n JSON:
+# the service worker renders the payload as-is, with no client-side lookup.
+_NOTIFICATION_CONTENT: dict[LanguageCode, dict[ReminderVariant, dict[str, str]]] = {
+    LanguageCode.EN: {
+        "opening": {
+            "title": "Meter reading window is open",
+            "body": "Submit your day/night reading by the 5th.",
+        },
+        "final": {
+            "title": "Last day to submit your reading",
+            "body": "Today's the deadline — submit before midnight.",
+        },
+    },
+    LanguageCode.UA: {
+        "opening": {
+            "title": "Відкрито подання показників лічильника",
+            "body": "Подайте денний/нічний показник до 5 числа.",
+        },
+        "final": {
+            "title": "Останній день подання показників",
+            "body": "Сьогодні дедлайн — подайте показники до півночі.",
+        },
+    },
+}
+
+
+def _content_for(user: User, variant: ReminderVariant) -> dict[str, str]:
+    catalog = _NOTIFICATION_CONTENT.get(
+        user.language, _NOTIFICATION_CONTENT[LanguageCode.UA]
+    )
+    return catalog[variant]
 
 
 def upsert_subscription(
@@ -159,14 +192,23 @@ def send_reminders(*, session: Session, variant: ReminderVariant) -> tuple[int, 
     (sent, removed) counts."""
     period = current_billing_period()
     subscriptions = _due_subscriptions(session=session, period=period, variant=variant)
-    payload = _notification_payload(variant)
+    users_by_id = {
+        user.id: user
+        for user in session.exec(
+            select(User).where(col(User.id).in_({sub.user_id for sub in subscriptions}))
+        ).all()
+    }
+    payloads = [
+        _notification_payload(_content_for(users_by_id[sub.user_id], variant))
+        for sub in subscriptions
+    ]
 
     # webpush() is a blocking HTTP call to the browser vendor's push service. Sending
     # serially would make the run take the sum of every round trip, so one slow or
     # timing-out endpoint delays all the others. The pool overlaps the waiting, and the
     # worker cap keeps us from opening hundreds of connections at once.
     with ThreadPoolExecutor(max_workers=10) as executor:
-        outcomes = executor.map(lambda sub: _send_one(sub, payload), subscriptions)
+        outcomes = executor.map(_send_one, subscriptions, payloads)
         results = list(zip(subscriptions, outcomes))
 
     sent = [sub for sub, outcome in results if outcome == _SendOutcome.SENT]
@@ -186,15 +228,5 @@ def send_reminders(*, session: Session, variant: ReminderVariant) -> tuple[int, 
     return len(sent), len(gone)
 
 
-def _notification_payload(variant: ReminderVariant) -> str:
-    content = {
-        "opening": {
-            "title": "Meter reading window is open",
-            "body": "Submit your day/night reading by the 5th.",
-        },
-        "final": {
-            "title": "Last day to submit your reading",
-            "body": "Today's the deadline — submit before midnight.",
-        },
-    }[variant]
+def _notification_payload(content: dict[str, str]) -> str:
     return json.dumps({**content, "url": "/"})

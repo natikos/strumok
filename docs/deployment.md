@@ -52,6 +52,7 @@ idempotent per `(period, variant)`.
 | `DATABASE_URL`           | PostgreSQL connection string                                                      |
 | `AUTH_SECRET_KEY`        | JWT signing secret                                                                |
 | `AUTH_ALGORITHM`         | JWT algorithm (default: `HS256`)                                                  |
+| `AUTH_ACCESS_TOKEN_EXPIRATION` | Access token lifetime in minutes (default: `60`); refreshed via `/auth/refresh` |
 | `CORS_ORIGINS`           | Comma-separated list of allowed origins                                           |
 | `ENVIRONMENT`            | **Required.** `development` or `production` — no default, startup fails otherwise |
 | `BREVO_API_KEY`          | Brevo transactional email API key                                                 |
