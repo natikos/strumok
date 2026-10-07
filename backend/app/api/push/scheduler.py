@@ -6,6 +6,7 @@ from apscheduler.triggers.cron import CronTrigger
 from sqlmodel import Session
 
 from app.api.push.service import send_reminders
+from app.core.domain import SUBMISSION_DEADLINE_DAY, SUBMISSION_OPEN_DAY
 from app.db.engine import engine
 
 logger = logging.getLogger(__name__)
@@ -32,7 +33,10 @@ def start_reminder_scheduler() -> AsyncIOScheduler:
     reminders on a cron trigger."""
 
     scheduler = AsyncIOScheduler(timezone="UTC")
-    for day, variant in ((1, "opening"), (5, "final")):
+    for day, variant in (
+        (SUBMISSION_OPEN_DAY, "opening"),
+        (SUBMISSION_DEADLINE_DAY, "final"),
+    ):
         scheduler.add_job(
             _run_reminders,
             CronTrigger(day=day, hour=6, minute=0),

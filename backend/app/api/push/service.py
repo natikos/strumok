@@ -12,7 +12,8 @@ from sqlalchemy.dialects.postgresql import insert
 from sqlmodel import Session, col, delete, select
 
 from app.core.config import settings
-from app.core.domain import current_billing_period
+from app.core.domain import SUBMISSION_DEADLINE_DAY, current_billing_period
+from app.core.domain.billing import kyiv_now
 from app.core.time import utc_now
 from app.db.models import (
     Household,
@@ -33,7 +34,7 @@ _NOTIFICATION_CONTENT: dict[LanguageCode, dict[ReminderVariant, dict[str, str]]]
     LanguageCode.EN: {
         "opening": {
             "title": "Meter reading window is open",
-            "body": "Submit your day/night reading by the 5th.",
+            "body": f"Submit your day/night reading by the {SUBMISSION_DEADLINE_DAY}th.",
         },
         "final": {
             "title": "Last day to submit your reading",
@@ -43,7 +44,7 @@ _NOTIFICATION_CONTENT: dict[LanguageCode, dict[ReminderVariant, dict[str, str]]]
     LanguageCode.UA: {
         "opening": {
             "title": "Відкрито подання показників лічильника",
-            "body": "Подайте денний/нічний показник до 5 числа.",
+            "body": f"Подайте денний/нічний показник до {SUBMISSION_DEADLINE_DAY} числа.",
         },
         "final": {
             "title": "Останній день подання показників",
@@ -93,11 +94,13 @@ class _SendOutcome(StrEnum):
 
 
 def _seconds_until_window_closes() -> int:
-    """Seconds left in the submission window (days 1-5, UTC). Used as the push
+    """Seconds left in the submission window (Kyiv time). Used as the push
     TTL so an offline device still gets the reminder when it reconnects, but a
     reminder is dropped rather than delivered after the deadline has passed."""
-    now = utc_now()
-    window_end = now.replace(day=6, hour=0, minute=0, second=0, microsecond=0)
+    now = kyiv_now()
+    window_end = now.replace(
+        day=SUBMISSION_DEADLINE_DAY + 1, hour=0, minute=0, second=0, microsecond=0
+    )
     return max(int((window_end - now).total_seconds()), 0)
 
 
