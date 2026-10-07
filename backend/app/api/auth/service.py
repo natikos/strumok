@@ -59,7 +59,9 @@ def create_access_token(user: User) -> str:
         "type": "access",
     }
     return jwt.encode(
-        payload, settings.auth.secret_key.get_secret_value(), algorithm=settings.auth.algorithm
+        payload,
+        settings.auth.secret_key.get_secret_value(),
+        algorithm=settings.auth.algorithm,
     )
 
 
@@ -150,7 +152,9 @@ def create_email_verification_token(user: User) -> str:
         "type": VERIFICATION_TOKEN_TYPE,
     }
     return jwt.encode(
-        payload, settings.auth.secret_key.get_secret_value(), algorithm=settings.auth.algorithm
+        payload,
+        settings.auth.secret_key.get_secret_value(),
+        algorithm=settings.auth.algorithm,
     )
 
 

@@ -46,7 +46,7 @@ def get_user_household_id(*, session: Session, user: User) -> int:
     household_id = session.exec(
         select(Household.id)
         .where(Household.user_id == user.id)
-        .where(Household.is_active == True)  # noqa: E712
+        .where(Household.is_active)
         .order_by(asc(Household.created_at))
     ).first()
 

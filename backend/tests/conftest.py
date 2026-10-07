@@ -16,7 +16,8 @@ import pytest
 # --- Environment must be configured before importing anything from `app`. ------
 
 ADMIN_DATABASE_URL = os.environ.get(
-    "TEST_DATABASE_URL", "postgresql+psycopg://postgres:postgres@localhost:5432/postgres"
+    "TEST_DATABASE_URL",
+    "postgresql+psycopg://postgres:postgres@localhost:5432/postgres",
 )
 
 LOCAL_HOSTNAMES = {"localhost", "127.0.0.1", "::1", "postgres"}

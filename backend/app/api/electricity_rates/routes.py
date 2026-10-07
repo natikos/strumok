@@ -5,7 +5,10 @@ from sqlmodel import Session
 
 from app.api.auth.schemas import ErrorOut
 from app.api.deps import require_admin
-from app.api.electricity_rates.schemas import ElectricityRateCreateIn, ElectricityRateOut
+from app.api.electricity_rates.schemas import (
+    ElectricityRateCreateIn,
+    ElectricityRateOut,
+)
 from app.api.electricity_rates.service import (
     EffectiveFromAlreadyExistsError,
     create_rate,

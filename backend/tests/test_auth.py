@@ -30,7 +30,9 @@ def _register_payload(**overrides) -> dict:
 
 class TestRegister:
     @patch("app.api.auth.service.send_email")
-    def test_register_creates_user_and_sets_auth_cookie(self, mock_send_email, client: TestClient) -> None:
+    def test_register_creates_user_and_sets_auth_cookie(
+        self, mock_send_email, client: TestClient
+    ) -> None:
         response = client.post("/auth/register", json=_register_payload())
 
         assert response.status_code == 201
@@ -40,10 +42,14 @@ class TestRegister:
         assert settings.auth.auth_cookie_name in response.cookies
 
     @patch("app.api.auth.service.send_email")
-    def test_register_with_taken_email_returns_409(self, mock_send_email, client: TestClient, session) -> None:
+    def test_register_with_taken_email_returns_409(
+        self, mock_send_email, client: TestClient, session
+    ) -> None:
         make_user(session, email="taken@example.com")
 
-        response = client.post("/auth/register", json=_register_payload(email="taken@example.com"))
+        response = client.post(
+            "/auth/register", json=_register_payload(email="taken@example.com")
+        )
 
         assert response.status_code == 409
         assert response.json()["detail"] == "emailAlreadyRegistered"
@@ -54,14 +60,18 @@ class TestRegister:
     ) -> None:
         make_user(session, email="taken@example.com")
 
-        response = client.post("/auth/register", json=_register_payload(email="TAKEN@example.com"))
+        response = client.post(
+            "/auth/register", json=_register_payload(email="TAKEN@example.com")
+        )
 
         assert response.status_code == 409
         assert response.json()["detail"] == "emailAlreadyRegistered"
 
 
 class TestLogin:
-    def test_login_with_correct_credentials_sets_auth_cookie(self, client: TestClient, session) -> None:
+    def test_login_with_correct_credentials_sets_auth_cookie(
+        self, client: TestClient, session
+    ) -> None:
         user = make_user(session, email="resident@example.com")
 
         response = client.post(
@@ -73,7 +83,9 @@ class TestLogin:
         assert response.json()["email"] == user.email
         assert settings.auth.auth_cookie_name in response.cookies
 
-    def test_login_with_wrong_password_returns_401(self, client: TestClient, session) -> None:
+    def test_login_with_wrong_password_returns_401(
+        self, client: TestClient, session
+    ) -> None:
         make_user(session, email="resident@example.com")
 
         response = client.post(
@@ -94,7 +106,9 @@ class TestLogin:
         assert response.status_code == 401
         assert response.json()["detail"] == "invalidCredentials"
 
-    def test_login_for_inactive_user_returns_401(self, client: TestClient, session) -> None:
+    def test_login_for_inactive_user_returns_401(
+        self, client: TestClient, session
+    ) -> None:
         make_user(session, email="left@example.com", is_active=False)
 
         response = client.post(
@@ -121,7 +135,9 @@ class TestMe:
         assert response.status_code == 401
         assert response.json()["detail"] == "invalidOrExpiredToken"
 
-    def test_me_with_expired_token_returns_401(self, client: TestClient, session) -> None:
+    def test_me_with_expired_token_returns_401(
+        self, client: TestClient, session
+    ) -> None:
         user = make_user(session, email="resident@example.com")
         expired_token = jwt.encode(
             {
@@ -140,7 +156,9 @@ class TestMe:
         assert response.status_code == 401
         assert response.json()["detail"] == "invalidOrExpiredToken"
 
-    def test_me_with_email_verification_token_returns_401(self, client: TestClient, session) -> None:
+    def test_me_with_email_verification_token_returns_401(
+        self, client: TestClient, session
+    ) -> None:
         """An emailed verification-link token must not double as a session cookie.
 
         Regression for #62: get_user_from_token previously accepted any token
@@ -157,7 +175,9 @@ class TestMe:
         assert response.status_code == 401
         assert response.json()["detail"] == "invalidOrExpiredToken"
 
-    def test_me_returns_current_user_with_households(self, client: TestClient, session) -> None:
+    def test_me_returns_current_user_with_households(
+        self, client: TestClient, session
+    ) -> None:
         user = make_user(session, email="resident@example.com")
         authenticate(client, user)
 
@@ -176,7 +196,9 @@ class TestRefresh:
         assert response.status_code == 401
         assert response.json()["detail"] == "missingAuthenticationToken"
 
-    def test_refresh_with_expired_token_still_succeeds(self, client: TestClient, session) -> None:
+    def test_refresh_with_expired_token_still_succeeds(
+        self, client: TestClient, session
+    ) -> None:
         """/auth/refresh calls get_user_from_token(verify_expiration=False), so an
         expired-but-otherwise-valid token is the intended refresh case, not a
         rejection -- confirmed by reading app/api/auth/routes.py:206-211."""
@@ -200,11 +222,15 @@ class TestRefresh:
 
         new_token = response.cookies[settings.auth.auth_cookie_name]
         new_claims = jwt.decode(
-            new_token, settings.auth.secret_key.get_secret_value(), algorithms=[settings.auth.algorithm]
+            new_token,
+            settings.auth.secret_key.get_secret_value(),
+            algorithms=[settings.auth.algorithm],
         )
         assert new_claims["exp"] > utc_now().timestamp()
 
-    def test_refresh_with_bad_signature_returns_401(self, client: TestClient, session) -> None:
+    def test_refresh_with_bad_signature_returns_401(
+        self, client: TestClient, session
+    ) -> None:
         user = make_user(session, email="resident@example.com")
         forged_token = jwt.encode(
             {
@@ -225,7 +251,11 @@ class TestRefresh:
 
     def test_refresh_with_missing_subject_returns_401(self, client: TestClient) -> None:
         token_without_subject = jwt.encode(
-            {"email": "nobody@example.com", "exp": utc_now() + timedelta(minutes=5), "type": "access"},
+            {
+                "email": "nobody@example.com",
+                "exp": utc_now() + timedelta(minutes=5),
+                "type": "access",
+            },
             settings.auth.secret_key.get_secret_value(),
             algorithm=settings.auth.algorithm,
         )
@@ -236,7 +266,9 @@ class TestRefresh:
         assert response.status_code == 401
         assert response.json()["detail"] == "invalidOrExpiredToken"
 
-    def test_refresh_for_deactivated_user_returns_401(self, client: TestClient, session) -> None:
+    def test_refresh_for_deactivated_user_returns_401(
+        self, client: TestClient, session
+    ) -> None:
         user = make_user(session, email="resident@example.com")
         authenticate(client, user)
         user.is_active = False
@@ -261,7 +293,9 @@ class TestLogout:
         assert f"{settings.auth.auth_cookie_name}=" in set_cookie_header
         assert "Max-Age=0" in set_cookie_header
 
-    def test_logout_delete_cookie_matches_secure_flag_set_at_login_in_production_config(self) -> None:
+    def test_logout_delete_cookie_matches_secure_flag_set_at_login_in_production_config(
+        self,
+    ) -> None:
         """Exercises the two Response.delete_cookie/set_cookie calls exactly as
         app/api/auth/routes.py invokes them, under production's `secure=True`,
         without touching the app or a database. This isolates the assertion
@@ -314,7 +348,9 @@ class TestVerificationLinkCooldown:
         assert second.json()["detail"] == "verificationEmailCooldown"
         retry_after = second.headers.get("retry-after")
         assert retry_after is not None
-        assert 0 < int(retry_after) <= settings.auth.verify_email_resend_cooldown_seconds
+        assert (
+            0 < int(retry_after) <= settings.auth.verify_email_resend_cooldown_seconds
+        )
 
     @patch("app.api.auth.service.send_email")
     def test_requesting_verification_link_after_cooldown_elapses_succeeds(
@@ -345,7 +381,9 @@ class TestVerificationLinkCooldown:
         assert response.status_code == 204
         mock_send_email.assert_not_called()
 
-    def test_verification_link_without_cookie_returns_401(self, client: TestClient) -> None:
+    def test_verification_link_without_cookie_returns_401(
+        self, client: TestClient
+    ) -> None:
         response = client.post("/auth/verification-link")
 
         assert response.status_code == 401
