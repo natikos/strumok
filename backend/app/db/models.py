@@ -106,6 +106,28 @@ class PushSubscription(SQLModel, table=True):
     created_at: datetime = Field(default_factory=utc_now)
 
 
+class NotificationLog(SQLModel, table=True):
+    """One row per (user, period, variant) actually notified. The reminder
+    job consults this to skip anyone already sent to, so a repeated or
+    overlapping run delivers at most one notification per user."""
+
+    __tablename__ = "notification_log"  # type: ignore
+    __table_args__ = (
+        UniqueConstraint(
+            "user_id",
+            "period",
+            "variant",
+            name="uq_notification_log_user_period_variant",
+        ),
+    )
+
+    id: int = Field(default=None, primary_key=True)
+    user_id: int = Field(foreign_key="users.id", index=True)
+    period: str
+    variant: str
+    sent_at: datetime = Field(default_factory=utc_now)
+
+
 class ElectricityRate(SQLModel, table=True):
     """Day/night per-kWh rate effective from a given billing period onward."""
 

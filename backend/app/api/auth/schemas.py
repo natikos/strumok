@@ -74,9 +74,7 @@ class UserWithHouseholdsOut(UserOut):
         return cls.model_validate(
             {
                 **base.model_dump(),
-                "households": [
-                    HouseholdSummary.model_validate(h) for h in households
-                ],
+                "households": [HouseholdSummary.model_validate(h) for h in households],
             }
         )
 

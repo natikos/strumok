@@ -8,10 +8,8 @@ that simulate the attack build a bare `TestClient` without that default header i
 """
 
 from fastapi.routing import APIRoute
-from pydantic import SecretStr
 from starlette.testclient import TestClient
 
-from app.core.config import settings
 from app.main import app
 from tests.factories import authenticate, make_user
 
@@ -88,37 +86,6 @@ class TestCsrfMiddleware:
         response = bare.post("/auth/logout", json={})
 
         assert response.status_code == 204
-
-    def test_internal_route_is_exempt_and_works_without_the_custom_header(
-        self, client: TestClient, monkeypatch
-    ) -> None:
-        monkeypatch.setattr(
-            settings.auth, "internal_secret", SecretStr("correct-secret")
-        )
-        bare = _bare_client(client)
-
-        response = bare.post(
-            "/internal/push/send-reminders",
-            params={"variant": "opening"},
-            headers={"X-Internal-Secret": "correct-secret"},
-        )
-
-        assert response.status_code == 200
-
-    def test_internal_route_still_rejects_a_missing_internal_secret(
-        self, client: TestClient, monkeypatch
-    ) -> None:
-        # The /internal/ exemption skips only the CSRF check, not authentication.
-        monkeypatch.setattr(
-            settings.auth, "internal_secret", SecretStr("correct-secret")
-        )
-        bare = _bare_client(client)
-
-        response = bare.post(
-            "/internal/push/send-reminders", params={"variant": "opening"}
-        )
-
-        assert response.status_code == 401
 
     def test_get_requests_are_never_blocked_regardless_of_headers(
         self, client: TestClient

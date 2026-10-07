@@ -1,6 +1,4 @@
-import secrets
-
-from fastapi import Depends, Header, HTTPException, status
+from fastapi import Depends, HTTPException, status
 from fastapi.security import APIKeyCookie
 from sqlmodel import Session
 
@@ -37,17 +35,6 @@ def get_current_user(
         )
 
     return get_current_user_from_token(session=session, token=access_token)
-
-
-def require_internal_secret(
-    x_internal_secret: str | None = Header(default=None, alias="X-Internal-Secret"),
-) -> None:
-    expected = settings.auth.internal_secret.get_secret_value()
-    if not x_internal_secret or not secrets.compare_digest(x_internal_secret, expected):
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="invalidInternalSecret",
-        )
 
 
 def require_admin(current_user: User = Depends(get_current_user)) -> User:

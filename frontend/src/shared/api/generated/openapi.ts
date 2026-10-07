@@ -280,7 +280,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -916,17 +915,12 @@ export interface operations {
                     "application/json": components["schemas"]["MeterReadingOut"][];
                 };
             };
-            /** @description User does not own this household */
+            /** @description User does not own this household, or it is inactive */
             403: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    /**
-                     * @example {
-                     *       "detail": "householdNotAccessible"
-                     *     }
-                     */
                     "application/json": components["schemas"]["ErrorOut"];
                 };
             };
@@ -979,17 +973,12 @@ export interface operations {
                     "application/json": components["schemas"]["MeterReadingOut"];
                 };
             };
-            /** @description User does not own this household */
+            /** @description User does not own this household, or it is inactive */
             403: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    /**
-                     * @example {
-                     *       "detail": "householdNotAccessible"
-                     *     }
-                     */
                     "application/json": components["schemas"]["ErrorOut"];
                 };
             };
@@ -1355,5 +1344,4 @@ export interface operations {
             };
         };
     };
-
 }

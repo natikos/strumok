@@ -21,7 +21,7 @@ from sqlmodel import Session, select
 def parse_int(val):
     try:
         return int(val)
-    except (ValueError, TypeError):
+    except ValueError, TypeError:
         return 0
 
 
@@ -33,7 +33,7 @@ def parse_decimal(val):
     val = val.strip().replace(" ", "").replace(",", ".")
     try:
         return float(val)
-    except (ValueError, TypeError):
+    except ValueError, TypeError:
         return 0
 
 
@@ -71,16 +71,24 @@ def parse_csv(file_path: str):
                 continue
 
             meter_id = parse_int(row[0]) if has_id else None
-            amount_charged = parse_decimal(row[amount_idx]) if amount_idx < len(row) else 0
+            amount_charged = (
+                parse_decimal(row[amount_idx]) if amount_idx < len(row) else 0
+            )
 
             rows.append(
                 {
                     "household_id": meter_id,
                     "household_name": row[name_idx],
                     "day_meter": parse_int(row[day_idx]) if day_idx < len(row) else 0,
-                    "night_meter": parse_int(row[night_idx]) if night_idx < len(row) else 0,
-                    "day_usage": parse_int(row[day_usage_idx]) if day_usage_idx < len(row) else 0,
-                    "night_usage": parse_int(row[night_usage_idx]) if night_usage_idx < len(row) else 0,
+                    "night_meter": parse_int(row[night_idx])
+                    if night_idx < len(row)
+                    else 0,
+                    "day_usage": parse_int(row[day_usage_idx])
+                    if day_usage_idx < len(row)
+                    else 0,
+                    "night_usage": parse_int(row[night_usage_idx])
+                    if night_usage_idx < len(row)
+                    else 0,
                     "amount_charged_uah": amount_charged,
                 }
             )
@@ -168,16 +176,18 @@ def insert_meter_history(parsed_meters):
         if meter["household_id"] is None:
             continue
 
-        readings.append({
-            "household_id": meter["household_id"],
-            "period": period,
-            "day_meter_value": meter["day_meter"],
-            "night_meter_value": meter["night_meter"],
-            "day_usage_kwh": meter["day_usage"],
-            "night_usage_kwh": meter["night_usage"],
-            "amount_charged_uah": Decimal(str(meter["amount_charged_uah"])),
-            "submitted_at": submitted_at,
-        })
+        readings.append(
+            {
+                "household_id": meter["household_id"],
+                "period": period,
+                "day_meter_value": meter["day_meter"],
+                "night_meter_value": meter["night_meter"],
+                "day_usage_kwh": meter["day_usage"],
+                "night_usage_kwh": meter["night_usage"],
+                "amount_charged_uah": Decimal(str(meter["amount_charged_uah"])),
+                "submitted_at": submitted_at,
+            }
+        )
 
     if not readings:
         return
@@ -190,12 +200,16 @@ def insert_meter_history(parsed_meters):
                 index_elements=["household_id", "period"],
                 set_={
                     "day_meter_value": insert(MeterReading).excluded.day_meter_value,
-                    "night_meter_value": insert(MeterReading).excluded.night_meter_value,
+                    "night_meter_value": insert(
+                        MeterReading
+                    ).excluded.night_meter_value,
                     "day_usage_kwh": insert(MeterReading).excluded.day_usage_kwh,
                     "night_usage_kwh": insert(MeterReading).excluded.night_usage_kwh,
-                    "amount_charged_uah": insert(MeterReading).excluded.amount_charged_uah,
+                    "amount_charged_uah": insert(
+                        MeterReading
+                    ).excluded.amount_charged_uah,
                     "submitted_at": insert(MeterReading).excluded.submitted_at,
-                }
+                },
             )
         )
         session.exec(stmt)

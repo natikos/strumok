@@ -3,10 +3,6 @@ from fastapi.responses import JSONResponse
 from starlette.middleware.base import BaseHTTPMiddleware, RequestResponseEndpoint
 
 _MUTATING_METHODS = {"POST", "PUT", "PATCH", "DELETE"}
-# Every route under this prefix authenticates via X-Internal-Secret instead of the
-# cookie (see require_internal_secret), so it can't be ridden by a forged same-site
-# form submission. Any new router mounted here must keep that guarantee.
-_EXEMPT_PATH_PREFIXES = ("/internal/",)
 
 
 def _is_allowed(request: Request) -> bool:
@@ -31,9 +27,6 @@ class CsrfMiddleware(BaseHTTPMiddleware):
 
     async def dispatch(self, request: Request, call_next: RequestResponseEndpoint):
         if request.method not in _MUTATING_METHODS:
-            return await call_next(request)
-
-        if request.url.path.startswith(_EXEMPT_PATH_PREFIXES):
             return await call_next(request)
 
         if not _is_allowed(request):

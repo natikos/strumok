@@ -104,7 +104,10 @@ def get_admin_dashboard(*, session: Session) -> AdminDashboardOut:
             )
         )
 
-    return AdminDashboardOut(current_period=current_period, households=households)
+    return AdminDashboardOut(
+        current_period=current_period,
+        households=households,
+    )
 
 
 def _get_active_user(*, session: Session, user_id: int) -> User:

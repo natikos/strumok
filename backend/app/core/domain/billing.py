@@ -3,8 +3,13 @@ from zoneinfo import ZoneInfo
 
 # Residents are in Kyiv; "the current period" must follow Kyiv local time, not
 # server UTC, or a resident near midnight on the 1st sees the wrong month (issue
-# #141). The day 1-5 submission window itself is computed only in the frontend.
+# #141).
 KYIV_TZ = ZoneInfo("Europe/Kyiv")
+
+# Submission window: days 1-5 of the month, Kyiv time. Mirrors DEADLINE_DAY in
+# frontend/src/shared/utils/deadline.ts; keep the two in sync.
+SUBMISSION_OPEN_DAY = 1
+SUBMISSION_DEADLINE_DAY = 5
 
 
 def previous_period(period: str) -> str:
