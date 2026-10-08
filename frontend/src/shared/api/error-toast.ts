@@ -28,7 +28,12 @@ function getStatusMessageKey(status: number): string {
 // would be redundant. noHouseholdMembership: AppLayout blocks the whole app
 // behind a dedicated "no household yet" screen for it. householdAlreadyAssigned:
 // the admin household-assignment form triggers a confirmation dialog instead.
-const SILENCED_DETAILS = new Set(["noHouseholdMembership", "householdAlreadyAssigned"]);
+// tooManyAttempts: the login form shows it inline with a countdown.
+const SILENCED_DETAILS = new Set([
+  "noHouseholdMembership",
+  "householdAlreadyAssigned",
+  "tooManyAttempts",
+]);
 
 function toErrorMessageKey(body: unknown, fallbackMessageKey: string): string {
   if (!body || typeof body !== "object" || !("detail" in body)) {

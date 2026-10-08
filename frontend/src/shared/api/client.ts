@@ -11,10 +11,12 @@ let refreshPromise: Promise<boolean> | null = null;
 
 export class ApiError extends Error {
   public readonly status: number;
+  public readonly retryAfterSeconds: number | undefined;
 
-  constructor(message: string, status: number) {
+  constructor(message: string, status: number, retryAfterSeconds?: number) {
     super(message);
     this.status = status;
+    this.retryAfterSeconds = retryAfterSeconds;
   }
 }
 
@@ -86,11 +88,17 @@ appApiClient.use({
   },
 });
 
-export function buildApiError(status: number, body: unknown): ApiError {
+export function buildApiError(status: number, body: unknown, headers?: Headers): ApiError {
   const detailValue =
     body && typeof body === "object" && "detail" in body ? body.detail : undefined;
   const detail =
     typeof detailValue === "string" ? detailValue : `Request failed with status ${status}`;
 
-  return new ApiError(detail, status);
+  const retryAfter = Number(headers?.get("Retry-After"));
+
+  return new ApiError(
+    detail,
+    status,
+    Number.isFinite(retryAfter) && retryAfter > 0 ? retryAfter : undefined
+  );
 }

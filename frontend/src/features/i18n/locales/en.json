@@ -50,6 +50,7 @@
   "auth": {
     "login": "Login",
     "loginSubmit": "Submit",
+    "tooManyAttempts": "Too many failed attempts. Try again in {timer}",
     "loginSubtitle": "Sign in to continue your secure session",
     "loginTitle": "Welcome back!",
     "register": "Register",
@@ -145,6 +146,7 @@
     "requestFailed": "Something went wrong. Please try again",
     "retry": "Retry",
     "serverError": "Something went wrong. Please try again",
+    "tooManyAttempts": "Too many failed attempts. Please wait and try again",
     "tooManyRequests": "Too many requests. Please wait and try again",
     "unauthorized": "Please sign in and try again",
     "validationError": "Please check your data and try again",

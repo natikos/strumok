@@ -94,9 +94,17 @@
             type="submit"
             class="auth-form__submit"
             :label="$t(`auth.${mode}Submit`)"
-            :disabled="isSubmitting || !$form.valid"
+            :disabled="isSubmitting || !$form.valid || throttleSeconds > 0"
             :loading="isSubmitting"
           />
+          <Message
+            v-if="throttleSeconds > 0"
+            class="auth-form__throttle"
+            severity="error"
+            role="alert"
+          >
+            {{ $t("auth.tooManyAttempts", { timer: throttleTimer }) }}
+          </Message>
         </Form>
       </div>
     </template>
@@ -116,6 +124,7 @@
   import type { FormSubmitEvent } from "@primevue/forms/form";
   import { ApiError, loginUser, registerUser, updateMyPreferences } from "@shared/api/auth";
   import type { UserOut } from "@shared/api/auth";
+  import { useCountdown } from "@shared/composables/useCountdown";
   import FormFieldControl from "@shared/FormFieldControl.vue";
   import { ROUTES } from "@shared/routing/routes";
 
@@ -127,6 +136,7 @@
 
   const mode = ref<AuthMode>("login");
   const isSubmitting = ref(false);
+  const { formatted: throttleTimer, seconds: throttleSeconds, start: startThrottle } = useCountdown();
 
   const baseString = () =>
     z
@@ -212,6 +222,11 @@
 
       setLocale(me.language);
     } catch (error: unknown) {
+      if (error instanceof ApiError && error.status === 429) {
+        startThrottle(error.retryAfterSeconds ?? 60);
+        return;
+      }
+
       // API errors are handled globally through client middleware + toast presenter.
       if (!(error instanceof ApiError) && error instanceof Error) {
         console.error(error);
@@ -249,6 +264,10 @@
 
   .auth-form__fields {
     gap: var(--s-app-space-3);
+  }
+
+  .auth-form__throttle {
+    min-width: 0;
   }
 
   .auth-form__submit {

@@ -131,4 +131,13 @@ describe("error-toast status-to-message-key mapping", () => {
       expect.objectContaining({ messageKey: "errors.periodAlreadySubmitted" })
     );
   });
+
+  it("stays silent for tooManyAttempts, which the login form renders inline", () => {
+    const presenter = vi.fn();
+    registerToastPresenter(presenter);
+
+    showApiErrorToast(429, { detail: "tooManyAttempts" });
+
+    expect(presenter).not.toHaveBeenCalled();
+  });
 });

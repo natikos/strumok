@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+import { buildApiError } from "./client";
 import { registerToastPresenter } from "./error-toast";
 
 /**
@@ -164,5 +165,24 @@ describe("appApiClient and authApiClient CSRF header", () => {
 
     const request = fetchMock.mock.calls[0]?.[0] as Request;
     expect(request.headers.get("X-Requested-With")).toBe("XMLHttpRequest");
+  });
+});
+
+describe("buildApiError", () => {
+  it("reads Retry-After from the response headers", () => {
+    const error = buildApiError(
+      429,
+      { detail: "tooManyAttempts" },
+      new Headers({ "Retry-After": "120" })
+    );
+
+    expect(error.retryAfterSeconds).toBe(120);
+  });
+
+  it("leaves retryAfterSeconds undefined when the header is missing or invalid", () => {
+    expect(buildApiError(429, { detail: "x" }).retryAfterSeconds).toBeUndefined();
+    expect(
+      buildApiError(429, { detail: "x" }, new Headers({ "Retry-After": "soon" })).retryAfterSeconds
+    ).toBeUndefined();
   });
 });
