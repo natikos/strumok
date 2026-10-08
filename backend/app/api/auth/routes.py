@@ -1,7 +1,7 @@
 import logging
 from typing import Any
 
-from fastapi import APIRouter, Cookie, Depends, HTTPException, Response, status
+from fastapi import APIRouter, Cookie, Depends, HTTPException, Request, Response, status
 from sqlmodel import Session
 
 from app.api.auth.schemas import (
@@ -29,6 +29,13 @@ from app.api.auth.service import (
     register_user,
     request_email_verification_link,
 )
+from app.api.auth.throttle import (
+    LOGIN_EMAIL_LIMIT,
+    LOGIN_IP_LIMIT,
+    TooManyAttemptsError,
+    check_not_throttled,
+    record_failure,
+)
 from app.api.deps import get_current_user
 from app.api.deps.auth import AUTH_CHALLENGE_HEADERS
 from app.core.config import settings
@@ -51,6 +58,21 @@ REGISTER_RESPONSES: dict[int | str, dict[str, Any]] = {
 }
 
 LOGIN_RESPONSES: dict[int | str, dict[str, Any]] = {
+    status.HTTP_429_TOO_MANY_REQUESTS: {
+        "description": "Too many failed attempts; see Retry-After",
+        "model": ErrorOut,
+        "headers": {
+            "Retry-After": {
+                "description": "Seconds until the next attempt is allowed",
+                "schema": {"type": "integer"},
+            }
+        },
+        "content": {
+            "application/json": {
+                "example": {"detail": "tooManyAttempts"},
+            }
+        },
+    },
     status.HTTP_401_UNAUTHORIZED: {
         "description": "Invalid credentials",
         "model": ErrorOut,
@@ -59,7 +81,7 @@ LOGIN_RESPONSES: dict[int | str, dict[str, Any]] = {
                 "example": {"detail": "invalidCredentials"},
             }
         },
-    }
+    },
 }
 
 ME_RESPONSES: dict[int | str, dict[str, Any]] = {
@@ -166,9 +188,23 @@ def register(
 @router.post("/login", response_model=UserOut, responses=LOGIN_RESPONSES)
 def login(
     payload: LoginIn,
+    request: Request,
     response: Response,
     session: Session = Depends(get_session),
 ) -> UserOut:
+    email_key = f"login:email:{payload.email.strip().lower()}"
+    ip_key = f"login:ip:{request.client.host if request.client else 'unknown'}"
+
+    try:
+        check_not_throttled(session=session, key=email_key, limit=LOGIN_EMAIL_LIMIT)
+        check_not_throttled(session=session, key=ip_key, limit=LOGIN_IP_LIMIT)
+    except TooManyAttemptsError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail="tooManyAttempts",
+            headers={"Retry-After": str(exc.retry_after_seconds)},
+        ) from exc
+
     try:
         user = authenticate_user(
             session=session, email=payload.email, password=payload.password
@@ -177,6 +213,8 @@ def login(
 
         return UserOut.from_user(user)
     except InvalidCredentialsError as exc:
+        record_failure(session=session, key=email_key, limit=LOGIN_EMAIL_LIMIT)
+        record_failure(session=session, key=ip_key, limit=LOGIN_IP_LIMIT)
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="invalidCredentials",
