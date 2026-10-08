@@ -25,8 +25,9 @@ the one shared utility bill. A user can
 hold multiple households (frontend tracks a "current household" in localStorage), but a
 household has at most one owning user.
 
-Per-household billing (turning usage into `amount_charged_uah`) is unimplemented — see
-[Known limitations](docs/known-limitations.md).
+Per-household billing is partly implemented: `amount_charged_uah` is computed at submit
+time from a flat day/night tariff (`ElectricityRate`) and frozen on the reading. It is not
+yet a share of the shared bill — see [Known limitations](docs/known-limitations.md).
 
 Keep this section current as the domain evolves — update it in the same change that adds or
 changes a concept, not as separate cleanup later.
@@ -37,10 +38,10 @@ changes a concept, not as separate cleanup later.
 - **Backend module shape**: `backend/app/api/<feature>/{routes,schemas,service}.py`. No DB access in routes.
 - **Household scoping**: every household-bound route resolves access through a dependency that verifies ownership and 403s otherwise (`require_household_id`). Follow that pattern for new routes.
 - **Money/usage**: `Decimal` end to end in the backend; JSON emits them as strings, so the frontend parses.
-- **Prefer installed libraries**: don't hand-roll logic (date math, formatting, etc.) that an already-installed dependency covers — e.g. use `date-fns` (already a dependency, see `frontend/src/features/meter-readings/deadline.ts`) instead of native `Date` arithmetic.
+- **Prefer installed libraries**: don't hand-roll logic (date math, formatting, etc.) that an already-installed dependency covers — e.g. use `date-fns` (already a dependency, see `frontend/src/shared/utils/deadline.ts`) instead of native `Date` arithmetic.
 - **Reuse before writing**: before adding a helper, check `frontend/src/shared/` (and `frontend/src/utils/`) for existing logic that already does it — e.g. formatting a meter value is `frontend/src/shared/utils/format.ts`, not a copy in each component. If you find the same logic duplicated across components while implementing something new, extract it to `shared/` rather than adding a third copy.
 - **Generated types**: `frontend/src/shared/api/generated/openapi.ts` is produced by `bun run api:types` against a running backend. Never hand-edit; regenerate after changing schemas.
-- **Migrations**: hand-written SQL in `backend/migrations/`, applied manually. `init_db()` only runs `create_all` in development. No Alembic.
+- **Migrations**: there is no migrations directory yet (tracked in #140). `init_db()` only runs `create_all` in development. No Alembic.
 - **Frontend layout**: `features/` (domain logic + components), `pages/` (routed views), `shared/`, `layouts/`. Aliases `@/`, `@features`, `@pages`, `@shared`, `@utils`. Components under those dirs and all PrimeVue components are auto-imported — don't add explicit imports.
 - **Styling**: scoped SCSS with BEM, `--s-*` design tokens from `src/preset.ts` (check there before hand-rolling colors), `layout` SCSS module auto-injected. Mobile viewport first, minimum supported width **360px** — write base styles for 360px, then layer on wider layouts with `@include layout.respond-to("sm"|"md"|"lg"|"xl")` (`frontend/src/shared/styles/_layout.scss`) instead of a new hardcoded `@media` breakpoint. Grid/flex children holding text or inputs need `min-width: 0` or they can force overflow at 360px.
 

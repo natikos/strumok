@@ -59,7 +59,7 @@ otherwise pick up.
 
 **Postgres is required — SQLite will not do.** `NUMERIC` columns come back as floats
 under SQLite, which destroys the exact-`Decimal` guarantee that money handling
-depends on, and the import script and migrations use Postgres-only features
+depends on, and the import script uses Postgres-only features
 (`on_conflict_do_update`, `LAG() OVER (...)`).
 
 ### Isolation
@@ -149,12 +149,9 @@ tests. Highest-value gaps, roughly in order:
    string and is safe only because ownership is re-checked; nothing stops a future
    route skipping that dependency. Also worth pinning: with the parameter omitted, a
    user owning several households resolves to the oldest one.
-2. **Usage maths.** Three implementations disagree — `app/api/meter_readings/service.py`
-   does not clamp negative usage, while `migrations/001_calculate_meter_usage.sql`
-   (`GREATEST(..., 0)`) and `scripts/calculate_meter_usage.py` (`max(..., 0)`) both do.
-   The service also picks the "previous" reading by `ORDER BY period DESC`, i.e. the
-   lexicographically greatest period rather than the one immediately before, so
-   backfilling an older period computes usage against a newer reading.
+2. **Usage maths.** The service clamps negative usage and takes the previous reading
+   as the latest one before the submitted period; both behaviours still want pinning
+   in tests, as does agreement with `scripts/calculate_meter_usage.py`.
 3. **Duplicate periods**, including the concurrent case that the unique constraint
    catches.
 4. **`shared/api/client.ts` refresh path** — single in-flight refresh, one retry, no
