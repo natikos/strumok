@@ -14,17 +14,19 @@ is the real `Household.id`. Rows with no mapping entry are reported and
 skipped. There is deliberately no name matching: two households sharing a
 surname must never be silently merged.
 
-Numeric cells parse as `Decimal` (comma separator accepted). If any cell is
-malformed the script aborts before writing anything and lists every bad row
-and column.
+Numeric cells parse as `Decimal` (comma separator accepted); a blank cell is 0.
+If any non-blank cell is malformed the script aborts before writing anything
+and lists every bad row and column.
 """
 
 import argparse
 import csv
+import re
 import sys
+import unicodedata
 from dataclasses import dataclass
 from datetime import datetime, timezone
-from decimal import Decimal, InvalidOperation
+from decimal import ROUND_HALF_UP, Decimal, InvalidOperation
 from pathlib import Path
 
 from app.db.engine import engine
@@ -57,6 +59,21 @@ class CsvValidationError(Exception):
 
 # Spreadsheet summary rows are labelled "Сума" ("total") and must not be imported.
 TOTAL_ROW_MARKER = "сума"
+HEADER_MARKER = "день показник"
+UA_MONTHS = {
+    "січень": 1,
+    "лютий": 2,
+    "березень": 3,
+    "квітень": 4,
+    "травень": 5,
+    "червень": 6,
+    "липень": 7,
+    "серпень": 8,
+    "вересень": 9,
+    "жовтень": 10,
+    "листопад": 11,
+    "грудень": 12,
+}
 NUMERIC_COLUMNS = (
     "day_meter",
     "night_meter",
@@ -80,10 +97,11 @@ class ParsedRow:
 
 def parse_decimal(raw: str, *, row_num: int, column: str) -> Decimal:
     """Parse a numeric cell as Decimal, accepting a comma decimal separator.
-    Raises ImportValidationError rather than silently defaulting to 0 -- the
-    behavior this replaces is exactly what corrupted historical charges."""
+    A blank cell is 0 (the source sheets leave unused meters empty); any
+    other unparseable value raises ImportValidationError rather than being
+    zeroed -- silently zeroing garbage is what corrupted historical charges."""
     if not raw.strip():
-        raise ImportValidationError(row_num, column, raw)
+        return Decimal(0)
 
     cleaned = raw.strip().replace(" ", "").replace(",", ".")
     try:
@@ -103,6 +121,8 @@ def parse_csv(file_path: str) -> list[ParsedRow]:
     with open(file_path, encoding="utf-8", newline="") as meter_file:
         for row_num, row in enumerate(csv.reader(meter_file), start=1):
             if not row or not row[0].strip():
+                continue
+            if any(HEADER_MARKER in cell.lower() for cell in row):
                 continue
 
             # Some sheets lead with a numeric ID column, some don't.
@@ -126,6 +146,9 @@ def parse_csv(file_path: str) -> list[ParsedRow]:
                     errors.append(exc)
 
             if not errors:
+                values["amount_charged"] = values["amount_charged"].quantize(
+                    Decimal("0.01"), rounding=ROUND_HALF_UP
+                )
                 rows.append(
                     ParsedRow(
                         row_num=row_num,
@@ -168,10 +191,17 @@ def get_valid_household_ids() -> set[int]:
 
 
 def get_period(file_path: str) -> str:
-    filename = Path(file_path).stem
-    month, year = filename.split("_")
-    month_num = datetime.strptime(month, "%B").month
-    return f"20{year}-{month_num:02d}"
+    """Derive "YYYY-MM" from a filename like `Березень26.csv`."""
+    # macOS may hand back decomposed Cyrillic (и + combining breve for й).
+    stem = unicodedata.normalize("NFC", Path(file_path).stem)
+    match = re.fullmatch(r"(\D+?)_?(\d{2})", stem)
+    month_num = UA_MONTHS.get(match.group(1).strip().lower()) if match else None
+    if match is None or month_num is None:
+        raise ValueError(
+            f"cannot read period from filename {Path(file_path).name!r}; "
+            "expected a Ukrainian month name plus 2-digit year, e.g. Березень26.csv"
+        )
+    return f"20{match.group(2)}-{month_num:02d}"
 
 
 def match_rows(

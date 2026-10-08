@@ -15,6 +15,7 @@ Pure parsing/matching logic (`parse_decimal`, `parse_csv`, `match_rows`,
 `load_mapping`) touches no database at all and is tested directly.
 """
 
+import unicodedata
 from decimal import Decimal
 
 import pytest
@@ -25,6 +26,7 @@ from app.db.engine import engine as real_engine
 from app.db.models import ElectricityRate, Household, MeterReading
 from scripts import calculate_meter_usage
 from scripts.import_meter_history import (
+    CsvValidationError,
     ImportValidationError,
     ParsedRow,
     get_period,
@@ -82,11 +84,9 @@ class TestParseDecimal:
         assert result == Decimal("3205.50")
         assert str(result) == "3205.50"
 
-    def test_empty_cell_raises_naming_row_and_column(self) -> None:
-        with pytest.raises(ImportValidationError) as exc_info:
-            parse_decimal("", row_num=7, column="night_usage")
-        assert exc_info.value.row_num == 7
-        assert exc_info.value.column == "night_usage"
+    def test_blank_cell_parses_as_zero(self) -> None:
+        assert parse_decimal("", row_num=7, column="night_usage") == Decimal(0)
+        assert parse_decimal("  ", row_num=7, column="night_usage") == Decimal(0)
 
     def test_non_numeric_cell_raises_naming_row_and_column(self) -> None:
         with pytest.raises(ImportValidationError) as exc_info:
@@ -102,21 +102,32 @@ class TestParseCsv:
     def test_malformed_numeric_cell_raises_naming_exact_row_and_column(
         self, tmp_path
     ) -> None:
-        csv_path = tmp_path / "December_24.csv"
+        csv_path = tmp_path / "Грудень24.csv"
         csv_path.write_text(
             "1,Petrenko Ivan,100,50,10,5,300\n"
             "2,Sydorenko Olha,abc,60,12,6,320\n",  # row 2, day_meter is malformed
             encoding="utf-8",
         )
 
-        with pytest.raises(ImportValidationError) as exc_info:
+        with pytest.raises(CsvValidationError) as exc_info:
             parse_csv(str(csv_path))
 
-        assert exc_info.value.row_num == 2
-        assert exc_info.value.column == "day_meter"
+        [error] = exc_info.value.errors
+        assert error.row_num == 2
+        assert error.column == "day_meter"
+
+    def test_amount_charged_is_rounded_to_two_decimals(self, tmp_path) -> None:
+        csv_path = tmp_path / "Грудень24.csv"
+        csv_path.write_text(
+            "1,Petrenko Ivan,100,50,10,5,2524.135000000005\n", encoding="utf-8"
+        )
+
+        [row] = parse_csv(str(csv_path))
+
+        assert row.amount_charged == Decimal("2524.14")
 
     def test_valid_rows_parse_all_fields(self, tmp_path) -> None:
-        csv_path = tmp_path / "December_24.csv"
+        csv_path = tmp_path / "Грудень24.csv"
         csv_path.write_text("1,Petrenko Ivan,100,50,10,5,300\n", encoding="utf-8")
 
         rows = parse_csv(str(csv_path))
@@ -136,8 +147,16 @@ class TestParseCsv:
 
 class TestGetPeriod:
     def test_derives_period_from_filename_across_year_boundary(self, tmp_path) -> None:
-        assert get_period(str(tmp_path / "December_24.csv")) == "2024-12"
-        assert get_period(str(tmp_path / "January_25.csv")) == "2025-01"
+        assert get_period(str(tmp_path / "Грудень24.csv")) == "2024-12"
+        assert get_period(str(tmp_path / "Січень25.csv")) == "2025-01"
+
+    def test_accepts_decomposed_unicode_filename(self, tmp_path) -> None:
+        decomposed = unicodedata.normalize("NFD", "Лютий26.csv")
+        assert get_period(str(tmp_path / decomposed)) == "2026-02"
+
+    def test_unrecognised_filename_raises(self, tmp_path) -> None:
+        with pytest.raises(ValueError, match="cannot read period"):
+            get_period(str(tmp_path / "March_26.csv"))
 
 
 # --- match_rows: mapping-only, no fuzzy fallback ---------------------------
@@ -311,7 +330,7 @@ class TestMainEndToEnd:
         household = make_household(real_session, name="Plot C")
         real_session.commit()
 
-        csv_path = tmp_path / "December_24.csv"
+        csv_path = tmp_path / "Грудень24.csv"
         csv_path.write_text(
             "1,Plot C,100,50,10,5,300\n"
             "2,Plot D,abc,60,12,6,320\n",  # malformed day_meter
@@ -354,7 +373,7 @@ class TestMainEndToEnd:
         household = make_household(real_session, name="Plot E")
         real_session.commit()
 
-        csv_path = tmp_path / "December_24.csv"
+        csv_path = tmp_path / "Грудень24.csv"
         csv_path.write_text("1,Plot E,100,50,10,5,300\n", encoding="utf-8")
         mapping_path = tmp_path / "mapping.csv"
         mapping_path.write_text(
