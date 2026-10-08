@@ -4,34 +4,19 @@ Usage:
     cd backend
     uv run python scripts/import_meter_history.py <csv_path> --mapping <mapping.csv> [--apply]
 
-Without --apply this is a dry run: it prints the match report (which CSV row
-maps to which household, and which don't) and would-be writes, and makes no
-database changes. Pass --apply to actually write.
+Without --apply this is a dry run: it prints the match report and would-be
+writes, and changes nothing.
 
-The mapping file is the *only* way a CSV row is matched to a household. It is
-a CSV with a header row and two columns, `csv_id,household_id`:
+The mapping file is the only way a CSV row is matched to a household: a CSV
+with a header row `csv_id,household_id`, where `csv_id` is the source
+spreadsheet's own first-column number (not a database id) and `household_id`
+is the real `Household.id`. Rows with no mapping entry are reported and
+skipped. There is deliberately no name matching: two households sharing a
+surname must never be silently merged.
 
-    csv_id,household_id
-    12,4
-    7,9
-
-`csv_id` is the CSV's own first-column identifier (an arbitrary number from
-the source spreadsheet, not a database id); `household_id` is the real
-`Household.id` it corresponds to. There is no name-based matching of any
-kind -- a CSV row whose `csv_id` has no entry in the mapping file is reported
-as unmatched and never written, never guessed at by name or surname
-similarity. This is a deliberate, load-bearing restriction: two households
-sharing a surname must never be silently merged.
-
-Every numeric cell is parsed as a `Decimal` (accepting a comma decimal
-separator, e.g. "3205,50"). If ANY row has a malformed numeric cell, the
-script aborts before writing anything and reports every such row and column
--- a partial import that silently zeroes out a bad cell is worse than no
-import at all.
-
-Already-imported (household_id, period) pairs are left untouched (the
-database's own uniqueness constraint enforces this); re-running the script on
-an already-imported file reports the conflicts and changes nothing for them.
+Numeric cells parse as `Decimal` (comma separator accepted). If any cell is
+malformed the script aborts before writing anything and lists every bad row
+and column.
 """
 
 import argparse
@@ -47,16 +32,6 @@ from app.db.models import Household, MeterReading
 from sqlalchemy.dialects.postgresql import insert
 from sqlmodel import Session, select
 
-# Columns, in order, after the leading id/name columns: day meter, night
-# meter, day usage, night usage, amount charged.
-NUMERIC_COLUMNS = (
-    "day_meter",
-    "night_meter",
-    "day_usage",
-    "night_usage",
-    "amount_charged",
-)
-
 
 class ImportValidationError(Exception):
     """A malformed cell was found. Carries enough detail to name the exact
@@ -70,6 +45,25 @@ class ImportValidationError(Exception):
         super().__init__(
             f"row {row_num}, column {column!r}: invalid value {raw_value!r}"
         )
+
+
+class CsvValidationError(Exception):
+    """Every malformed cell found in the CSV, reported together."""
+
+    def __init__(self, errors: list[ImportValidationError]) -> None:
+        self.errors = errors
+        super().__init__(f"{len(errors)} invalid cell(s)")
+
+
+# Spreadsheet summary rows are labelled "Сума" ("total") and must not be imported.
+TOTAL_ROW_MARKER = "сума"
+NUMERIC_COLUMNS = (
+    "day_meter",
+    "night_meter",
+    "day_usage",
+    "night_usage",
+    "amount_charged",
+)
 
 
 @dataclass
@@ -88,7 +82,7 @@ def parse_decimal(raw: str, *, row_num: int, column: str) -> Decimal:
     """Parse a numeric cell as Decimal, accepting a comma decimal separator.
     Raises ImportValidationError rather than silently defaulting to 0 -- the
     behavior this replaces is exactly what corrupted historical charges."""
-    if raw is None or not raw.strip():
+    if not raw.strip():
         raise ImportValidationError(row_num, column, raw)
 
     cleaned = raw.strip().replace(" ", "").replace(",", ".")
@@ -99,58 +93,50 @@ def parse_decimal(raw: str, *, row_num: int, column: str) -> Decimal:
 
 
 def parse_csv(file_path: str) -> list[ParsedRow]:
-    """Parse every data row up front, raising on the first malformed numeric
+    """Parse every data row up front and collect every malformed numeric
     cell, so a bad row anywhere in the file blocks the entire import rather
-    than writing everything before it."""
+    than writing everything before it. Raises CsvValidationError listing all
+    bad cells."""
     rows: list[ParsedRow] = []
+    errors: list[ImportValidationError] = []
 
-    with open(file_path, encoding="utf-8") as meter_file:
-        reader = csv.reader(meter_file)
-
-        for row_num, row in enumerate(reader, start=1):
+    with open(file_path, encoding="utf-8", newline="") as meter_file:
+        for row_num, row in enumerate(csv.reader(meter_file), start=1):
             if not row or not row[0].strip():
                 continue
 
+            # Some sheets lead with a numeric ID column, some don't.
             has_id = row[0].strip().isdigit()
-            name_idx = 1 if has_id else 0
-            day_idx = 2 if has_id else 1
-            night_idx = 3 if has_id else 2
-            day_usage_idx = 4 if has_id else 3
-            night_usage_idx = 5 if has_id else 4
-            amount_idx = 6 if has_id else 5
-
-            name = row[name_idx].strip() if name_idx < len(row) else ""
-            if not name or "сума" in name.lower():
-                continue
-
-            csv_id = row[0].strip() if has_id else ""
+            offset = 1 if has_id else 0
 
             def cell(idx: int) -> str:
-                return row[idx] if idx < len(row) else ""
+                return row[offset + idx] if offset + idx < len(row) else ""
 
-            rows.append(
-                ParsedRow(
-                    row_num=row_num,
-                    csv_id=csv_id,
-                    household_name=name,
-                    day_meter=parse_decimal(
-                        cell(day_idx), row_num=row_num, column="day_meter"
-                    ),
-                    night_meter=parse_decimal(
-                        cell(night_idx), row_num=row_num, column="night_meter"
-                    ),
-                    day_usage=parse_decimal(
-                        cell(day_usage_idx), row_num=row_num, column="day_usage"
-                    ),
-                    night_usage=parse_decimal(
-                        cell(night_usage_idx), row_num=row_num, column="night_usage"
-                    ),
-                    amount_charged=parse_decimal(
-                        cell(amount_idx), row_num=row_num, column="amount_charged"
-                    ),
+            name = cell(0).strip()
+            if not name or TOTAL_ROW_MARKER in name.lower():
+                continue
+
+            values: dict[str, Decimal] = {}
+            for idx, column in enumerate(NUMERIC_COLUMNS, start=1):
+                try:
+                    values[column] = parse_decimal(
+                        cell(idx), row_num=row_num, column=column
+                    )
+                except ImportValidationError as exc:
+                    errors.append(exc)
+
+            if not errors:
+                rows.append(
+                    ParsedRow(
+                        row_num=row_num,
+                        csv_id=row[0].strip() if has_id else "",
+                        household_name=name,
+                        **values,
+                    )
                 )
-            )
 
+    if errors:
+        raise CsvValidationError(errors)
     return rows
 
 
@@ -159,7 +145,7 @@ def load_mapping(mapping_path: str) -> dict[str, int]:
     only accepted way to match a CSV row to a household."""
     mapping: dict[str, int] = {}
 
-    with open(mapping_path, encoding="utf-8") as mapping_file:
+    with open(mapping_path, encoding="utf-8", newline="") as mapping_file:
         reader = csv.DictReader(mapping_file)
         for row_num, row in enumerate(reader, start=2):
             csv_id = (row.get("csv_id") or "").strip()
@@ -295,6 +281,11 @@ def main() -> int:
     try:
         rows = parse_csv(args.csv_path)
         mapping = load_mapping(args.mapping)
+    except CsvValidationError as exc:
+        print("Aborting, invalid cells:", file=sys.stderr)
+        for error in exc.errors:
+            print(f"  {error}", file=sys.stderr)
+        return 1
     except ImportValidationError as exc:
         print(f"Aborting: {exc}", file=sys.stderr)
         return 1
