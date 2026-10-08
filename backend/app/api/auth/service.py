@@ -26,6 +26,9 @@ def list_user_households(*, session: Session, user: User) -> list[Any]:
 
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+# Verified against when no user matches, so unknown emails cost the same bcrypt
+# time as wrong passwords and response time doesn't reveal who is registered.
+_DUMMY_PASSWORD_HASH = pwd_context.hash("timing-equalizer")
 
 
 class EmailAlreadyRegisteredError(Exception):
@@ -79,7 +82,10 @@ def authenticate_user(*, session: Session, email: str, password: str) -> User:
         select(User).where(User.email == email.strip().lower(), User.is_active)
     ).first()
 
-    if user is None or not pwd_context.verify(password, user.password_hash):
+    password_hash = user.password_hash if user else _DUMMY_PASSWORD_HASH
+    password_ok = pwd_context.verify(password, password_hash)
+
+    if user is None or not password_ok:
         raise InvalidCredentialsError
 
     return user

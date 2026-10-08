@@ -10,9 +10,15 @@ from unittest.mock import patch
 
 import pytest
 from jose import jwt
+from sqlalchemy import text
+from sqlmodel import Session
 from starlette.testclient import TestClient
 
-from app.api.auth.service import create_email_verification_token
+from app.api.auth.service import (
+    InvalidCredentialsError,
+    authenticate_user,
+    create_email_verification_token,
+)
 from app.core.config import settings
 from app.core.time import utc_now
 from tests.factories import DEFAULT_PASSWORD, authenticate, make_user
@@ -119,6 +125,103 @@ class TestLogin:
 
         assert response.status_code == 401
         assert response.json()["detail"] == "invalidCredentials"
+
+
+class TestLoginThrottle:
+    def _fail(self, client: TestClient, email: str):
+        return client.post(
+            "/auth/login", json={"email": email, "password": "definitely-wrong"}
+        )
+
+    def test_sixth_failed_login_for_one_email_is_throttled(
+        self, client: TestClient, session
+    ) -> None:
+        make_user(session, email="resident@example.com")
+
+        for _ in range(5):
+            assert self._fail(client, "resident@example.com").status_code == 401
+
+        response = self._fail(client, "Resident@Example.com")
+
+        assert response.status_code == 429
+        assert response.json()["detail"] == "tooManyAttempts"
+        assert 1 <= int(response.headers["Retry-After"]) <= 15 * 60 + 1
+
+    def test_unknown_emails_are_throttled_too(self, client: TestClient) -> None:
+        for _ in range(5):
+            assert self._fail(client, "ghost@example.com").status_code == 401
+
+        assert self._fail(client, "ghost@example.com").status_code == 429
+
+    def test_throttling_one_email_does_not_block_another(
+        self, client: TestClient, session
+    ) -> None:
+        make_user(session, email="neighbour@example.com")
+        for _ in range(6):
+            self._fail(client, "resident@example.com")
+
+        response = client.post(
+            "/auth/login",
+            json={"email": "neighbour@example.com", "password": DEFAULT_PASSWORD},
+        )
+
+        assert response.status_code == 200
+
+    def test_correct_password_succeeds_after_window_expires(
+        self, client: TestClient, session
+    ) -> None:
+        make_user(session, email="resident@example.com")
+        for _ in range(5):
+            self._fail(client, "resident@example.com")
+        session.execute(
+            text(
+                "UPDATE auth_throttle SET window_start = window_start - interval '1 hour'"
+            )
+        )
+
+        response = client.post(
+            "/auth/login",
+            json={"email": "resident@example.com", "password": DEFAULT_PASSWORD},
+        )
+
+        assert response.status_code == 200
+
+    def test_limit_holds_across_separate_sessions_on_one_database(self, engine) -> None:
+        from app.api.auth.throttle import (
+            LOGIN_EMAIL_LIMIT,
+            TooManyAttemptsError,
+            check_not_throttled,
+            record_failure,
+        )
+
+        key = "login:email:shared@example.com"
+        try:
+            for _ in range(LOGIN_EMAIL_LIMIT.max_attempts):
+                with Session(engine) as instance_a:
+                    record_failure(session=instance_a, key=key, limit=LOGIN_EMAIL_LIMIT)
+
+            with Session(engine) as instance_b:
+                with pytest.raises(TooManyAttemptsError):
+                    check_not_throttled(
+                        session=instance_b, key=key, limit=LOGIN_EMAIL_LIMIT
+                    )
+        finally:
+            with Session(engine) as cleanup:
+                cleanup.execute(
+                    text("DELETE FROM auth_throttle WHERE key = :k"), {"k": key}
+                )
+                cleanup.commit()
+
+    def test_unknown_email_still_runs_a_bcrypt_verify(self, session) -> None:
+        with patch(
+            "app.api.auth.service.pwd_context.verify", return_value=False
+        ) as verify:
+            with pytest.raises(InvalidCredentialsError):
+                authenticate_user(
+                    session=session, email="ghost@example.com", password="whatever123"
+                )
+
+        verify.assert_called_once()
 
 
 class TestMe:

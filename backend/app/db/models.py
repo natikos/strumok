@@ -141,3 +141,15 @@ class ElectricityRate(SQLModel, table=True):
         default_factory=utc_now,
         sa_column_kwargs={"server_default": text("CURRENT_TIMESTAMP")},
     )
+
+
+class AuthThrottle(SQLModel, table=True):
+    """Fixed-window counter of failed auth attempts, keyed by what is throttled
+    (e.g. ``login:email:<address>``). Lives in the database, not in memory, so
+    the limit holds across app instances."""
+
+    __tablename__ = "auth_throttle"  # type: ignore
+
+    key: str = Field(primary_key=True)
+    window_start: datetime = Field(primary_key=True)
+    count: int = Field(default=0)
