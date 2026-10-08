@@ -1,6 +1,6 @@
 from decimal import Decimal
 
-from sqlmodel import Session, select
+from sqlmodel import Session, col, select
 
 from app.api.admin.schemas import (
     AdminDashboardHouseholdOut,
@@ -51,18 +51,23 @@ def list_households_with_owners(
         user.id: user
         for user in session.exec(
             select(User).where(
-                User.id.in_({h.user_id for h in households if h.user_id is not None})
+                col(User.id).in_(
+                    {h.user_id for h in households if h.user_id is not None}
+                )
             )
         )
     }
-    return [(h, owners_by_id.get(h.user_id)) for h in households]
+    return [
+        (h, owners_by_id.get(h.user_id) if h.user_id is not None else None)
+        for h in households
+    ]
 
 
 def get_admin_dashboard(*, session: Session) -> AdminDashboardOut:
     current_period = current_billing_period()
     readings = session.exec(
         select(MeterReading).order_by(
-            MeterReading.household_id, MeterReading.period.desc()
+            col(MeterReading.household_id), col(MeterReading.period).desc()
         )
     ).all()
 
@@ -99,7 +104,10 @@ def get_admin_dashboard(*, session: Session) -> AdminDashboardOut:
             )
         )
 
-    return AdminDashboardOut(current_period=current_period, households=households)
+    return AdminDashboardOut(
+        current_period=current_period,
+        households=households,
+    )
 
 
 def _get_active_user(*, session: Session, user_id: int) -> User:

@@ -1,81 +1,110 @@
 import json
 import logging
-from collections import defaultdict
+from collections.abc import Sequence
 from concurrent.futures import ThreadPoolExecutor
+from enum import StrEnum
+from http import HTTPStatus
 from typing import Literal
 
 from pywebpush import WebPushException, webpush
-from sqlmodel import Session, select
+from sqlalchemy import and_
+from sqlalchemy.dialects.postgresql import insert
+from sqlmodel import Session, col, delete, select
 
 from app.core.config import settings
-from app.core.domain import current_billing_period
-from app.db.models import Household, MeterReading, PushSubscription, User
+from app.core.domain import SUBMISSION_DEADLINE_DAY, current_billing_period
+from app.core.domain.billing import kyiv_now
+from app.core.time import utc_now
+from app.db.models import (
+    Household,
+    LanguageCode,
+    MeterReading,
+    NotificationLog,
+    PushSubscription,
+    User,
+)
 
 logger = logging.getLogger(__name__)
 
 ReminderVariant = Literal["opening", "final"]
 
-# Reminder window is days 1-5 of the month; keep messages queued by the push
-# service for that long instead of the pywebpush default (ttl=0, drop if the
-# device is offline right now).
-_REMINDER_TTL_SECONDS = 5 * 24 * 60 * 60
-_MAX_CONCURRENT_SENDS = 10
-
-_NOTIFICATION_CONTENT: dict[ReminderVariant, dict[str, str]] = {
-    "opening": {
-        "title": "Meter reading window is open",
-        "body": "Submit your day/night reading by the 5th.",
+# Keyed by language so this stays separate from the frontend's vue-i18n JSON:
+# the service worker renders the payload as-is, with no client-side lookup.
+_NOTIFICATION_CONTENT: dict[LanguageCode, dict[ReminderVariant, dict[str, str]]] = {
+    LanguageCode.EN: {
+        "opening": {
+            "title": "Meter reading window is open",
+            "body": f"Submit your day/night reading by the {SUBMISSION_DEADLINE_DAY}th.",
+        },
+        "final": {
+            "title": "Last day to submit your reading",
+            "body": "Today's the deadline — submit before midnight.",
+        },
     },
-    "final": {
-        "title": "Last day to submit your reading",
-        "body": "Today's the deadline — submit before midnight.",
+    LanguageCode.UA: {
+        "opening": {
+            "title": "Відкрито подання показників лічильника",
+            "body": f"Подайте денний/нічний показник до {SUBMISSION_DEADLINE_DAY} числа.",
+        },
+        "final": {
+            "title": "Останній день подання показників",
+            "body": "Сьогодні дедлайн — подайте показники до півночі.",
+        },
     },
 }
+
+
+def _content_for(user: User, variant: ReminderVariant) -> dict[str, str]:
+    catalog = _NOTIFICATION_CONTENT.get(
+        user.language, _NOTIFICATION_CONTENT[LanguageCode.UA]
+    )
+    return catalog[variant]
 
 
 def upsert_subscription(
     *, session: Session, user: User, endpoint: str, p256dh: str, auth: str
 ) -> PushSubscription:
-    existing = session.exec(
-        select(PushSubscription).where(PushSubscription.endpoint == endpoint)
-    ).first()
-
-    if existing is not None:
-        existing.user_id = user.id  # type: ignore[assignment]
-        existing.p256dh = p256dh
-        existing.auth = auth
-        session.add(existing)
-        session.commit()
-        session.refresh(existing)
-        return existing
-
-    subscription = PushSubscription(
-        user_id=user.id,  # type: ignore[arg-type]
-        endpoint=endpoint,
-        p256dh=p256dh,
-        auth=auth,
+    stmt = (
+        insert(PushSubscription)
+        .values(user_id=user.id, endpoint=endpoint, p256dh=p256dh, auth=auth)
+        .on_conflict_do_update(
+            index_elements=["endpoint"],
+            set_={"user_id": user.id, "p256dh": p256dh, "auth": auth},
+        )
+        .returning(PushSubscription)
     )
-    session.add(subscription)
+    subscription = session.exec(stmt).scalar_one()
     session.commit()
-    session.refresh(subscription)
     return subscription
 
 
 def delete_subscription(*, session: Session, user: User, endpoint: str) -> None:
-    subscription = session.exec(
-        select(PushSubscription)
-        .where(PushSubscription.endpoint == endpoint)
-        .where(PushSubscription.user_id == user.id)
-    ).first()
-
-    if subscription is not None:
-        session.delete(subscription)
-        session.commit()
+    session.exec(
+        delete(PushSubscription)
+        .where(col(PushSubscription.endpoint) == endpoint)
+        .where(col(PushSubscription.user_id) == user.id)
+    )
+    session.commit()
 
 
-def _send_one(
-    subscription: PushSubscription, payload: str
-) -> tuple[PushSubscription, str]:
+class _SendOutcome(StrEnum):
+    SENT = "sent"
+    GONE = "gone"
+    FAILED = "failed"
+
+
+def _seconds_until_window_closes() -> int:
+    """Seconds left in the submission window (Kyiv time). Used as the push
+    TTL so an offline device still gets the reminder when it reconnects, but a
+    reminder is dropped rather than delivered after the deadline has passed."""
+    now = kyiv_now()
+    window_end = now.replace(
+        day=SUBMISSION_DEADLINE_DAY + 1, hour=0, minute=0, second=0, microsecond=0
+    )
+    return max(int((window_end - now).total_seconds()), 0)
+
+
+def _send_one(subscription: PushSubscription, payload: str) -> _SendOutcome:
     """Send to a single subscription. Runs on a worker thread; must not touch the session."""
     try:
         webpush(
@@ -89,104 +118,118 @@ def _send_one(
             data=payload,
             vapid_private_key=settings.push.vapid_private_key.get_secret_value(),
             vapid_claims={"sub": settings.push.vapid_subject},
-            ttl=_REMINDER_TTL_SECONDS,
+            ttl=_seconds_until_window_closes(),
             headers={"Urgency": "normal"},
         )
     except WebPushException as exc:
         status_code = getattr(exc.response, "status_code", None)
-        if status_code in (404, 410):
-            return subscription, "remove"
+        if status_code in (HTTPStatus.NOT_FOUND, HTTPStatus.GONE):
+            return _SendOutcome.GONE
         logger.exception("Push send failed for subscription %s", subscription.id)
-        return subscription, "error"
+        return _SendOutcome.FAILED
     except Exception:
-        # Anything else (network errors, malformed stored keys, ...) must not
-        # escape the worker thread: executor.map() re-raises it at this item's
-        # position while send_reminders() iterates results, which would abort
-        # the whole batch and roll back every deletion already staged for
-        # subscriptions handled earlier in the same run.
         logger.exception("Push send failed for subscription %s", subscription.id)
-        return subscription, "error"
-    return subscription, "sent"
+        return _SendOutcome.FAILED
+    return _SendOutcome.SENT
+
+
+def _due_subscriptions(
+    *, session: Session, period: str, variant: ReminderVariant
+) -> Sequence[PushSubscription]:
+    """Subscriptions of active users who still owe a reading this period and
+    haven't been sent this variant yet."""
+    query = (
+        select(PushSubscription)
+        .join(User, col(User.id) == PushSubscription.user_id)
+        .join(Household, col(Household.user_id) == User.id)
+        .outerjoin(
+            MeterReading,
+            and_(
+                col(MeterReading.household_id) == Household.id,
+                col(MeterReading.period) == period,
+            ),
+        )
+        .outerjoin(
+            NotificationLog,
+            and_(
+                col(NotificationLog.user_id) == User.id,
+                col(NotificationLog.period) == period,
+                col(NotificationLog.variant) == variant,
+            ),
+        )
+        .where(
+            User.is_active,
+            Household.is_active,
+            col(MeterReading.household_id).is_(None),
+            col(NotificationLog.user_id).is_(None),
+        )
+        .distinct()
+    )
+    return session.exec(query).all()
+
+
+def _record_notified(
+    *, session: Session, user_ids: set[int], period: str, variant: ReminderVariant
+) -> None:
+    session.exec(
+        insert(NotificationLog)
+        .values(
+            [
+                {
+                    "user_id": user_id,
+                    "period": period,
+                    "variant": variant,
+                    "sent_at": utc_now(),
+                }
+                for user_id in user_ids
+            ]
+        )
+        .on_conflict_do_nothing(index_elements=["user_id", "period", "variant"])
+    )
 
 
 def send_reminders(*, session: Session, variant: ReminderVariant) -> tuple[int, int]:
-    """Send a push reminder to every subscribed user with an unsubmitted household
-    reading for the current period. Returns (sent, removed) counts."""
-    content = _NOTIFICATION_CONTENT[variant]
+    """Push a reminder to each subscribed, active user with an unsubmitted
+    household reading this period. Idempotent per (period, variant):
+    repeat or overlapping calls notify each user at most once. Returns
+    (sent, removed) counts."""
     period = current_billing_period()
-
-    households_by_user: dict[int, list[int]] = defaultdict(list)
-    for household_id, user_id in session.exec(
-        select(Household.id, Household.user_id).where(Household.user_id.is_not(None))
-    ).all():
-        households_by_user[user_id].append(household_id)
-
-    submitted_household_ids = set(
-        session.exec(
-            select(MeterReading.household_id).where(MeterReading.period == period)
+    subscriptions = _due_subscriptions(session=session, period=period, variant=variant)
+    users_by_id = {
+        user.id: user
+        for user in session.exec(
+            select(User).where(col(User.id).in_({sub.user_id for sub in subscriptions}))
         ).all()
-    )
+    }
+    payloads = [
+        _notification_payload(_content_for(users_by_id[sub.user_id], variant))
+        for sub in subscriptions
+    ]
 
-    subscriptions_by_user: dict[int, list[PushSubscription]] = defaultdict(list)
-    for subscription in session.exec(select(PushSubscription)).all():
-        subscriptions_by_user[subscription.user_id].append(subscription)
+    # webpush() is a blocking HTTP call to the browser vendor's push service. Sending
+    # serially would make the run take the sum of every round trip, so one slow or
+    # timing-out endpoint delays all the others. The pool overlaps the waiting, and the
+    # worker cap keeps us from opening hundreds of connections at once.
+    with ThreadPoolExecutor(max_workers=10) as executor:
+        outcomes = executor.map(_send_one, subscriptions, payloads)
+        results = list(zip(subscriptions, outcomes))
 
-    due_subscriptions: list[PushSubscription] = []
-    for user_id, subscriptions in subscriptions_by_user.items():
-        household_ids = households_by_user.get(user_id, [])
-        if not household_ids:
-            continue
-        if all(
-            household_id in submitted_household_ids for household_id in household_ids
-        ):
-            continue
-        due_subscriptions.extend(subscriptions)
+    sent = [sub for sub, outcome in results if outcome == _SendOutcome.SENT]
+    gone = [sub for sub, outcome in results if outcome == _SendOutcome.GONE]
 
-    payload = _notification_payload(content)
-    sent = 0
-    removed = 0
-    # Bounded concurrency: each webpush() call is a blocking HTTP request, and a serial
-    # loop over hundreds of subscriptions could stall the whole request for one slow push
-    # service. A thread pool keeps requests in flight without unbounded concurrency.
-    with ThreadPoolExecutor(max_workers=_MAX_CONCURRENT_SENDS) as executor:
-        for subscription, outcome in executor.map(
-            lambda subscription: _send_one(subscription, payload), due_subscriptions
-        ):
-            if outcome == "sent":
-                sent += 1
-            elif outcome == "remove":
-                session.delete(subscription)
-                removed += 1
+    for subscription in gone:
+        session.delete(subscription)
+    if sent:
+        _record_notified(
+            session=session,
+            user_ids={sub.user_id for sub in sent},
+            period=period,
+            variant=variant,
+        )
 
     session.commit()
-    return sent, removed
+    return len(sent), len(gone)
 
 
 def _notification_payload(content: dict[str, str]) -> str:
     return json.dumps({**content, "url": "/"})
-
-
-# TEMPORARY: manual end-to-end check that a deployed subscription actually
-# receives a push, without waiting for the scheduled reminder or depending on
-# submission status. Safe to remove once push has been verified in production
-# (issue #94).
-def send_test_notification(*, session: Session, user: User) -> tuple[int, int]:
-    subscriptions = session.exec(
-        select(PushSubscription).where(PushSubscription.user_id == user.id)
-    ).all()
-    payload = _notification_payload(
-        {"title": "Strumok", "body": "Test notification -- push is working."}
-    )
-
-    sent = 0
-    removed = 0
-    for subscription in subscriptions:
-        _, outcome = _send_one(subscription, payload)
-        if outcome == "sent":
-            sent += 1
-        elif outcome == "remove":
-            session.delete(subscription)
-            removed += 1
-
-    session.commit()
-    return sent, removed

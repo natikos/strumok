@@ -8,9 +8,8 @@ that these two fields are actually typed as SecretStr.
 """
 
 import pytest
-from pydantic import SecretStr, ValidationError
-
 from app.core.config import AuthSettings, BrevoSettings, Settings
+from pydantic import SecretStr, ValidationError
 
 
 def test_auth_secret_key_is_a_secret_str() -> None:
@@ -25,10 +24,10 @@ def test_missing_environment_fails_startup(monkeypatch: pytest.MonkeyPatch) -> N
     """A deploy that forgets to set ENVIRONMENT must not silently run as development (#139)."""
     monkeypatch.delenv("ENVIRONMENT", raising=False)
     with pytest.raises(ValidationError):
-        Settings()
+        Settings(_env_file=None)  # pyright: ignore[reportCallIssue]
 
 
 def test_invalid_environment_fails_startup(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("ENVIRONMENT", "staging")
     with pytest.raises(ValidationError):
-        Settings()
+        Settings()  # pyright: ignore[reportCallIssue]

@@ -1,6 +1,8 @@
+import { format, subYears } from "date-fns";
 import { computed, type Ref } from "vue";
 
 import type { MeterPeriod } from "@/features/dashboard/composables/useMeterReadings";
+import { periodToDate } from "@shared/utils/billing-period";
 import { toDecimal } from "@shared/utils/format";
 
 /** Periods shown in the usage chart and used for the season/record aggregates. */
@@ -234,8 +236,7 @@ export function useUsageInsights(slots: Ref<MeterPeriod[]>) {
 
     // Match on the "YYYY-MM" key rather than diffing Dates, which avoids the
     // month-length and DST traps in `setMonth`.
-    const [year, month] = last.period.split("-");
-    const previousPeriod = `${Number(year) - 1}-${month}`;
+    const previousPeriod = format(subYears(periodToDate(last.period), 1), "yyyy-MM");
     const previousSlot = slots.value.find((slot) => slot.period === previousPeriod);
     const previous = previousSlot ? toUsage(previousSlot) : null;
 

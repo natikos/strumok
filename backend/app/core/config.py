@@ -31,11 +31,11 @@ class AuthSettings(BaseSettings):
 
     secret_key: SecretStr
     algorithm: str = "HS256"
-    access_token_expiration: int = 1440  # (min) 24 hours
+    access_token_expiration: int = 60  # (min) 1 hour -- refreshed via /auth/refresh
     auth_cookie_name: str = "access_token"
     verify_email_resend_cooldown_seconds: int = 180  # 3 minutes
     verification_token_expiration: int = 60  # (min) 1 hour
-    internal_secret: SecretStr  # API secret for internal endpoints (push notifications, webhooks, cron jobs, etc.)
+    refresh_absolute_window_days: int = 180  # (days) hard session cap since login
 
 
 class BrevoSettings(BaseSettings):
@@ -94,12 +94,13 @@ class Settings(BaseSettings):
 
     @property
     def auth_token_ttl_seconds(self) -> int:
-        return self.auth.access_token_expiration * 60
+        """Cookie max_age: the full session cap, not the short JWT lifetime."""
+        return self.auth.refresh_absolute_window_days * 24 * 60 * 60
 
 
 @lru_cache
 def get_settings() -> Settings:
-    return Settings()
+    return Settings()  # type: ignore
 
 
 settings: Settings = get_settings()

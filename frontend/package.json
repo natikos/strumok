@@ -14,6 +14,7 @@
     "api:types": "bunx openapi-typescript \"${OPENAPI_URL:-http://localhost:8000/openapi.json}\" -o src/shared/api/generated/openapi.ts"
   },
   "dependencies": {
+    "@date-fns/tz": "^1.5.0",
     "@primeicons/vue": "^8.0.2",
     "@primeuix/themes": "^2.0.3",
     "@primevue/forms": "^4.5.5",

@@ -13,11 +13,11 @@ from app.api import (
     auth_router,
     electricity_rates_router,
     meter_readings_router,
-    push_internal_router,
     push_router,
 )
-from app.api.push.scheduler import start_reminder_scheduler, stop_reminder_scheduler
+from app.api.push.scheduler import start_reminder_scheduler
 from app.core.config import settings
+from app.core.csrf import CsrfMiddleware
 from app.db.engine import init_db
 
 logger = logging.getLogger(__name__)
@@ -28,25 +28,25 @@ DIST_DIR = Path(__file__).resolve().parent.parent / "dist"
 @asynccontextmanager
 async def lifespan(_: FastAPI):
     init_db()
-    start_reminder_scheduler()
+    scheduler = start_reminder_scheduler()
     yield
-    stop_reminder_scheduler()
+    scheduler.shutdown(wait=False)
 
 
 app = FastAPI(title=settings.app_name, lifespan=lifespan)
+app.add_middleware(CsrfMiddleware)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.cors_origins,
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-    allow_headers=["Authorization", "Content-Type", "Accept"],
+    allow_headers=["Authorization", "Content-Type", "Accept", "X-Requested-With"],
 )
 app.include_router(auth_router)
 app.include_router(meter_readings_router)
 app.include_router(admin_router)
 app.include_router(electricity_rates_router)
 app.include_router(push_router)
-app.include_router(push_internal_router)
 
 
 @app.exception_handler(Exception)

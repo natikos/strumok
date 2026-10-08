@@ -5,6 +5,8 @@ import { appApiClient, buildApiError } from "./client";
 type MeterReadingIn = components["schemas"]["MeterReadingIn"];
 export type MeterReadingOut = components["schemas"]["MeterReadingOut"];
 
+export const NO_RATE_CONFIGURED_ERROR_CODE = "noRateConfigured";
+
 export async function listMyMeterReadings(
   householdId?: number | null,
 ): Promise<MeterReadingOut[]> {

@@ -5,11 +5,14 @@ from sqlmodel import Session
 
 from app.api.auth.schemas import ErrorOut
 from app.api.deps import get_current_user
+from app.api.electricity_rates.service import NoRateConfiguredError
 from app.api.meter_readings.schemas import MeterReadingIn, MeterReadingOut
 from app.api.meter_readings.service import (
+    HouseholdInactiveError,
     HouseholdNotAccessibleError,
     NoHouseholdMembershipError,
     PeriodAlreadySubmittedError,
+    PeriodNotOpenError,
     get_owned_household_id,
     get_user_household_id,
     list_meter_readings,
@@ -31,11 +34,16 @@ NO_HOUSEHOLD_RESPONSES: dict[int | str, dict[str, Any]] = {
         },
     },
     status.HTTP_403_FORBIDDEN: {
-        "description": "User does not own this household",
+        "description": "User does not own this household, or it is inactive",
         "model": ErrorOut,
         "content": {
             "application/json": {
-                "example": {"detail": "householdNotAccessible"},
+                "examples": {
+                    "householdNotAccessible": {
+                        "value": {"detail": "householdNotAccessible"}
+                    },
+                    "householdInactive": {"value": {"detail": "householdInactive"}},
+                }
             }
         },
     },
@@ -44,11 +52,27 @@ NO_HOUSEHOLD_RESPONSES: dict[int | str, dict[str, Any]] = {
 SUBMIT_RESPONSES: dict[int | str, dict[str, Any]] = {
     **NO_HOUSEHOLD_RESPONSES,
     status.HTTP_409_CONFLICT: {
-        "description": "Reading for this period already exists",
+        "description": (
+            "Reading for this period already exists, the period isn't open, "
+            "or no rate covers it"
+        ),
         "model": ErrorOut,
         "content": {
             "application/json": {
-                "example": {"detail": "periodAlreadySubmitted"},
+                "examples": {
+                    "periodAlreadySubmitted": {
+                        "summary": "Reading for this period already exists",
+                        "value": {"detail": "periodAlreadySubmitted"},
+                    },
+                    "periodNotOpen": {
+                        "summary": "Period is not the one currently open",
+                        "value": {"detail": "periodNotOpen"},
+                    },
+                    "noRateConfigured": {
+                        "summary": "No electricity rate covers this period",
+                        "value": {"detail": "noRateConfigured"},
+                    },
+                },
             }
         },
     },
@@ -75,6 +99,11 @@ def require_household_id(
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="householdNotAccessible",
+        ) from exc
+    except HouseholdInactiveError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="householdInactive",
         ) from exc
 
 
@@ -111,6 +140,16 @@ def submit_my_meter_reading(
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
             detail="periodAlreadySubmitted",
+        ) from exc
+    except PeriodNotOpenError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="periodNotOpen",
+        ) from exc
+    except NoRateConfiguredError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="noRateConfigured",
         ) from exc
 
     return MeterReadingOut.model_validate(reading)

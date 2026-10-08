@@ -20,6 +20,7 @@
     "reassignConfirmReject": "Cancel",
     "electricityRates": "Electricity rates",
     "noRatesConfigured": "No rates configured yet",
+    "noRateForPeriod": "No rate covers {period} — residents submitting for it will see an error",
     "dayRateShort": "Day",
     "nightRateShort": "Night",
     "effectiveFrom": "Effective from",
@@ -126,21 +127,29 @@
   },
   "errors": {
     "adminPrivilegesRequired": "You don't have permission to do that",
+    "csrfCheckFailed": "Something went wrong. Please refresh the page and try again",
     "emailAlreadyRegistered": "Email is already registered",
+    "householdInactive": "This household is no longer active",
+    "householdNotAccessible": "You don't have access to this household",
     "householdNotFound": "This household no longer exists",
+    "internalServerError": "Something went wrong on our end. Please try again later",
     "userInactive": "This user's account is inactive",
     "userNotFound": "This user no longer exists",
     "invalidCredentials": "Invalid email or password",
     "invalidOrExpiredToken": "Please sign in and try again",
     "missingAuthenticationToken": "Please sign in and try again",
     "noHouseholdMembership": "You are not a member of any household yet",
+    "noRateConfigured": "The co-op hasn't set an electricity rate for this period yet. Your entered values are kept — try submitting again once it's set",
     "periodAlreadySubmitted": "A reading for this period has already been submitted",
+    "periodNotOpen": "This period isn't open for submissions right now. Refresh and try again",
     "requestFailed": "Something went wrong. Please try again",
+    "retry": "Retry",
     "serverError": "Something went wrong. Please try again",
     "tooManyRequests": "Too many requests. Please wait and try again",
     "unauthorized": "Please sign in and try again",
     "validationError": "Please check your data and try again",
-    "verificationEmailCooldown": "Please wait before requesting another verification email"
+    "verificationEmailCooldown": "Please wait before requesting another verification email",
+    "verificationEmailSendFailed": "We couldn't send the verification email. Please try again later"
   },
   "household": {
     "switchAria": "Switch household"

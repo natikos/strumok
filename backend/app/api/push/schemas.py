@@ -33,8 +33,3 @@ class PushUnsubscribeIn(BaseModel):
 
 class VapidPublicKeyOut(BaseModel):
     public_key: str
-
-
-class SendRemindersOut(BaseModel):
-    sent: int
-    removed: int

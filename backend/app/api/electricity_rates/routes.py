@@ -5,7 +5,10 @@ from sqlmodel import Session
 
 from app.api.auth.schemas import ErrorOut
 from app.api.deps import require_admin
-from app.api.electricity_rates.schemas import ElectricityRateCreateIn, ElectricityRateOut
+from app.api.electricity_rates.schemas import (
+    ElectricityRateCreateIn,
+    ElectricityRateOut,
+)
 from app.api.electricity_rates.service import (
     EffectiveFromAlreadyExistsError,
     create_rate,
@@ -34,7 +37,7 @@ CREATE_RATE_RESPONSES: dict[int | str, dict[str, Any]] = {
 def list_electricity_rates(
     session: Session = Depends(get_session),
 ) -> list[ElectricityRateOut]:
-    return list_rates(session=session)
+    return [ElectricityRateOut.model_validate(r) for r in list_rates(session=session)]
 
 
 @router.post(
@@ -48,12 +51,13 @@ def create_electricity_rate(
     session: Session = Depends(get_session),
 ) -> ElectricityRateOut:
     try:
-        return create_rate(
+        rate = create_rate(
             session=session,
             day_rate_uah=payload.day_rate_uah,
             night_rate_uah=payload.night_rate_uah,
             effective_from=payload.effective_from,
         )
+        return ElectricityRateOut.model_validate(rate)
     except EffectiveFromAlreadyExistsError as exc:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT, detail="effectiveFromAlreadyExists"

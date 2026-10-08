@@ -20,10 +20,12 @@ from app.api.auth.service import (
     VerificationEmailRateLimitError,
     VerificationEmailSendFailedError,
     authenticate_user,
+    bump_token_version,
     confirm_email_verification,
     create_access_token,
-    get_user_from_token,
+    get_user_id_and_version_for_logout,
     list_user_households,
+    refresh_access_token,
     register_user,
     request_email_verification_link,
 )
@@ -116,10 +118,10 @@ VERIFY_EMAIL_RESPONSES: dict[int | str, dict[str, Any]] = {
 }
 
 
-def set_auth_cookie(response: Response, *, user: User) -> None:
+def set_auth_cookie(response: Response, *, token: str) -> None:
     response.set_cookie(
         key=settings.auth.auth_cookie_name,
-        value=create_access_token(user),
+        value=token,
         httponly=True,
         max_age=settings.auth_token_ttl_seconds,
         samesite="lax",
@@ -146,7 +148,7 @@ def register(
             last_name=payload.last_name,
             password=payload.password,
         )
-        set_auth_cookie(response, user=user)
+        set_auth_cookie(response, token=create_access_token(user))
 
         try:
             request_email_verification_link(session=session, user=user)
@@ -171,7 +173,7 @@ def login(
         user = authenticate_user(
             session=session, email=payload.email, password=payload.password
         )
-        set_auth_cookie(response, user=user)
+        set_auth_cookie(response, token=create_access_token(user))
 
         return UserOut.from_user(user)
     except InvalidCredentialsError as exc:
@@ -197,11 +199,7 @@ def refresh(
         )
 
     try:
-        user = get_user_from_token(
-            session=session,
-            token=access_token,
-            verify_expiration=False,
-        )
+        new_token = refresh_access_token(session=session, token=access_token)
     except InvalidOrExpiredTokenError as exc:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -209,13 +207,30 @@ def refresh(
             headers=AUTH_CHALLENGE_HEADERS,
         ) from exc
 
-    set_auth_cookie(response, user=user)
+    set_auth_cookie(response, token=new_token)
     response.status_code = status.HTTP_204_NO_CONTENT
     return response
 
 
 @router.post("/logout", status_code=status.HTTP_204_NO_CONTENT)
-def logout(response: Response) -> Response:
+def logout(
+    response: Response,
+    access_token: str | None = Cookie(
+        default=None, alias=settings.auth.auth_cookie_name
+    ),
+    session: Session = Depends(get_session),
+) -> Response:
+    if access_token is not None:
+        identity = get_user_id_and_version_for_logout(access_token)
+        if identity is not None:
+            user_id, token_version = identity
+            user = session.get(User, user_id)
+            # Ignore tokens that are already revoked (version doesn't match).
+            # Otherwise someone holding an old stolen cookie could keep
+            # calling /auth/logout and log the user out of every new session.
+            if user is not None and token_version == user.token_version:
+                bump_token_version(session=session, user=user)
+
     response.delete_cookie(
         key=settings.auth.auth_cookie_name,
         samesite="lax",

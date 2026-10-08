@@ -1,6 +1,8 @@
+import { TZDate } from "@date-fns/tz";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { mountWithPlugins } from "@/shared/testing/mount";
+import { KYIV_TZ } from "@shared/utils/deadline";
 
 import WindowStrip from "./WindowStrip.vue";
 
@@ -9,7 +11,7 @@ describe("WindowStrip", () => {
   afterEach(() => vi.useRealTimers());
 
   it("always renders exactly 5 segments and 5 captions, one per deadline day", () => {
-    vi.setSystemTime(new Date(2026, 5, 3));
+    vi.setSystemTime(new TZDate(2026, 5, 3, 12, 0, 0, KYIV_TZ));
     const wrapper = mountWithPlugins(WindowStrip);
 
     expect(wrapper.findAll(".window-strip__segment")).toHaveLength(5);
@@ -18,7 +20,7 @@ describe("WindowStrip", () => {
   });
 
   it("marks days before today as elapsed, today as today, and later days as future", () => {
-    vi.setSystemTime(new Date(2026, 5, 3));
+    vi.setSystemTime(new TZDate(2026, 5, 3, 12, 0, 0, KYIV_TZ));
     const wrapper = mountWithPlugins(WindowStrip);
 
     const segments = wrapper.findAll(".window-strip__segment");
@@ -34,7 +36,7 @@ describe("WindowStrip", () => {
   });
 
   it("on day 1, only the first segment is today and none are elapsed", () => {
-    vi.setSystemTime(new Date(2026, 5, 1));
+    vi.setSystemTime(new TZDate(2026, 5, 1, 12, 0, 0, KYIV_TZ));
     const wrapper = mountWithPlugins(WindowStrip);
 
     const segments = wrapper.findAll(".window-strip__segment");
@@ -45,7 +47,7 @@ describe("WindowStrip", () => {
   });
 
   it("when overdue, every segment reads as elapsed and none is marked today", () => {
-    vi.setSystemTime(new Date(2026, 5, 3));
+    vi.setSystemTime(new TZDate(2026, 5, 3, 12, 0, 0, KYIV_TZ));
     const wrapper = mountWithPlugins(WindowStrip, { props: { isOverdue: true } });
 
     const segments = wrapper.findAll(".window-strip__segment");
@@ -57,7 +59,7 @@ describe("WindowStrip", () => {
   });
 
   it("exposes the strip as an image role with a non-empty aria-label describing progress", () => {
-    vi.setSystemTime(new Date(2026, 5, 3));
+    vi.setSystemTime(new TZDate(2026, 5, 3, 12, 0, 0, KYIV_TZ));
     const wrapper = mountWithPlugins(WindowStrip);
 
     const img = wrapper.find('[role="img"]');

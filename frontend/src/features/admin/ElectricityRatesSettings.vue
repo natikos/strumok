@@ -1,11 +1,15 @@
 <template>
   <div class="electricity-rates">
+    <Message v-if="uncoveredPeriodWarning" severity="warn" class="electricity-rates__warning">
+      {{ uncoveredPeriodWarning }}
+    </Message>
+
     <ul v-if="rates.length > 0" class="electricity-rates__list">
       <li v-for="rate in rates" :key="rate.id" class="electricity-rates__item">
         <span class="electricity-rates__period">{{ rate.effective_from }}</span>
         <span class="electricity-rates__values">
-          {{ t("admin.dayRateShort") }} {{ formatUah(rate.day_rate_uah, currentLocale) }} ·
-          {{ t("admin.nightRateShort") }} {{ formatUah(rate.night_rate_uah, currentLocale) }}
+          {{ t("admin.dayRateShort") }} {{ formatUah(rate.day_rate_uah, intlLocale) }} ·
+          {{ t("admin.nightRateShort") }} {{ formatUah(rate.night_rate_uah, intlLocale) }}
         </span>
       </li>
     </ul>
@@ -117,7 +121,7 @@
 
 <script setup lang="ts">
   import { useToast } from "primevue/usetoast";
-  import { onMounted, ref } from "vue";
+  import { computed, onMounted, ref } from "vue";
   import { useI18n } from "vue-i18n";
   import { z } from "zod";
 
@@ -129,6 +133,11 @@
     type ElectricityRateOut,
     listElectricityRates,
   } from "@shared/api/electricity-rates";
+  import {
+    currentBillingPeriod,
+    formatPeriodMonth,
+    nextBillingPeriod,
+  } from "@shared/utils/billing-period";
   import { formatUah } from "@shared/utils/format";
 
   interface FieldErrors {
@@ -149,7 +158,7 @@
   });
 
   const { t } = useI18n();
-  const { currentLocale } = useLocale();
+  const { intlLocale } = useLocale();
   const toast = useToast();
 
   const rates = ref<ElectricityRateOut[]>([]);
@@ -159,6 +168,31 @@
   const effectiveFrom = ref("");
   const dayRateUah = ref<number | null>(null);
   const nightRateUah = ref<number | null>(null);
+
+  function isPeriodCovered(period: string): boolean {
+    return rates.value.some((rate) => rate.effective_from <= period);
+  }
+
+  const uncoveredPeriodWarning = computed<string | null>(() => {
+    const current = currentBillingPeriod();
+    const next = nextBillingPeriod();
+
+    let uncoveredPeriod: string | null = null;
+    if (!isPeriodCovered(current)) {
+      uncoveredPeriod = current;
+    } else if (!isPeriodCovered(next)) {
+      uncoveredPeriod = next;
+    }
+    if (!uncoveredPeriod) {
+      return null;
+    }
+
+    const period = formatPeriodMonth(uncoveredPeriod, intlLocale.value, {
+      month: "long",
+      year: "numeric",
+    });
+    return t("admin.noRateForPeriod", { period });
+  });
 
   onMounted(async () => {
     isLoading.value = true;
