@@ -1,6 +1,6 @@
 ---
 description: Tag and push a release to trigger the FastAPI Cloud deployment
-allowed-tools: Bash(git status:*), Bash(git switch:*), Bash(git pull:*), Bash(git fetch:*), Bash(git log:*), Bash(git tag:*), Bash(git push origin v*), Bash(git describe:*), Bash(gh api:*), Bash(gh run list:*), Bash(gh run view:*), Bash(gh workflow run:*)
+allowed-tools: Bash(git status:*), Bash(git rev-parse:*), Bash(git switch:*), Bash(git pull:*), Bash(git fetch:*), Bash(git log:*), Bash(git tag:*), Bash(git push origin v*), Bash(git describe:*), Bash(gh api:*), Bash(gh run list:*), Bash(gh run view:*), Bash(gh workflow run:*)
 ---
 
 Deploy to production. Takes no arguments — the version is always derived from
@@ -23,6 +23,9 @@ pushed tag deploys straight to production.
   `origin/main`. If `pull --ff-only` fails, stop and report; don't force anything.
 - `gh api repos/:owner/:repo --jq .permissions.push` — if not `true`, stop and
   tell the user the active `gh` account can't push tags here.
+- `gh run list --workflow=ci.yml --commit $(git rev-parse HEAD) --json conclusion --jq '.[].conclusion'`
+  — must include `success`. If CI is red, missing, or still running, stop: the
+  deployment workflow's preflight job would reject the tag anyway.
 
 ## 2. Determine the version
 

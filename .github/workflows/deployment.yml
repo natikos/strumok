@@ -4,8 +4,25 @@ on:
     tags:
       - "v*"
   workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
 jobs:
+  preflight:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Require green CI on this commit
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          passed=$(gh api "repos/${{ github.repository }}/actions/workflows/ci.yml/runs?head_sha=${{ github.sha }}&status=success" --jq '.total_count')
+          if [ "$passed" -lt 1 ]; then
+            echo "::error::No successful CI run for ${{ github.sha }}. Fix or re-run CI before deploying."
+            exit 1
+          fi
+
   deploy:
+    needs: preflight
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6

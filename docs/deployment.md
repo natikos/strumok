@@ -24,8 +24,14 @@ git push origin v1.2.3
 
 The workflow (`.github/workflows/deployment.yml`) will:
 
+0. Run a `preflight` job that fails the workflow unless `ci.yml` succeeded on
+   the tagged SHA. `deploy` `needs:` it, so nothing deploys on red or missing CI.
 1. Build the frontend (`bun run build` inside `frontend/`)
 2. Deploy the backend to FastAPI Cloud (`uv run fastapi deploy` inside `backend/`)
+
+Once migrations land (#140), apply them to production *before* tagging, and
+preflight will also verify that every bundled migration is recorded in
+`schema_migrations`. That check is not implemented yet.
 
 You can also trigger a deployment manually from the GitHub Actions UI using the **workflow_dispatch** option.
 
