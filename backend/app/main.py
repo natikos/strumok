@@ -18,7 +18,7 @@ from app.api import (
 from app.api.push.scheduler import start_reminder_scheduler
 from app.core.config import settings
 from app.core.csrf import CsrfMiddleware
-from app.db.engine import init_db
+from app.db.engine import init_db, is_db_reachable
 
 logger = logging.getLogger(__name__)
 
@@ -56,8 +56,12 @@ async def unhandled_exception_handler(_: Request, exc: Exception) -> JSONRespons
 
 
 @app.get("/health", include_in_schema=False)
-def health() -> dict[str, str]:
-    return {"status": "ok"}
+def health() -> JSONResponse:
+    if not is_db_reachable():
+        return JSONResponse(
+            status_code=503, content={"status": "degraded", "db": "unreachable"}
+        )
+    return JSONResponse(content={"status": "ok"})
 
 
 # dist/ is created by the frontend build (bun run build) and won't exist during development
