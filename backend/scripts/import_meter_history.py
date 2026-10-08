@@ -1,239 +1,345 @@
-"""Parse csv file with meter history and import it into the database
+"""Import a CSV of historical meter readings into the database.
 
 Usage:
     cd backend
-    uv run python scripts/import_meter_history.py ./scripts/meters/December_24.csv
+    uv run python scripts/import_meter_history.py <csv_path> --mapping <mapping.csv> [--apply]
+
+Without --apply this is a dry run: it prints the match report and would-be
+writes, and changes nothing.
+
+The mapping file is the only way a CSV row is matched to a household: a CSV
+with a header row `csv_id,household_id`, where `csv_id` is the source
+spreadsheet's own first-column number (not a database id) and `household_id`
+is the real `Household.id`. Rows with no mapping entry are reported and
+skipped. There is deliberately no name matching: two households sharing a
+surname must never be silently merged.
+
+Numeric cells parse as `Decimal` (comma separator accepted); a blank cell is 0.
+If any non-blank cell is malformed the script aborts before writing anything
+and lists every bad row and column.
 """
 
+import argparse
 import csv
+import re
 import sys
+import unicodedata
+from dataclasses import dataclass
 from datetime import datetime, timezone
-from difflib import SequenceMatcher
+from decimal import ROUND_HALF_UP, Decimal, InvalidOperation
+from pathlib import Path
 
-from decimal import Decimal
-
-from sqlalchemy.dialects.postgresql import insert
 from app.db.engine import engine
 from app.db.models import Household, MeterReading
+from sqlalchemy.dialects.postgresql import insert
 from sqlmodel import Session, select
 
 
-def parse_int(val):
-    try:
-        return int(val)
-    except ValueError, TypeError:
-        return 0
+class ImportValidationError(Exception):
+    """A malformed cell was found. Carries enough detail to name the exact
+    row and column in the report; raising it aborts the whole import before
+    any database write."""
 
-
-def parse_decimal(val):
-    """Parse decimal value, handling Ukrainian format (comma as decimal separator)"""
-    if not val or not isinstance(val, str):
-        return 0
-    # Remove spaces and convert comma to period
-    val = val.strip().replace(" ", "").replace(",", ".")
-    try:
-        return float(val)
-    except ValueError, TypeError:
-        return 0
-
-
-def get_file_path() -> str:
-    if len(sys.argv) != 2:
-        print(
-            "Check the usage of this script. You need to provide the path to the csv file as an argument."
+    def __init__(self, row_num: int, column: str, raw_value: str) -> None:
+        self.row_num = row_num
+        self.column = column
+        self.raw_value = raw_value
+        super().__init__(
+            f"row {row_num}, column {column!r}: invalid value {raw_value!r}"
         )
-        sys.exit(1)
-    return sys.argv[1]
 
 
-def parse_csv(file_path: str):
-    with open(file_path, "r", encoding="utf-8") as meterFile:
-        reader = csv.reader(meterFile)
-        rows = []
+class CsvValidationError(Exception):
+    """Every malformed cell found in the CSV, reported together."""
 
-        for row in reader:
+    def __init__(self, errors: list[ImportValidationError]) -> None:
+        self.errors = errors
+        super().__init__(f"{len(errors)} invalid cell(s)")
+
+
+# Spreadsheet summary rows are labelled "Сума" ("total") and must not be imported.
+TOTAL_ROW_MARKER = "сума"
+HEADER_MARKER = "день показник"
+UA_MONTHS = {
+    "січень": 1,
+    "лютий": 2,
+    "березень": 3,
+    "квітень": 4,
+    "травень": 5,
+    "червень": 6,
+    "липень": 7,
+    "серпень": 8,
+    "вересень": 9,
+    "жовтень": 10,
+    "листопад": 11,
+    "грудень": 12,
+}
+NUMERIC_COLUMNS = (
+    "day_meter",
+    "night_meter",
+    "day_usage",
+    "night_usage",
+    "amount_charged",
+)
+
+
+@dataclass
+class ParsedRow:
+    row_num: int
+    csv_id: str
+    household_name: str
+    day_meter: Decimal
+    night_meter: Decimal
+    day_usage: Decimal
+    night_usage: Decimal
+    amount_charged: Decimal
+
+
+def parse_decimal(raw: str, *, row_num: int, column: str) -> Decimal:
+    """Parse a numeric cell as Decimal, accepting a comma decimal separator.
+    A blank cell is 0 (the source sheets leave unused meters empty); any
+    other unparseable value raises ImportValidationError rather than being
+    zeroed -- silently zeroing garbage is what corrupted historical charges."""
+    if not raw.strip():
+        return Decimal(0)
+
+    cleaned = raw.strip().replace(" ", "").replace(",", ".")
+    try:
+        return Decimal(cleaned)
+    except InvalidOperation as exc:
+        raise ImportValidationError(row_num, column, raw) from exc
+
+
+def parse_csv(file_path: str) -> list[ParsedRow]:
+    """Parse every data row up front and collect every malformed numeric
+    cell, so a bad row anywhere in the file blocks the entire import rather
+    than writing everything before it. Raises CsvValidationError listing all
+    bad cells."""
+    rows: list[ParsedRow] = []
+    errors: list[ImportValidationError] = []
+
+    with open(file_path, encoding="utf-8", newline="") as meter_file:
+        for row_num, row in enumerate(csv.reader(meter_file), start=1):
             if not row or not row[0].strip():
                 continue
+            if any(HEADER_MARKER in cell.lower() for cell in row):
+                continue
 
+            # Some sheets lead with a numeric ID column, some don't.
             has_id = row[0].strip().isdigit()
-            name_idx = 1 if has_id else 0
-            day_idx = 2 if has_id else 1
-            night_idx = 3 if has_id else 2
-            day_usage_idx = 4 if has_id else 3
-            night_usage_idx = 5 if has_id else 4
-            amount_idx = 6 if has_id else 5
+            offset = 1 if has_id else 0
 
-            name = row[name_idx].strip() if name_idx < len(row) else ""
-            if not name:
+            def cell(idx: int) -> str:
+                return row[offset + idx] if offset + idx < len(row) else ""
+
+            name = cell(0).strip()
+            if not name or TOTAL_ROW_MARKER in name.lower():
                 continue
 
-            if "сума" in name.lower():
+            values: dict[str, Decimal] = {}
+            for idx, column in enumerate(NUMERIC_COLUMNS, start=1):
+                try:
+                    values[column] = parse_decimal(
+                        cell(idx), row_num=row_num, column=column
+                    )
+                except ImportValidationError as exc:
+                    errors.append(exc)
+
+            if not errors:
+                values["amount_charged"] = values["amount_charged"].quantize(
+                    Decimal("0.01"), rounding=ROUND_HALF_UP
+                )
+                rows.append(
+                    ParsedRow(
+                        row_num=row_num,
+                        csv_id=row[0].strip() if has_id else "",
+                        household_name=name,
+                        **values,
+                    )
+                )
+
+    if errors:
+        raise CsvValidationError(errors)
+    return rows
+
+
+def load_mapping(mapping_path: str) -> dict[str, int]:
+    """Load the explicit csv_id -> household_id mapping file. This is the
+    only accepted way to match a CSV row to a household."""
+    mapping: dict[str, int] = {}
+
+    with open(mapping_path, encoding="utf-8", newline="") as mapping_file:
+        reader = csv.DictReader(mapping_file)
+        for row_num, row in enumerate(reader, start=2):
+            csv_id = (row.get("csv_id") or "").strip()
+            household_id_raw = (row.get("household_id") or "").strip()
+            if not csv_id or not household_id_raw:
                 continue
+            try:
+                mapping[csv_id] = int(household_id_raw)
+            except ValueError as exc:
+                raise ImportValidationError(
+                    row_num, "household_id", household_id_raw
+                ) from exc
 
-            meter_id = parse_int(row[0]) if has_id else None
-            amount_charged = (
-                parse_decimal(row[amount_idx]) if amount_idx < len(row) else 0
-            )
-
-            rows.append(
-                {
-                    "household_id": meter_id,
-                    "household_name": row[name_idx],
-                    "day_meter": parse_int(row[day_idx]) if day_idx < len(row) else 0,
-                    "night_meter": parse_int(row[night_idx])
-                    if night_idx < len(row)
-                    else 0,
-                    "day_usage": parse_int(row[day_usage_idx])
-                    if day_usage_idx < len(row)
-                    else 0,
-                    "night_usage": parse_int(row[night_usage_idx])
-                    if night_usage_idx < len(row)
-                    else 0,
-                    "amount_charged_uah": amount_charged,
-                }
-            )
-
-        return rows
+    return mapping
 
 
-def get_households():
+def get_valid_household_ids() -> set[int]:
     with Session(engine) as session:
-        return session.exec(select(Household)).all()
+        return set(session.exec(select(Household.id)).all())
 
 
-def find_household_match(meter, households):
-    meter_id = meter.get("household_id")
-    meter_lower = meter["household_name"].lower().strip()
-
-    # Step 1: exact match by ID first
-    if meter_id is not None:
-        matched = next(
-            (h for h in households if h.id == meter_id),
-            None,
+def get_period(file_path: str) -> str:
+    """Derive "YYYY-MM" from a filename like `Березень26.csv`."""
+    # macOS may hand back decomposed Cyrillic (и + combining breve for й).
+    stem = unicodedata.normalize("NFC", Path(file_path).stem)
+    match = re.fullmatch(r"(\D+?)_?(\d{2})", stem)
+    month_num = UA_MONTHS.get(match.group(1).strip().lower()) if match else None
+    if match is None or month_num is None:
+        raise ValueError(
+            f"cannot read period from filename {Path(file_path).name!r}; "
+            "expected a Ukrainian month name plus 2-digit year, e.g. Березень26.csv"
         )
-        if matched is not None:
-            return matched
-
-    # Step 2: exact match by name
-    matched_household = next(
-        (h for h in households if h.name.lower().strip() == meter_lower),
-        None,
-    )
-    if matched_household is not None:
-        return matched_household
-
-    # Step 3: surname match or meter_lower in household name
-    meter_surname = meter["household_name"].split()[0].lower()
-    surname_match = next(
-        (
-            h
-            for h in households
-            if h.name.split()[0].lower() == meter_surname
-            or meter_lower in h.name.lower()
-        ),
-        None,
-    )
-    if surname_match is not None:
-        return surname_match
-
-    # Step 4: similarity match
-    best_match = None
-    best_ratio = 0
-    for h in households:
-        ratio = SequenceMatcher(None, meter_lower, h.name.lower().strip()).ratio()
-        if ratio > best_ratio:
-            best_ratio = ratio
-            best_match = h
-
-    return best_match if best_ratio >= 0.85 else None
+    return f"20{match.group(2)}-{month_num:02d}"
 
 
-def get_unmatched_households(parsed_meters, households):
-    unmatched = []
-    for meter in parsed_meters:
-        match = find_household_match(meter, households)
-        if match is None:
-            unmatched.append(meter["household_name"])
-    return unmatched
+def match_rows(
+    rows: list[ParsedRow], mapping: dict[str, int], valid_household_ids: set[int]
+) -> tuple[list[tuple[ParsedRow, int]], list[ParsedRow]]:
+    """Splits rows into (row, household_id) matches and unmatched rows. A row
+    with no mapping entry, or whose mapped household_id doesn't exist, is
+    unmatched -- never guessed at by name."""
+    matched: list[tuple[ParsedRow, int]] = []
+    unmatched: list[ParsedRow] = []
+
+    for row in rows:
+        household_id = mapping.get(row.csv_id)
+        if household_id is not None and household_id in valid_household_ids:
+            matched.append((row, household_id))
+        else:
+            unmatched.append(row)
+
+    return matched, unmatched
 
 
-def get_period() -> str:
-    filename = get_file_path().split("/")[-1].replace(".csv", "")
-    month, year = filename.split("_")
-    month_num = datetime.strptime(month, "%B").month
-    return f"20{year}-{month_num:02d}"
+def print_match_report(
+    matched: list[tuple[ParsedRow, int]], unmatched: list[ParsedRow]
+) -> None:
+    print("\nMatched rows:")
+    for row, household_id in matched:
+        print(
+            f"  row {row.row_num}: csv_id={row.csv_id!r} ({row.household_name!r}) -> household {household_id}"
+        )
+
+    print("\nUnmatched rows (will NOT be written):")
+    for row in unmatched:
+        print(
+            f"  row {row.row_num}: csv_id={row.csv_id!r} ({row.household_name!r}) -- no mapping entry"
+        )
 
 
-def insert_meter_history(parsed_meters):
-    period = get_period()
+def insert_meter_history(
+    matched: list[tuple[ParsedRow, int]], period: str
+) -> tuple[int, list[tuple[ParsedRow, int]]]:
+    """Writes matched rows with ON CONFLICT DO NOTHING -- an existing
+    (household_id, period) reading is never overwritten. Returns
+    (inserted_count, conflicts)."""
+    if not matched:
+        return 0, []
+
     # A period's reading is due days 1-5 of the following month.
     year, month = (int(part) for part in period.split("-"))
     due_year, due_month = (year, month + 1) if month < 12 else (year + 1, 1)
     submitted_at = datetime(due_year, due_month, 1, tzinfo=timezone.utc)
 
-    readings = []
-    for meter in parsed_meters:
-        if meter["household_id"] is None:
-            continue
-
-        readings.append(
-            {
-                "household_id": meter["household_id"],
-                "period": period,
-                "day_meter_value": meter["day_meter"],
-                "night_meter_value": meter["night_meter"],
-                "day_usage_kwh": meter["day_usage"],
-                "night_usage_kwh": meter["night_usage"],
-                "amount_charged_uah": Decimal(str(meter["amount_charged_uah"])),
-                "submitted_at": submitted_at,
-            }
-        )
-
-    if not readings:
-        return
+    values = [
+        {
+            "household_id": household_id,
+            "period": period,
+            "day_meter_value": row.day_meter,
+            "night_meter_value": row.night_meter,
+            "day_usage_kwh": row.day_usage,
+            "night_usage_kwh": row.night_usage,
+            "amount_charged_uah": row.amount_charged,
+            "submitted_at": submitted_at,
+        }
+        for row, household_id in matched
+    ]
 
     with Session(engine) as session:
+        existing_household_ids = set(
+            session.exec(
+                select(MeterReading.household_id).where(MeterReading.period == period)
+            ).all()
+        )
+        conflicts = [
+            (row, household_id)
+            for row, household_id in matched
+            if household_id in existing_household_ids
+        ]
+
         stmt = (
             insert(MeterReading)
-            .values(readings)
-            .on_conflict_do_update(
-                index_elements=["household_id", "period"],
-                set_={
-                    "day_meter_value": insert(MeterReading).excluded.day_meter_value,
-                    "night_meter_value": insert(
-                        MeterReading
-                    ).excluded.night_meter_value,
-                    "day_usage_kwh": insert(MeterReading).excluded.day_usage_kwh,
-                    "night_usage_kwh": insert(MeterReading).excluded.night_usage_kwh,
-                    "amount_charged_uah": insert(
-                        MeterReading
-                    ).excluded.amount_charged_uah,
-                    "submitted_at": insert(MeterReading).excluded.submitted_at,
-                },
-            )
+            .values(values)
+            .on_conflict_do_nothing(index_elements=["household_id", "period"])
         )
         session.exec(stmt)
         session.commit()
+        # psycopg3 reports rowcount as -1 ("not determined") for a batched
+        # INSERT ... ON CONFLICT DO NOTHING, so the actual inserted count has
+        # to be derived from what we already know rather than trusted from
+        # the driver: every matched row not already flagged as a conflict.
+        inserted = len(matched) - len(conflicts)
 
-
-def validate_parsed_data(parsed_meters, households):
-    for meter in parsed_meters:
-        matched_household = find_household_match(meter, households)
-        meter["household_id"] = matched_household.id if matched_household else None
+    return inserted, conflicts
 
 
 def main() -> int:
-    file_path = get_file_path()
-    parsed_meters = parse_csv(file_path)
-    households = get_households()
-    unmatched_households = get_unmatched_households(parsed_meters, households)
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("csv_path", help="Path to the historical meter-readings CSV")
+    parser.add_argument(
+        "--mapping", required=True, help="Path to the csv_id,household_id mapping CSV"
+    )
+    parser.add_argument(
+        "--apply",
+        action="store_true",
+        help="Actually write to the database (default: dry run)",
+    )
+    args = parser.parse_args()
 
-    print("\nUnmatched Households:")
-    for name in unmatched_households:
-        print(f" - {name}")
+    try:
+        rows = parse_csv(args.csv_path)
+        mapping = load_mapping(args.mapping)
+    except CsvValidationError as exc:
+        print("Aborting, invalid cells:", file=sys.stderr)
+        for error in exc.errors:
+            print(f"  {error}", file=sys.stderr)
+        return 1
+    except ImportValidationError as exc:
+        print(f"Aborting: {exc}", file=sys.stderr)
+        return 1
 
-    validate_parsed_data(parsed_meters, households)
-    insert_meter_history(parsed_meters)
+    period = get_period(args.csv_path)
+    valid_household_ids = get_valid_household_ids()
+    matched, unmatched = match_rows(rows, mapping, valid_household_ids)
+
+    print(f"Period: {period}")
+    print_match_report(matched, unmatched)
+
+    if not args.apply:
+        print("\nDry run: no changes written. Pass --apply to write.")
+        return 0
+
+    inserted, conflicts = insert_meter_history(matched, period)
+
+    print(f"\nInserted {inserted} reading(s).")
+    if conflicts:
+        print("Conflicts (already imported, left unchanged):")
+        for row, household_id in conflicts:
+            print(
+                f"  row {row.row_num}: household {household_id} already has a {period} reading"
+            )
 
     return 0
 
