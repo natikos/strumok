@@ -17,7 +17,7 @@ export async function loginUser(payload: LoginIn): Promise<UserOut> {
   });
 
   if (error) {
-    throw buildApiError(response.status, error);
+    throw buildApiError(response.status, error, response.headers);
   }
 
   setAuthSessionState(true, data.email_verified);

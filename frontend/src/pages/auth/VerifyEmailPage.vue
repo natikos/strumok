@@ -81,7 +81,7 @@
 </template>
 
 <script setup lang="ts">
-  import { computed, onBeforeUnmount, onMounted, ref } from "vue";
+  import { computed, onMounted, ref } from "vue";
   import { useI18n } from "vue-i18n";
   import { useRoute, useRouter } from "vue-router";
 
@@ -92,6 +92,7 @@
     logoutUser,
     sendVerificationEmailLink,
   } from "@shared/api/auth";
+  import { useCountdown } from "@shared/composables/useCountdown";
   import { ROUTES } from "@shared/routing/routes";
 
   const RESEND_COOLDOWN_SECONDS = 180;
@@ -102,44 +103,18 @@
   const tokenState = ref<"idle" | "pending" | "confirmed" | "error">("idle");
   const sendState = ref<"idle" | "sending" | "failed">("idle");
   const stillNotVerified = ref(false);
-  const cooldownSeconds = ref(0);
+  const { formatted: cooldownTimer, seconds: cooldownSeconds, start: startCooldown } = useCountdown();
   const router = useRouter();
   const route = useRoute();
   const { t } = useI18n();
 
-  let cooldownTimer: ReturnType<typeof setInterval> | null = null;
-
   const sendButtonLabel = computed(() => {
     if (cooldownSeconds.value > 0) {
-      const minutes = Math.floor(cooldownSeconds.value / 60);
-      const seconds = cooldownSeconds.value % 60;
-      const timer = `${minutes.toString().padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`;
-      return t("verifyEmail.resendCooldown", { timer });
+      return t("verifyEmail.resendCooldown", { timer: cooldownTimer.value });
     }
 
     return t("verifyEmail.sendButton");
   });
-
-  function startCooldown(seconds = RESEND_COOLDOWN_SECONDS): void {
-    cooldownSeconds.value = seconds;
-
-    if (cooldownTimer) {
-      clearInterval(cooldownTimer);
-    }
-
-    cooldownTimer = setInterval(() => {
-      if (cooldownSeconds.value <= 1) {
-        cooldownSeconds.value = 0;
-        if (cooldownTimer) {
-          clearInterval(cooldownTimer);
-          cooldownTimer = null;
-        }
-        return;
-      }
-
-      cooldownSeconds.value -= 1;
-    }, 1000);
-  }
 
   function maskEmail(email: string): string {
     const [localPart, domain] = email.split("@");
@@ -180,11 +155,11 @@
 
     try {
       await sendVerificationEmailLink();
-      startCooldown();
+      startCooldown(RESEND_COOLDOWN_SECONDS);
       sendState.value = "idle";
     } catch (error: unknown) {
       if (error instanceof ApiError && error.status === 429) {
-        startCooldown();
+        startCooldown(RESEND_COOLDOWN_SECONDS);
         sendState.value = "idle";
       } else {
         sendState.value = "failed";
@@ -246,13 +221,6 @@
       await syncUserState();
     } catch {
       await router.replace(ROUTES.auth);
-    }
-  });
-
-  onBeforeUnmount(() => {
-    if (cooldownTimer) {
-      clearInterval(cooldownTimer);
-      cooldownTimer = null;
     }
   });
 </script>
