@@ -284,7 +284,7 @@
   import { useCurrentHousehold } from "@features/households/useCurrentHousehold";
   import { useHouseholdTenures } from "@features/households/useHouseholdTenures";
   import { useLocale } from "@features/i18n/composables/useLocale";
-  import { type BalanceOut, getBalance, listAdjustments, listStatements } from "@shared/api/billing";
+  import { type BalanceOut, getBalance, listAdjustments, listStatements, type StatementLineOut } from "@shared/api/billing";
   import { listMyMeterReadings, type MeterReadingOut } from "@shared/api/meter-readings";
   import { ROUTES } from "@shared/routing/routes";
   import { type Bill, buildBill } from "@shared/utils/bill";
@@ -331,6 +331,7 @@
 
   const readings = ref<MeterReadingOut[]>([]);
   const balance = ref<BalanceOut | null>(null);
+  const statements = ref(new Map<string, StatementLineOut>());
   const bills = ref(new Map<string, Bill>());
   const openBreakdown = ref<string | null>(null);
   const status = ref<"loading" | "error" | "ready">("loading");
@@ -376,8 +377,11 @@
   const sortedEntries = computed<HistoryEntry[]>(() => {
     const entries = readings.value.map((reading) => {
       const date = periodToDate(reading.period);
-      const dayUsage = toDecimal(reading.day_usage_kwh);
-      const nightUsage = toDecimal(reading.night_usage_kwh);
+      // Usage and charge come from the ledger, not the compatibility columns on
+      // the reading. A provisional line has usage but no charge yet.
+      const line = statements.value.get(reading.period);
+      const dayUsage = toDecimal(line?.day_usage_kwh);
+      const nightUsage = toDecimal(line?.night_usage_kwh);
 
       return {
         period: reading.period,
@@ -386,7 +390,7 @@
         dayUsage,
         nightUsage,
         totalUsage: dayUsage + nightUsage,
-        amountCharged: toDecimal(reading.amount_charged_uah),
+        amountCharged: line?.status === "closed" ? toDecimal(line.total_uah) : 0,
         submitted: reading.id !== null,
         estimated: reading.source === "estimate",
         correctionReason: reading.correction_reason ?? "",
@@ -525,15 +529,17 @@
   async function loadReadings(): Promise<void> {
     status.value = "loading";
     try {
-      readings.value = await listMyMeterReadings(currentId.value);
+      const [loadedReadings, lines, adjustments] = await Promise.all([
+        listMyMeterReadings(currentId.value),
+        listStatements(currentId.value).catch(() => []),
+        listAdjustments(currentId.value).catch(() => []),
+      ]);
+      readings.value = loadedReadings;
+      statements.value = new Map(lines.map((line) => [line.period, line]));
       status.value = "ready";
       // Payment status is a nicety on top of the history: if it fails the
       // charges still show, just without the paid/unpaid line.
       balance.value = await getBalance(currentId.value).catch(() => null);
-      const [lines, adjustments] = await Promise.all([
-        listStatements(currentId.value).catch(() => []),
-        listAdjustments(currentId.value).catch(() => []),
-      ]);
       bills.value = new Map(
         lines
           .filter((line) => line.status === "closed")

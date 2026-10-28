@@ -19,6 +19,7 @@ import {
   getDeadlineStatus,
   isOverdue,
 } from "@/shared/utils/deadline";
+import { listStatements, type StatementLineOut } from "@shared/api/billing";
 import { ApiError } from "@shared/api/client";
 import {
   listMyMeterReadings,
@@ -36,6 +37,8 @@ export interface MeterPeriod {
   monthLong: string;
   isCurrent: boolean;
   reading: MeterReadingOut | undefined;
+  /** The ledger line for the period: usage and charge come from here. */
+  statement: StatementLineOut | undefined;
 }
 
 const schema = z.object({
@@ -73,6 +76,13 @@ export function useMeterReadings() {
     execute: loadHistory,
   } = useAsyncData(() => listMyMeterReadings(currentId.value), false);
 
+  // Usage and charges are a nicety on top of the readings: without them the
+  // dashboard still works, it just shows no usage figures.
+  const { data: statements, execute: loadStatements } = useAsyncData(
+    () => listStatements(currentId.value).catch(() => [] as StatementLineOut[]),
+    false
+  );
+
   const currentMonthStart = new Date();
   currentMonthStart.setDate(1);
   currentMonthStart.setHours(0, 0, 0, 0);
@@ -93,6 +103,10 @@ export function useMeterReadings() {
     return map;
   });
 
+  const statementsByPeriod = computed(
+    () => new Map((statements.value ?? []).map((line) => [line.period, line]))
+  );
+
   const slots = computed<MeterPeriod[]>(() => {
     const HISTORY_MONTHS = 24;
     const result: MeterPeriod[] = [];
@@ -107,6 +121,7 @@ export function useMeterReadings() {
         monthLong: capitalize(formatPeriodMonth(period, intlLocale.value)),
         isCurrent: period === currentBillingPeriod,
         reading: readingsByPeriod.value.get(period),
+        statement: statementsByPeriod.value.get(period),
       });
     }
 
@@ -257,8 +272,12 @@ export function useMeterReadings() {
     }
   }
 
+  async function loadAll(): Promise<void> {
+    await Promise.all([loadHistory(), loadStatements()]);
+  }
+
   watch(currentId, () => {
-    void loadHistory();
+    void loadAll();
   });
 
   return {
@@ -281,7 +300,7 @@ export function useMeterReadings() {
     isFirstPeriod,
     missedPeriods,
     readings,
-    loadHistory,
+    loadHistory: loadAll,
     handleSubmit,
     ...insights,
   };

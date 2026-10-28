@@ -103,14 +103,13 @@ function toUsage(slot: MeterPeriod): PeriodUsage | null {
     return null;
   }
 
-  const dayKwh = toDecimal(slot.reading.day_usage_kwh);
-  const nightKwh = toDecimal(slot.reading.night_usage_kwh);
+  const dayKwh = toDecimal(slot.statement?.day_usage_kwh);
+  const nightKwh = toDecimal(slot.statement?.night_usage_kwh);
 
-  // Billing is unimplemented (#45): readings submitted through the API always
-  // store 0, and only CSV-imported history carries a real charge. Treat 0 as
-  // "not billed" so a comparison against it is suppressed rather than shown as
-  // a swing to zero hryvnia.
-  const charged = toDecimal(slot.reading.amount_charged_uah);
+  // Only a closed period carries a real charge; the open period's provisional
+  // line is an estimate. Anything else counts as "not billed" so a comparison
+  // against it is suppressed rather than shown as a swing to zero hryvnia.
+  const charged = slot.statement?.status === "closed" ? toDecimal(slot.statement.total_uah) : 0;
 
   return {
     period: slot.period,
@@ -222,8 +221,8 @@ export function useUsageInsights(slots: Ref<MeterPeriod[]>) {
     return {
       labels: recent.map((slot) => slot.monthLabel),
       fullLabels: recent.map((slot) => `${slot.monthLong} ${slot.date.getFullYear()}`),
-      day: recent.map((slot) => (slot.reading ? toDecimal(slot.reading.day_usage_kwh) : null)),
-      night: recent.map((slot) => (slot.reading ? toDecimal(slot.reading.night_usage_kwh) : null)),
+      day: recent.map((slot) => (slot.reading ? toDecimal(slot.statement?.day_usage_kwh) : null)),
+      night: recent.map((slot) => (slot.reading ? toDecimal(slot.statement?.night_usage_kwh) : null)),
       presentCount: recent.filter((slot) => slot.reading).length,
     };
   });

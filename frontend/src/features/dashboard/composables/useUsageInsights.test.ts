@@ -3,6 +3,7 @@ import { effectScope, ref } from "vue";
 
 import type { MeterPeriod } from "@/features/dashboard/composables/useMeterReadings";
 import { SEASON_ORDER, useUsageInsights } from "@/features/dashboard/composables/useUsageInsights";
+import type { StatementLineOut } from "@shared/api/billing";
 import type { MeterReadingOut } from "@shared/api/meter-readings";
 
 function makeReading(overrides: Partial<MeterReadingOut> = {}): MeterReadingOut {
@@ -25,6 +26,24 @@ function makeReading(overrides: Partial<MeterReadingOut> = {}): MeterReadingOut 
   };
 }
 
+/** The ledger line for a fixture reading: a charge makes it closed, none leaves it provisional. */
+function makeStatement(reading: MeterReadingOut): StatementLineOut {
+  const charged = Number(reading.amount_charged_uah) > 0;
+
+  return {
+    period: reading.period,
+    status: charged ? "closed" : "provisional",
+    day_usage_kwh: reading.day_usage_kwh ?? "0.00",
+    night_usage_kwh: reading.night_usage_kwh ?? "0.00",
+    is_estimated: false,
+    tariff_uah: reading.amount_charged_uah ?? "0.00",
+    loss_share_uah: "0.00",
+    penalty_uah: "0.00",
+    penalty_credit_uah: "0.00",
+    total_uah: reading.amount_charged_uah ?? "0.00",
+  };
+}
+
 /**
  * Build a `MeterPeriod` slot the way `useMeterReadings` does: `period` drives
  * `date`/labels so fixtures stay internally consistent without duplicating
@@ -40,6 +59,7 @@ function makeSlot(period: string, reading?: MeterReadingOut): MeterPeriod {
     monthLong: date.toLocaleString("en", { month: "long" }),
     isCurrent: false,
     reading,
+    statement: reading ? makeStatement(reading) : undefined,
   };
 }
 
