@@ -72,6 +72,10 @@
             :disabled="isSubmitting"
           />
 
+          <RouterLink v-if="mode === 'login'" class="auth-form__forgot" :to="ROUTES.forgotPassword">
+            {{ $t("auth.forgotPassword") }}
+          </RouterLink>
+
           <div
             class="auth-form__expand"
             :class="{ 'auth-form__expand--open': mode === 'register' }"
@@ -264,6 +268,12 @@
 
   .auth-form__fields {
     gap: var(--s-app-space-3);
+  }
+
+  .auth-form__forgot {
+    align-self: flex-start;
+    color: var(--p-primary-color);
+    font-size: 0.875rem;
   }
 
   .auth-form__throttle {

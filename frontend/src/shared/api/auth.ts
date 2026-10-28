@@ -126,3 +126,23 @@ export async function confirmEmailChange(token: string): Promise<void> {
   // Every session is revoked on change, this one included.
   setAuthSessionState(false, false);
 }
+
+export async function requestPasswordReset(email: string): Promise<void> {
+  const { error, response } = await appApiClient.POST("/auth/password-reset/request", {
+    body: { email },
+  });
+
+  if (!response.ok) {
+    throw buildApiError(response.status, error);
+  }
+}
+
+export async function confirmPasswordReset(token: string, password: string): Promise<void> {
+  const { error, response } = await appApiClient.POST("/auth/password-reset/confirm", {
+    body: { password, token },
+  });
+
+  if (!response.ok) {
+    throw buildApiError(response.status, error);
+  }
+}

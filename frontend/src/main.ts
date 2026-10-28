@@ -35,6 +35,15 @@ const routes: RouteRecordRaw[] = [
     path: ROUTES.auth,
   },
   {
+    component: () => import("@pages/auth/ForgotPasswordPage.vue"),
+    meta: { guestOnly: true },
+    path: ROUTES.forgotPassword,
+  },
+  {
+    component: () => import("@pages/auth/ResetPasswordPage.vue"),
+    path: ROUTES.resetPassword,
+  },
+  {
     component: () => import("@pages/auth/ConfirmEmailChangePage.vue"),
     path: ROUTES.confirmEmailChange,
   },
