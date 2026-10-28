@@ -3,6 +3,7 @@
     <ErrorState v-if="error" :message-key="error" @retry="load" />
 
     <template v-else-if="data">
+      <ExportCsvButton :path="`period/${period}`" />
       <div
         class="reconciliation__result"
         :class="{ 'reconciliation__result--ok': variantKey === 'matches' }"
