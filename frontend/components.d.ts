@@ -23,6 +23,8 @@ declare module 'vue' {
     AuthPage: typeof import('./src/pages/auth/AuthPage.vue')['default']
     BalancesPanel: typeof import('./src/features/admin/BalancesPanel.vue')['default']
     BalanceStrip: typeof import('./src/features/dashboard/components/BalanceStrip.vue')['default']
+    BillBreakdown: typeof import('./src/features/dashboard/components/BillBreakdown.vue')['default']
+    BillSummaryCard: typeof import('./src/features/dashboard/components/BillSummaryCard.vue')['default']
     Button: typeof import('primevue/button')['default']
     Card: typeof import('primevue/card')['default']
     Chart: typeof import('primevue/chart')['default']

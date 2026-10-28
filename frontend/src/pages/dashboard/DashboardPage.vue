@@ -41,6 +41,8 @@
 
     <FirstRunGuideCard v-if="showFirstRunGuide" />
 
+    <BillSummaryCard />
+
     <!-- With no readings at all there is nothing to chart, split or compare, so
          one dashed card stands in for the whole analytics block. -->
     <EmptyUsageCard v-if="showEmptyUsage" />
@@ -76,6 +78,7 @@
   import { useRouter } from "vue-router";
 
   import BalanceStrip from "@/features/dashboard/components/BalanceStrip.vue";
+  import BillSummaryCard from "@/features/dashboard/components/BillSummaryCard.vue";
   import DayNightSplitCard from "@/features/dashboard/components/DayNightSplitCard.vue";
   import EmptyUsageCard from "@/features/dashboard/components/EmptyUsageCard.vue";
   import FirstRunGuideCard from "@/features/dashboard/components/FirstRunGuideCard.vue";
