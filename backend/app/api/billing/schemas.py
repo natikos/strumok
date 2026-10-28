@@ -78,3 +78,17 @@ class HouseholdStatementsOut(BaseModel):
     has_previous_owner: bool
     balance: BalanceOut
     statements: list[StatementLineOut]
+
+
+class PaymentDetailsOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    iban: str = Field(examples=["UA213223130000026007233566001"])
+    recipient_name: str
+
+
+class PaymentDetailsIn(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    iban: str = Field(max_length=40)
+    recipient_name: str = Field(min_length=1, max_length=120)

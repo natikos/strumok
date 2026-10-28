@@ -74,6 +74,12 @@ from app.api.admin.service import (
     list_users,
 )
 from app.api.auth.schemas import ErrorOut
+from app.api.billing.payment_details import (
+    InvalidIbanError,
+    get_payment_details,
+    set_payment_details,
+)
+from app.api.billing.schemas import PaymentDetailsIn, PaymentDetailsOut
 from app.api.billing.payments import (
     HouseholdMissingError,
     PaymentAlreadyVoidedError,
@@ -358,6 +364,44 @@ def assign_admin_household_owner(
         ) from exc
 
     return AdminHouseholdOut.from_household(household, owner=owner)
+
+
+@router.get("/payment-details", response_model=PaymentDetailsOut | None)
+def get_admin_payment_details(
+    session: Session = Depends(get_session),
+) -> PaymentDetailsOut | None:
+    row = get_payment_details(session)
+    return PaymentDetailsOut.model_validate(row) if row else None
+
+
+@router.put(
+    "/payment-details",
+    response_model=PaymentDetailsOut,
+    responses={
+        422: {
+            "description": "IBAN is malformed or fails its checksum",
+            "model": ErrorOut,
+            "content": {"application/json": {"example": {"detail": "invalidIban"}}},
+        }
+    },
+)
+def put_admin_payment_details(
+    payload: PaymentDetailsIn,
+    session: Session = Depends(get_session),
+    admin: User = CurrentAdmin,
+) -> PaymentDetailsOut:
+    try:
+        row = set_payment_details(
+            session,
+            actor_id=admin.id,
+            iban=payload.iban,
+            recipient_name=payload.recipient_name,
+        )
+    except InvalidIbanError as exc:
+        raise HTTPException(
+            status_code=422, detail="invalidIban"
+        ) from exc
+    return PaymentDetailsOut.model_validate(row)
 
 
 @router.get("/audit-log", response_model=AuditLogPageOut)
