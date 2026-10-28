@@ -16,6 +16,9 @@ function makeReading(overrides: Partial<MeterReadingOut> = {}): MeterReadingOut 
     day_usage_kwh: "10.00",
     night_usage_kwh: "5.00",
     amount_charged_uah: "0.00",
+    source: "resident",
+    corrected_at: null,
+    correction_reason: null,
     submitted_at: "2026-06-02T09:00:00.000Z",
     ...overrides,
   };

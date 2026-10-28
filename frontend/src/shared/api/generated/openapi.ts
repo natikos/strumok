@@ -524,6 +524,57 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/households/{household_id}/readings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Submit Reading On Behalf */
+        post: operations["submit_reading_on_behalf_admin_households__household_id__readings_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/readings/{reading_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Correct Reading */
+        patch: operations["correct_reading_admin_readings__reading_id__patch"];
+        trace?: never;
+    };
+    "/admin/readings/{reading_id}/void": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Void Reading */
+        post: operations["void_reading_admin_readings__reading_id__void_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/electricity-rates": {
         parameters: {
             query?: never;
@@ -722,6 +773,20 @@ export interface components {
             /** Email Sent */
             email_sent: boolean;
         };
+        /** AdminReadingCreateIn */
+        AdminReadingCreateIn: {
+            /**
+             * Period
+             * @example 2026-07
+             */
+            period: string;
+            /** Day Meter Value */
+            day_meter_value: number | string;
+            /** Night Meter Value */
+            night_meter_value: number | string;
+            /** Reason */
+            reason: string;
+        };
         /** AdminReadingOut */
         AdminReadingOut: {
             /** Id */
@@ -738,6 +803,39 @@ export interface components {
             needs_review: boolean;
             /** Review Reason */
             review_reason: ("decrease" | "spike") | null;
+        };
+        /** AdminReadingResultOut */
+        AdminReadingResultOut: {
+            /** Id */
+            id: number;
+            /** Household Id */
+            household_id: number;
+            /** Period */
+            period: string;
+            /** Day Meter Value */
+            day_meter_value: string;
+            /** Night Meter Value */
+            night_meter_value: string;
+            /** Source */
+            source: string;
+            /** Corrected At */
+            corrected_at: string | null;
+            /** Correction Reason */
+            correction_reason: string | null;
+        };
+        /** AdminReadingUpdateIn */
+        AdminReadingUpdateIn: {
+            /** Day Meter Value */
+            day_meter_value?: number | string | null;
+            /** Night Meter Value */
+            night_meter_value?: number | string | null;
+            /** Reason */
+            reason: string;
+        };
+        /** AdminReadingVoidIn */
+        AdminReadingVoidIn: {
+            /** Reason */
+            reason: string;
         };
         /** AdminUserOut */
         AdminUserOut: {
@@ -1028,6 +1126,21 @@ export interface components {
              * @example 2026-07-20T08:40:50.453Z
              */
             submitted_at: string | null;
+            /**
+             * Source
+             * @example resident
+             */
+            source: string;
+            /**
+             * Corrected At
+             * @example null
+             */
+            corrected_at: string | null;
+            /**
+             * Correction Reason
+             * @example null
+             */
+            correction_reason: string | null;
         };
         /** PasswordResetConfirmIn */
         PasswordResetConfirmIn: {
@@ -2857,6 +2970,163 @@ export interface operations {
                 };
             };
             /** @description The period isn't closed, or nothing was corrected */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    submit_reading_on_behalf_admin_households__household_id__readings_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                household_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AdminReadingCreateIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminReadingResultOut"];
+                };
+            };
+            /** @description Household or reading does not exist */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description The change can't be made directly */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    correct_reading_admin_readings__reading_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                reading_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AdminReadingUpdateIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminReadingResultOut"];
+                };
+            };
+            /** @description Household or reading does not exist */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description The change can't be made directly */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    void_reading_admin_readings__reading_id__void_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                reading_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AdminReadingVoidIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Household or reading does not exist */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description The change can't be made directly */
             409: {
                 headers: {
                     [name: string]: unknown;

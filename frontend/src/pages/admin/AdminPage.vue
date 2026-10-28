@@ -80,8 +80,20 @@
                       </tr>
                     </thead>
                     <tbody>
-                      <tr v-for="household in dashboard.households" :key="household.id">
-                        <th scope="row">{{ household.name }}</th>
+                      <template v-for="household in dashboard.households" :key="household.id">
+                      <tr>
+                        <th scope="row">
+                          {{ household.name }}
+                          <Button
+                            class="admin-edit-toggle"
+                            icon="pi pi-pencil"
+                            severity="secondary"
+                            variant="text"
+                            :aria-expanded="editingId === household.id"
+                            :aria-label="$t('admin.readingEdit.edit', { name: household.name })"
+                            @click="editingId = editingId === household.id ? null : household.id"
+                          />
+                        </th>
                         <td>{{ ownerLabel(household) }}</td>
                         <td>
                           <span
@@ -110,11 +122,30 @@
                               :label="$t('admin.review.looksRight')"
                               @click="markReviewed(household.reading.id)"
                             />
+                            <Button
+                              size="small"
+                              severity="secondary"
+                              variant="outlined"
+                              :label="$t('admin.review.correct')"
+                              @click="editingId = household.id"
+                            />
                           </div>
                         </td>
                         <td>{{ formatUsage(household.latest_usage_kwh) }}</td>
                         <td>{{ formatCharge(household.latest_amount_charged_uah) }}</td>
                       </tr>
+                      <tr v-if="editingId === household.id">
+                        <td colspan="5">
+                          <ReadingEditor
+                            :household="household"
+                            :period="dashboard.current_period"
+                            :reading="household.reading ?? null"
+                            @changed="loadDashboard"
+                            @close="editingId = null"
+                          />
+                        </td>
+                      </tr>
+                      </template>
                     </tbody>
                   </table>
                 </div>
@@ -159,6 +190,7 @@
   import AuditLogPanel from "@features/admin/AuditLogPanel.vue";
   import ElectricityRatesSettings from "@features/admin/ElectricityRatesSettings.vue";
   import PeriodCloseCard from "@features/admin/PeriodCloseCard.vue";
+  import ReadingEditor from "@features/admin/ReadingEditor.vue";
   import ReconciliationPanel from "@features/admin/ReconciliationPanel.vue";
   import ResidentsPanel from "@features/admin/ResidentsPanel.vue";
   import { type AdminDashboardOut, getAdminDashboard, reviewAdminReading } from "@shared/api/admin";
@@ -187,6 +219,8 @@
   onMounted(() => {
     void loadDashboard();
   });
+
+  const editingId = ref<number | null>(null);
 
   const needsReviewCount = computed(
     () => dashboard.value?.households.filter((h) => h.reading?.needs_review).length ?? 0
@@ -371,6 +405,12 @@
     tr:last-child td {
       border-bottom: 0;
     }
+  }
+
+  .admin-edit-toggle {
+    margin-left: var(--s-app-space-2);
+    min-height: 44px;
+    min-width: 44px;
   }
 
   .admin-review {

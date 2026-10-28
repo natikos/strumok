@@ -41,6 +41,6 @@ class MeterReadingOut(BaseModel):
         max_digits=12, decimal_places=2, examples=["987.65"]
     )
     submitted_at: UtcDatetime | None = Field(examples=["2026-07-20T08:40:50.453Z"])
-    source: str = Field(default="resident", examples=["resident"])
-    corrected_at: UtcDatetime | None = Field(default=None)
-    correction_reason: str | None = Field(default=None)
+    source: str = Field(examples=["resident"])
+    corrected_at: UtcDatetime | None = Field(examples=[None])
+    correction_reason: str | None = Field(examples=[None])

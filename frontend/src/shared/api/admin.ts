@@ -4,6 +4,7 @@ import { ApiError, appApiClient, buildApiError } from "./client";
 
 export type AdminUserOut = components["schemas"]["AdminUserOut"];
 export type AdminInviteOut = components["schemas"]["AdminInviteOut"];
+export type AdminReadingOut = components["schemas"]["AdminReadingOut"];
 export type AdminUserSummaryOut = components["schemas"]["AdminUserSummaryOut"];
 export type AdminHouseholdOut = components["schemas"]["AdminHouseholdOut"];
 export type AdminDashboardOut = components["schemas"]["AdminDashboardOut"];
@@ -217,6 +218,7 @@ export async function reviewAdminReading(readingId: number): Promise<void> {
 
 export interface PeriodCorrections {
   bill_total_uah?: string;
+  readings?: { day_meter_value: string; household_id: number; night_meter_value: string }[];
   rate?: { day_rate_uah: string; night_rate_uah: string };
 }
 
@@ -240,4 +242,43 @@ export async function restatePeriod(
   }
 
   return data;
+}
+
+export async function submitReadingOnBehalf(
+  householdId: number,
+  payload: { day_meter_value: string; night_meter_value: string; period: string; reason: string }
+): Promise<void> {
+  const { error, response } = await appApiClient.POST("/admin/households/{household_id}/readings", {
+    body: payload,
+    params: { path: { household_id: householdId } },
+  });
+
+  if (!response.ok) {
+    throw buildApiError(response.status, error);
+  }
+}
+
+export async function correctAdminReading(
+  readingId: number,
+  payload: { day_meter_value: string; night_meter_value: string; reason: string }
+): Promise<void> {
+  const { error, response } = await appApiClient.PATCH("/admin/readings/{reading_id}", {
+    body: payload,
+    params: { path: { reading_id: readingId } },
+  });
+
+  if (!response.ok) {
+    throw buildApiError(response.status, error);
+  }
+}
+
+export async function voidAdminReading(readingId: number, reason: string): Promise<void> {
+  const { error, response } = await appApiClient.POST("/admin/readings/{reading_id}/void", {
+    body: { reason },
+    params: { path: { reading_id: readingId } },
+  });
+
+  if (!response.ok) {
+    throw buildApiError(response.status, error);
+  }
 }
