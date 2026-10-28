@@ -9,6 +9,7 @@ from sqlalchemy import (
     CheckConstraint,
     Column,
     ForeignKey,
+    SmallInteger,
     String,
     UniqueConstraint,
     event,
@@ -34,6 +35,11 @@ class User(SQLModel, table=True):
     """System user account that can belong to one or more households."""
 
     __tablename__ = "users"  # type: ignore
+    __table_args__ = (
+        CheckConstraint(
+            "reminder_hour BETWEEN 0 AND 23", name="ck_users_reminder_hour"
+        ),
+    )
 
     id: int = Field(default=None, primary_key=True)
     email: str = Field(unique=True)
@@ -48,6 +54,10 @@ class User(SQLModel, table=True):
     token_version: int = Field(default=0)
     theme: ThemeMode = Field(default=ThemeMode.LIGHT, max_length=16)
     language: LanguageCode = Field(default=LanguageCode.UA, max_length=16)
+    # Hour of day (Europe/Kyiv) at which deadline push reminders are sent.
+    reminder_hour: int = Field(
+        default=9, sa_type=SmallInteger, sa_column_kwargs={"server_default": "9"}
+    )
     verification_email_last_sent_at: datetime | None = Field(default=None)
     created_at: datetime = Field(default_factory=utc_now)
     updated_at: datetime = Field(

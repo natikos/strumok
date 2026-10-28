@@ -56,6 +56,7 @@ class UserOut(BaseModel):
     verification_email_retry_after_seconds: int
     theme: ThemeMode
     language: LanguageCode
+    reminder_hour: int
 
     @classmethod
     def from_user(cls, user: User) -> "UserOut":
@@ -94,6 +95,9 @@ class UserWithHouseholdsOut(UserOut):
 class UserPreferencesIn(BaseModel):
     theme: ThemeMode | None = None
     language: LanguageCode | None = None
+    reminder_hour: int | None = Field(
+        default=None, ge=0, le=23, description="Hour of day, Europe/Kyiv"
+    )
 
 
 class ErrorOut(BaseModel):

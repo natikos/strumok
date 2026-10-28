@@ -1,5 +1,6 @@
 import json
 import logging
+from datetime import datetime
 from collections.abc import Sequence
 from concurrent.futures import ThreadPoolExecutor
 from enum import StrEnum
@@ -12,7 +13,11 @@ from sqlalchemy.dialects.postgresql import insert
 from sqlmodel import Session, col, delete, select
 
 from app.core.config import settings
-from app.core.domain import SUBMISSION_DEADLINE_DAY, current_billing_period
+from app.core.domain import (
+    SUBMISSION_DEADLINE_DAY,
+    SUBMISSION_OPEN_DAY,
+    current_billing_period,
+)
 from app.core.domain.billing import kyiv_now
 from app.core.time import utc_now
 from app.db.models import (
@@ -133,11 +138,23 @@ def _send_one(subscription: PushSubscription, payload: str) -> _SendOutcome:
     return _SendOutcome.SENT
 
 
+def reminder_variant_for(now: datetime) -> ReminderVariant | None:
+    """Which reminder (if any) is sent on the Kyiv calendar day of `now`.
+    Days 1 and 5 never contain a DST shift (those fall on days 25-31), so
+    every Kyiv hour occurs exactly once on them."""
+    if now.day == SUBMISSION_OPEN_DAY:
+        return "opening"
+    if now.day == SUBMISSION_DEADLINE_DAY:
+        return "final"
+    return None
+
+
 def _due_subscriptions(
-    *, session: Session, period: str, variant: ReminderVariant
+    *, session: Session, period: str, variant: ReminderVariant, hour: int
 ) -> Sequence[PushSubscription]:
-    """Subscriptions of active users who still owe a reading this period and
-    haven't been sent this variant yet."""
+    """Subscriptions of active users who still owe a reading this period,
+    whose chosen hour has arrived, and who haven't been sent this variant.
+    `<=` rather than `==` so a missed tick is caught up on the next one."""
     query = (
         select(PushSubscription)
         .join(User, col(User.id) == PushSubscription.user_id)
@@ -159,6 +176,7 @@ def _due_subscriptions(
         )
         .where(
             User.is_active,
+            col(User.reminder_hour) <= hour,
             Household.is_active,
             col(MeterReading.household_id).is_(None),
             col(NotificationLog.user_id).is_(None),
@@ -168,10 +186,15 @@ def _due_subscriptions(
     return session.exec(query).all()
 
 
-def _record_notified(
+def _claim_users(
     *, session: Session, user_ids: set[int], period: str, variant: ReminderVariant
-) -> None:
-    session.exec(
+) -> set[int]:
+    """Record the send before it happens; returns the users this call won.
+    A concurrent run (or another instance) gets nothing back for them, so
+    each user is notified at most once per (period, variant)."""
+    if not user_ids:
+        return set()
+    rows = session.exec(
         insert(NotificationLog)
         .values(
             [
@@ -185,21 +208,36 @@ def _record_notified(
             ]
         )
         .on_conflict_do_nothing(index_elements=["user_id", "period", "variant"])
-    )
+        .returning(col(NotificationLog.user_id))
+    ).all()
+    session.commit()
+    return {row[0] for row in rows}
 
 
-def send_reminders(*, session: Session, variant: ReminderVariant) -> tuple[int, int]:
+def send_reminders(*, session: Session, now: datetime) -> tuple[int, int]:
     """Push a reminder to each subscribed, active user with an unsubmitted
-    household reading this period. Idempotent per (period, variant):
-    repeat or overlapping calls notify each user at most once. Returns
+    household reading whose chosen Kyiv hour has arrived. `now` is Kyiv time.
+    At most one push per (user, period, variant): users are claimed in
+    NotificationLog before sending, and the claim is released only if every
+    send to that user failed, so the next hourly run retries. Returns
     (sent, removed) counts."""
-    period = current_billing_period()
-    subscriptions = _due_subscriptions(session=session, period=period, variant=variant)
+    variant = reminder_variant_for(now)
+    if variant is None:
+        return 0, 0
+    period = current_billing_period(now)
+    due = _due_subscriptions(
+        session=session, period=period, variant=variant, hour=now.hour
+    )
+    claimed = _claim_users(
+        session=session,
+        user_ids={sub.user_id for sub in due},
+        period=period,
+        variant=variant,
+    )
+    subscriptions = [sub for sub in due if sub.user_id in claimed]
     users_by_id = {
         user.id: user
-        for user in session.exec(
-            select(User).where(col(User.id).in_({sub.user_id for sub in subscriptions}))
-        ).all()
+        for user in session.exec(select(User).where(col(User.id).in_(claimed))).all()
     }
     payloads = [
         _notification_payload(_content_for(users_by_id[sub.user_id], variant))
@@ -216,15 +254,19 @@ def send_reminders(*, session: Session, variant: ReminderVariant) -> tuple[int, 
 
     sent = [sub for sub, outcome in results if outcome == _SendOutcome.SENT]
     gone = [sub for sub, outcome in results if outcome == _SendOutcome.GONE]
+    delivered_users = {
+        sub.user_id for sub, outcome in results if outcome != _SendOutcome.FAILED
+    }
+    unreached = claimed - delivered_users
 
     for subscription in gone:
         session.delete(subscription)
-    if sent:
-        _record_notified(
-            session=session,
-            user_ids={sub.user_id for sub in sent},
-            period=period,
-            variant=variant,
+    if unreached:
+        session.exec(
+            delete(NotificationLog)
+            .where(col(NotificationLog.user_id).in_(unreached))
+            .where(col(NotificationLog.period) == period)
+            .where(col(NotificationLog.variant) == variant)
         )
 
     session.commit()
