@@ -132,7 +132,7 @@
         "noReadings": "No readings for {period}"
       },
       "confirmTitle": "Close {period} billing?",
-      "confirmBody": "{charged} household(s) will be charged and {missing} have no reading. Residents can't submit for {period} afterwards, and corrections become adjustments. Take a database backup first.",
+      "confirmBody": "{charged} household(s) will be charged and {missing} have no reading and will be estimated with a 30% late fee. Residents can't submit for {period} afterwards, and corrections become adjustments. Take a database backup first.",
       "confirmAccept": "Close period",
       "confirmReject": "Cancel",
       "acknowledge": "Close anyway ({count} reading(s) not reviewed)"
@@ -238,7 +238,9 @@
       "closedNote": "This period is closed, so the change becomes adjustments.",
       "correctedBy": "Corrected by the head on {date}: {reason}",
       "enteredBy": "Entered by the head on {date}: {reason}"
-    }
+    },
+    "estimated": "Estimated",
+    "estimatedCount": "Estimated ({count})"
   },
   "auth": {
     "login": "Login",
@@ -409,7 +411,9 @@
     "hintText": "Enter the numbers shown on your electricity meter, then press Submit",
     "submitAnyway": "Submit anyway",
     "warnDecrease": "This is lower than last month's reading. If your meter was replaced or you mistyped, check it; you can still submit.",
-    "warnSpike": "That's a big jump from last month ({usage} vs usual {typical}). Please double-check; you can still submit."
+    "warnSpike": "That's a big jump from last month ({usage} vs usual {typical}). Please double-check; you can still submit.",
+    "periodClosed": "{month} is closed, so readings can't be submitted for it any more.",
+    "periodEstimated": "{month} was estimated because we didn't get a reading: about {usage} (based on your last month) plus a 30% late fee = {total}. Submit this month's reading and it will be corrected."
   },
   "months": {
     "long": [
@@ -482,7 +486,8 @@
       "overdue": "Overdue",
       "due": "Due",
       "submitted": "Submitted",
-      "submittedLate": "Submitted late"
+      "submittedLate": "Submitted late",
+      "estimated": "Estimated"
     }
   },
   "units": {

@@ -41,6 +41,9 @@
               <div class="admin-section__heading">
                 <div>
                   <h2 class="admin-section__title">{{ $t("admin.submissionOverview") }}</h2>
+                  <p v-if="estimatedCount > 0" class="admin-section__period">
+                    {{ $t("admin.estimatedCount", { count: estimatedCount }) }}
+                  </p>
                   <p v-if="needsReviewCount > 0" class="admin-section__period">
                     {{ $t("admin.review.count", { count: needsReviewCount }) }}
                   </p>
@@ -221,6 +224,10 @@
   });
 
   const editingId = ref<number | null>(null);
+
+  const estimatedCount = computed(
+    () => dashboard.value?.households.filter((h) => h.submission_status === "estimated").length ?? 0
+  );
 
   const needsReviewCount = computed(
     () => dashboard.value?.households.filter((h) => h.reading?.needs_review).length ?? 0
@@ -423,6 +430,7 @@
     }
   }
 
+  .admin-status--estimated,
   .admin-status--review {
     color: var(--s-amber-500);
   }

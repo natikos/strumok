@@ -131,8 +131,12 @@
           >
             <div class="usage-history__item-head">
               <span class="usage-history__month">{{ entry.monthLabel }}</span>
+              <span v-if="entry.estimated" class="usage-history__estimated-tag">
+                <ExclamationTriangle aria-hidden="true" />
+                {{ $t("statuses.meterReading.estimated") }}
+              </span>
               <span
-                v-if="!entry.submitted"
+                v-else-if="!entry.submitted"
                 class="usage-history__not-submitted-tag"
                 :class="{
                   'usage-history__not-submitted-tag--due': entry.period === currentBillingPeriod,
@@ -147,7 +151,7 @@
               </span>
             </div>
 
-            <template v-if="entry.submitted">
+            <template v-if="entry.submitted && !entry.estimated">
               <div class="usage-history__metrics">
                 <div
                   class="usage-history__metric"
@@ -235,7 +239,16 @@
 </template>
 
 <script setup lang="ts">
-  import { ArrowRight, CheckCircle, Clock, ExclamationCircle, Inbox, Moon, Sun } from "@primeicons/vue";
+  import {
+    ArrowRight,
+    CheckCircle,
+    Clock,
+    ExclamationCircle,
+    ExclamationTriangle,
+    Inbox,
+    Moon,
+    Sun,
+  } from "@primeicons/vue";
   import { addMonths, format } from "date-fns";
   import { computed, onMounted, ref, watch } from "vue";
   import { useI18n } from "vue-i18n";
@@ -270,6 +283,7 @@
     totalUsage: number;
     amountCharged: number;
     submitted: boolean;
+    estimated: boolean;
     correctionReason: string;
     corrected: boolean;
     correctedOn: string;
@@ -306,6 +320,7 @@
         totalUsage: dayUsage + nightUsage,
         amountCharged: toDecimal(reading.amount_charged_uah),
         submitted: reading.id !== null,
+        estimated: reading.source === "estimate",
         correctionReason: reading.correction_reason ?? "",
         corrected: reading.source !== "admin",
         correctedOn: reading.corrected_at ? format(new Date(reading.corrected_at), "yyyy-MM-dd") : "",
@@ -838,6 +853,14 @@
     color: color-mix(in srgb, var(--s-content-color), transparent 35%);
     font-size: 0.8rem;
     margin: var(--s-app-space-2) 0 0;
+  }
+
+  .usage-history__estimated-tag {
+    align-items: center;
+    color: var(--s-amber-500);
+    display: inline-flex;
+    font-size: 0.8rem;
+    gap: var(--s-app-space-1);
   }
 
   .usage-history__charge {

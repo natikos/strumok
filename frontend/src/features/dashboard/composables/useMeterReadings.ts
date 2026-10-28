@@ -71,7 +71,9 @@ export function useMeterReadings() {
     const map = new Map<string, MeterReadingOut>();
     if (readings.value) {
       for (const reading of readings.value) {
-        if (reading.id !== null) {
+        // An estimate is the co-op's guess, not a submission: it must not make
+        // the period look submitted.
+        if (reading.id !== null && reading.source !== "estimate") {
           map.set(reading.period, reading);
         }
       }
@@ -111,7 +113,7 @@ export function useMeterReadings() {
   });
 
   const latestSubmittedReading = computed<MeterReadingOut | undefined>(() => {
-    return readings.value?.find((reading) => reading.id !== null);
+    return readings.value?.find((reading) => reading.id !== null && reading.source !== "estimate");
   });
 
   const daysLeft = computed<number>(() => getDaysLeft());
@@ -122,7 +124,9 @@ export function useMeterReadings() {
   );
 
   const isFirstPeriod = computed(
-    () => (readings.value?.filter((reading) => reading.id !== null).length ?? 0) === 0
+    () =>
+      (readings.value?.filter((reading) => reading.id !== null && reading.source !== "estimate")
+        .length ?? 0) === 0
   );
 
   // Missing periods between the household's first submission and now.
@@ -255,6 +259,7 @@ export function useMeterReadings() {
     deadlineStatus,
     isFirstPeriod,
     missedPeriods,
+    readings,
     loadHistory,
     handleSubmit,
     ...insights,

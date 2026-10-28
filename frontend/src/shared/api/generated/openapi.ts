@@ -284,6 +284,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/billing/current-period": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Current Period */
+        get: operations["get_current_period_billing_current_period_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/admin/users": {
         parameters: {
             query?: never;
@@ -700,7 +717,7 @@ export interface components {
              * Submission Status
              * @enum {string}
              */
-            submission_status: "submitted" | "missing";
+            submission_status: "submitted" | "estimated" | "missing";
             /** Submitted At */
             submitted_at?: string | null;
             reading?: components["schemas"]["AdminReadingOut"] | null;
@@ -965,6 +982,23 @@ export interface components {
              * @default []
              */
             readings: components["schemas"]["ReadingCorrectionIn"][];
+        };
+        /**
+         * CurrentPeriodOut
+         * @description Where the period residents are submitting for stands: `closed` once the
+         *     head has closed it, after which submissions get periodClosed.
+         */
+        CurrentPeriodOut: {
+            /**
+             * Period
+             * @example 2026-07
+             */
+            period: string;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "open" | "closed";
         };
         /** ElectricityRateCreateIn */
         ElectricityRateCreateIn: {
@@ -2303,6 +2337,26 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_current_period_billing_current_period_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CurrentPeriodOut"];
                 };
             };
         };
