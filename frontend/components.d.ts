@@ -11,6 +11,7 @@ export {}
 /* prettier-ignore */
 declare module 'vue' {
   export interface GlobalComponents {
+    AccountSettings: typeof import('./src/features/auth/AccountSettings.vue')['default']
     AdminHouseholdAssignment: typeof import('./src/features/admin/AdminHouseholdAssignment.vue')['default']
     AdminPage: typeof import('./src/pages/admin/AdminPage.vue')['default']
     App: typeof import('./src/App.vue')['default']
@@ -23,6 +24,7 @@ declare module 'vue' {
     Card: typeof import('primevue/card')['default']
     Chart: typeof import('primevue/chart')['default']
     ConfirmDialog: typeof import('primevue/confirmdialog')['default']
+    ConfirmEmailChangePage: typeof import('./src/pages/auth/ConfirmEmailChangePage.vue')['default']
     DashboardPage: typeof import('./src/pages/dashboard/DashboardPage.vue')['default']
     DayNightSplitCard: typeof import('./src/features/dashboard/components/DayNightSplitCard.vue')['default']
     DeadlineBadge: typeof import('./src/features/dashboard/components/DeadlineBadge.vue')['default']

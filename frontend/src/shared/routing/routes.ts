@@ -10,6 +10,7 @@ declare module "vue-router" {
 export const ROUTES = {
   admin: "/admin",
   auth: "/auth",
+  confirmEmailChange: "/confirm-email-change",
   history: "/history",
   root: "/",
   settings: "/settings",

@@ -225,6 +225,24 @@
       "denied": "Blocked in browser settings — enable notifications for the app and reload the page",
       "ios-not-installed": "On iPhone, first add the app to the home screen (Share → Add to Home Screen), then enable this",
       "unsupported": "Unavailable in this browser"
+    },
+    "account": {
+      "title": "Account",
+      "password": "Password",
+      "passwordHint": "Change the password you sign in with",
+      "email": "Email",
+      "change": "Change",
+      "cancel": "Cancel",
+      "currentPassword": "Current password",
+      "newPassword": "New password",
+      "newEmail": "New email",
+      "savePassword": "Save password",
+      "passwordChanged": "Password changed. Your other devices were signed out.",
+      "sendEmailLink": "Send confirmation link",
+      "emailLinkSent": "We sent a confirmation link to {email}. Your email changes once you open it.",
+      "wrongPassword": "Current password is incorrect",
+      "emailTaken": "That email is already in use",
+      "tryAgainIn": "Too many attempts. Try again in {timer}"
     }
   },
   "statuses": {
@@ -278,5 +296,12 @@
     "sendFailed": "We couldn't send the verification email. Please try again shortly.",
     "stillNotVerified": "Still not verified. Check your inbox and click the link we sent you.",
     "goToDashboard": "Go to dashboard"
+  },
+  "confirmEmailChange": {
+    "confirming": "Confirming your new email...",
+    "successTitle": "Email changed",
+    "successBody": "Your email was updated. Sign in again with the new address.",
+    "errorExpired": "This link is invalid or has expired. Request the change again from Settings.",
+    "signIn": "Sign in"
   }
 }
