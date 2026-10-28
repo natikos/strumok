@@ -11,6 +11,7 @@ and "this failure was transient, keep it".
 """
 
 import json
+from datetime import datetime
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -18,10 +19,12 @@ from app.api.push.service import (
     ReminderVariant,
     _content_for,
     delete_subscription,
+    reminder_variant_for,
     send_reminders,
     upsert_subscription,
 )
 from app.core.domain import current_billing_period
+from app.core.domain.billing import kyiv_now
 from app.core.config import settings
 from app.db.models import LanguageCode, NotificationLog, PushSubscription
 from pywebpush import WebPushException
@@ -33,6 +36,19 @@ from tests.factories import (
     make_push_subscription,
     make_user,
 )
+
+
+def _kyiv_at(day: int, hour: int = 23) -> datetime:
+    """A Kyiv instant in the current month, so the derived period matches the
+    live `current_billing_period()` the tests assert against."""
+    return kyiv_now().replace(day=day, hour=hour, minute=0, second=0, microsecond=0)
+
+
+def _send(
+    session: Session, variant: ReminderVariant, hour: int = 23
+) -> tuple[int, int]:
+    day = 1 if variant == "opening" else 5
+    return send_reminders(session=session, now=_kyiv_at(day, hour))
 
 
 def _fake_webpush_exception(status_code: int) -> WebPushException:
@@ -170,7 +186,7 @@ class TestSendReminders:
         make_push_subscription(session, user_id=user.id)
 
         with patch("app.api.push.service.webpush") as mock_webpush:
-            sent, removed = send_reminders(session=session, variant="opening")
+            sent, removed = _send(session, "opening")
 
         assert (sent, removed) == (0, 0)
         mock_webpush.assert_not_called()
@@ -188,7 +204,7 @@ class TestSendReminders:
         make_push_subscription(session, user_id=user.id)
 
         with patch("app.api.push.service.webpush") as mock_webpush:
-            sent, removed = send_reminders(session=session, variant="opening")
+            sent, removed = _send(session, "opening")
 
         assert (sent, removed) == (1, 0)
         mock_webpush.assert_called_once()
@@ -206,7 +222,7 @@ class TestSendReminders:
         )
 
         with patch("app.api.push.service.webpush") as mock_webpush:
-            sent, removed = send_reminders(session=session, variant="final")
+            sent, removed = _send(session, "final")
 
         assert (sent, removed) == (2, 0)
         assert mock_webpush.call_count == 2
@@ -218,7 +234,7 @@ class TestSendReminders:
         make_push_subscription(session, user_id=user.id)
 
         with patch("app.api.push.service.webpush") as mock_webpush:
-            sent, removed = send_reminders(session=session, variant="opening")
+            sent, removed = _send(session, "opening")
 
         assert (sent, removed) == (0, 0)
         mock_webpush.assert_not_called()
@@ -234,7 +250,7 @@ class TestSendReminders:
         make_push_subscription(session, user_id=user.id)
 
         with patch("app.api.push.service.webpush") as mock_webpush:
-            sent, removed = send_reminders(session=session, variant="opening")
+            sent, removed = _send(session, "opening")
 
         # The user's only owned household already submitted, so they must be
         # skipped -- the unowned household must not be attributed to them.
@@ -252,7 +268,7 @@ class TestSendReminders:
         make_push_subscription(session, user_id=user.id)
 
         with patch("app.api.push.service.webpush") as mock_webpush:
-            sent, removed = send_reminders(session=session, variant="opening")
+            sent, removed = _send(session, "opening")
 
         assert (sent, removed) == (0, 0)
         mock_webpush.assert_not_called()
@@ -265,7 +281,7 @@ class TestSendReminders:
         make_push_subscription(session, user_id=user.id)
 
         with patch("app.api.push.service.webpush") as mock_webpush:
-            sent, removed = send_reminders(session=session, variant="opening")
+            sent, removed = _send(session, "opening")
 
         assert (sent, removed) == (0, 0)
         mock_webpush.assert_not_called()
@@ -282,7 +298,7 @@ class TestSendReminders:
         make_push_subscription(session, user_id=user.id)
 
         with patch("app.api.push.service.webpush") as mock_webpush:
-            sent, removed = send_reminders(session=session, variant="opening")
+            sent, removed = _send(session, "opening")
 
         assert (sent, removed) == (1, 0)
         mock_webpush.assert_called_once()
@@ -299,7 +315,7 @@ class TestSendReminders:
             "app.api.push.service.webpush",
             side_effect=_fake_webpush_exception(status_code),
         ):
-            sent, removed = send_reminders(session=session, variant="opening")
+            sent, removed = _send(session, "opening")
 
         assert (sent, removed) == (0, 1)
         assert (
@@ -322,7 +338,7 @@ class TestSendReminders:
         with patch(
             "app.api.push.service.webpush", side_effect=_fake_webpush_exception(500)
         ):
-            sent, removed = send_reminders(session=session, variant="opening")
+            sent, removed = _send(session, "opening")
 
         assert (sent, removed) == (0, 0)
         assert (
@@ -356,7 +372,7 @@ class TestSendReminders:
                 raise _fake_webpush_exception(410)
 
         with patch("app.api.push.service.webpush", side_effect=side_effect):
-            sent, removed = send_reminders(session=session, variant="opening")
+            sent, removed = _send(session, "opening")
 
         assert (sent, removed) == (1, 1)
 
@@ -373,9 +389,9 @@ class TestSendRemindersIdempotency:
         make_push_subscription(session, user_id=user.id)
 
         with patch("app.api.push.service.webpush") as mock_webpush:
-            first = send_reminders(session=session, variant="opening")
-            second = send_reminders(session=session, variant="opening")
-            third = send_reminders(session=session, variant="opening")
+            first = _send(session, "opening")
+            second = _send(session, "opening")
+            third = _send(session, "opening")
 
         assert mock_webpush.call_count == 1
         assert first == (1, 0)
@@ -391,8 +407,8 @@ class TestSendRemindersIdempotency:
         make_push_subscription(session, user_id=user.id)
 
         with patch("app.api.push.service.webpush"):
-            send_reminders(session=session, variant="opening")
-            send_reminders(session=session, variant="opening")
+            _send(session, "opening")
+            _send(session, "opening")
 
         rows = session.exec(
             select(NotificationLog)
@@ -435,7 +451,7 @@ class TestReminderContentLocalization:
         make_push_subscription(session, user_id=user.id)
 
         with patch("app.api.push.service.webpush") as mock_webpush:
-            send_reminders(session=session, variant=variant)
+            _send(session, variant)
 
         payload = json.loads(mock_webpush.call_args.kwargs["data"])
         assert payload["title"] == expected_title
@@ -471,7 +487,7 @@ class TestReminderContentLocalization:
         make_push_subscription(session, user_id=user.id)
 
         with patch("app.api.push.service.webpush") as mock_webpush:
-            send_reminders(session=session, variant=variant)
+            _send(session, variant)
 
         payload = json.loads(mock_webpush.call_args.kwargs["data"])
         assert payload["title"] == expected_title
@@ -505,7 +521,7 @@ class TestReminderContentLocalization:
             sent_payloads[subscription_info["endpoint"]] = json.loads(data)
 
         with patch("app.api.push.service.webpush", side_effect=side_effect):
-            sent, removed = send_reminders(session=session, variant="opening")
+            sent, removed = _send(session, "opening")
 
         assert (sent, removed) == (2, 0)
         assert (
@@ -636,3 +652,69 @@ class TestUnsubscribeRoute:
             ).first()
             is None
         )
+
+
+class TestReminderHour:
+    """Issue #200: each user is reminded at their own Kyiv hour."""
+
+    def test_variant_is_chosen_by_the_kyiv_day(self) -> None:
+        assert reminder_variant_for(_kyiv_at(1)) == "opening"
+        assert reminder_variant_for(_kyiv_at(5)) == "final"
+        assert reminder_variant_for(_kyiv_at(2)) is None
+        assert reminder_variant_for(_kyiv_at(15)) is None
+
+    def test_other_days_send_nothing(self, session: Session) -> None:
+        user = make_user(session)
+        make_household(session, user_id=user.id)
+        make_push_subscription(session, user_id=user.id)
+
+        with patch("app.api.push.service.webpush") as mock_webpush:
+            result = send_reminders(session=session, now=_kyiv_at(3))
+
+        assert result == (0, 0)
+        mock_webpush.assert_not_called()
+
+    def test_waits_until_the_users_hour_then_sends_once(self, session: Session) -> None:
+        user = make_user(session)
+        user.reminder_hour = 14
+        session.add(user)
+        session.flush()
+        make_household(session, user_id=user.id)
+        make_push_subscription(session, user_id=user.id)
+
+        with patch("app.api.push.service.webpush") as mock_webpush:
+            early = _send(session, "opening", hour=13)
+            on_time = _send(session, "opening", hour=14)
+            later = _send(session, "opening", hour=15)
+
+        assert (early, on_time, later) == ((0, 0), (1, 0), (0, 0))
+        assert mock_webpush.call_count == 1
+
+    def test_a_missed_tick_is_caught_up_on_the_next_one(self, session: Session) -> None:
+        user = make_user(session)
+        user.reminder_hour = 8
+        session.add(user)
+        session.flush()
+        make_household(session, user_id=user.id)
+        make_push_subscription(session, user_id=user.id)
+
+        with patch("app.api.push.service.webpush"):
+            result = _send(session, "final", hour=11)
+
+        assert result == (1, 0)
+
+    def test_a_user_whose_send_failed_is_retried_on_the_next_run(
+        self, session: Session
+    ) -> None:
+        user = make_user(session)
+        make_household(session, user_id=user.id)
+        make_push_subscription(session, user_id=user.id)
+
+        with patch("app.api.push.service.webpush", side_effect=RuntimeError("down")):
+            first = _send(session, "opening")
+        with patch("app.api.push.service.webpush") as mock_webpush:
+            second = _send(session, "opening")
+
+        assert first == (0, 0)
+        assert second == (1, 0)
+        assert mock_webpush.call_count == 1

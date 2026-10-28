@@ -296,6 +296,9 @@ def update_preferences(
     if payload.language is not None:
         current_user.language = payload.language
 
+    if payload.reminder_hour is not None:
+        current_user.reminder_hour = payload.reminder_hour
+
     session.add(current_user)
     session.commit()
     session.refresh(current_user)

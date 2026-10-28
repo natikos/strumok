@@ -493,7 +493,9 @@
       "on": "Enabled · reminders on the 1st and 5th",
       "denied": "Blocked in browser settings — enable notifications for the app and reload the page",
       "ios-not-installed": "On iPhone, first add the app to the home screen (Share → Add to Home Screen), then enable this",
-      "unsupported": "Unavailable in this browser"
+      "unsupported": "Unavailable in this browser",
+      "reminderHour": "Reminder time (Kyiv time)",
+      "reminderHourHint": "Sent on the 1st and 5th at this hour, Kyiv time"
     },
     "account": {
       "title": "Account",

@@ -66,11 +66,13 @@ the quarterly drill are in [operations.md](operations.md#database-backups).
 ## Push Reminders
 
 Deadline push reminders run on an in-process APScheduler
-(`backend/app/api/push/scheduler.py`), started from the app's lifespan. It
-fires the `opening` variant on day 1 and the `final` variant on day 5, at
-06:00 UTC (Kyiv morning). The instance must be awake on those days; if it is
-put to sleep after the 10th, wake it before the 1st. `send_reminders` is
-idempotent per `(period, variant)`.
+(`backend/app/api/push/scheduler.py`), started from the app's lifespan. An
+hourly job (minute 0 UTC) sends the `opening` variant on Kyiv day 1 and the
+`final` variant on day 5 to each user whose chosen hour (`users.reminder_hour`,
+Kyiv time, default 09:00) has arrived. The instance must be awake on those
+days; if it is put to sleep after the 10th, wake it before the 1st. Users are
+claimed in `NotificationLog` before sending, so overlapping runs or multiple
+instances notify each `(user, period, variant)` at most once.
 
 ## Environment Variables
 
