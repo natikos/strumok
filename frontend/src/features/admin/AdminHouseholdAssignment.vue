@@ -133,6 +133,41 @@
       </span>
     </div>
 
+    <div v-if="isReassignment" class="admin-assignment__starting">
+      <p class="admin-assignment__hint">{{ $t("admin.handoverHint") }}</p>
+      <div class="admin-assignment__field">
+        <label class="admin-assignment__label" for="admin-handover-day">
+          {{ $t("admin.handoverDay") }}
+        </label>
+        <InputNumber
+          v-model="handoverDay"
+          input-id="admin-handover-day"
+          :min="0"
+          :min-fraction-digits="2"
+          :max-fraction-digits="2"
+          fluid
+          :disabled="isLoading"
+        />
+      </div>
+      <div class="admin-assignment__field">
+        <label class="admin-assignment__label" for="admin-handover-night">
+          {{ $t("admin.handoverNight") }}
+        </label>
+        <InputNumber
+          v-model="handoverNight"
+          input-id="admin-handover-night"
+          :min="0"
+          :min-fraction-digits="2"
+          :max-fraction-digits="2"
+          fluid
+          :disabled="isLoading"
+        />
+      </div>
+      <span v-if="errors.handover" role="alert" class="admin-assignment__field-error">
+        {{ $t(errors.handover) }}
+      </span>
+    </div>
+
     <Button
       class="admin-assignment__submit"
       :label="$t('admin.assign')"
@@ -174,6 +209,7 @@
     newHouseholdName?: string;
     selectedUserId?: string;
     starting?: string;
+    handover?: string;
   }
 
   const schema = z.object({
@@ -195,6 +231,8 @@
   const selectedUserId = ref<number | null>(null);
   const startingDay = ref<number | null>(null);
   const startingNight = ref<number | null>(null);
+  const handoverDay = ref<number | null>(null);
+  const handoverNight = ref<number | null>(null);
 
   onMounted(async () => {
     isLoading.value = true;
@@ -305,6 +343,8 @@
     selectedUserId.value = null;
     startingDay.value = null;
     startingNight.value = null;
+    handoverDay.value = null;
+    handoverNight.value = null;
     errors.value = {};
   }
 
@@ -334,11 +374,18 @@
       next.starting = "admin.startingBoth";
     }
 
+    if (isReassignment.value && (handoverDay.value === null || handoverNight.value === null)) {
+      next.handover = "admin.handoverRequired";
+    }
+
     errors.value = next;
     return Object.keys(next).length === 0;
   }
 
-  async function performAssignment(confirmReassignment: boolean): Promise<void> {
+  async function performAssignment(
+    confirmReassignment: boolean,
+    acknowledgeBalance = false
+  ): Promise<void> {
     if (selectedUserId.value === null) {
       return;
     }
@@ -350,8 +397,15 @@
 
       if (selectedHouseholdId.value !== null) {
         household = await assignAdminHouseholdOwner(selectedHouseholdId.value, {
+          acknowledge_balance: acknowledgeBalance,
           confirm_reassignment: confirmReassignment,
           user_id: selectedUserId.value,
+          ...(isReassignment.value && handoverDay.value !== null && handoverNight.value !== null
+            ? {
+                handover_day_meter_value: String(handoverDay.value),
+                handover_night_meter_value: String(handoverNight.value),
+              }
+            : {}),
         });
       } else {
         household = await createAdminHousehold({
@@ -385,9 +439,25 @@
       if (!(error instanceof ApiError)) {
         throw error;
       }
+
+      // The outgoing owner still owes money; it stays with them, but the head
+      // must say they know.
+      if (error.message === "householdHasOutstandingBalance") {
+        confirmBalanceDialog();
+      }
     } finally {
       isLoading.value = false;
     }
+  }
+
+  function confirmBalanceDialog(): void {
+    confirm.require({
+      accept: () => void performAssignment(true, true),
+      acceptLabel: t("admin.balanceConfirmAccept"),
+      header: t("admin.balanceConfirmTitle"),
+      message: t("admin.balanceConfirmBody", { owner: selectedHouseholdOwnerLabel.value ?? "" }),
+      rejectLabel: t("admin.reassignConfirmReject"),
+    });
   }
 
   function confirmReassignmentDialog(): void {

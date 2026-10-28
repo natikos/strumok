@@ -15,9 +15,9 @@
     "newHouseholdNameRequired": "Select an existing household, or enter a name for a new one",
     "assign": "Assign household",
     "assignSuccess": "{household} assigned to {owner}",
-    "reassignConfirmTitle": "Reassign household?",
-    "reassignConfirmBody": "This household is already assigned to {owner}. Reassigning it will remove their access to it.",
-    "reassignConfirmAccept": "Reassign",
+    "reassignConfirmTitle": "Transfer household?",
+    "reassignConfirmBody": "This household is currently owned by {owner}. They will lose access to it but keep their past bills and any balance; the new owner sees records from now on.",
+    "reassignConfirmAccept": "Transfer",
     "reassignConfirmReject": "Cancel",
     "electricityRates": "Electricity rates",
     "noRatesConfigured": "No rates configured yet",
@@ -290,7 +290,14 @@
       "usage": "Usage this period: day {day} kWh, night {night} kWh",
       "usagePending": "No reading submitted for this period yet.",
       "failed": "Could not record the replacement."
-    }
+    },
+    "handoverHint": "Record the meters at the handover. The new owner is billed from this point; the previous owner keeps their history and any unpaid balance.",
+    "handoverDay": "Day meter at handover",
+    "handoverNight": "Night meter at handover",
+    "handoverRequired": "Enter both meter values at the handover",
+    "balanceConfirmTitle": "Previous owner has an unpaid balance",
+    "balanceConfirmBody": "{owner} still owes money for this household. The balance stays with them and is not passed on to the new owner. Transfer anyway?",
+    "balanceConfirmAccept": "Transfer anyway"
   },
   "auth": {
     "login": "Login",
@@ -435,7 +442,9 @@
     "paymentNotFound": "This payment no longer exists",
     "paymentAlreadyVoided": "This payment was already voided",
     "baselineNotFirst": "A starting reading can only be set before the household has any reading",
-    "meterChangeAlreadyRecorded": "A meter replacement is already recorded for this period"
+    "meterChangeAlreadyRecorded": "A meter replacement is already recorded for this period",
+    "handoverReadingRequired": "Enter the meter values at the handover",
+    "householdHasOutstandingBalance": "The previous owner has an unpaid balance"
   },
   "household": {
     "switchAria": "Switch household",
