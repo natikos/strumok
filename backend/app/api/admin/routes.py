@@ -8,6 +8,8 @@ from app.api.admin.schemas import (
     AdminHouseholdCreateIn,
     AdminHouseholdOut,
     AdminHouseholdUpdateIn,
+    AdminInviteIn,
+    AdminInviteOut,
     AdminUserOut,
     AdminUserSummaryOut,
     AdminUserUpdateIn,
@@ -16,6 +18,10 @@ from app.api.admin.schemas import (
     HouseholdOwnerAssignIn,
 )
 from app.api.admin.service import (
+    EmailTakenError,
+    InviteAlreadyAcceptedError,
+    invite_user,
+    resend_invite,
     CannotModifySelfError,
     LastAdminRequiredError,
     UserOwnsActiveHouseholdsError,
@@ -33,6 +39,7 @@ from app.api.admin.service import (
     list_users,
 )
 from app.api.auth.schemas import ErrorOut
+from app.api.auth.throttle import TooManyAttemptsError
 from app.api.deps import require_admin
 from app.db import get_session
 from app.db.models import User
@@ -303,3 +310,99 @@ def update_admin_household(
         ) from exc
 
     return AdminHouseholdOut.from_household(household, owner=owner)
+
+
+INVITE_RESPONSES: dict[int | str, dict[str, Any]] = {
+    status.HTTP_404_NOT_FOUND: ASSIGN_OWNER_RESPONSES[status.HTTP_404_NOT_FOUND],
+    status.HTTP_409_CONFLICT: {
+        "description": "Email taken, household owned, or invite already accepted",
+        "model": ErrorOut,
+        "content": {
+            "application/json": {
+                "examples": {
+                    "emailAlreadyRegistered": {
+                        "value": {"detail": "emailAlreadyRegistered"}
+                    },
+                    "householdAlreadyAssigned": {
+                        "value": {"detail": "householdAlreadyAssigned"}
+                    },
+                    "inviteAlreadyAccepted": {
+                        "value": {"detail": "inviteAlreadyAccepted"}
+                    },
+                }
+            }
+        },
+    },
+    status.HTTP_429_TOO_MANY_REQUESTS: {
+        "description": "Invite resent too often; see Retry-After",
+        "model": ErrorOut,
+        "content": {"application/json": {"example": {"detail": "tooManyAttempts"}}},
+    },
+}
+
+
+@router.post(
+    "/users",
+    response_model=AdminInviteOut,
+    responses=INVITE_RESPONSES,
+    status_code=status.HTTP_201_CREATED,
+)
+def invite_admin_user(
+    payload: AdminInviteIn,
+    session: Session = Depends(get_session),
+    admin: User = CurrentAdmin,
+) -> AdminInviteOut:
+    try:
+        user, link, sent = invite_user(
+            session=session,
+            actor_id=admin.id,
+            email=payload.email,
+            first_name=payload.first_name,
+            last_name=payload.last_name,
+            language=payload.language,
+            household_id=payload.household_id,
+        )
+    except EmailTakenError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT, detail="emailAlreadyRegistered"
+        ) from exc
+    except HouseholdNotFoundError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="householdNotFound"
+        ) from exc
+    except HouseholdAlreadyAssignedError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT, detail="householdAlreadyAssigned"
+        ) from exc
+    return AdminInviteOut(user=user, invite_link=link, email_sent=sent)
+
+
+@router.post(
+    "/users/{user_id}/invite",
+    response_model=AdminInviteOut,
+    responses=INVITE_RESPONSES,
+)
+def resend_admin_invite(
+    user_id: int,
+    session: Session = Depends(get_session),
+    admin: User = CurrentAdmin,
+) -> AdminInviteOut:
+    try:
+        user, link, sent = resend_invite(
+            session=session, actor_id=admin.id, user_id=user_id
+        )
+    except UserNotFoundError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="userNotFound"
+        ) from exc
+    except InviteAlreadyAcceptedError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT, detail="inviteAlreadyAccepted"
+        ) from exc
+    except TooManyAttemptsError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail="tooManyAttempts",
+            headers={"Retry-After": str(exc.retry_after_seconds)},
+        ) from exc
+    return AdminInviteOut(user=user, invite_link=link, email_sent=sent)

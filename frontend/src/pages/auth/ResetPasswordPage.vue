@@ -101,7 +101,7 @@
     try {
       await confirmPasswordReset(token, parsed.data.password);
       toast.add({ detail: t("auth.resetDone"), life: 6000, severity: "success" });
-      await goTo(ROUTES.auth);
+      await goTo(ROUTES.root);
     } catch (error: unknown) {
       if (error instanceof ApiError && error.status === 400) {
         tokenState.value = "error";

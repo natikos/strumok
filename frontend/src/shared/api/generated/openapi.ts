@@ -220,7 +220,11 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Password Reset Confirm */
+        /**
+         * Password Reset Confirm
+         * @description Also the set-password step of an invite. Signs the user in: they just
+         *     proved ownership of the inbox.
+         */
         post: operations["password_reset_confirm_auth_password_reset_confirm_post"];
         delete?: never;
         options?: never;
@@ -256,7 +260,8 @@ export interface paths {
         /** List Admin Users */
         get: operations["list_admin_users_admin_users_get"];
         put?: never;
-        post?: never;
+        /** Invite Admin User */
+        post: operations["invite_admin_user_admin_users_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -364,6 +369,23 @@ export interface paths {
         head?: never;
         /** Update Admin Household */
         patch: operations["update_admin_household_admin_households__household_id__patch"];
+        trace?: never;
+    };
+    "/admin/users/{user_id}/invite": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Resend Admin Invite */
+        post: operations["resend_admin_invite_admin_users__user_id__invite_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
         trace?: never;
     };
     "/electricity-rates": {
@@ -482,6 +504,30 @@ export interface components {
              */
             confirm: true;
         };
+        /** AdminInviteIn */
+        AdminInviteIn: {
+            /**
+             * Email
+             * Format: email
+             */
+            email: string;
+            /** First Name */
+            first_name: string;
+            /** Last Name */
+            last_name: string;
+            /** @default ua */
+            language: components["schemas"]["LanguageCode"];
+            /** Household Id */
+            household_id?: number | null;
+        };
+        /** AdminInviteOut */
+        AdminInviteOut: {
+            user: components["schemas"]["AdminUserOut"];
+            /** Invite Link */
+            invite_link: string;
+            /** Email Sent */
+            email_sent: boolean;
+        };
         /** AdminUserOut */
         AdminUserOut: {
             /** Id */
@@ -498,6 +544,11 @@ export interface components {
             is_admin: boolean;
             /** Household Count */
             household_count: number;
+            /**
+             * Invite Pending
+             * @default false
+             */
+            invite_pending: boolean;
         };
         /** AdminUserSummaryOut */
         AdminUserSummaryOut: {
@@ -751,20 +802,6 @@ export interface components {
             /** Endpoint */
             endpoint: string;
         };
-        /** RegisterIn */
-        RegisterIn: {
-            /**
-             * Email
-             * Format: email
-             */
-            email: string;
-            /** First Name */
-            first_name: string;
-            /** Last Name */
-            last_name: string;
-            /** Password */
-            password: string;
-        };
         /**
          * ThemeMode
          * @enum {string}
@@ -858,42 +895,20 @@ export interface operations {
             path?: never;
             cookie?: never;
         };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["RegisterIn"];
-            };
-        };
+        requestBody?: never;
         responses: {
-            /** @description Successful Response */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["UserOut"];
-                };
-            };
-            /** @description Email is already registered */
-            409: {
+            /** @description Self-registration is closed; the head invites residents */
+            403: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
                     /**
                      * @example {
-                     *       "detail": "emailAlreadyRegistered"
+                     *       "detail": "registrationClosed"
                      *     }
                      */
                     "application/json": components["schemas"]["ErrorOut"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };
@@ -1414,11 +1429,13 @@ export interface operations {
         };
         responses: {
             /** @description Successful Response */
-            204: {
+            200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["UserOut"];
+                };
             };
             /** @description Verification token is invalid or expired */
             400: {
@@ -1582,6 +1599,71 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["AdminUserOut"][];
+                };
+            };
+        };
+    };
+    invite_admin_user_admin_users_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AdminInviteIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminInviteOut"];
+                };
+            };
+            /** @description Household or user does not exist */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Email taken, household owned, or invite already accepted */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+            /** @description Invite resent too often; see Retry-After */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "detail": "tooManyAttempts"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorOut"];
                 };
             };
         };
@@ -1877,6 +1959,69 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    resend_admin_invite_admin_users__user_id__invite_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                user_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminInviteOut"];
+                };
+            };
+            /** @description Household or user does not exist */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Email taken, household owned, or invite already accepted */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+            /** @description Invite resent too often; see Retry-After */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "detail": "tooManyAttempts"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorOut"];
                 };
             };
         };

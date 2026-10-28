@@ -1,10 +1,10 @@
 from decimal import Decimal
 from typing import Any, Literal
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, EmailStr, Field
 
 from app.core.time import UtcDatetime
-from app.db.models import Household, User
+from app.db.models import Household, LanguageCode, User
 
 
 class AdminUserSummaryOut(BaseModel):
@@ -20,6 +20,23 @@ class AdminUserSummaryOut(BaseModel):
 class AdminUserOut(AdminUserSummaryOut):
     is_admin: bool
     household_count: int
+    invite_pending: bool = False
+
+
+class AdminInviteIn(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    email: EmailStr
+    first_name: str = Field(min_length=2, max_length=255)
+    last_name: str = Field(min_length=2, max_length=255)
+    language: LanguageCode = LanguageCode.UA
+    household_id: int | None = None
+
+
+class AdminInviteOut(BaseModel):
+    user: AdminUserOut
+    invite_link: str
+    email_sent: bool
 
 
 class AdminUserUpdateIn(BaseModel):

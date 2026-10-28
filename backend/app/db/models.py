@@ -29,7 +29,8 @@ class User(SQLModel, table=True):
     email: str = Field(unique=True)
     first_name: str
     last_name: str
-    password_hash: str
+    # NULL until an invited user sets a password; such accounts cannot log in.
+    password_hash: Optional[str] = None
     is_admin: bool = Field(default=False)
     is_active: bool = Field(default=True)
     email_verified: bool = Field(default=False)

@@ -3,10 +3,10 @@
     <template #title>
       <div class="auth-form__header">
         <Typography variant="h1" class="auth-form__title">
-          {{ $t(`auth.${mode}Title`) }}
+          {{ $t("auth.loginTitle") }}
         </Typography>
         <Typography variant="subtitle" class="auth-form__subtitle">
-          {{ $t(`auth.${mode}Subtitle`) }}
+          {{ $t("auth.loginSubtitle") }}
         </Typography>
       </div>
     </template>
@@ -14,42 +14,6 @@
     <template #content>
       <div class="auth-form__content">
         <Form v-slot="$form" class="auth-form__fields" :resolver="resolver" @submit="handleSubmit">
-          <SelectButton
-            v-model="mode"
-            :allow-empty="false"
-            :options="[
-              { label: $t('auth.login'), value: 'login' },
-              { label: $t('auth.register'), value: 'register' },
-            ]"
-            option-label="label"
-            option-value="value"
-            class="auth-form__mode"
-            :disabled="isSubmitting"
-            @update:model-value="$form.reset()"
-          />
-
-          <div
-            class="auth-form__expand"
-            :class="{ 'auth-form__expand--open': mode === 'register' }"
-          >
-            <div class="auth-form__extra auth-form__extra--names">
-              <FormFieldControl
-                id="auth-first-name"
-                name="firstName"
-                label-key="auth.firstName"
-                placeholder-key="auth.firstName"
-                :disabled="isSubmitting"
-              />
-              <FormFieldControl
-                id="auth-last-name"
-                name="lastName"
-                label-key="auth.lastName"
-                placeholder-key="auth.lastName"
-                :disabled="isSubmitting"
-              />
-            </div>
-          </div>
-
           <FormFieldControl
             id="auth-email"
             name="email"
@@ -64,7 +28,7 @@
             name="password"
             type="password"
             :input-props="{
-              autocomplete: mode === 'register' ? 'new-password' : 'current-password',
+              autocomplete: 'current-password',
               name: 'password',
             }"
             label-key="auth.password"
@@ -72,32 +36,15 @@
             :disabled="isSubmitting"
           />
 
-          <RouterLink v-if="mode === 'login'" class="auth-form__forgot" :to="ROUTES.forgotPassword">
+          <RouterLink class="auth-form__forgot" :to="ROUTES.forgotPassword">
             {{ $t("auth.forgotPassword") }}
           </RouterLink>
-
-          <div
-            class="auth-form__expand"
-            :class="{ 'auth-form__expand--open': mode === 'register' }"
-          >
-            <div class="auth-form__extra">
-              <FormFieldControl
-                id="auth-confirm-password"
-                name="confirmPassword"
-                type="password"
-                :input-props="{ autocomplete: 'new-password', name: 'confirmPassword' }"
-                label-key="auth.confirmPassword"
-                placeholder-key="auth.confirmPassword"
-                :disabled="isSubmitting"
-              />
-            </div>
-          </div>
 
           <Button
             fluid
             type="submit"
             class="auth-form__submit"
-            :label="$t(`auth.${mode}Submit`)"
+            :label="$t('auth.loginSubmit')"
             :disabled="isSubmitting || !$form.valid || throttleSeconds > 0"
             :loading="isSubmitting"
           />
@@ -110,6 +57,7 @@
             {{ $t("auth.tooManyAttempts", { timer: throttleTimer }) }}
           </Message>
         </Form>
+        <p class="auth-form__invite-note">{{ $t("auth.inviteNote") }}</p>
       </div>
     </template>
   </Card>
@@ -118,7 +66,7 @@
 <script setup lang="ts">
   import { Form } from "@primevue/forms";
   import { zodResolver } from "@primevue/forms/resolvers/zod";
-  import { computed, ref } from "vue";
+  import { ref } from "vue";
   import { useRouter } from "vue-router";
   import { z } from "zod";
 
@@ -126,19 +74,16 @@
   import { getStoredTheme } from "@features/preferences/preferences.storage";
   import { useTheme } from "@features/theme/composables/useTheme";
   import type { FormSubmitEvent } from "@primevue/forms/form";
-  import { ApiError, loginUser, registerUser, updateMyPreferences } from "@shared/api/auth";
+  import { ApiError, loginUser, updateMyPreferences } from "@shared/api/auth";
   import type { UserOut } from "@shared/api/auth";
   import { useCountdown } from "@shared/composables/useCountdown";
   import FormFieldControl from "@shared/FormFieldControl.vue";
   import { ROUTES } from "@shared/routing/routes";
 
-  type AuthMode = "login" | "register";
-
   const router = useRouter();
   const { setLocale } = useLocale();
   const { setTheme } = useTheme();
 
-  const mode = ref<AuthMode>("login");
   const isSubmitting = ref(false);
   const { formatted: throttleTimer, seconds: throttleSeconds, start: startThrottle } = useCountdown();
 
@@ -149,29 +94,12 @@
       })
       .trim();
 
-  const isRegisterMode = computed(() => mode.value === "register");
-  const emailSchema = baseString().pipe(z.email("auth.invalidEmail"));
-
   const loginSchema = z.object({
-    email: emailSchema,
+    email: baseString().pipe(z.email("auth.invalidEmail")),
     password: baseString().min(1, "auth.requiredField"),
   });
 
-  const registerSchema = z
-    .object({
-      confirmPassword: baseString().min(8, "auth.passwordMinLength"),
-      email: emailSchema,
-      firstName: baseString().min(2, "auth.nameMinLength"),
-      lastName: baseString().min(2, "auth.nameMinLength"),
-      password: baseString().min(8, "auth.passwordMinLength"),
-    })
-    .refine((data) => data["password"] === data["confirmPassword"], {
-      message: "auth.passwordMismatch",
-      path: ["confirmPassword"],
-    });
-
-  const resolver = (options: { values: Record<string, unknown> }) =>
-    isRegisterMode.value ? zodResolver(registerSchema)(options) : zodResolver(loginSchema)(options);
+  const resolver = zodResolver(loginSchema);
 
   async function handleSubmit(event: FormSubmitEvent): Promise<void> {
     const { valid, values } = event;
@@ -182,37 +110,13 @@
     isSubmitting.value = true;
 
     try {
-      let me: UserOut;
+      const { success, data } = loginSchema.safeParse(values);
 
-      if (isRegisterMode.value) {
-        const { success, data } = registerSchema.safeParse(values);
-
-        if (!success) {
-          return;
-        }
-
-        const { email, firstName, lastName, password } = data;
-
-        me = await registerUser({
-          email,
-          first_name: firstName,
-          last_name: lastName,
-          password,
-        });
-      } else {
-        const { success, data } = loginSchema.safeParse(values);
-
-        if (!success) {
-          return;
-        }
-
-        const { email, password } = data;
-
-        me = await loginUser({
-          email,
-          password,
-        });
+      if (!success) {
+        return;
       }
+
+      let me: UserOut = await loginUser({ email: data.email, password: data.password });
 
       const selectedTheme = getStoredTheme();
 
@@ -254,15 +158,8 @@
     @include layout.stack(var(--s-app-space-2));
   }
 
-  .auth-form__mode {
-    margin-bottom: var(--s-app-space-1);
-    margin-top: 0;
-    width: 100%;
-  }
-
   .auth-form__content,
-  .auth-form__fields,
-  .auth-form__extra {
+  .auth-form__fields {
     @include layout.stack(var(--s-app-space-3));
   }
 
@@ -280,32 +177,16 @@
     min-width: 0;
   }
 
+  .auth-form__invite-note {
+    color: color-mix(in srgb, var(--s-content-color), transparent 35%);
+    font-size: 0.85rem;
+    margin: 0;
+    text-align: center;
+  }
+
   .auth-form__submit {
     margin-top: var(--s-app-space-1);
     transition: transform 180ms ease;
-  }
-
-  .auth-form__expand {
-    display: grid;
-    grid-template-rows: 0fr;
-    overflow: hidden;
-    transition:
-      grid-template-rows 240ms ease,
-      opacity 240ms ease;
-  }
-
-  .auth-form__expand > .auth-form__extra {
-    min-height: 0;
-    opacity: 0;
-    transition: opacity 180ms ease;
-  }
-
-  .auth-form__expand--open {
-    grid-template-rows: 1fr;
-  }
-
-  .auth-form__expand--open > .auth-form__extra {
-    opacity: 1;
   }
 
   @media (min-width: 21.25rem) {
@@ -317,14 +198,8 @@
       gap: var(--s-app-space-3);
     }
 
-    .auth-form__mode {
-      margin-bottom: var(--s-app-space-2);
-      margin-top: var(--s-app-space-1);
-    }
-
     .auth-form__content,
-    .auth-form__fields,
-    .auth-form__extra {
+    .auth-form__fields {
       gap: var(--s-app-space-4);
     }
   }
@@ -336,15 +211,6 @@
 
     .auth-form__fields {
       gap: var(--s-app-space-3);
-    }
-  }
-
-  @media (min-width: 42rem) {
-    .auth-form__extra--names {
-      column-gap: var(--s-app-space-3);
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      row-gap: var(--s-app-space-2);
     }
   }
 </style>

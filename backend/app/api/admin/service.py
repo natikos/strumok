@@ -1,6 +1,7 @@
 from collections.abc import Sequence
 from decimal import Decimal
 
+from sqlalchemy.exc import IntegrityError
 from sqlmodel import Session, col, func, select
 
 from app.api.admin.schemas import (
@@ -9,9 +10,15 @@ from app.api.admin.schemas import (
     AdminUserOut,
     AdminUserSummaryOut,
 )
+from app.api.auth.service import build_invite_link, send_invite_email
+from app.api.auth.throttle import (
+    INVITE_RESEND_LIMIT,
+    check_not_throttled,
+    record_failure,
+)
 from app.core import audit
 from app.core.domain import current_billing_period
-from app.db.models import AuditLog, Household, MeterReading, User
+from app.db.models import AuditLog, Household, LanguageCode, MeterReading, User
 
 
 def _summed_usage_kwh(
@@ -68,7 +75,11 @@ def list_users(*, session: Session) -> list[AdminUserOut]:
     users = session.exec(select(User).order_by(User.first_name, User.last_name))
     return [
         AdminUserOut.model_validate(
-            {**user.model_dump(), "household_count": counts.get(user.id, 0)}
+            {
+                **user.model_dump(),
+                "household_count": counts.get(user.id, 0),
+                "invite_pending": user.password_hash is None,
+            }
         )
         for user in users
     ]
@@ -368,3 +379,108 @@ def update_household(
     session.refresh(household)
     owner = session.get(User, household.user_id) if household.user_id else None
     return household, owner
+
+
+class EmailTakenError(Exception):
+    pass
+
+
+class InviteAlreadyAcceptedError(Exception):
+    pass
+
+
+def invite_user(
+    *,
+    session: Session,
+    actor_id: int,
+    email: str,
+    first_name: str,
+    last_name: str,
+    language: LanguageCode,
+    household_id: int | None,
+) -> tuple[AdminUserOut, str, bool]:
+    household = None
+    if household_id is not None:
+        household = session.get(Household, household_id)
+        if household is None:
+            raise HouseholdNotFoundError
+        if household.user_id is not None:
+            raise HouseholdAlreadyAssignedError
+
+    email = email.strip().lower()
+    if session.exec(select(User.id).where(User.email == email)).first() is not None:
+        raise EmailTakenError
+
+    user = User(
+        email=email,
+        first_name=first_name.strip(),
+        last_name=last_name.strip(),
+        language=language,
+    )
+    session.add(user)
+    try:
+        session.flush()
+    except IntegrityError as exc:
+        # Lost a race with a concurrent invite; the unique index caught it.
+        session.rollback()
+        raise EmailTakenError from exc
+
+    audit.record(
+        session,
+        actor_user_id=actor_id,
+        action="userInvited",
+        entity_type="user",
+        entity_id=user.id,
+        after={"email": user.email, "household_id": household_id},
+    )
+    if household is not None:
+        audit.record(
+            session,
+            actor_user_id=actor_id,
+            action="householdOwnerAssigned",
+            entity_type="household",
+            entity_id=household.id,
+            household_id=household.id,
+            before={"user_id": None},
+            after={"user_id": user.id},
+        )
+        household.user_id = user.id
+        session.add(household)
+    session.commit()
+    session.refresh(user)
+
+    link = build_invite_link(user)
+    sent = send_invite_email(user=user, link=link)
+    return _user_out(session=session, user=user), link, sent
+
+
+def resend_invite(
+    *, session: Session, actor_id: int, user_id: int
+) -> tuple[AdminUserOut, str, bool]:
+    user = session.get(User, user_id)
+    if user is None:
+        raise UserNotFoundError
+    if user.password_hash is not None:
+        raise InviteAlreadyAcceptedError
+
+    key = f"invite:user:{user.id}"
+    check_not_throttled(session=session, key=key, limit=INVITE_RESEND_LIMIT)
+    record_failure(session=session, key=key, limit=INVITE_RESEND_LIMIT)
+
+    # The previous link stays valid until used or expired; the token's `ver`
+    # is unchanged, so resending doesn't revoke it.
+    audit.record(
+        session,
+        actor_user_id=actor_id,
+        action="inviteResent",
+        entity_type="user",
+        entity_id=user.id,
+    )
+    session.commit()
+    link = build_invite_link(user)
+    sent = send_invite_email(user=user, link=link)
+    return _user_out(session=session, user=user), link, sent
+
+
+def _user_out(*, session: Session, user: User) -> AdminUserOut:
+    return next(u for u in list_users(session=session) if u.id == user.id)

@@ -35,44 +35,12 @@ def _register_payload(**overrides) -> dict:
     return payload
 
 
-class TestRegister:
-    @patch("app.api.auth.service.send_email")
-    def test_register_creates_user_and_sets_auth_cookie(
-        self, mock_send_email, client: TestClient
-    ) -> None:
+class TestRegistrationClosed:
+    def test_register_is_closed(self, client: TestClient) -> None:
         response = client.post("/auth/register", json=_register_payload())
 
-        assert response.status_code == 201
-        body = response.json()
-        assert body["email"] == "newresident@example.com"
-        assert body["email_verified"] is False
-        assert settings.auth.auth_cookie_name in response.cookies
-
-    @patch("app.api.auth.service.send_email")
-    def test_register_with_taken_email_returns_409(
-        self, mock_send_email, client: TestClient, session
-    ) -> None:
-        make_user(session, email="taken@example.com")
-
-        response = client.post(
-            "/auth/register", json=_register_payload(email="taken@example.com")
-        )
-
-        assert response.status_code == 409
-        assert response.json()["detail"] == "emailAlreadyRegistered"
-
-    @patch("app.api.auth.service.send_email")
-    def test_register_with_taken_email_is_case_insensitive(
-        self, mock_send_email, client: TestClient, session
-    ) -> None:
-        make_user(session, email="taken@example.com")
-
-        response = client.post(
-            "/auth/register", json=_register_payload(email="TAKEN@example.com")
-        )
-
-        assert response.status_code == 409
-        assert response.json()["detail"] == "emailAlreadyRegistered"
+        assert response.status_code == 403
+        assert response.json()["detail"] == "registrationClosed"
 
 
 class TestLogin:
@@ -908,6 +876,7 @@ class TestPasswordReset:
     ) -> None:
         user = make_user(session, email="resident@example.com")
         authenticate(client, user)
+        stale_token = client.cookies.get(settings.auth.auth_cookie_name)
 
         response = client.post(
             "/auth/password-reset/request", json={"email": "Resident@example.com"}
@@ -919,8 +888,13 @@ class TestPasswordReset:
             "/auth/password-reset/confirm",
             json={"token": token, "password": "brand-new-pass-1"},
         )
-        assert confirm.status_code == 204
-        assert client.get("/auth/me").status_code == 401  # older session rejected
+        assert confirm.status_code == 200
+        assert confirm.json()["email"] == "resident@example.com"
+        other_device = client.get(
+            "/auth/me",
+            headers={"Cookie": f"{settings.auth.auth_cookie_name}={stale_token}"},
+        )
+        assert other_device.status_code == 401  # older session rejected
         assert (
             client.post(
                 "/auth/login",

@@ -75,3 +75,4 @@ def record_failure(
 
 RESET_EMAIL_LIMIT = Limit(max_attempts=3, window=timedelta(minutes=15))
 RESET_IP_LIMIT = Limit(max_attempts=20, window=timedelta(minutes=15))
+INVITE_RESEND_LIMIT = Limit(max_attempts=3, window=timedelta(minutes=15))

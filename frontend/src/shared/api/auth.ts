@@ -4,7 +4,6 @@ import { setAuthSessionState } from "./auth-session";
 import { appApiClient, buildApiError } from "./client";
 
 type LoginIn = components["schemas"]["LoginIn"];
-type RegisterIn = components["schemas"]["RegisterIn"];
 export type UserOut = components["schemas"]["UserOut"];
 export type UserWithHouseholdsOut = components["schemas"]["UserWithHouseholdsOut"];
 type UserPreferencesIn = components["schemas"]["UserPreferencesIn"];
@@ -18,19 +17,6 @@ export async function loginUser(payload: LoginIn): Promise<UserOut> {
 
   if (error) {
     throw buildApiError(response.status, error, response.headers);
-  }
-
-  setAuthSessionState(true, data.email_verified);
-  return data;
-}
-
-export async function registerUser(payload: RegisterIn): Promise<UserOut> {
-  const { data, error, response } = await appApiClient.POST("/auth/register", {
-    body: payload,
-  });
-
-  if (error) {
-    throw buildApiError(response.status, error);
   }
 
   setAuthSessionState(true, data.email_verified);
@@ -137,12 +123,16 @@ export async function requestPasswordReset(email: string): Promise<void> {
   }
 }
 
-export async function confirmPasswordReset(token: string, password: string): Promise<void> {
-  const { error, response } = await appApiClient.POST("/auth/password-reset/confirm", {
+// Also the set-password step of an invite; either way the backend signs the user in.
+export async function confirmPasswordReset(token: string, password: string): Promise<UserOut> {
+  const { data, error, response } = await appApiClient.POST("/auth/password-reset/confirm", {
     body: { password, token },
   });
 
-  if (!response.ok) {
+  if (error) {
     throw buildApiError(response.status, error);
   }
+
+  setAuthSessionState(true, data.email_verified);
+  return data;
 }

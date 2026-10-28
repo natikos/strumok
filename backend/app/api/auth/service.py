@@ -88,10 +88,10 @@ def authenticate_user(*, session: Session, email: str, password: str) -> User:
         select(User).where(User.email == email.strip().lower(), User.is_active)
     ).first()
 
-    password_hash = user.password_hash if user else _DUMMY_PASSWORD_HASH
+    password_hash = (user.password_hash if user else None) or _DUMMY_PASSWORD_HASH
     password_ok = pwd_context.verify(password, password_hash)
 
-    if user is None or not password_ok:
+    if user is None or user.password_hash is None or not password_ok:
         raise InvalidCredentialsError
 
     return user
@@ -174,34 +174,6 @@ def refresh_access_token(*, session: Session, token: str) -> str:
         raise InvalidOrExpiredTokenError
 
     return create_access_token(user, auth_time=auth_time_at)
-
-
-def register_user(
-    *,
-    session: Session,
-    email: str,
-    first_name: str,
-    last_name: str,
-    password: str,
-) -> User:
-    user = User(
-        email=email.strip().lower(),
-        first_name=first_name.strip(),
-        last_name=last_name.strip(),
-        password_hash=pwd_context.hash(password),
-    )
-
-    session.add(user)
-
-    try:
-        session.commit()
-    except IntegrityError as exc:
-        session.rollback()
-        raise EmailAlreadyRegisteredError from exc
-
-    session.refresh(user)
-
-    return user
 
 
 def get_user_id_and_version_for_logout(token: str) -> tuple[int, int] | None:
@@ -394,7 +366,9 @@ def change_password(
 ) -> None:
     """Replaces the password and signs out every device; the caller issues a
     fresh cookie for the current one."""
-    if not pwd_context.verify(current_password, user.password_hash):
+    if user.password_hash is None or not pwd_context.verify(
+        current_password, user.password_hash
+    ):
         raise InvalidCredentialsError
 
     user.password_hash = pwd_context.hash(new_password)
@@ -413,7 +387,9 @@ def request_email_change(
 ) -> None:
     """Sends a confirmation link to `new_email`. Nothing changes on the user
     until the link is confirmed."""
-    if not pwd_context.verify(current_password, user.password_hash):
+    if user.password_hash is None or not pwd_context.verify(
+        current_password, user.password_hash
+    ):
         raise InvalidCredentialsError
 
     new_email = new_email.strip().lower()
@@ -561,7 +537,7 @@ def request_password_reset(*, session: Session, email: str) -> None:
         logger.exception("Password reset email failed to send")
 
 
-def confirm_password_reset(*, session: Session, token: str, password: str) -> None:
+def confirm_password_reset(*, session: Session, token: str, password: str) -> User:
     try:
         payload = jwt.decode(
             token,
@@ -583,6 +559,55 @@ def confirm_password_reset(*, session: Session, token: str, password: str) -> No
         raise InvalidOrExpiredTokenError
 
     user.password_hash = pwd_context.hash(password)
+    # The link went to the user's inbox, which verifies the address too.
+    user.email_verified = True
     user.token_version += 1
     session.add(user)
     session.commit()
+    session.refresh(user)
+    return user
+
+
+INVITE_TTL = timedelta(days=7)
+
+_INVITE_EMAIL = {
+    "en": (
+        "You're invited to Strumok",
+        "The co-op head created an account for you. Set a password to start submitting meter readings. The link works once and expires in 7 days.",
+        "Set password",
+    ),
+    "ua": (
+        "Запрошення до Струмок",
+        "Голова кооперативу створив для вас обліковий запис. Встановіть пароль, щоб подавати показники лічильника. Посилання діє один раз і спливає за 7 днів.",
+        "Встановити пароль",
+    ),
+}
+
+
+def build_invite_link(user: User) -> str:
+    token = create_password_reset_token(user, ttl=INVITE_TTL)
+    return f"{settings.brevo.app_base_url}/set-password?token={token}"
+
+
+def send_invite_email(*, user: User, link: str) -> bool:
+    """Returns whether the email went out; the link is still valid either way
+    and the head can pass it on by hand."""
+    subject, message, button = _INVITE_EMAIL.get(
+        str(getattr(user.language, "value", user.language)), _INVITE_EMAIL["en"]
+    )
+    try:
+        send_email(
+            to_email=user.email,
+            to_name=user.first_name,
+            subject=subject,
+            html_content=_build_action_email_html(
+                first_name=user.first_name,
+                message=message,
+                link=link,
+                button_label=button,
+            ),
+        )
+    except EmailSendError:
+        logger.exception("Invite email failed to send")
+        return False
+    return True
