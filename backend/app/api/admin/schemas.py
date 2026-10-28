@@ -111,7 +111,7 @@ class AdminDashboardHouseholdOut(BaseModel):
     id: int
     name: str
     owner: AdminUserSummaryOut | None = None
-    submission_status: Literal["submitted", "missing"]
+    submission_status: Literal["submitted", "estimated", "missing"]
     submitted_at: UtcDatetime | None = None
     reading: AdminReadingOut | None = None
     latest_period: str | None = None

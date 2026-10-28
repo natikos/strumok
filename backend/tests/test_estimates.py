@@ -256,3 +256,44 @@ class TestEstimatesAtClose:
                 select(MeterReading).where(MeterReading.period == "2024-03")
             )
         ] == ["resident"]
+
+
+class TestCurrentPeriodAndAdminStatus:
+    def test_residents_can_see_whether_the_current_period_is_closed(
+        self, client, session: Session
+    ) -> None:
+        from app.core.domain import current_billing_period
+        from app.db.models import BillingPeriod
+
+        user = make_user(session)
+        authenticate(client, user)
+        period = current_billing_period()
+
+        assert client.get("/billing/current-period").json() == {
+            "period": period,
+            "status": "open",
+        }
+
+        session.add(BillingPeriod(period=period, status="closed"))
+        session.flush()
+        assert client.get("/billing/current-period").json()["status"] == "closed"
+
+    def test_the_admin_dashboard_labels_estimates(
+        self, client, session: Session
+    ) -> None:
+        from app.core.domain import current_billing_period
+
+        authenticate(client, make_user(session, is_admin=True))
+        household = make_household(session, user_id=make_user(session).id)
+        reading = make_meter_reading(
+            session, household_id=household.id, period=current_billing_period()
+        )
+        reading.source = "estimate"
+        session.flush()
+
+        rows = client.get("/admin/dashboard").json()["households"]
+
+        assert (
+            next(r for r in rows if r["id"] == household.id)["submission_status"]
+            == "estimated"
+        )

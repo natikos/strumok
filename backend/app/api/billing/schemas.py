@@ -34,3 +34,11 @@ class AdjustmentOut(BaseModel):
     amount_uah: Decimal = Field(max_digits=12, decimal_places=2)
     reason_code: str
     reason: str
+
+
+class CurrentPeriodOut(BaseModel):
+    """Where the period residents are submitting for stands: `closed` once the
+    head has closed it, after which submissions get periodClosed."""
+
+    period: str = Field(examples=["2026-07"])
+    status: Literal["open", "closed"]
