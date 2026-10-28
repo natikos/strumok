@@ -7,6 +7,8 @@ from .billing import (
     current_billing_period,
     derive_usage,
     money,
+    next_period,
+    period_window_closed,
     previous_period,
 )
 
@@ -19,5 +21,7 @@ __all__ = [
     "current_billing_period",
     "derive_usage",
     "money",
+    "next_period",
+    "period_window_closed",
     "previous_period",
 ]

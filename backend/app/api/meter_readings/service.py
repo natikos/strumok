@@ -3,6 +3,7 @@ from decimal import Decimal
 from sqlalchemy.exc import IntegrityError
 from sqlmodel import Session, asc, desc, select
 
+from app.api.billing.service import lock_period_for_submission
 from app.api.electricity_rates.service import get_effective_rate
 from app.api.meter_readings.schemas import MeterReadingOut
 from app.core.domain import current_billing_period
@@ -117,6 +118,8 @@ def submit_meter_reading(
 ) -> MeterReading:
     if period != current_billing_period():
         raise PeriodNotOpenError
+
+    lock_period_for_submission(session=session, period=period)
 
     previous = session.exec(
         select(MeterReading)

@@ -51,6 +51,12 @@
                 />
               </div>
 
+              <PeriodCloseCard
+                v-if="dashboard"
+                :period="dashboard.current_period"
+                @closed="loadDashboard"
+              />
+
               <ErrorState
                 v-if="dashboardError"
                 :message-key="dashboardError"
@@ -116,6 +122,7 @@
   import AdminHouseholdAssignment from "@features/admin/AdminHouseholdAssignment.vue";
   import AuditLogPanel from "@features/admin/AuditLogPanel.vue";
   import ElectricityRatesSettings from "@features/admin/ElectricityRatesSettings.vue";
+  import PeriodCloseCard from "@features/admin/PeriodCloseCard.vue";
   import ResidentsPanel from "@features/admin/ResidentsPanel.vue";
   import { type AdminDashboardOut, getAdminDashboard } from "@shared/api/admin";
   import { formatKwh, formatUah } from "@shared/utils/format";

@@ -22,6 +22,25 @@ def previous_period(period: str) -> str:
     return f"{year}-{month - 1:02d}"
 
 
+def next_period(period: str) -> str:
+    year, month = (int(part) for part in period.split("-"))
+    if month == 12:
+        return f"{year + 1}-01"
+    return f"{year}-{month + 1:02d}"
+
+
+def period_window_closed(period: str, now: datetime | None = None) -> bool:
+    """Whether the submission window for `period` is over: it runs through day
+    SUBMISSION_DEADLINE_DAY of the following month, Kyiv time. Only then may
+    the head close the period."""
+    reference = (now if now is not None else kyiv_now()).astimezone(KYIV_TZ)
+    year, month = (int(part) for part in next_period(period).split("-"))
+    first_day_after_window = datetime(
+        year, month, SUBMISSION_DEADLINE_DAY + 1, tzinfo=KYIV_TZ
+    )
+    return reference >= first_day_after_window
+
+
 def kyiv_now() -> datetime:
     return datetime.now(KYIV_TZ)
 

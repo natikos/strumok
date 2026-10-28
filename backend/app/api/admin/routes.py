@@ -1,6 +1,6 @@
 from typing import Any
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Path, Query, status
 from sqlmodel import Session
 
 from app.api.admin.schemas import (
@@ -16,6 +16,8 @@ from app.api.admin.schemas import (
     AuditLogEntryOut,
     AuditLogPageOut,
     HouseholdOwnerAssignIn,
+    PeriodCloseIn,
+    PeriodOverviewOut,
 )
 from app.api.admin.service import (
     EmailTakenError,
@@ -39,6 +41,13 @@ from app.api.admin.service import (
     list_users,
 )
 from app.api.auth.schemas import ErrorOut
+from app.api.billing.service import (
+    PeriodAlreadyClosedError,
+    PeriodNotEndedError,
+    close_period,
+    list_period_overviews,
+)
+from app.api.electricity_rates.service import NoRateConfiguredError
 from app.api.auth.throttle import TooManyAttemptsError
 from app.api.deps import require_admin
 from app.db import get_session
@@ -406,3 +415,63 @@ def resend_admin_invite(
             headers={"Retry-After": str(exc.retry_after_seconds)},
         ) from exc
     return AdminInviteOut(user=user, invite_link=link, email_sent=sent)
+
+
+CLOSE_PERIOD_RESPONSES: dict[int | str, dict[str, Any]] = {
+    status.HTTP_409_CONFLICT: {
+        "description": "The period can't be closed",
+        "model": ErrorOut,
+        "content": {
+            "application/json": {
+                "examples": {
+                    "periodAlreadyClosed": {"value": {"detail": "periodAlreadyClosed"}},
+                    "periodNotEnded": {"value": {"detail": "periodNotEnded"}},
+                    "noRateConfigured": {"value": {"detail": "noRateConfigured"}},
+                }
+            }
+        },
+    }
+}
+
+
+@router.get("/periods", response_model=list[PeriodOverviewOut])
+def get_admin_periods(
+    session: Session = Depends(get_session),
+) -> list[PeriodOverviewOut]:
+    return [
+        PeriodOverviewOut.model_validate(overview, from_attributes=True)
+        for overview in list_period_overviews(session=session)
+    ]
+
+
+@router.post(
+    "/periods/{period}/close",
+    response_model=PeriodOverviewOut,
+    responses=CLOSE_PERIOD_RESPONSES,
+)
+def close_admin_period(
+    payload: PeriodCloseIn,
+    period: str = Path(pattern=r"^\d{4}-(0[1-9]|1[0-2])$"),
+    session: Session = Depends(get_session),
+    admin: User = CurrentAdmin,
+) -> PeriodOverviewOut:
+    try:
+        close_period(session=session, period=period, actor_id=admin.id)
+    except PeriodAlreadyClosedError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT, detail="periodAlreadyClosed"
+        ) from exc
+    except PeriodNotEndedError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT, detail="periodNotEnded"
+        ) from exc
+    except NoRateConfiguredError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT, detail="noRateConfigured"
+        ) from exc
+
+    return next(
+        PeriodOverviewOut.model_validate(overview, from_attributes=True)
+        for overview in list_period_overviews(session=session)
+        if overview.period == period
+    )

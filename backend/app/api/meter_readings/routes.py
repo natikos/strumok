@@ -7,6 +7,7 @@ from app.api.auth.schemas import ErrorOut
 from app.api.deps import get_current_user
 from app.api.electricity_rates.service import NoRateConfiguredError
 from app.api.meter_readings.schemas import MeterReadingIn, MeterReadingOut
+from app.api.billing.service import PeriodClosedError
 from app.api.meter_readings.service import (
     HouseholdInactiveError,
     HouseholdNotAccessibleError,
@@ -67,6 +68,10 @@ SUBMIT_RESPONSES: dict[int | str, dict[str, Any]] = {
                     "periodNotOpen": {
                         "summary": "Period is not the one currently open",
                         "value": {"detail": "periodNotOpen"},
+                    },
+                    "periodClosed": {
+                        "summary": "The head has closed this period",
+                        "value": {"detail": "periodClosed"},
                     },
                     "noRateConfigured": {
                         "summary": "No electricity rate covers this period",
@@ -140,6 +145,11 @@ def submit_my_meter_reading(
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
             detail="periodAlreadySubmitted",
+        ) from exc
+    except PeriodClosedError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="periodClosed",
         ) from exc
     except PeriodNotOpenError as exc:
         raise HTTPException(
