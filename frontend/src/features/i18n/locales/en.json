@@ -200,7 +200,8 @@
       "reason": {
         "decrease": "Lower than last reading",
         "spike": "Big jump"
-      }
+      },
+      "correct": "Correct"
     },
     "restatement": {
       "summary": "{households} household(s) across {periods} period(s) will get an adjustment",
@@ -215,6 +216,28 @@
       "posted": "Adjustments posted",
       "correctAndPreview": "Correct and preview adjustments",
       "correctBill": "Correct the bill and preview adjustments"
+    },
+    "readingEdit": {
+      "edit": "Edit readings for {name}",
+      "submitFor": "Submit on behalf of {name}",
+      "correct": "Correct reading for {name}",
+      "day": "Day meter",
+      "night": "Night meter",
+      "reason": "Reason (required)",
+      "reasonHint": "Enter a reason to continue",
+      "submit": "Submit reading",
+      "save": "Save correction",
+      "void": "Void reading",
+      "close": "Close",
+      "diffTitle": "{name}: apply this change?",
+      "diff": "Day: {dayBefore} → {dayAfter} · Night: {nightBefore} → {nightAfter}",
+      "voidTitle": "Void {name}'s reading?",
+      "voidBody": "The reading is removed. Reason: {reason}",
+      "accept": "Apply",
+      "reject": "Cancel",
+      "closedNote": "This period is closed, so the change becomes adjustments.",
+      "correctedBy": "Corrected by the head on {date}: {reason}",
+      "enteredBy": "Entered by the head on {date}: {reason}"
     }
   },
   "auth": {
@@ -355,7 +378,8 @@
     "periodHasUnreviewedReadings": "Some readings still need review",
     "readingNotFound": "This reading no longer exists",
     "periodNotClosed": "This period isn't closed yet",
-    "nothingToCorrect": "Nothing to correct"
+    "nothingToCorrect": "Nothing to correct",
+    "periodInFuture": "That period hasn't started yet"
   },
   "household": {
     "switchAria": "Switch household",
@@ -489,7 +513,9 @@
     "recordMissing": "Not submitted",
     "recordStreak": "On-time streak: {count} months",
     "recordMissedPeriods": "You missed last month | You missed the last {count} months",
-    "recordLateThisMonth": "You're late this month"
+    "recordLateThisMonth": "You're late this month",
+    "correctedByHead": "Corrected by the head on {date}: {reason}",
+    "enteredByHead": "Entered by the head on {date}: {reason}"
   },
   "verifyEmail": {
     "title": "Hi, {name}",

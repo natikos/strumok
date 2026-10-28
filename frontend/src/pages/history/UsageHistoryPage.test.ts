@@ -27,6 +27,9 @@ function makeReading(overrides: Partial<MeterReadingOut> = {}): MeterReadingOut 
     day_usage_kwh: "10.00",
     night_usage_kwh: "5.00",
     amount_charged_uah: "0.00",
+    source: "resident",
+    corrected_at: null,
+    correction_reason: null,
     submitted_at: "2026-07-02T09:00:00.000Z",
     ...overrides,
   };
@@ -278,5 +281,18 @@ describe("UsageHistoryPage load error handling", () => {
     // The successful retry's data actually renders: the June entry's day
     // usage from the readings we just resolved.
     expect(wrapper.text()).toContain("10");
+  });
+
+  it("shows the head's correction note on a corrected or entered reading", async () => {
+    listMyMeterReadings.mockResolvedValue([
+      makeReading({
+        corrected_at: "2026-07-05T09:00:00.000Z",
+        correction_reason: "typo in the day value",
+      }),
+    ]);
+
+    const wrapper = await mountPage();
+
+    expect(wrapper.text()).toContain("Corrected by the head on 2026-07-05: typo in the day value");
   });
 });

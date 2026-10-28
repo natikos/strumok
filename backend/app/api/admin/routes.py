@@ -20,11 +20,21 @@ from app.api.admin.schemas import (
     ReconciliationOut,
     PeriodCloseIn,
     ReadingReviewIn,
+    AdminReadingCreateIn,
+    AdminReadingResultOut,
+    AdminReadingUpdateIn,
+    AdminReadingVoidIn,
     RestateIn,
     RestatementOut,
     PeriodOverviewOut,
 )
 from app.api.admin.service import (
+    PeriodClosedForEditError,
+    PeriodInFutureError,
+    ReadingAlreadyExistsError,
+    admin_correct_reading,
+    admin_submit_reading,
+    admin_void_reading,
     ReadingNotFoundError,
     review_reading,
     EmailTakenError,
@@ -660,3 +670,142 @@ def restate_admin_period(
             status_code=status.HTTP_409_CONFLICT, detail="nothingToCorrect"
         ) from exc
     return RestatementOut.from_result(result)
+
+
+READING_EDIT_RESPONSES: dict[int | str, dict[str, Any]] = {
+    status.HTTP_404_NOT_FOUND: {
+        "description": "Household or reading does not exist",
+        "model": ErrorOut,
+        "content": {
+            "application/json": {
+                "examples": {
+                    "householdNotFound": {"value": {"detail": "householdNotFound"}},
+                    "readingNotFound": {"value": {"detail": "readingNotFound"}},
+                }
+            }
+        },
+    },
+    status.HTTP_409_CONFLICT: {
+        "description": "The change can't be made directly",
+        "model": ErrorOut,
+        "content": {
+            "application/json": {
+                "examples": {
+                    "periodClosed": {
+                        "summary": "Closed periods go through POST /admin/periods/{period}/restate",
+                        "value": {"detail": "periodClosed"},
+                    },
+                    "periodInFuture": {"value": {"detail": "periodInFuture"}},
+                    "periodAlreadySubmitted": {
+                        "value": {"detail": "periodAlreadySubmitted"}
+                    },
+                }
+            }
+        },
+    },
+}
+
+
+def _reading_out(reading) -> AdminReadingResultOut:  # noqa: ANN001
+    return AdminReadingResultOut.model_validate(reading, from_attributes=True)
+
+
+@router.post(
+    "/households/{household_id}/readings",
+    response_model=AdminReadingResultOut,
+    responses=READING_EDIT_RESPONSES,
+    status_code=status.HTTP_201_CREATED,
+)
+def submit_reading_on_behalf(
+    household_id: int,
+    payload: AdminReadingCreateIn,
+    session: Session = Depends(get_session),
+    admin: User = CurrentAdmin,
+) -> AdminReadingResultOut:
+    try:
+        reading = admin_submit_reading(
+            session=session,
+            household_id=household_id,
+            period=payload.period,
+            day=payload.day_meter_value,
+            night=payload.night_meter_value,
+            reason=payload.reason.strip(),
+            actor_id=admin.id,
+        )
+    except HouseholdNotFoundError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="householdNotFound"
+        ) from exc
+    except PeriodInFutureError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT, detail="periodInFuture"
+        ) from exc
+    except PeriodClosedForEditError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT, detail="periodClosed"
+        ) from exc
+    except ReadingAlreadyExistsError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT, detail="periodAlreadySubmitted"
+        ) from exc
+    return _reading_out(reading)
+
+
+@router.patch(
+    "/readings/{reading_id}",
+    response_model=AdminReadingResultOut,
+    responses=READING_EDIT_RESPONSES,
+)
+def correct_reading(
+    reading_id: int,
+    payload: AdminReadingUpdateIn,
+    session: Session = Depends(get_session),
+    admin: User = CurrentAdmin,
+) -> AdminReadingResultOut:
+    try:
+        reading = admin_correct_reading(
+            session=session,
+            reading_id=reading_id,
+            day=payload.day_meter_value,
+            night=payload.night_meter_value,
+            reason=payload.reason.strip(),
+            actor_id=admin.id,
+        )
+    except ReadingNotFoundError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="readingNotFound"
+        ) from exc
+    except PeriodClosedForEditError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT, detail="periodClosed"
+        ) from exc
+    return _reading_out(reading)
+
+
+@router.post(
+    "/readings/{reading_id}/void",
+    status_code=status.HTTP_204_NO_CONTENT,
+    responses=READING_EDIT_RESPONSES,
+)
+def void_reading(
+    reading_id: int,
+    payload: AdminReadingVoidIn,
+    session: Session = Depends(get_session),
+    admin: User = CurrentAdmin,
+) -> Response:
+    try:
+        admin_void_reading(
+            session=session,
+            reading_id=reading_id,
+            reason=payload.reason.strip(),
+            actor_id=admin.id,
+        )
+    except ReadingNotFoundError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="readingNotFound"
+        ) from exc
+    except PeriodClosedForEditError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT, detail="periodClosed"
+        ) from exc
+    return Response(status_code=status.HTTP_204_NO_CONTENT)

@@ -100,6 +100,9 @@ def list_meter_readings(
                     night_usage_kwh=Decimal("0"),
                     amount_charged_uah=Decimal("0"),
                     submitted_at=None,
+                    source="resident",
+                    corrected_at=None,
+                    correction_reason=None,
                 )
             )
         period = previous_period(period)

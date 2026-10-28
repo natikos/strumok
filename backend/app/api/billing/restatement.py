@@ -13,6 +13,7 @@ from sqlmodel import Session, col, desc, func, select
 
 from app.api.billing.service import ensure_period
 from app.core import audit
+from app.core.time import utc_now
 from app.core.domain import (
     ChargeInput,
     current_billing_period,
@@ -415,6 +416,8 @@ def _apply_corrections(
         reading.day_meter_value = day
         reading.night_meter_value = night
         reading.needs_review = False
+        reading.corrected_at = utc_now()
+        reading.correction_reason = reason
         session.add(reading)
         session.flush()
         audit.record(

@@ -183,6 +183,15 @@
                 </div>
               </div>
 
+              <p v-if="entry.correctionReason" class="usage-history__correction">
+                {{
+                  $t(
+                    entry.corrected ? "usageHistory.correctedByHead" : "usageHistory.enteredByHead",
+                    { date: entry.correctedOn, reason: entry.correctionReason }
+                  )
+                }}
+              </p>
+
               <div
                 class="usage-history__charge"
                 :class="{ 'usage-history__charge--credit': entry.amountCharged < 0 }"
@@ -227,7 +236,7 @@
 
 <script setup lang="ts">
   import { ArrowRight, CheckCircle, Clock, ExclamationCircle, Inbox, Moon, Sun } from "@primeicons/vue";
-  import { addMonths } from "date-fns";
+  import { addMonths, format } from "date-fns";
   import { computed, onMounted, ref, watch } from "vue";
   import { useI18n } from "vue-i18n";
 
@@ -261,6 +270,9 @@
     totalUsage: number;
     amountCharged: number;
     submitted: boolean;
+    correctionReason: string;
+    corrected: boolean;
+    correctedOn: string;
   }
 
   interface YearGroup {
@@ -294,6 +306,9 @@
         totalUsage: dayUsage + nightUsage,
         amountCharged: toDecimal(reading.amount_charged_uah),
         submitted: reading.id !== null,
+        correctionReason: reading.correction_reason ?? "",
+        corrected: reading.source !== "admin",
+        correctedOn: reading.corrected_at ? format(new Date(reading.corrected_at), "yyyy-MM-dd") : "",
       };
     });
     return entries.sort((a, b) => (a.period < b.period ? 1 : -1));
@@ -817,6 +832,12 @@
     color: var(--s-content-color);
     font-size: 0.95rem;
     font-variant-numeric: tabular-nums;
+  }
+
+  .usage-history__correction {
+    color: color-mix(in srgb, var(--s-content-color), transparent 35%);
+    font-size: 0.8rem;
+    margin: var(--s-app-space-2) 0 0;
   }
 
   .usage-history__charge {

@@ -276,3 +276,59 @@ class RestatementOut(BaseModel):
             posted_in_period=result.posted_in_period,
             is_zero_sum=result.total_delta_uah == 0,
         )
+
+
+class AdminReadingCreateIn(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    period: str = Field(pattern=r"^\d{4}-(0[1-9]|1[0-2])$", examples=["2026-07"])
+    day_meter_value: Decimal = Field(ge=Decimal("0"), max_digits=12, decimal_places=2)
+    night_meter_value: Decimal = Field(ge=Decimal("0"), max_digits=12, decimal_places=2)
+    reason: str = Field(min_length=1, max_length=500)
+
+    @model_validator(mode="after")
+    def _reason_not_blank(self) -> "AdminReadingCreateIn":
+        if not self.reason.strip():
+            raise ValueError("A reason is required")
+        return self
+
+
+class AdminReadingUpdateIn(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    day_meter_value: Decimal | None = Field(
+        default=None, ge=Decimal("0"), max_digits=12, decimal_places=2
+    )
+    night_meter_value: Decimal | None = Field(
+        default=None, ge=Decimal("0"), max_digits=12, decimal_places=2
+    )
+    reason: str = Field(min_length=1, max_length=500)
+
+    @model_validator(mode="after")
+    def _reason_not_blank(self) -> "AdminReadingUpdateIn":
+        if not self.reason.strip():
+            raise ValueError("A reason is required")
+        return self
+
+
+class AdminReadingVoidIn(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    reason: str = Field(min_length=1, max_length=500)
+
+    @model_validator(mode="after")
+    def _reason_not_blank(self) -> "AdminReadingVoidIn":
+        if not self.reason.strip():
+            raise ValueError("A reason is required")
+        return self
+
+
+class AdminReadingResultOut(BaseModel):
+    id: int
+    household_id: int
+    period: str
+    day_meter_value: Decimal
+    night_meter_value: Decimal
+    source: str
+    corrected_at: UtcDatetime | None
+    correction_reason: str | None

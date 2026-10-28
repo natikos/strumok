@@ -18,9 +18,17 @@ from app.api.auth.throttle import (
     record_failure,
 )
 from app.core import audit
-from app.core.domain import current_billing_period
+from app.api.electricity_rates.service import NoRateConfiguredError, get_effective_rate
+from app.core.domain import current_billing_period, derive_usage, money
 from app.core.time import utc_now
-from app.db.models import AuditLog, Household, LanguageCode, MeterReading, User
+from app.db.models import (
+    AuditLog,
+    BillingPeriod,
+    Household,
+    LanguageCode,
+    MeterReading,
+    User,
+)
 
 
 def _summed_usage_kwh(
@@ -545,3 +553,178 @@ def review_reading(*, session: Session, reading_id: int, actor_id: int) -> Meter
         session.commit()
         session.refresh(reading)
     return reading
+
+
+class PeriodInFutureError(Exception):
+    pass
+
+
+class PeriodClosedForEditError(Exception):
+    """The period is closed; corrections go through POST /admin/periods/{period}/restate."""
+
+
+class ReadingAlreadyExistsError(Exception):
+    pass
+
+
+def _is_closed(*, session: Session, period: str) -> bool:
+    row = session.get(BillingPeriod, period)
+    return row is not None and row.status == "closed"
+
+
+def _compat_usage_and_amount(
+    *, session: Session, household_id: int, period: str, day: Decimal, night: Decimal
+) -> tuple[Decimal, Decimal, Decimal]:
+    """The columns the resident UI still reads (see the ledger contract
+    follow-up): usage since the previous reading and the provisional amount."""
+    previous = session.exec(
+        select(MeterReading)
+        .where(MeterReading.household_id == household_id)
+        .where(MeterReading.period < period)
+        .order_by(col(MeterReading.period).desc())
+    ).first()
+    day_usage = derive_usage(previous.day_meter_value if previous else None, day)
+    night_usage = derive_usage(previous.night_meter_value if previous else None, night)
+    try:
+        rate = get_effective_rate(session=session, period=period)
+        amount = money(
+            day_usage * rate.day_rate_uah + night_usage * rate.night_rate_uah
+        )
+    except NoRateConfiguredError:
+        amount = Decimal("0.00")
+    return day_usage, night_usage, amount
+
+
+def admin_submit_reading(
+    *,
+    session: Session,
+    household_id: int,
+    period: str,
+    day: Decimal,
+    night: Decimal,
+    reason: str,
+    actor_id: int,
+) -> MeterReading:
+    household = session.get(Household, household_id)
+    if household is None:
+        raise HouseholdNotFoundError
+    if period > current_billing_period():
+        raise PeriodInFutureError
+    if _is_closed(session=session, period=period):
+        raise PeriodClosedForEditError
+    existing = session.exec(
+        select(MeterReading)
+        .where(MeterReading.household_id == household_id)
+        .where(MeterReading.period == period)
+    ).first()
+    if existing is not None:
+        raise ReadingAlreadyExistsError
+
+    day_usage, night_usage, amount = _compat_usage_and_amount(
+        session=session, household_id=household_id, period=period, day=day, night=night
+    )
+    reading = MeterReading(
+        household_id=household_id,
+        submitted_by_user_id=actor_id,
+        period=period,
+        day_meter_value=day,
+        night_meter_value=night,
+        day_usage_kwh=day_usage,
+        night_usage_kwh=night_usage,
+        amount_charged_uah=amount,
+        source="admin",
+        corrected_at=utc_now(),
+        correction_reason=reason,
+    )
+    session.add(reading)
+    session.flush()
+    audit.record(
+        session,
+        actor_user_id=actor_id,
+        action="readingSubmittedOnBehalf",
+        entity_type="meter_reading",
+        entity_id=reading.id,
+        household_id=household_id,
+        period=period,
+        after={"day": day, "night": night},
+        reason=reason,
+    )
+    session.commit()
+    session.refresh(reading)
+    return reading
+
+
+def admin_correct_reading(
+    *,
+    session: Session,
+    reading_id: int,
+    day: Decimal | None,
+    night: Decimal | None,
+    reason: str,
+    actor_id: int,
+) -> MeterReading:
+    reading = session.get(MeterReading, reading_id)
+    if reading is None:
+        raise ReadingNotFoundError
+    if _is_closed(session=session, period=reading.period):
+        raise PeriodClosedForEditError
+
+    before = {"day": reading.day_meter_value, "night": reading.night_meter_value}
+    reading.day_meter_value = day if day is not None else reading.day_meter_value
+    reading.night_meter_value = (
+        night if night is not None else reading.night_meter_value
+    )
+    (
+        reading.day_usage_kwh,
+        reading.night_usage_kwh,
+        reading.amount_charged_uah,
+    ) = _compat_usage_and_amount(
+        session=session,
+        household_id=reading.household_id,
+        period=reading.period,
+        day=reading.day_meter_value,
+        night=reading.night_meter_value,
+    )
+    reading.needs_review = False
+    reading.corrected_at = utc_now()
+    reading.correction_reason = reason
+    audit.record(
+        session,
+        actor_user_id=actor_id,
+        action="readingCorrected",
+        entity_type="meter_reading",
+        entity_id=reading.id,
+        household_id=reading.household_id,
+        period=reading.period,
+        before=before,
+        after={"day": reading.day_meter_value, "night": reading.night_meter_value},
+        reason=reason,
+    )
+    session.add(reading)
+    session.commit()
+    session.refresh(reading)
+    return reading
+
+
+def admin_void_reading(
+    *, session: Session, reading_id: int, reason: str, actor_id: int
+) -> None:
+    reading = session.get(MeterReading, reading_id)
+    if reading is None:
+        raise ReadingNotFoundError
+    if _is_closed(session=session, period=reading.period):
+        raise PeriodClosedForEditError
+
+    audit.record(
+        session,
+        actor_user_id=actor_id,
+        action="readingVoided",
+        entity_type="meter_reading",
+        entity_id=reading.id,
+        household_id=reading.household_id,
+        period=reading.period,
+        before={"day": reading.day_meter_value, "night": reading.night_meter_value},
+        reason=reason,
+    )
+    session.delete(reading)
+    session.commit()

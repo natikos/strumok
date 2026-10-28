@@ -205,6 +205,48 @@ class TestRestatement:
             == "fix"
         )
 
+    def test_a_household_without_a_reading_gets_one_entered_on_its_behalf(
+        self, client, session: Session
+    ) -> None:
+        _, _, a, b = _closed_period(client, session)
+        unowned = make_household(session, name="C")
+        make_meter_reading(
+            session, household_id=unowned.id, period="2024-01", day_meter_value="0"
+        )
+
+        response = _restate(
+            client,
+            {
+                "readings": [
+                    {
+                        "household_id": unowned.id,
+                        "day_meter_value": "100",
+                        "night_meter_value": "0",
+                    }
+                ]
+            },
+        )
+
+        assert response.status_code == 200, response.text
+        created = session.exec(
+            select(MeterReading).where(
+                MeterReading.household_id == unowned.id, MeterReading.period == PAST
+            )
+        ).one()
+        assert (created.source, created.day_meter_value) == ("admin", D("100"))
+        assert any(
+            line["household_id"] == unowned.id and D(line["before_uah"]) == 0
+            for line in response.json()["lines"]
+        )
+        assert (
+            session.exec(
+                select(AuditLog).where(AuditLog.action == "readingSubmittedOnBehalf")
+            )
+            .one()
+            .household_id
+            == unowned.id
+        )
+
     def test_open_period_and_empty_corrections_are_refused(
         self, client, session: Session
     ) -> None:

@@ -200,7 +200,8 @@
       "reason": {
         "decrease": "Менше за попередній показник",
         "spike": "Різкий стрибок"
-      }
+      },
+      "correct": "Виправити"
     },
     "restatement": {
       "summary": "Коригування отримають ділянок: {households}, періодів: {periods}",
@@ -215,6 +216,28 @@
       "posted": "Коригування проведено",
       "correctAndPreview": "Виправити та переглянути коригування",
       "correctBill": "Виправити рахунок і переглянути коригування"
+    },
+    "readingEdit": {
+      "edit": "Редагувати показники для {name}",
+      "submitFor": "Подати від імені {name}",
+      "correct": "Виправити показник для {name}",
+      "day": "Лічильник (день)",
+      "night": "Лічильник (ніч)",
+      "reason": "Причина (обов'язково)",
+      "reasonHint": "Введіть причину, щоб продовжити",
+      "submit": "Подати показник",
+      "save": "Зберегти виправлення",
+      "void": "Анулювати показник",
+      "close": "Закрити",
+      "diffTitle": "{name}: застосувати зміну?",
+      "diff": "День: {dayBefore} → {dayAfter} · Ніч: {nightBefore} → {nightAfter}",
+      "voidTitle": "Анулювати показник {name}?",
+      "voidBody": "Показник буде видалено. Причина: {reason}",
+      "accept": "Застосувати",
+      "reject": "Скасувати",
+      "closedNote": "Цей період закрито, тому зміна стане коригуваннями.",
+      "correctedBy": "Виправлено головою {date}: {reason}",
+      "enteredBy": "Внесено головою {date}: {reason}"
     }
   },
   "auth": {
@@ -355,7 +378,8 @@
     "periodHasUnreviewedReadings": "Деякі показники ще потребують перевірки",
     "readingNotFound": "Цього показника вже не існує",
     "periodNotClosed": "Цей період ще не закрито",
-    "nothingToCorrect": "Нічого виправляти"
+    "nothingToCorrect": "Нічого виправляти",
+    "periodInFuture": "Цей період ще не настав"
   },
   "household": {
     "switchAria": "Обрати домогосподарство",
@@ -503,7 +527,9 @@
     "recordMissing": "Не подано",
     "recordStreak": "Серія вчасних подач: {count} міс.",
     "recordMissedPeriods": "Ви пропустили минулий місяць | Ви пропустили {count} останні місяці",
-    "recordLateThisMonth": "Цього місяця подано із запізненням"
+    "recordLateThisMonth": "Цього місяця подано із запізненням",
+    "correctedByHead": "Виправлено головою {date}: {reason}",
+    "enteredByHead": "Внесено головою {date}: {reason}"
   },
   "verifyEmail": {
     "title": "Привіт, {name}",
