@@ -136,7 +136,7 @@ class ElectricityRate(SQLModel, table=True):
     id: int = Field(default=None, primary_key=True)
     day_rate_uah: Decimal = Field(decimal_places=4, max_digits=12)
     night_rate_uah: Decimal = Field(decimal_places=4, max_digits=12)
-    effective_from: str = Field(index=True)  # YYYY-MM
+    effective_from: str = Field(index=True, unique=True)  # YYYY-MM
     created_at: datetime = Field(
         default_factory=utc_now,
         sa_column_kwargs={"server_default": text("CURRENT_TIMESTAMP")},

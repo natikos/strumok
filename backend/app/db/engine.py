@@ -1,10 +1,20 @@
+import logging
+from pathlib import Path
+
+from alembic.config import Config
+from alembic.runtime.migration import MigrationContext
+from alembic.script import ScriptDirectory
 from sqlalchemy import text
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.pool import NullPool
-from sqlmodel import Session, SQLModel, create_engine
+from sqlmodel import Session, create_engine
 
 from app.core.config import settings
 from app.db import models  # noqa: F401  # ensure model metadata is registered
+
+logger = logging.getLogger(__name__)
+
+ALEMBIC_INI = Path(__file__).resolve().parent.parent.parent / "alembic.ini"
 
 engine = create_engine(
     settings.db.url,
@@ -23,8 +33,15 @@ probe_engine = create_engine(
 
 
 def init_db() -> None:
-    if settings.environment == "development":
-        SQLModel.metadata.create_all(engine)
+    """Check the schema is at the newest migration; apply with `alembic upgrade head`."""
+    head = ScriptDirectory.from_config(Config(str(ALEMBIC_INI))).get_current_head()
+    with engine.connect() as conn:
+        current = MigrationContext.configure(conn).get_current_revision()
+    if current == head:
+        return
+    logger.error("schemaOutdated: database at %s, expected %s", current, head)
+    if settings.environment == "production":
+        raise RuntimeError("schemaOutdated")
 
 
 def get_session():

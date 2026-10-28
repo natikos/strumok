@@ -26,6 +26,7 @@ dependencies = [
   "httpx>=0.28",
   "pywebpush>=2.5.0",
   "apscheduler>=3.11.0",
+  "alembic>=1.16",
 ]
 
 [tool.fastapi]

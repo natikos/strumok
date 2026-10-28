@@ -41,6 +41,21 @@ jobs:
         run: uv run pyright app
         working-directory: backend
 
+      - name: Migrations match models
+        # Fresh DB -> upgrade head -> `alembic check` fails on any model/schema drift.
+        run: |
+          uv run alembic upgrade head
+          uv run alembic check
+          uv run alembic downgrade base
+        working-directory: backend
+        env:
+          DATABASE_URL: postgresql+psycopg://postgres:postgres@localhost:5432/postgres
+          ENVIRONMENT: development
+          AUTH_SECRET_KEY: ci-only
+          PUSH_VAPID_PUBLIC_KEY: ci-only
+          PUSH_VAPID_PRIVATE_KEY: ci-only
+          PUSH_VAPID_SUBJECT: mailto:ci@example.com
+
       - name: Test
         # The suite creates and drops its own throwaway database on this server.
         run: uv run pytest
