@@ -575,6 +575,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/households/{household_id}/meter-change": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Change Household Meter */
+        post: operations["change_household_meter_admin_households__household_id__meter_change_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/admin/readings/{reading_id}": {
         parameters: {
             query?: never;
@@ -653,6 +670,74 @@ export interface paths {
         };
         /** Get Admin Balances */
         get: operations["get_admin_balances_admin_balances_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/export/period/{period}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Export Period Reconciliation */
+        get: operations["export_period_reconciliation_admin_export_period__period__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/export/balances": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Export Balances */
+        get: operations["export_balances_admin_export_balances_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/export/payments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Export Payments */
+        get: operations["export_payments_admin_export_payments_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/export/audit-log": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Export Audit Log */
+        get: operations["export_audit_log_admin_export_audit_log_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -810,6 +895,10 @@ export interface components {
             name: string;
             /** User Id */
             user_id: number;
+            /** Starting Day Meter Value */
+            starting_day_meter_value?: number | string | null;
+            /** Starting Night Meter Value */
+            starting_night_meter_value?: number | string | null;
         };
         /** AdminHouseholdOut */
         AdminHouseholdOut: {
@@ -872,6 +961,12 @@ export interface components {
             night_meter_value: number | string;
             /** Reason */
             reason: string;
+            /**
+             * Kind
+             * @default reading
+             * @enum {string}
+             */
+            kind: "reading" | "baseline";
         };
         /** AdminReadingOut */
         AdminReadingOut: {
@@ -1196,6 +1291,37 @@ export interface components {
             /** Password */
             password: string;
         };
+        /** MeterChangeIn */
+        MeterChangeIn: {
+            /**
+             * Period
+             * @example 2026-07
+             */
+            period: string;
+            /** Old Final Day */
+            old_final_day: number | string;
+            /** Old Final Night */
+            old_final_night: number | string;
+            /** New Start Day */
+            new_start_day: number | string;
+            /** New Start Night */
+            new_start_night: number | string;
+            /** Reason */
+            reason: string;
+        };
+        /** MeterChangeOut */
+        MeterChangeOut: {
+            /** Id */
+            id: number;
+            /** Household Id */
+            household_id: number;
+            /** Period */
+            period: string;
+            /** Day Usage Kwh */
+            day_usage_kwh: string | null;
+            /** Night Usage Kwh */
+            night_usage_kwh: string | null;
+        };
         /** MeterReadingIn */
         MeterReadingIn: {
             /**
@@ -1282,6 +1408,12 @@ export interface components {
              * @example null
              */
             correction_reason: string | null;
+            /**
+             * Meter Replaced
+             * @description The household's meter was replaced during this period.
+             * @default false
+             */
+            meter_replaced: boolean;
         };
         /** PasswordResetConfirmIn */
         PasswordResetConfirmIn: {
@@ -3329,6 +3461,64 @@ export interface operations {
             };
         };
     };
+    change_household_meter_admin_households__household_id__meter_change_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                household_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MeterChangeIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MeterChangeOut"];
+                };
+            };
+            /** @description Household does not exist */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "detail": "householdNotFound"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description The period is in the future or closed, or a replacement is already recorded for it */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     correct_reading_admin_readings__reading_id__patch: {
         parameters: {
             query?: never;
@@ -3596,6 +3786,150 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["BalancesOut"];
+                };
+            };
+        };
+    };
+    export_period_reconciliation_admin_export_period__period__get: {
+        parameters: {
+            query?: {
+                format?: "standard" | "ua";
+            };
+            header?: never;
+            path: {
+                period: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Period is still open, or no rate is configured */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "detail": "periodNotClosed"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    export_balances_admin_export_balances_get: {
+        parameters: {
+            query?: {
+                format?: "standard" | "ua";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    export_payments_admin_export_payments_get: {
+        parameters: {
+            query?: {
+                from?: string | null;
+                to?: string | null;
+                format?: "standard" | "ua";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    export_audit_log_admin_export_audit_log_get: {
+        parameters: {
+            query?: {
+                from?: string | null;
+                to?: string | null;
+                format?: "standard" | "ua";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };

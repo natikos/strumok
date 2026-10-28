@@ -30,6 +30,8 @@ from app.api.admin.schemas import (
     PeriodCloseIn,
     ReadingReviewIn,
     AdminReadingCreateIn,
+    MeterChangeIn,
+    MeterChangeOut,
     AdminReadingResultOut,
     AdminReadingUpdateIn,
     AdminReadingVoidIn,
@@ -41,6 +43,9 @@ from app.api.admin.service import (
     PeriodClosedForEditError,
     PeriodInFutureError,
     ReadingAlreadyExistsError,
+    BaselineNotFirstError,
+    MeterChangeAlreadyRecordedError,
+    record_meter_change,
     admin_correct_reading,
     admin_submit_reading,
     admin_void_reading,
@@ -83,6 +88,7 @@ from app.api.billing.restatement import (
     restate_period,
 )
 from app.api.billing.service import (
+    derive_reading_usage,
     BillNotEnteredError,
     PeriodHasUnreviewedReadingsError,
     PeriodHasNoReadingsError,
@@ -279,6 +285,8 @@ def create_admin_household(
             name=payload.name,
             user_id=payload.user_id,
             actor_id=admin.id,
+            starting_day=payload.starting_day_meter_value,
+            starting_night=payload.starting_night_meter_value,
         )
     except UserNotFoundError as exc:
         raise HTTPException(
@@ -757,6 +765,7 @@ READING_EDIT_RESPONSES: dict[int | str, dict[str, Any]] = {
                     "periodAlreadySubmitted": {
                         "value": {"detail": "periodAlreadySubmitted"}
                     },
+                    "baselineNotFirst": {"value": {"detail": "baselineNotFirst"}},
                 }
             }
         },
@@ -789,10 +798,15 @@ def submit_reading_on_behalf(
             night=payload.night_meter_value,
             reason=payload.reason.strip(),
             actor_id=admin.id,
+            kind=payload.kind,
         )
     except HouseholdNotFoundError as exc:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="householdNotFound"
+        ) from exc
+    except BaselineNotFirstError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT, detail="baselineNotFirst"
         ) from exc
     except PeriodInFutureError as exc:
         raise HTTPException(
@@ -807,6 +821,85 @@ def submit_reading_on_behalf(
             status_code=status.HTTP_409_CONFLICT, detail="periodAlreadySubmitted"
         ) from exc
     return _reading_out(reading)
+
+
+METER_CHANGE_RESPONSES: dict[int | str, dict[str, Any]] = {
+    status.HTTP_404_NOT_FOUND: {
+        "description": "Household does not exist",
+        "model": ErrorOut,
+        "content": {
+            "application/json": {"example": {"detail": "householdNotFound"}}
+        },
+    },
+    status.HTTP_409_CONFLICT: {
+        "description": "The period is in the future or closed, or a replacement is already recorded for it",
+        "model": ErrorOut,
+        "content": {
+            "application/json": {
+                "examples": {
+                    "periodInFuture": {"value": {"detail": "periodInFuture"}},
+                    "periodClosed": {"value": {"detail": "periodClosed"}},
+                    "meterChangeAlreadyRecorded": {
+                        "value": {"detail": "meterChangeAlreadyRecorded"}
+                    },
+                }
+            }
+        },
+    },
+}
+
+
+@router.post(
+    "/households/{household_id}/meter-change",
+    response_model=MeterChangeOut,
+    responses=METER_CHANGE_RESPONSES,
+    status_code=status.HTTP_201_CREATED,
+)
+def change_household_meter(
+    household_id: int,
+    payload: MeterChangeIn,
+    session: Session = Depends(get_session),
+    admin: User = CurrentAdmin,
+) -> MeterChangeOut:
+    try:
+        segment, reading = record_meter_change(
+            session=session,
+            household_id=household_id,
+            period=payload.period,
+            old_final_day=payload.old_final_day,
+            old_final_night=payload.old_final_night,
+            new_start_day=payload.new_start_day,
+            new_start_night=payload.new_start_night,
+            reason=payload.reason.strip(),
+            actor_id=admin.id,
+        )
+    except HouseholdNotFoundError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="householdNotFound"
+        ) from exc
+    except PeriodInFutureError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT, detail="periodInFuture"
+        ) from exc
+    except PeriodClosedForEditError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT, detail="periodClosed"
+        ) from exc
+    except MeterChangeAlreadyRecordedError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT, detail="meterChangeAlreadyRecorded"
+        ) from exc
+
+    day_usage = night_usage = None
+    if reading is not None:
+        day_usage, night_usage = derive_reading_usage(session=session, reading=reading)
+    return MeterChangeOut(
+        id=segment.id,
+        household_id=segment.household_id,
+        period=segment.period,
+        day_usage_kwh=day_usage,
+        night_usage_kwh=night_usage,
+    )
 
 
 @router.patch(

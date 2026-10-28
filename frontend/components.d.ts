@@ -46,6 +46,7 @@ declare module 'vue' {
     LanguageToggleButton: typeof import('./src/shared/components/i18n/LanguageToggleButton.vue')['default']
     Menu: typeof import('primevue/menu')['default']
     Message: typeof import('primevue/message')['default']
+    MeterChangeForm: typeof import('./src/features/admin/MeterChangeForm.vue')['default']
     MeterValueField: typeof import('./src/features/dashboard/components/MeterValueField.vue')['default']
     NoHouseholdScreen: typeof import('./src/layouts/NoHouseholdScreen.vue')['default']
     Password: typeof import('primevue/password')['default']

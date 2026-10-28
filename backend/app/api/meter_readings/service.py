@@ -3,12 +3,16 @@ from decimal import Decimal
 from sqlalchemy.exc import IntegrityError
 from sqlmodel import Session, asc, desc, select
 
-from app.api.billing.service import lock_period_for_submission
+from app.api.billing.service import (
+    get_meter_segment,
+    lock_period_for_submission,
+    usage_since,
+)
 from app.api.electricity_rates.service import get_effective_rate
 from app.api.meter_readings.schemas import MeterReadingOut
 from app.core.domain import current_billing_period
 from app.core.domain.billing import derive_usage, detect_review_reason, previous_period
-from app.db.models import Household, MeterReading, User
+from app.db.models import Household, MeterReading, MeterSegment, User
 
 
 class NoHouseholdMembershipError(Exception):
@@ -107,6 +111,14 @@ def list_meter_readings(
             )
         period = previous_period(period)
 
+    replaced_periods = set(
+        session.exec(
+            select(MeterSegment.period).where(MeterSegment.household_id == household_id)
+        )
+    )
+    for entry in result:
+        entry.meter_replaced = entry.period in replaced_periods
+
     return result
 
 
@@ -119,7 +131,10 @@ def _review_reason(
     night_meter_value: Decimal,
 ) -> str | None:
     """Looks at the last four real readings: the newest is the comparison
-    point, the rest give up to three past usages."""
+    point, the rest give up to three past usages. A recorded meter
+    replacement explains a lower or jumping value, so nothing is flagged."""
+    if get_meter_segment(session=session, household_id=household_id, period=period):
+        return None
     history = list(
         session.exec(
             select(MeterReading)
@@ -168,14 +183,17 @@ def submit_meter_reading(
         .order_by(desc(MeterReading.period))
     ).first()
 
-    if previous:
-        day_usage_kwh = max(day_meter_value - previous.day_meter_value, Decimal("0"))
-        night_usage_kwh = max(
-            night_meter_value - previous.night_meter_value, Decimal("0")
-        )
-    else:
-        day_usage_kwh = Decimal("0")
-        night_usage_kwh = Decimal("0")
+    day_usage_kwh, night_usage_kwh = usage_since(
+        session=session,
+        household_id=household_id,
+        period=period,
+        previous_values=(
+            (previous.day_meter_value, previous.night_meter_value) if previous else None
+        ),
+        previous_is_estimate=False,
+        day=day_meter_value,
+        night=night_meter_value,
+    )
 
     review_reason = _review_reason(
         session=session,

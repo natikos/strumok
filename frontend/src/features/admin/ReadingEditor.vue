@@ -7,6 +7,14 @@
       @posted="onDone"
     />
 
+    <MeterChangeForm
+      v-else-if="replacingMeter"
+      :household="household"
+      :period="period"
+      @cancel="replacingMeter = false"
+      @changed="onDone"
+    />
+
     <template v-else>
       <h3 class="reading-editor__title">
         {{ reading ? t("admin.readingEdit.correct", { name: household.name }) : t("admin.readingEdit.submitFor", { name: household.name }) }}
@@ -37,6 +45,13 @@
           variant="outlined"
           :label="t('admin.readingEdit.void')"
           @click="askToVoid"
+        />
+        <Button
+          severity="secondary"
+          variant="outlined"
+          :disabled="isBusy"
+          :label="t('admin.meterChange.open')"
+          @click="replacingMeter = true"
         />
         <Button severity="secondary" variant="text" :label="t('admin.readingEdit.close')" @click="$emit('close')" />
       </div>
@@ -74,6 +89,7 @@
   const reason = ref("");
   const isBusy = ref(false);
   const restating = ref(false);
+  const replacingMeter = ref(false);
 
   const reasonFilled = computed(() => reason.value.trim().length > 0);
   const canSubmit = computed(() => reasonFilled.value && day.value !== null && night.value !== null);

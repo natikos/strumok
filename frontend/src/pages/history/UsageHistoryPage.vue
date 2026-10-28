@@ -196,6 +196,10 @@
                 }}
               </p>
 
+              <p v-if="entry.meterReplaced" class="usage-history__correction">
+                {{ $t("usageHistory.meterReplaced", { month: entry.monthLabel }) }}
+              </p>
+
               <p v-if="paymentLine(entry.period)" class="usage-history__payment">
                 {{ paymentLine(entry.period) }}
               </p>
@@ -306,6 +310,7 @@
     correctionReason: string;
     corrected: boolean;
     correctedOn: string;
+    meterReplaced: boolean;
   }
 
   interface YearGroup {
@@ -362,7 +367,8 @@
         submitted: reading.id !== null,
         estimated: reading.source === "estimate",
         correctionReason: reading.correction_reason ?? "",
-        corrected: reading.source !== "admin",
+        corrected: reading.source !== "admin" && reading.source !== "baseline",
+        meterReplaced: reading.meter_replaced ?? false,
         correctedOn: reading.corrected_at ? format(new Date(reading.corrected_at), "yyyy-MM-dd") : "",
       };
     });

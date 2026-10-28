@@ -272,6 +272,24 @@
       "voidAccept": "Void payment",
       "noPayments": "No payments recorded yet",
       "loadError": "Couldn't load balances"
+    },
+    "startingDay": "Starting day meter (optional)",
+    "startingNight": "Starting night meter (optional)",
+    "startingHint": "Opening values for a new plot, so its first month is billed from them instead of 0.",
+    "startingBoth": "Enter both starting values or neither",
+    "meterChange": {
+      "open": "Meter replaced",
+      "title": "Meter replaced at {name} ({period})",
+      "oldMeter": "Old meter: final values",
+      "newMeter": "New meter: starting values",
+      "hint": "Enter all four values and a reason to continue",
+      "submit": "Record replacement",
+      "confirmTitle": "Record meter replacement for {name}?",
+      "confirmBody": "Old meter ended at day {oldDay} / night {oldNight}; new meter starts at day {newDay} / night {newNight}. Reason: {reason}",
+      "recorded": "Meter replacement recorded for {name}",
+      "usage": "Usage this period: day {day} kWh, night {night} kWh",
+      "usagePending": "No reading submitted for this period yet.",
+      "failed": "Could not record the replacement."
     }
   },
   "auth": {
@@ -415,7 +433,9 @@
     "nothingToCorrect": "Nothing to correct",
     "periodInFuture": "That period hasn't started yet",
     "paymentNotFound": "This payment no longer exists",
-    "paymentAlreadyVoided": "This payment was already voided"
+    "paymentAlreadyVoided": "This payment was already voided",
+    "baselineNotFirst": "A starting reading can only be set before the household has any reading",
+    "meterChangeAlreadyRecorded": "A meter replacement is already recorded for this period"
   },
   "household": {
     "switchAria": "Switch household",
@@ -557,7 +577,8 @@
     "recordMissedPeriods": "You missed last month | You missed the last {count} months",
     "recordLateThisMonth": "You're late this month",
     "correctedByHead": "Corrected by the head on {date}: {reason}",
-    "enteredByHead": "Entered by the head on {date}: {reason}"
+    "enteredByHead": "Entered by the head on {date}: {reason}",
+    "meterReplaced": "Meter replaced in {month}"
   },
   "verifyEmail": {
     "title": "Hi, {name}",

@@ -1,5 +1,6 @@
 import { flushPromises, mount } from "@vue/test-utils";
 import Button from "primevue/button";
+import InputNumber from "primevue/inputnumber";
 import InputText from "primevue/inputtext";
 import Select from "primevue/select";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -61,7 +62,7 @@ function makeHousehold(overrides: Partial<AdminHouseholdOut> = {}): AdminHouseho
 async function mountForm() {
   const wrapper = mount(AdminHouseholdAssignment, {
     global: {
-      components: { Button, InputText, Select },
+      components: { Button, InputNumber, InputText, Select },
       plugins: appPlugins(),
     },
   });
@@ -136,5 +137,45 @@ describe("AdminHouseholdAssignment", () => {
       confirm_reassignment: false,
       user_id: targetUser.id,
     });
+  });
+
+  it("sends the starting meter values when creating a new household", async () => {
+    const owner = makeUser({ email: "new@example.com", id: 5 });
+    listAdminUsers.mockResolvedValue([owner]);
+    listAdminHouseholds.mockResolvedValue([]);
+    createAdminHousehold.mockResolvedValue(makeHousehold({ id: 30, name: "Plot 30" }));
+
+    const wrapper = await mountForm();
+
+    await wrapper.find("#admin-household-name").setValue("Plot 30");
+    const numbers = wrapper.findAllComponents(InputNumber);
+    numbers[0]!.vm.$emit("update:modelValue", 250.5);
+    numbers[1]!.vm.$emit("update:modelValue", 120);
+    await wrapper.findAllComponents(Select)[1]!.setValue(owner.id);
+    await wrapper.find(".admin-assignment__submit").trigger("click");
+    await flushPromises();
+
+    expect(createAdminHousehold).toHaveBeenCalledWith({
+      name: "Plot 30",
+      starting_day_meter_value: "250.5",
+      starting_night_meter_value: "120",
+      user_id: owner.id,
+    });
+  });
+
+  it("refuses a lone starting value", async () => {
+    const owner = makeUser({ email: "new2@example.com", id: 6 });
+    listAdminUsers.mockResolvedValue([owner]);
+    listAdminHouseholds.mockResolvedValue([]);
+
+    const wrapper = await mountForm();
+
+    await wrapper.find("#admin-household-name").setValue("Plot 31");
+    wrapper.findAllComponents(InputNumber)[0]!.vm.$emit("update:modelValue", 10);
+    await wrapper.findAllComponents(Select)[1]!.setValue(owner.id);
+    await wrapper.find(".admin-assignment__submit").trigger("click");
+    await flushPromises();
+
+    expect(createAdminHousehold).not.toHaveBeenCalled();
   });
 });

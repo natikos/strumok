@@ -251,13 +251,31 @@ export async function submitReadingOnBehalf(
   payload: { day_meter_value: string; night_meter_value: string; period: string; reason: string }
 ): Promise<void> {
   const { error, response } = await appApiClient.POST("/admin/households/{household_id}/readings", {
-    body: payload,
+    body: { ...payload, kind: "reading" },
     params: { path: { household_id: householdId } },
   });
 
   if (!response.ok) {
     throw buildApiError(response.status, error);
   }
+}
+
+export type MeterChangeOut = components["schemas"]["MeterChangeOut"];
+
+export async function recordMeterChange(
+  householdId: number,
+  payload: components["schemas"]["MeterChangeIn"]
+): Promise<MeterChangeOut> {
+  const { data, error, response } = await appApiClient.POST(
+    "/admin/households/{household_id}/meter-change",
+    { body: payload, params: { path: { household_id: householdId } } }
+  );
+
+  if (error || !data) {
+    throw buildApiError(response.status, error);
+  }
+
+  return data;
 }
 
 export async function correctAdminReading(

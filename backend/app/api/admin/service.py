@@ -19,7 +19,8 @@ from app.api.auth.throttle import (
 )
 from app.core import audit
 from app.api.electricity_rates.service import NoRateConfiguredError, get_effective_rate
-from app.core.domain import current_billing_period, derive_usage, money
+from app.api.billing.service import usage_since
+from app.core.domain import current_billing_period, money, previous_period
 from app.core.time import utc_now
 from app.db.models import (
     AuditLog,
@@ -27,6 +28,7 @@ from app.db.models import (
     Household,
     LanguageCode,
     MeterReading,
+    MeterSegment,
     User,
 )
 
@@ -291,7 +293,13 @@ def _get_active_user(*, session: Session, user_id: int) -> User:
 
 
 def create_household_for_user(
-    *, session: Session, name: str, user_id: int, actor_id: int
+    *,
+    session: Session,
+    name: str,
+    user_id: int,
+    actor_id: int,
+    starting_day: Decimal | None = None,
+    starting_night: Decimal | None = None,
 ) -> tuple[Household, User]:
     owner = _get_active_user(session=session, user_id=user_id)
 
@@ -307,6 +315,33 @@ def create_household_for_user(
         household_id=household.id,
         after={"name": name, "user_id": user_id},
     )
+    if starting_day is not None and starting_night is not None:
+        # The first period residents submit is the current one; the baseline
+        # sits just before it so that month is measured against it.
+        period = previous_period(current_billing_period())
+        baseline = MeterReading(
+            household_id=household.id,
+            submitted_by_user_id=actor_id,
+            period=period,
+            day_meter_value=starting_day,
+            night_meter_value=starting_night,
+            source="baseline",
+            corrected_at=utc_now(),
+            correction_reason="Starting meter reading",
+        )
+        session.add(baseline)
+        session.flush()
+        audit.record(
+            session,
+            actor_user_id=actor_id,
+            action="baselineSet",
+            entity_type="meter_reading",
+            entity_id=baseline.id,
+            household_id=household.id,
+            period=period,
+            after={"day": starting_day, "night": starting_night},
+            reason="Starting meter reading",
+        )
     session.commit()
     session.refresh(household)
     return household, owner
@@ -571,6 +606,14 @@ class ReadingAlreadyExistsError(Exception):
     pass
 
 
+class BaselineNotFirstError(Exception):
+    """A baseline only makes sense before the household has any reading."""
+
+
+class MeterChangeAlreadyRecordedError(Exception):
+    pass
+
+
 def _is_closed(*, session: Session, period: str) -> bool:
     row = session.get(BillingPeriod, period)
     return row is not None and row.status == "closed"
@@ -587,8 +630,17 @@ def _compat_usage_and_amount(
         .where(MeterReading.period < period)
         .order_by(col(MeterReading.period).desc())
     ).first()
-    day_usage = derive_usage(previous.day_meter_value if previous else None, day)
-    night_usage = derive_usage(previous.night_meter_value if previous else None, night)
+    day_usage, night_usage = usage_since(
+        session=session,
+        household_id=household_id,
+        period=period,
+        previous_values=(
+            (previous.day_meter_value, previous.night_meter_value) if previous else None
+        ),
+        previous_is_estimate=False,
+        day=day,
+        night=night,
+    )
     try:
         rate = get_effective_rate(session=session, period=period)
         amount = money(
@@ -608,6 +660,7 @@ def admin_submit_reading(
     night: Decimal,
     reason: str,
     actor_id: int,
+    kind: str = "reading",
 ) -> MeterReading:
     household = session.get(Household, household_id)
     if household is None:
@@ -623,6 +676,10 @@ def admin_submit_reading(
     ).first()
     if existing is not None:
         raise ReadingAlreadyExistsError
+    if kind == "baseline" and session.exec(
+        select(MeterReading.id).where(MeterReading.household_id == household_id)
+    ).first():
+        raise BaselineNotFirstError
 
     day_usage, night_usage, amount = _compat_usage_and_amount(
         session=session, household_id=household_id, period=period, day=day, night=night
@@ -636,7 +693,7 @@ def admin_submit_reading(
         day_usage_kwh=day_usage,
         night_usage_kwh=night_usage,
         amount_charged_uah=amount,
-        source="admin",
+        source="baseline" if kind == "baseline" else "admin",
         corrected_at=utc_now(),
         correction_reason=reason,
     )
@@ -645,7 +702,7 @@ def admin_submit_reading(
     audit.record(
         session,
         actor_user_id=actor_id,
-        action="readingSubmittedOnBehalf",
+        action="baselineSet" if kind == "baseline" else "readingSubmittedOnBehalf",
         entity_type="meter_reading",
         entity_id=reading.id,
         household_id=household_id,
@@ -656,6 +713,90 @@ def admin_submit_reading(
     session.commit()
     session.refresh(reading)
     return reading
+
+
+def record_meter_change(
+    *,
+    session: Session,
+    household_id: int,
+    period: str,
+    old_final_day: Decimal,
+    old_final_night: Decimal,
+    new_start_day: Decimal,
+    new_start_night: Decimal,
+    reason: str,
+    actor_id: int,
+) -> tuple[MeterSegment, MeterReading | None]:
+    """Records that the household's meter was replaced during `period` (the
+    first period read on the new meter). The reading for that period, if any,
+    now derives its usage across both meters and loses a 'decrease' flag the
+    swap explains."""
+    if session.get(Household, household_id) is None:
+        raise HouseholdNotFoundError
+    if period > current_billing_period():
+        raise PeriodInFutureError
+    if _is_closed(session=session, period=period):
+        raise PeriodClosedForEditError
+    if session.exec(
+        select(MeterSegment.id)
+        .where(MeterSegment.household_id == household_id)
+        .where(MeterSegment.period == period)
+    ).first():
+        raise MeterChangeAlreadyRecordedError
+
+    segment = MeterSegment(
+        household_id=household_id,
+        period=period,
+        old_final_day=old_final_day,
+        old_final_night=old_final_night,
+        new_start_day=new_start_day,
+        new_start_night=new_start_night,
+        reason=reason,
+        created_by_user_id=actor_id,
+    )
+    session.add(segment)
+    session.flush()
+
+    reading = session.exec(
+        select(MeterReading)
+        .where(MeterReading.household_id == household_id)
+        .where(MeterReading.period == period)
+    ).first()
+    if reading is not None:
+        (
+            reading.day_usage_kwh,
+            reading.night_usage_kwh,
+            reading.amount_charged_uah,
+        ) = _compat_usage_and_amount(
+            session=session,
+            household_id=household_id,
+            period=period,
+            day=reading.day_meter_value,
+            night=reading.night_meter_value,
+        )
+        if reading.review_reason == "decrease":
+            reading.needs_review = False
+            reading.review_reason = None
+        session.add(reading)
+    audit.record(
+        session,
+        actor_user_id=actor_id,
+        action="meterReplaced",
+        entity_type="meter_segment",
+        entity_id=segment.id,
+        household_id=household_id,
+        period=period,
+        after={
+            "old_final_day": old_final_day,
+            "old_final_night": old_final_night,
+            "new_start_day": new_start_day,
+            "new_start_night": new_start_night,
+        },
+        reason=reason,
+    )
+    session.commit()
+    session.refresh(segment)
+    return segment, reading
 
 
 def admin_correct_reading(
