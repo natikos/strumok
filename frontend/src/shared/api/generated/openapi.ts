@@ -1461,21 +1461,6 @@ export interface components {
              */
             night_meter_value: string | null;
             /**
-             * Day Usage Kwh
-             * @example 145.50
-             */
-            day_usage_kwh: string;
-            /**
-             * Night Usage Kwh
-             * @example 98.20
-             */
-            night_usage_kwh: string;
-            /**
-             * Amount Charged Uah
-             * @example 987.65
-             */
-            amount_charged_uah: string;
-            /**
              * Submitted At
              * @example 2026-07-20T08:40:50.453Z
              */

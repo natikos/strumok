@@ -39,9 +39,6 @@ function makeReading(overrides: Partial<MeterReadingOut> = {}): MeterReadingOut 
     period: "2026-06",
     day_meter_value: "100.00",
     night_meter_value: "50.00",
-    day_usage_kwh: "10.00",
-    night_usage_kwh: "5.00",
-    amount_charged_uah: "0.00",
     source: "resident",
     corrected_at: null,
     correction_reason: null,
@@ -323,7 +320,7 @@ describe("UsageHistoryPage load error handling", () => {
 
   it("labels an estimated period as Estimated and never as a normal charge", async () => {
     listMyMeterReadings.mockResolvedValue([
-      makeReading({ amount_charged_uah: "0.00", source: "estimate" }),
+      makeReading({ source: "estimate" }),
     ]);
 
     const wrapper = await mountPage();
@@ -332,8 +329,8 @@ describe("UsageHistoryPage load error handling", () => {
     expect(wrapper.find(".usage-history__charge").exists()).toBe(false);
   });
 
-  it("takes the period's charge from the ledger, not the reading's legacy column", async () => {
-    listMyMeterReadings.mockResolvedValue([makeReading({ amount_charged_uah: "999.00" })]);
+  it("takes the period's charge from the ledger statement", async () => {
+    listMyMeterReadings.mockResolvedValue([makeReading()]);
     listStatements.mockResolvedValue([
       {
         period: "2026-06",
@@ -352,7 +349,6 @@ describe("UsageHistoryPage load error handling", () => {
     const wrapper = await mountPage();
 
     expect(wrapper.find(".usage-history__charge").text()).toContain("123");
-    expect(wrapper.text()).not.toContain("999");
   });
 
   it("shows each period's payment status in words", async () => {

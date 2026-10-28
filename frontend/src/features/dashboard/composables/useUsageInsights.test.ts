@@ -6,7 +6,16 @@ import { SEASON_ORDER, useUsageInsights } from "@/features/dashboard/composables
 import type { StatementLineOut } from "@shared/api/billing";
 import type { MeterReadingOut } from "@shared/api/meter-readings";
 
-function makeReading(overrides: Partial<MeterReadingOut> = {}): MeterReadingOut {
+/** Usage and charge for a fixture; they become the period's ledger statement, not part of the reading. */
+interface LedgerFixture {
+  day_usage_kwh: string;
+  night_usage_kwh: string;
+  amount_charged_uah: string;
+}
+
+type ReadingFixture = LedgerFixture & MeterReadingOut;
+
+function makeReading(overrides: Partial<ReadingFixture> = {}): ReadingFixture {
   return {
     id: 1,
     household_id: 1,
@@ -27,7 +36,7 @@ function makeReading(overrides: Partial<MeterReadingOut> = {}): MeterReadingOut 
 }
 
 /** The ledger line for a fixture reading: a charge makes it closed, none leaves it provisional. */
-function makeStatement(reading: MeterReadingOut): StatementLineOut {
+function makeStatement(reading: ReadingFixture): StatementLineOut {
   const charged = Number(reading.amount_charged_uah) > 0;
 
   return {
@@ -49,7 +58,7 @@ function makeStatement(reading: MeterReadingOut): StatementLineOut {
  * `date`/labels so fixtures stay internally consistent without duplicating
  * `Intl.DateTimeFormat` calls in every test.
  */
-function makeSlot(period: string, reading?: MeterReadingOut): MeterPeriod {
+function makeSlot(period: string, reading?: ReadingFixture): MeterPeriod {
   const [year, month] = period.split("-").map(Number);
   const date = new Date(year!, month! - 1, 1);
   return {
