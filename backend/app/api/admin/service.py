@@ -7,8 +7,9 @@ from app.api.admin.schemas import (
     AdminDashboardOut,
     AdminUserSummaryOut,
 )
+from app.core import audit
 from app.core.domain import current_billing_period
-from app.db.models import Household, MeterReading, User
+from app.db.models import AuditLog, Household, MeterReading, User
 
 
 def _summed_usage_kwh(
@@ -120,12 +121,22 @@ def _get_active_user(*, session: Session, user_id: int) -> User:
 
 
 def create_household_for_user(
-    *, session: Session, name: str, user_id: int
+    *, session: Session, name: str, user_id: int, actor_id: int
 ) -> tuple[Household, User]:
     owner = _get_active_user(session=session, user_id=user_id)
 
     household = Household(name=name, user_id=user_id)
     session.add(household)
+    session.flush()
+    audit.record(
+        session,
+        actor_user_id=actor_id,
+        action="householdCreated",
+        entity_type="household",
+        entity_id=household.id,
+        household_id=household.id,
+        after={"name": name, "user_id": user_id},
+    )
     session.commit()
     session.refresh(household)
     return household, owner
@@ -137,6 +148,7 @@ def assign_household_owner(
     household_id: int,
     user_id: int | None,
     confirm_reassignment: bool,
+    actor_id: int,
 ) -> tuple[Household, User | None]:
     household = session.get(Household, household_id)
     if household is None:
@@ -152,8 +164,49 @@ def assign_household_owner(
     if is_reassignment and not confirm_reassignment:
         raise HouseholdAlreadyAssignedError
 
+    audit.record(
+        session,
+        actor_user_id=actor_id,
+        action="householdOwnerAssigned",
+        entity_type="household",
+        entity_id=household.id,
+        household_id=household.id,
+        before={"user_id": household.user_id},
+        after={"user_id": user_id},
+    )
     household.user_id = user_id
     session.add(household)
     session.commit()
     session.refresh(household)
     return household, owner
+
+
+AUDIT_PAGE_SIZE = 50
+
+
+def list_audit_log(
+    *,
+    session: Session,
+    household_id: int | None = None,
+    period: str | None = None,
+    action: str | None = None,
+    cursor: int | None = None,
+    limit: int = AUDIT_PAGE_SIZE,
+) -> tuple[list[tuple[AuditLog, User | None]], int | None]:
+    """Newest first. `cursor` is the id of the last row of the previous page;
+    returns the next cursor, or None on the last page."""
+    query = select(AuditLog, User).join(
+        User, col(User.id) == col(AuditLog.actor_user_id), isouter=True
+    )
+    if household_id is not None:
+        query = query.where(AuditLog.household_id == household_id)
+    if period is not None:
+        query = query.where(AuditLog.period == period)
+    if action is not None:
+        query = query.where(AuditLog.action == action)
+    if cursor is not None:
+        query = query.where(col(AuditLog.id) < cursor)
+
+    rows = list(session.exec(query.order_by(col(AuditLog.id).desc()).limit(limit + 1)))
+    next_cursor = rows[limit - 1][0].id if len(rows) > limit else None
+    return rows[:limit], next_cursor

@@ -3,7 +3,8 @@ from decimal import Decimal
 from enum import StrEnum
 from typing import Optional
 
-from sqlalchemy import UniqueConstraint, text
+from sqlalchemy import DDL, BigInteger, Column, UniqueConstraint, event, text
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlmodel import Field, SQLModel
 
 from app.core.time import utc_now
@@ -153,3 +154,48 @@ class AuthThrottle(SQLModel, table=True):
     key: str = Field(primary_key=True)
     window_start: datetime = Field(primary_key=True)
     count: int = Field(default=0)
+
+
+AUDIT_LOG_APPEND_ONLY_SQL = """
+CREATE FUNCTION audit_log_reject_change() RETURNS trigger AS $$
+BEGIN
+    RAISE EXCEPTION 'audit_log is append-only';
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER audit_log_append_only
+BEFORE UPDATE OR DELETE ON audit_log
+FOR EACH ROW EXECUTE FUNCTION audit_log_reject_change();
+"""
+
+
+class AuditLog(SQLModel, table=True):
+    """Append-only record of who changed what. Rows are written in the same
+    transaction as the change itself (see ``app.core.audit.record``); a
+    database trigger rejects UPDATE and DELETE."""
+
+    __tablename__ = "audit_log"  # type: ignore
+
+    id: int | None = Field(
+        default=None, sa_column=Column(BigInteger, primary_key=True, autoincrement=True)
+    )
+    actor_user_id: int | None = Field(default=None, foreign_key="users.id")
+    action: str = Field(index=True)
+    entity_type: str
+    entity_id: int | None = None
+    household_id: int | None = Field(
+        default=None, foreign_key="households.id", index=True
+    )
+    period: str | None = Field(default=None, index=True)
+    before: dict | None = Field(default=None, sa_column=Column(JSONB))
+    after: dict | None = Field(default=None, sa_column=Column(JSONB))
+    reason: str | None = None
+    created_at: datetime = Field(
+        default_factory=utc_now,
+        sa_column_kwargs={"server_default": text("CURRENT_TIMESTAMP")},
+    )
+
+
+# create_all (used by the test suite) builds the trigger too; Alembic's 0002
+# migration runs the same SQL, so both paths enforce append-only.
+event.listen(AuditLog.__table__, "after_create", DDL(AUDIT_LOG_APPEND_ONLY_SQL))  # type: ignore[attr-defined]

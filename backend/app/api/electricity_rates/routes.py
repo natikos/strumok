@@ -15,6 +15,7 @@ from app.api.electricity_rates.service import (
     list_rates,
 )
 from app.db import get_session
+from app.db.models import User
 
 router = APIRouter(
     prefix="/electricity-rates",
@@ -49,6 +50,7 @@ def list_electricity_rates(
 def create_electricity_rate(
     payload: ElectricityRateCreateIn,
     session: Session = Depends(get_session),
+    admin: User = Depends(require_admin),
 ) -> ElectricityRateOut:
     try:
         rate = create_rate(
@@ -56,6 +58,7 @@ def create_electricity_rate(
             day_rate_uah=payload.day_rate_uah,
             night_rate_uah=payload.night_rate_uah,
             effective_from=payload.effective_from,
+            actor_id=admin.id,
         )
         return ElectricityRateOut.model_validate(rate)
     except EffectiveFromAlreadyExistsError as exc:

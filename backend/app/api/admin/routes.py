@@ -1,6 +1,6 @@
 from typing import Any
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlmodel import Session
 
 from app.api.admin.schemas import (
@@ -8,6 +8,8 @@ from app.api.admin.schemas import (
     AdminHouseholdCreateIn,
     AdminHouseholdOut,
     AdminUserSummaryOut,
+    AuditLogEntryOut,
+    AuditLogPageOut,
     HouseholdOwnerAssignIn,
 )
 from app.api.admin.service import (
@@ -18,6 +20,7 @@ from app.api.admin.service import (
     assign_household_owner,
     create_household_for_user,
     get_admin_dashboard,
+    list_audit_log,
     list_households_with_owners,
     list_users,
 )
@@ -31,6 +34,10 @@ router = APIRouter(
     tags=["admin"],
     dependencies=[Depends(require_admin)],
 )
+
+# FastAPI caches dependencies per request, so this reuses the router-level
+# check and just hands the admin to the handler (needed as the audit actor).
+CurrentAdmin = Depends(require_admin)
 
 USER_LOOKUP_RESPONSES: dict[int | str, dict[str, Any]] = {
     status.HTTP_404_NOT_FOUND: {
@@ -106,10 +113,14 @@ def list_admin_households(
 def create_admin_household(
     payload: AdminHouseholdCreateIn,
     session: Session = Depends(get_session),
+    admin: User = CurrentAdmin,
 ) -> AdminHouseholdOut:
     try:
         household, owner = create_household_for_user(
-            session=session, name=payload.name, user_id=payload.user_id
+            session=session,
+            name=payload.name,
+            user_id=payload.user_id,
+            actor_id=admin.id,
         )
     except UserNotFoundError as exc:
         raise HTTPException(
@@ -132,6 +143,7 @@ def assign_admin_household_owner(
     household_id: int,
     payload: HouseholdOwnerAssignIn,
     session: Session = Depends(get_session),
+    admin: User = CurrentAdmin,
 ) -> AdminHouseholdOut:
     try:
         household, owner = assign_household_owner(
@@ -139,6 +151,7 @@ def assign_admin_household_owner(
             household_id=household_id,
             user_id=payload.user_id,
             confirm_reassignment=payload.confirm_reassignment,
+            actor_id=admin.id,
         )
     except HouseholdNotFoundError as exc:
         raise HTTPException(
@@ -158,3 +171,34 @@ def assign_admin_household_owner(
         ) from exc
 
     return AdminHouseholdOut.from_household(household, owner=owner)
+
+
+@router.get("/audit-log", response_model=AuditLogPageOut)
+def get_audit_log(
+    household_id: int | None = None,
+    period: str | None = Query(default=None, pattern=r"^\d{4}-\d{2}$"),
+    action: str | None = None,
+    cursor: int | None = None,
+    session: Session = Depends(get_session),
+) -> AuditLogPageOut:
+    rows, next_cursor = list_audit_log(
+        session=session,
+        household_id=household_id,
+        period=period,
+        action=action,
+        cursor=cursor,
+    )
+    return AuditLogPageOut(
+        items=[
+            AuditLogEntryOut.model_validate(
+                {
+                    **entry.model_dump(),
+                    "actor": AdminUserSummaryOut.model_validate(actor)
+                    if actor
+                    else None,
+                }
+            )
+            for entry, actor in rows
+        ],
+        next_cursor=next_cursor,
+    )
