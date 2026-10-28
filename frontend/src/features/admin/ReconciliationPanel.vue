@@ -46,13 +46,26 @@
               :min="0"
               :min-fraction-digits="2"
               :max-fraction-digits="2"
-              :disabled="isClosed || isSaving"
+              :disabled="isSaving"
               fluid
             />
           </div>
           <p v-if="isClosed" class="reconciliation__note">{{ t("admin.reconciliation.closedNote") }}</p>
+          <RestatementPreview
+            v-if="isClosed && correcting"
+            :request="requestBillCorrection"
+            @cancel="correcting = false"
+            @posted="onCorrectionPosted"
+          />
           <Button
-            :disabled="isClosed || isSaving || !canSave"
+            v-else-if="isClosed"
+            :disabled="billTotal === null || billTotal === toDecimal(data.bill_total_uah)"
+            :label="t('admin.restatement.correctBill')"
+            @click="correcting = true"
+          />
+          <Button
+            v-else
+            :disabled="isSaving || !canSave"
             :loading="isSaving"
             :label="t('admin.reconciliation.saveBill')"
             @click="askToSave"
@@ -136,6 +149,7 @@
     getPeriodReconciliation,
     putPeriodBill,
     type ReconciliationOut,
+    restatePeriod,
   } from "@shared/api/admin";
   import { ApiError } from "@shared/api/client";
   import { formatKwh, formatUah, toDecimal } from "@shared/utils/format";
@@ -150,6 +164,7 @@
   const error = ref<string | null>(null);
   const isLoading = ref(true);
   const isSaving = ref(false);
+  const correcting = ref(false);
   const billDay = ref<number | null>(null);
   const billNight = ref<number | null>(null);
   const billTotal = ref<number | null>(null);
@@ -258,6 +273,19 @@
     } finally {
       isSaving.value = false;
     }
+  }
+
+  function requestBillCorrection(options: { dryRun: boolean; reason: string }) {
+    return restatePeriod(
+      props.period,
+      { bill_total_uah: String(billTotal.value) },
+      options
+    );
+  }
+
+  async function onCorrectionPosted(): Promise<void> {
+    correcting.value = false;
+    await load();
   }
 
   function askToSave(): void {

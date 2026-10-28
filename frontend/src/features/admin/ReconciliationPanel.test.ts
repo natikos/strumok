@@ -1,12 +1,16 @@
 import { flushPromises, mount } from "@vue/test-utils";
 import Button from "primevue/button";
 import InputNumber from "primevue/inputnumber";
+import InputText from "primevue/inputtext";
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { appPlugins } from "@/shared/testing/mount";
 import type { Component } from "vue";
 
-const { confirmRequire, getPeriodReconciliation, putPeriodBill } = vi.hoisted(() => ({
+import RestatementPreview from "./RestatementPreview.vue";
+
+const { confirmRequire, getPeriodReconciliation, putPeriodBill, restatePeriod } = vi.hoisted(() => ({
+  restatePeriod: vi.fn(),
   confirmRequire: vi.fn(),
   getPeriodReconciliation: vi.fn(),
   putPeriodBill: vi.fn(),
@@ -19,7 +23,7 @@ let ReconciliationPanel: Component;
 
 beforeAll(async () => {
   vi.resetModules();
-  vi.doMock("@shared/api/admin", () => ({ getPeriodReconciliation, putPeriodBill }));
+  vi.doMock("@shared/api/admin", () => ({ getPeriodReconciliation, putPeriodBill, restatePeriod }));
   ReconciliationPanel = (await import("./ReconciliationPanel.vue")).default;
 });
 
@@ -63,7 +67,7 @@ function mountPanel() {
   return mount(ReconciliationPanel, {
     props: { period: "2026-09" },
     global: {
-      components: { Button, InputNumber },
+      components: { Button, InputNumber, InputText, RestatementPreview },
       plugins: appPlugins(),
       stubs: { ErrorState: true, Skeleton: true },
     },
@@ -110,13 +114,32 @@ describe("ReconciliationPanel", () => {
     expect(wrapper.find("tbody tr").text()).toContain("—");
   });
 
-  it("disables bill entry on a closed period and explains why", async () => {
+  it("turns a closed period's bill entry into a correction that leads to a preview", async () => {
     getPeriodReconciliation.mockResolvedValue({ ...base, closed_at: "2026-10-08T10:00:00Z", status: "closed" });
+    restatePeriod.mockResolvedValue({
+      affected_periods: ["2026-09"],
+      is_zero_sum: false,
+      lines: [],
+      posted_in_period: "2026-10",
+      restatement_id: null,
+      total_delta_uah: "0.00",
+    });
     const wrapper = mountPanel();
     await flushPromises();
 
     expect(wrapper.text()).toContain("This period is closed");
     expect(wrapper.find(".reconciliation__card button").attributes("disabled")).toBeDefined();
+
+    wrapper.findAllComponents(InputNumber)[2]!.vm.$emit("update:modelValue", 600);
+    await flushPromises();
+    await wrapper.find(".reconciliation__card button").trigger("click");
+    await flushPromises();
+
+    expect(restatePeriod).toHaveBeenCalledWith(
+      "2026-09",
+      { bill_total_uah: "600" },
+      { dryRun: true, reason: "" }
+    );
   });
 
   it("asks before replacing an already-entered bill", async () => {

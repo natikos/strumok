@@ -50,6 +50,7 @@ declare module 'vue' {
     ReconciliationPanel: typeof import('./src/features/admin/ReconciliationPanel.vue')['default']
     ResetPasswordPage: typeof import('./src/pages/auth/ResetPasswordPage.vue')['default']
     ResidentsPanel: typeof import('./src/features/admin/ResidentsPanel.vue')['default']
+    RestatementPreview: typeof import('./src/features/admin/RestatementPreview.vue')['default']
     RouterLink: typeof import('vue-router')['RouterLink']
     RouterView: typeof import('vue-router')['RouterView']
     SeasonCard: typeof import('./src/features/dashboard/components/SeasonCard.vue')['default']

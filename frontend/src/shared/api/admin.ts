@@ -9,6 +9,7 @@ export type AdminHouseholdOut = components["schemas"]["AdminHouseholdOut"];
 export type AdminDashboardOut = components["schemas"]["AdminDashboardOut"];
 export type PeriodOverviewOut = components["schemas"]["PeriodOverviewOut"];
 export type ReconciliationOut = components["schemas"]["ReconciliationOut"];
+export type RestatementOut = components["schemas"]["RestatementOut"];
 export type AuditLogPageOut = components["schemas"]["AuditLogPageOut"];
 export type AuditLogEntryOut = components["schemas"]["AuditLogEntryOut"];
 type AdminHouseholdCreateIn = components["schemas"]["AdminHouseholdCreateIn"];
@@ -212,4 +213,31 @@ export async function reviewAdminReading(readingId: number): Promise<void> {
   if (!response.ok) {
     throw buildApiError(response.status, error);
   }
+}
+
+export interface PeriodCorrections {
+  bill_total_uah?: string;
+  rate?: { day_rate_uah: string; night_rate_uah: string };
+}
+
+export async function restatePeriod(
+  period: string,
+  corrections: PeriodCorrections,
+  options: { dryRun: boolean; reason: string }
+): Promise<RestatementOut> {
+  const { data, error, response } = await appApiClient.POST("/admin/periods/{period}/restate", {
+    body: {
+      confirm: true,
+      corrections: { readings: [], ...corrections },
+      dry_run: options.dryRun,
+      reason: options.reason || null,
+    },
+    params: { path: { period } },
+  });
+
+  if (error) {
+    throw buildApiError(response.status, error);
+  }
+
+  return data;
 }

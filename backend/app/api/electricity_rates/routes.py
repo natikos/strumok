@@ -3,12 +3,15 @@ from typing import Any
 from fastapi import APIRouter, Depends, HTTPException, Response, status
 from sqlmodel import Session
 
+from app.api.admin.schemas import RestatementOut
 from app.api.auth.schemas import ErrorOut
+from app.api.billing.restatement import correct_rate
 from app.api.deps import require_admin
 from app.api.electricity_rates.schemas import (
     ElectricityRateCreateIn,
     ElectricityRateOut,
     ElectricityRateUpdateIn,
+    RateCorrectIn,
 )
 from app.api.electricity_rates.service import (
     EffectiveFromAlreadyExistsError,
@@ -174,3 +177,32 @@ def create_electricity_rate(
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT, detail="effectiveFromAlreadyExists"
         ) from exc
+
+
+@router.post(
+    "/{rate_id}/correct",
+    response_model=RestatementOut,
+    responses=RATE_CHANGE_RESPONSES,
+)
+def correct_electricity_rate(
+    rate_id: int,
+    payload: RateCorrectIn,
+    session: Session = Depends(get_session),
+    admin: User = Depends(require_admin),
+) -> RestatementOut:
+    """Fix a rate that already billed closed periods: restate them, then update it."""
+    try:
+        result = correct_rate(
+            session=session,
+            rate_id=rate_id,
+            day_rate_uah=payload.day_rate_uah,
+            night_rate_uah=payload.night_rate_uah,
+            reason=(payload.reason or "").strip(),
+            actor_id=admin.id,
+            dry_run=payload.dry_run,
+        )
+    except RateNotFoundError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="rateNotFound"
+        ) from exc
+    return RestatementOut.from_result(result)

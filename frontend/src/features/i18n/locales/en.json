@@ -201,6 +201,20 @@
         "decrease": "Lower than last reading",
         "spike": "Big jump"
       }
+    },
+    "restatement": {
+      "summary": "{households} household(s) across {periods} period(s) will get an adjustment",
+      "zeroSum": "This correction nets to zero across households: it only moves money between tariff and loss share.",
+      "noChange": "No household's amount changes.",
+      "refund": "refund",
+      "extra": "extra charge",
+      "reason": "Reason (required)",
+      "reasonHint": "Enter a reason to continue",
+      "confirm": "Post adjustments",
+      "cancel": "Cancel",
+      "posted": "Adjustments posted",
+      "correctAndPreview": "Correct and preview adjustments",
+      "correctBill": "Correct the bill and preview adjustments"
     }
   },
   "auth": {
@@ -339,7 +353,9 @@
     "rateUsedByClosedPeriod": "A closed period was billed with this rate, so it can't be changed directly",
     "rateNotFound": "This rate no longer exists",
     "periodHasUnreviewedReadings": "Some readings still need review",
-    "readingNotFound": "This reading no longer exists"
+    "readingNotFound": "This reading no longer exists",
+    "periodNotClosed": "This period isn't closed yet",
+    "nothingToCorrect": "Nothing to correct"
   },
   "household": {
     "switchAria": "Switch household",
