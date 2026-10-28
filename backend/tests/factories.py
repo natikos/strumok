@@ -85,9 +85,6 @@ def make_meter_reading(
     submitted_by_user_id: int | None = None,
     day_meter_value: Decimal | str = Decimal("0"),
     night_meter_value: Decimal | str = Decimal("0"),
-    day_usage_kwh: Decimal | str = Decimal("0"),
-    night_usage_kwh: Decimal | str = Decimal("0"),
-    amount_charged_uah: Decimal | str = Decimal("0"),
 ) -> MeterReading:
     reading = MeterReading(
         household_id=household_id,
@@ -95,9 +92,6 @@ def make_meter_reading(
         period=period,
         day_meter_value=Decimal(day_meter_value),
         night_meter_value=Decimal(night_meter_value),
-        day_usage_kwh=Decimal(day_usage_kwh),
-        night_usage_kwh=Decimal(night_usage_kwh),
-        amount_charged_uah=Decimal(amount_charged_uah),
     )
     session.add(reading)
     session.flush()

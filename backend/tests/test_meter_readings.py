@@ -10,6 +10,7 @@ from datetime import datetime, timezone
 from decimal import Decimal
 
 import pytest
+from app.api.billing.service import derive_reading_usage
 from app.api.electricity_rates.service import NoRateConfiguredError
 from app.api.meter_readings.service import (
     HouseholdInactiveError,
@@ -49,8 +50,8 @@ def shift_period(period: str, months: int) -> str:
 def _default_electricity_rate(session: Session) -> None:
     """Seed a rate covering every period these tests submit against.
 
-    `submit_meter_reading` now hard-requires an effective rate to compute
-    `amount_charged_uah`; without one, every existing submission test in this
+    `submit_meter_reading` still requires an effective rate (a period with no
+    rate can't be billed); without one, every existing submission test in this
     file would fail with `NoRateConfiguredError` even though they don't assert
     on billing at all. `effective_from` is set far enough in the past to cover
     every period exercised below, and tests that care about a *specific* rate
@@ -195,8 +196,10 @@ class TestSubmitMeterReading:
             night_meter_value=Decimal("1820.00"),
         )
 
-        assert reading.day_usage_kwh == Decimal("0")
-        assert reading.night_usage_kwh == Decimal("0")
+        assert derive_reading_usage(session=session, reading=reading) == (
+            Decimal("0"),
+            Decimal("0"),
+        )
 
     def test_usage_is_diffed_against_the_most_recent_prior_reading(
         self, session: Session
@@ -221,8 +224,10 @@ class TestSubmitMeterReading:
             night_meter_value=Decimal("1820.25"),
         )
 
-        assert reading.day_usage_kwh == Decimal("205.50")
-        assert reading.night_usage_kwh == Decimal("120.25")
+        assert derive_reading_usage(session=session, reading=reading) == (
+            Decimal("205.50"),
+            Decimal("120.25"),
+        )
 
     def test_usage_diffs_against_the_latest_period_not_the_lowest_value(
         self, session: Session
@@ -267,8 +272,10 @@ class TestSubmitMeterReading:
         # Baseline must be the immediately-prior period (lexicographically
         # latest YYYY-MM), not the -2 (highest meter value) or -3 (first
         # inserted) period.
-        assert reading.day_usage_kwh == Decimal("100.00")
-        assert reading.night_usage_kwh == Decimal("100.00")
+        assert derive_reading_usage(session=session, reading=reading) == (
+            Decimal("100.00"),
+            Decimal("100.00"),
+        )
 
     def test_backfilling_an_older_period_diffs_against_the_immediately_prior_one(
         self, session: Session
@@ -306,8 +313,10 @@ class TestSubmitMeterReading:
             night_meter_value=Decimal("1300.00"),
         )
 
-        assert reading.day_usage_kwh == Decimal("500.00")
-        assert reading.night_usage_kwh == Decimal("300.00")
+        assert derive_reading_usage(session=session, reading=reading) == (
+            Decimal("500.00"),
+            Decimal("300.00"),
+        )
 
     def test_a_reading_lower_than_the_prior_one_clamps_usage_to_zero(
         self, session: Session
@@ -334,114 +343,10 @@ class TestSubmitMeterReading:
             night_meter_value=Decimal("50.00"),
         )
 
-        assert reading.day_usage_kwh == Decimal("0")
-        assert reading.night_usage_kwh == Decimal("0")
-
-    def test_amount_charged_is_usage_times_effective_rate_rounded_to_cents(
-        self, session: Session
-    ) -> None:
-        # Values chosen so day/night usage times rate produces a
-        # three-decimal intermediate, exercising the rounding step rather
-        # than a coincidentally-exact result.
-        current_period = current_billing_period()
-        user = make_user(session)
-        household = make_household(session, user_id=user.id)
-        make_meter_reading(
-            session,
-            household_id=household.id,
-            period=previous_period(current_period),
-            day_meter_value="1000.00",
-            night_meter_value="500.00",
+        assert derive_reading_usage(session=session, reading=reading) == (
+            Decimal("0"),
+            Decimal("0"),
         )
-        make_electricity_rate(
-            session,
-            day_rate_uah="4.3250",
-            night_rate_uah="2.1750",
-            effective_from=shift_period(current_period, -6),
-        )
-
-        reading = submit_meter_reading(
-            session=session,
-            user=user,
-            household_id=household.id,
-            period=current_period,
-            day_meter_value=Decimal("1123.70"),
-            night_meter_value=Decimal("611.30"),
-        )
-
-        day_usage = Decimal("123.70")
-        night_usage = Decimal("111.30")
-        assert reading.day_usage_kwh == day_usage
-        assert reading.night_usage_kwh == night_usage
-        expected = (
-            day_usage * Decimal("4.3250") + night_usage * Decimal("2.1750")
-        ).quantize(Decimal("0.01"))
-        assert reading.amount_charged_uah == expected
-
-    def test_amount_charged_uses_the_rate_effective_for_the_submitted_period(
-        self, session: Session
-    ) -> None:
-        # Two rates on file; the period being submitted falls under the
-        # earlier one, so submitting must not pick up the later rate just
-        # because it exists in the table.
-        current_period = current_billing_period()
-        user = make_user(session)
-        household = make_household(session, user_id=user.id)
-        make_meter_reading(
-            session,
-            household_id=household.id,
-            period=previous_period(current_period),
-            day_meter_value="0.00",
-            night_meter_value="0.00",
-        )
-        make_electricity_rate(
-            session,
-            day_rate_uah="3.0000",
-            night_rate_uah="1.5000",
-            effective_from=shift_period(current_period, -6),
-        )
-        make_electricity_rate(
-            session,
-            day_rate_uah="99.0000",
-            night_rate_uah="88.0000",
-            # Future-dated: not yet effective for the period being submitted.
-            effective_from=shift_period(current_period, 1),
-        )
-
-        reading = submit_meter_reading(
-            session=session,
-            user=user,
-            household_id=household.id,
-            period=current_period,
-            day_meter_value=Decimal("100.00"),
-            night_meter_value=Decimal("100.00"),
-        )
-
-        assert reading.amount_charged_uah == Decimal("450.00")
-
-    def test_first_ever_reading_has_zero_usage_and_zero_amount_charged(
-        self, session: Session
-    ) -> None:
-        current_period = current_billing_period()
-        user = make_user(session)
-        household = make_household(session, user_id=user.id)
-        make_electricity_rate(
-            session,
-            day_rate_uah="5.00",
-            night_rate_uah="3.00",
-            effective_from=shift_period(current_period, -6),
-        )
-
-        reading = submit_meter_reading(
-            session=session,
-            user=user,
-            household_id=household.id,
-            period=current_period,
-            day_meter_value=Decimal("3205.00"),
-            night_meter_value=Decimal("1820.00"),
-        )
-
-        assert reading.amount_charged_uah == Decimal("0.00")
 
     def test_submitting_with_no_electricity_rate_configured_raises(
         self, session: Session
@@ -655,9 +560,6 @@ class TestListMeterReadings:
         assert all(r.day_meter_value is None for r in readings)
         assert all(r.night_meter_value is None for r in readings)
         assert all(r.submitted_at is None for r in readings)
-        assert all(r.day_usage_kwh == Decimal("0") for r in readings)
-        assert all(r.night_usage_kwh == Decimal("0") for r in readings)
-        assert all(r.amount_charged_uah == Decimal("0") for r in readings)
         assert readings[0].period == last_month
         assert now.strftime("%Y-%m") not in [r.period for r in readings]
 
@@ -704,8 +606,6 @@ class TestListMeterReadings:
             period=newest_period,
             day_meter_value="1200.00",
             night_meter_value="620.00",
-            day_usage_kwh="200.00",
-            night_usage_kwh="120.00",
         )
 
         readings = list_meter_readings(session=session, household_id=household.id)
@@ -721,17 +621,12 @@ class TestListMeterReadings:
         assert newest.id is not None
         assert newest.day_meter_value == Decimal("1200.00")
         assert newest.night_meter_value == Decimal("620.00")
-        assert newest.day_usage_kwh == Decimal("200.00")
-        assert newest.night_usage_kwh == Decimal("120.00")
         assert newest.submitted_at is not None
 
         assert gap.id is None
         assert gap.day_meter_value is None
         assert gap.night_meter_value is None
         assert gap.submitted_at is None
-        assert gap.day_usage_kwh == Decimal("0")
-        assert gap.night_usage_kwh == Decimal("0")
-        assert gap.amount_charged_uah == Decimal("0")
 
         assert oldest.id is not None
         assert oldest.day_meter_value == Decimal("1000.00")
@@ -912,8 +807,6 @@ class TestMeterReadingRoutesHappyPath:
         assert body["household_id"] == household.id
         assert body["day_meter_value"] == "3205.00"
         assert body["night_meter_value"] == "1820.00"
-        assert body["day_usage_kwh"] == "0.00"
-        assert body["night_usage_kwh"] == "0.00"
         assert "id" in body
         assert "submitted_at" in body
 

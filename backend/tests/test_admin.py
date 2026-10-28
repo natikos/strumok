@@ -12,6 +12,7 @@ from decimal import Decimal
 import pytest
 
 from app.api.admin.service import _summed_usage_kwh
+from app.db.models import BillingPeriod, HouseholdCharge
 from sqlmodel import Session, select
 from tests.factories import authenticate, make_household, make_meter_reading, make_user
 
@@ -119,17 +120,27 @@ class TestAdminDashboard:
             session,
             household_id=submitted.id,
             period="2026-07",
-            day_usage_kwh="10.00",
-            night_usage_kwh="5.00",
-            amount_charged_uah="50.25",
+            day_meter_value="100.00",
+            night_meter_value="50.00",
         )
         make_meter_reading(
             session,
             household_id=submitted.id,
             period="2026-08",
-            day_usage_kwh="12.00",
-            night_usage_kwh="6.00",
-            amount_charged_uah="60.30",
+            day_meter_value="112.00",
+            night_meter_value="56.00",
+        )
+        session.add(BillingPeriod(period="2026-08", status="closed"))
+        session.flush()
+        session.add(
+            HouseholdCharge(
+                period="2026-08",
+                household_id=submitted.id,
+                day_usage_kwh=Decimal("12.00"),
+                night_usage_kwh=Decimal("6.00"),
+                tariff_uah=Decimal("60.30"),
+                total_uah=Decimal("60.30"),
+            )
         )
         authenticate(client, admin)
 
@@ -154,7 +165,16 @@ class TestAdminDashboard:
         admin = make_user(session, email="dashboard-admin2@example.com", is_admin=True)
         household = make_household(session, name="Older Reading Plot", user_id=admin.id)
         make_meter_reading(
-            session, household_id=household.id, period="2026-07", day_usage_kwh="4.00"
+            session,
+            household_id=household.id,
+            period="2026-06",
+            day_meter_value="10.00",
+        )
+        make_meter_reading(
+            session,
+            household_id=household.id,
+            period="2026-07",
+            day_meter_value="14.00",
         )
         authenticate(client, admin)
 
@@ -167,6 +187,7 @@ class TestAdminDashboard:
         assert row["submission_status"] == "missing"
         assert row["latest_period"] == "2026-07"
         assert row["latest_usage_kwh"] == "4.00"
+        assert row["latest_amount_charged_uah"] is None
 
 
 class TestCreateHousehold:

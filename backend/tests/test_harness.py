@@ -111,10 +111,8 @@ class TestHarnessWiring:
             household_id=household.id,
             period="2026-07",
             day_meter_value="1234.56",
-            amount_charged_uah="987.65",
         )
         session.expire(reading)
 
+        assert isinstance(reading.day_meter_value, Decimal)
         assert reading.day_meter_value == Decimal("1234.56")
-        assert isinstance(reading.amount_charged_uah, Decimal)
-        assert reading.amount_charged_uah == Decimal("987.65")

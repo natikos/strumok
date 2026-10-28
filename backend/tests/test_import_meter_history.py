@@ -1,6 +1,6 @@
 """Coverage for the historical-import scripts (issue #145).
 
-`import_meter_history.py` and `calculate_meter_usage.py` open their own
+`import_meter_history.py` opens its own
 `Session(engine)` against the application's configured database rather than
 using the test suite's rolled-back-transaction `session` fixture -- so a row
 created only in that fixture's transaction would be invisible to them (it
@@ -19,12 +19,18 @@ import unicodedata
 from decimal import Decimal
 
 import pytest
+from sqlalchemy import text
 from sqlmodel import Session, select
 
-from app.api.electricity_rates.service import get_effective_rate
+from app.core.domain import current_billing_period
 from app.db.engine import engine as real_engine
-from app.db.models import ElectricityRate, Household, MeterReading
-from scripts import calculate_meter_usage
+from app.db.models import (
+    BillingPeriod,
+    ElectricityRate,
+    Household,
+    HouseholdCharge,
+    MeterReading,
+)
 from scripts.import_meter_history import (
     CsvValidationError,
     ImportValidationError,
@@ -36,7 +42,7 @@ from scripts.import_meter_history import (
     parse_csv,
     parse_decimal,
 )
-from tests.factories import make_electricity_rate, make_household, make_meter_reading
+from tests.factories import make_household, make_meter_reading
 
 pytestmark = pytest.mark.usefixtures("engine")  # ensures schema exists
 
@@ -56,8 +62,20 @@ def real_session():
 
 
 def _cleanup(
-    real_session: Session, *, household_ids: list[int], rate_ids: list[int]
+    real_session: Session,
+    *,
+    household_ids: list[int],
+    rate_ids: list[int],
+    periods: list[str] | None = None,
 ) -> None:
+    # household_charges rejects DELETE by trigger; TRUNCATE doesn't fire it, and
+    # only this test's committed charges exist (every other test rolls back).
+    real_session.exec(text("TRUNCATE household_charges"))  # type: ignore[call-overload]
+    for period in periods or []:
+        billing_period = real_session.get(BillingPeriod, period)
+        if billing_period is not None:
+            real_session.delete(billing_period)
+    real_session.commit()
     for hid in household_ids:
         for reading in real_session.exec(
             select(MeterReading).where(MeterReading.household_id == hid)
@@ -245,9 +263,6 @@ class TestInsertMeterHistory:
             period="2024-12",
             day_meter_value="500.00",
             night_meter_value="300.00",
-            day_usage_kwh="20.00",
-            night_usage_kwh="10.00",
-            amount_charged_uah="150.00",
         )
         real_session.commit()
 
@@ -270,16 +285,16 @@ class TestInsertMeterHistory:
             real_session.refresh(existing)
             assert existing.day_meter_value == Decimal("500.00")
             assert existing.night_meter_value == Decimal("300.00")
-            assert existing.amount_charged_uah == Decimal("150.00")
-
-            # DEFECT (see report): `result.rowcount` from psycopg for this
-            # ON CONFLICT DO NOTHING multi-row insert is always -1, not the
-            # real affected-row count, so `insert_meter_history` reports
-            # -1 instead of 0 here even though the write behavior above
-            # (existing row left untouched) is correct.
             assert inserted == 0
+            # No new reading, so no charge either.
+            assert real_session.exec(select(HouseholdCharge)).all() == []
         finally:
-            _cleanup(real_session, household_ids=[household.id], rate_ids=[])
+            _cleanup(
+                real_session,
+                household_ids=[household.id],
+                rate_ids=[],
+                periods=["2024-12"],
+            )
 
     def test_new_reading_for_unseen_period_is_inserted(
         self, real_session: Session
@@ -310,14 +325,24 @@ class TestInsertMeterHistory:
                 )
             ).one()
             assert stored.day_meter_value == Decimal("100.00")
-            assert stored.amount_charged_uah == Decimal("300.00")
-
-            # DEFECT (see report): same rowcount==-1 issue as above -- the
-            # write above is correct (one row landed), but the reported
-            # count is -1, not 1.
             assert inserted == 1
+
+            # The sheet's exact amount lands in the ledger, not recomputed.
+            charge = real_session.exec(select(HouseholdCharge)).one()
+            assert charge.reading_id == stored.id
+            assert charge.household_id == household.id
+            assert charge.total_uah == Decimal("300.00")
+            assert charge.tariff_uah == Decimal("300.00")
+            assert charge.day_usage_kwh == Decimal("10.00")
+            assert charge.night_usage_kwh == Decimal("5.00")
+            assert real_session.get(BillingPeriod, "2024-11").status == "closed"
         finally:
-            _cleanup(real_session, household_ids=[household.id], rate_ids=[])
+            _cleanup(
+                real_session,
+                household_ids=[household.id],
+                rate_ids=[],
+                periods=["2024-11"],
+            )
 
 
 # --- main(): end-to-end abort on malformed input, no partial writes -------
@@ -400,99 +425,36 @@ class TestMainEndToEnd:
         finally:
             _cleanup(real_session, household_ids=[household.id], rate_ids=[])
 
-
-# --- calculate_meter_usage: amount recomputation --------------------------
-
-
-class TestCalculateMeterUsage:
-    def test_amount_charged_reflects_usage_times_effective_rate(
-        self, real_session: Session
+    def test_current_period_is_refused_and_writes_nothing(
+        self, tmp_path, monkeypatch, real_session: Session
     ) -> None:
-        household = make_household(real_session, name="Plot F")
+        household = make_household(real_session, name="Plot H")
         real_session.commit()
 
-        make_meter_reading(
-            real_session,
-            household_id=household.id,
-            period="2024-11",
-            day_meter_value="1000.00",
-            night_meter_value="500.00",
+        current = current_billing_period()
+        csv_path = tmp_path / "Грудень24.csv"
+        csv_path.write_text("1,Plot H,100,50,10,5,300\n", encoding="utf-8")
+        mapping_path = tmp_path / "mapping.csv"
+        mapping_path.write_text(
+            f"csv_id,household_id\n1,{household.id}\n", encoding="utf-8"
         )
-        second = make_meter_reading(
-            real_session,
-            household_id=household.id,
-            period="2024-12",
-            day_meter_value="1120.00",  # +120 day usage
-            night_meter_value="540.00",  # +40 night usage
-            amount_charged_uah="0.00",  # stale/wrong before recalculation
+        monkeypatch.setattr(
+            "scripts.import_meter_history.get_period", lambda _path: current
         )
-        rate = make_electricity_rate(
-            real_session,
-            day_rate_uah="4.32",
-            night_rate_uah="2.16",
-            effective_from="2024-12",
+        monkeypatch.setattr(
+            "sys.argv",
+            [
+                "import_meter_history.py",
+                str(csv_path),
+                "--mapping",
+                str(mapping_path),
+                "--apply",
+            ],
         )
-        real_session.commit()
 
         try:
-            exit_code = calculate_meter_usage.main()
-            assert exit_code == 0
-
-            real_session.refresh(second)
-            assert second.day_usage_kwh == Decimal(
-                "120.00"
-            ) or second.day_usage_kwh == Decimal("120")
-            assert second.night_usage_kwh == Decimal(
-                "40.00"
-            ) or second.night_usage_kwh == Decimal("40")
-            expected_amount = (
-                Decimal("120.00") * Decimal("4.32") + Decimal("40.00") * Decimal("2.16")
-            ).quantize(Decimal("0.01"))
-            assert second.amount_charged_uah == expected_amount
-            # sanity: the rate lookup used really is the one seeded for this period
-            effective = get_effective_rate(session=real_session, period="2024-12")
-            assert effective.id == rate.id
-        finally:
-            _cleanup(real_session, household_ids=[household.id], rate_ids=[rate.id])
-
-    def test_period_with_no_effective_rate_recalculates_usage_but_leaves_charge_and_is_reported_skipped(
-        self, real_session: Session, capsys
-    ) -> None:
-        household = make_household(real_session, name="Plot G")
-        real_session.commit()
-
-        make_meter_reading(
-            real_session,
-            household_id=household.id,
-            period="2031-01",
-            day_meter_value="2000.00",
-            night_meter_value="1000.00",
-        )
-        second = make_meter_reading(
-            real_session,
-            household_id=household.id,
-            period="2031-02",  # no ElectricityRate covers this far-future period
-            day_meter_value="2200.00",  # +200 day usage
-            night_meter_value="1080.00",  # +80 night usage
-            amount_charged_uah="42.00",  # must be left alone
-        )
-        real_session.commit()
-
-        try:
-            exit_code = calculate_meter_usage.main()
-            assert exit_code == 0
-
-            real_session.refresh(second)
-            assert second.day_usage_kwh == Decimal(
-                "200.00"
-            ) or second.day_usage_kwh == Decimal("200")
-            assert second.night_usage_kwh == Decimal(
-                "80.00"
-            ) or second.night_usage_kwh == Decimal("80")
-            # the charge is untouched, not zeroed out
-            assert second.amount_charged_uah == Decimal("42.00")
-
-            output = capsys.readouterr().out
-            assert "2031-02" in output
+            assert import_main() != 0
+            assert real_session.exec(select(BillingPeriod)).all() == []
+            assert real_session.exec(select(MeterReading)).all() == []
         finally:
             _cleanup(real_session, household_ids=[household.id], rate_ids=[])

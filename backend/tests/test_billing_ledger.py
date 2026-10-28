@@ -1,15 +1,13 @@
-"""Billing ledger: the pure statement function, the history backfill, the
+"""Billing ledger: the pure statement function, the
 append-only charges table and the statements endpoint."""
 
-import importlib.util
 import random
 from decimal import Decimal
-from pathlib import Path
 
 import pytest
 from sqlalchemy import text
 from sqlalchemy.exc import DBAPIError
-from sqlmodel import Session, select
+from sqlmodel import Session
 
 from app.core.domain import (
     ChargeInput,
@@ -111,62 +109,6 @@ class TestComputePeriodStatement:
             ):
                 assert line.total_uah == line.total_uah.quantize(D("0.01"))
                 assert line.total_uah >= 0
-
-
-def _load_migration():
-    path = Path(__file__).parent.parent / "alembic/versions/0004_billing_ledger.py"
-    spec = importlib.util.spec_from_file_location("migration_0004", path)
-    module = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(module)
-    return module
-
-
-class TestHistoryBackfill:
-    def test_closed_history_sums_match_and_open_period_is_left_alone(
-        self, session: Session
-    ) -> None:
-        make_electricity_rate(session, effective_from="2000-01")
-        a = make_household(session, name="A", user_id=make_user(session).id)
-        b = make_household(session, name="B")
-        for household, period, amount in (
-            (a, "2026-03", "100.10"),
-            (a, "2026-04", "200.20"),
-            (b, "2026-04", "50.05"),
-            (a, "2026-05", "999.00"),  # not before the cutoff
-        ):
-            make_meter_reading(
-                session,
-                household_id=household.id,
-                period=period,
-                day_usage_kwh="10",
-                amount_charged_uah=amount,
-            )
-
-        _load_migration().backfill_closed_history(
-            session.connection(), before_period="2026-05"
-        )
-
-        charges = session.exec(select(HouseholdCharge)).all()
-        assert sum(c.total_uah for c in charges) == D("350.35")
-        assert {c.period for c in charges} == {"2026-03", "2026-04"}
-        assert all(c.tariff_uah == c.total_uah for c in charges)
-        periods = {p.period: p.status for p in session.exec(select(BillingPeriod))}
-        assert periods == {"2026-03": "closed", "2026-04": "closed"}
-        owned = next(c for c in charges if c.household_id == a.id)
-        assert owned.owner_user_id == a.user_id
-
-    def test_rerunning_does_not_duplicate(self, session: Session) -> None:
-        make_electricity_rate(session)
-        household = make_household(session)
-        make_meter_reading(
-            session, household_id=household.id, period="2026-03", amount_charged_uah="5"
-        )
-        migration = _load_migration()
-
-        migration.backfill_closed_history(session.connection(), before_period="2026-05")
-        migration.backfill_closed_history(session.connection(), before_period="2026-05")
-
-        assert len(session.exec(select(HouseholdCharge)).all()) == 1
 
 
 class TestChargesAreAppendOnly:
