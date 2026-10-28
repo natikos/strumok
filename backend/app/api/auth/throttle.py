@@ -71,3 +71,7 @@ def record_failure(
         {"cutoff": now - PRUNE_AFTER},
     )
     session.commit()
+
+
+RESET_EMAIL_LIMIT = Limit(max_attempts=3, window=timedelta(minutes=15))
+RESET_IP_LIMIT = Limit(max_attempts=20, window=timedelta(minutes=15))

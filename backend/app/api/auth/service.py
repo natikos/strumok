@@ -1,3 +1,4 @@
+import logging
 from datetime import datetime, timedelta, timezone
 from typing import Any
 
@@ -11,8 +12,12 @@ from app.core.email import EmailSendError, send_email
 from app.core.time import utc_now
 from app.db.models import Household, User
 
+logger = logging.getLogger(__name__)
+
 VERIFICATION_TOKEN_TYPE = "email_verification"
 EMAIL_CHANGE_TOKEN_TYPE = "email_change"
+PASSWORD_RESET_TOKEN_TYPE = "password_reset"
+PASSWORD_RESET_TTL = timedelta(minutes=30)
 
 
 def list_user_households(*, session: Session, user: User) -> list[Any]:
@@ -493,3 +498,91 @@ def confirm_email_change(*, session: Session, token: str) -> User:
         pass
 
     return user
+
+
+_PASSWORD_RESET_EMAIL = {
+    "en": (
+        "Reset your Strumok password",
+        "We got a request to reset your password. The link works once and expires in 30 minutes. If this wasn't you, ignore this email.",
+        "Reset password",
+    ),
+    "ua": (
+        "Скидання пароля Струмок",
+        "Ми отримали запит на скидання пароля. Посилання діє один раз і спливає за 30 хвилин. Якщо це були не ви, проігноруйте цей лист.",
+        "Скинути пароль",
+    ),
+}
+
+
+def create_password_reset_token(
+    user: User, *, ttl: timedelta = PASSWORD_RESET_TTL
+) -> str:
+    return jwt.encode(
+        {
+            "sub": str(user.id),
+            "ver": user.token_version,
+            "exp": utc_now() + ttl,
+            "type": PASSWORD_RESET_TOKEN_TYPE,
+        },
+        settings.auth.secret_key.get_secret_value(),
+        algorithm=settings.auth.algorithm,
+    )
+
+
+def request_password_reset(*, session: Session, email: str) -> None:
+    user = session.exec(
+        select(User).where(
+            User.email == email.strip().lower(), User.is_active, User.email_verified
+        )
+    ).first()
+    if user is None:
+        return
+
+    subject, message, button = _PASSWORD_RESET_EMAIL.get(
+        str(getattr(user.language, "value", user.language)), _PASSWORD_RESET_EMAIL["en"]
+    )
+    link = (
+        f"{settings.brevo.app_base_url}/reset-password"
+        f"?token={create_password_reset_token(user)}"
+    )
+    try:
+        send_email(
+            to_email=user.email,
+            to_name=user.first_name,
+            subject=subject,
+            html_content=_build_action_email_html(
+                first_name=user.first_name,
+                message=message,
+                link=link,
+                button_label=button,
+            ),
+        )
+    except EmailSendError:
+        logger.exception("Password reset email failed to send")
+
+
+def confirm_password_reset(*, session: Session, token: str, password: str) -> None:
+    try:
+        payload = jwt.decode(
+            token,
+            settings.auth.secret_key.get_secret_value(),
+            algorithms=[settings.auth.algorithm],
+        )
+        if payload.get("type") != PASSWORD_RESET_TOKEN_TYPE:
+            raise ValueError("Unexpected token type")
+        user_id = int(payload["sub"])
+        version = payload["ver"]
+    except (JWTError, ValueError, TypeError, KeyError) as exc:
+        raise InvalidOrExpiredTokenError from exc
+
+    user = session.get(User, user_id)
+
+    # A stale `ver` means the link was already used (or the user signed out
+    # everywhere since), which is what makes it single-use without a table.
+    if user is None or not user.is_active or user.token_version != version:
+        raise InvalidOrExpiredTokenError
+
+    user.password_hash = pwd_context.hash(password)
+    user.token_version += 1
+    session.add(user)
+    session.commit()

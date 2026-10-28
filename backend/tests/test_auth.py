@@ -891,3 +891,91 @@ class TestChangeEmail:
     def test_garbage_token_returns_400(self, client: TestClient) -> None:
         response = client.post("/auth/confirm-email-change", json={"token": "x"})
         assert response.status_code == 400
+
+
+class TestPasswordReset:
+    @staticmethod
+    def _token_from(mock_send_email) -> str:
+        return (
+            mock_send_email.call_args.kwargs["html_content"]
+            .split("token=")[1]
+            .split('"')[0]
+        )
+
+    @patch("app.api.auth.service.send_email")
+    def test_reset_link_works_once_and_revokes_sessions(
+        self, mock_send_email, client: TestClient, session
+    ) -> None:
+        user = make_user(session, email="resident@example.com")
+        authenticate(client, user)
+
+        response = client.post(
+            "/auth/password-reset/request", json={"email": "Resident@example.com"}
+        )
+        assert response.status_code == 204
+        token = self._token_from(mock_send_email)
+
+        confirm = client.post(
+            "/auth/password-reset/confirm",
+            json={"token": token, "password": "brand-new-pass-1"},
+        )
+        assert confirm.status_code == 204
+        assert client.get("/auth/me").status_code == 401  # older session rejected
+        assert (
+            client.post(
+                "/auth/login",
+                json={"email": "resident@example.com", "password": "brand-new-pass-1"},
+            ).status_code
+            == 200
+        )
+
+        second = client.post(
+            "/auth/password-reset/confirm",
+            json={"token": token, "password": "another-pass-2"},
+        )
+        assert second.status_code == 400
+        assert second.json()["detail"] == "invalidOrExpiredToken"
+
+    @patch("app.api.auth.service.send_email")
+    def test_unknown_and_unverified_emails_get_204_and_no_mail(
+        self, mock_send_email, client: TestClient, session
+    ) -> None:
+        make_user(session, email="unverified@example.com", email_verified=False)
+
+        for email in ("nobody@example.com", "unverified@example.com"):
+            response = client.post(
+                "/auth/password-reset/request", json={"email": email}
+            )
+            assert response.status_code == 204
+            assert response.content == b""
+
+        mock_send_email.assert_not_called()
+
+    @patch("app.api.auth.service.send_email")
+    def test_requests_are_throttled_silently(
+        self, mock_send_email, client: TestClient, session
+    ) -> None:
+        make_user(session, email="resident@example.com")
+
+        for _ in range(5):
+            assert (
+                client.post(
+                    "/auth/password-reset/request",
+                    json={"email": "resident@example.com"},
+                ).status_code
+                == 204
+            )
+
+        assert mock_send_email.call_count == 3
+
+    def test_access_token_is_not_a_reset_token(
+        self, client: TestClient, session
+    ) -> None:
+        user = make_user(session, email="resident@example.com")
+        from app.api.auth.service import create_access_token
+
+        response = client.post(
+            "/auth/password-reset/confirm",
+            json={"token": create_access_token(user), "password": "brand-new-pass-1"},
+        )
+        assert response.status_code == 400

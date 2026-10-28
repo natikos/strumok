@@ -67,7 +67,19 @@
     "requiredField": "This field is required",
     "invalidEmail": "Please enter a valid email address",
     "nameMinLength": "Must be at least 2 characters",
-    "passwordMinLength": "Password must be at least 8 characters"
+    "passwordMinLength": "Password must be at least 8 characters",
+    "forgotPassword": "Forgot password?",
+    "forgotTitle": "Reset your password",
+    "forgotSubtitle": "Enter your email and we'll send you a link.",
+    "forgotSubmit": "Send link",
+    "forgotSent": "If that email is registered, we sent a link. It expires in 30 minutes.",
+    "resendIn": "Resend in {timer}",
+    "backToLogin": "Back to login",
+    "resetTitle": "Choose a new password",
+    "resetSubmit": "Save password",
+    "resetExpired": "This link is invalid or has expired, or was already used.",
+    "requestNewLink": "Request a new link",
+    "resetDone": "Password changed. Sign in with your new password."
   },
   "dashboard": {
     "awaitingReading": "{month} awaiting reading",
