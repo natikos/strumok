@@ -1315,6 +1315,8 @@ export interface components {
             owned_since: string | null;
             /** Owned Until */
             owned_until: string | null;
+            /** Has Previous Owner */
+            has_previous_owner: boolean;
             balance: components["schemas"]["BalanceOut"];
             /** Statements */
             statements: components["schemas"]["StatementLineOut"][];

@@ -1,5 +1,7 @@
 <template>
   <div class="dashboard">
+    <PastHouseholdNotice />
+
     <BalanceStrip @open-history="goToHistory" />
 
     <div class="dashboard__top">
@@ -90,6 +92,7 @@
   import YearOverYearCard from "@/features/dashboard/components/YearOverYearCard.vue";
   import { useCurrentPeriodState } from "@/features/dashboard/composables/useCurrentPeriodState";
   import { useMeterReadings } from "@/features/dashboard/composables/useMeterReadings.ts";
+  import PastHouseholdNotice from "@/features/households/components/PastHouseholdNotice.vue";
   import { useCurrentHousehold } from "@/features/households/useCurrentHousehold";
   import { useLocale } from "@/features/i18n/composables/useLocale";
   import { ROUTES } from "@shared/routing/routes";

@@ -87,6 +87,10 @@
       </ul>
     </section>
 
+    <p v-if="previousOwnerNote" class="usage-history__previous-owner">
+      {{ previousOwnerNote }}
+    </p>
+
     <ErrorState v-if="status === 'error'" message-key="errors.requestFailed" @retry="loadReadings" />
 
     <template v-else>
@@ -255,6 +259,8 @@
       </section>
       </template>
     </template>
+
+    <PastHouseholds />
   </div>
 </template>
 
@@ -274,7 +280,9 @@
   import { useI18n } from "vue-i18n";
 
   import BillBreakdown from "@/features/dashboard/components/BillBreakdown.vue";
+  import PastHouseholds from "@/features/households/components/PastHouseholds.vue";
   import { useCurrentHousehold } from "@features/households/useCurrentHousehold";
+  import { useHouseholdTenures } from "@features/households/useHouseholdTenures";
   import { useLocale } from "@features/i18n/composables/useLocale";
   import { type BalanceOut, getBalance, listAdjustments, listStatements } from "@shared/api/billing";
   import { listMyMeterReadings, type MeterReadingOut } from "@shared/api/meter-readings";
@@ -288,6 +296,7 @@
   import { DEADLINE_DAY } from "@shared/utils/deadline";
   import {
     formatKwh as formatKwhShared,
+    formatKyivDate,
     formatUah as formatUahShared,
     toDecimal,
   } from "@shared/utils/format";
@@ -329,6 +338,20 @@
   const { t } = useI18n();
   const { intlLocale } = useLocale();
   const { currentId } = useCurrentHousehold();
+
+  const { forHousehold, load: loadTenures } = useHouseholdTenures();
+
+  // A new owner sees nothing from before their date; say why, so a short
+  // history doesn't read as lost data.
+  const previousOwnerNote = computed(() => {
+    const tenure = forHousehold(currentId.value);
+
+    return tenure?.has_previous_owner && tenure.owned_since
+      ? t("ownership.previousOwnerNote", {
+          date: formatKyivDate(tenure.owned_since, intlLocale.value),
+        })
+      : "";
+  });
 
   const currentBillingPeriod = getCurrentBillingPeriod();
 
@@ -521,7 +544,10 @@
     }
   }
 
-  onMounted(loadReadings);
+  onMounted(() => {
+    void loadReadings();
+    void loadTenures();
+  });
 
   watch(currentId, () => {
     void loadReadings();
@@ -567,6 +593,12 @@
     font-size: 1.25rem;
     font-variant-numeric: tabular-nums;
     font-weight: 700;
+  }
+
+  .usage-history__previous-owner {
+    color: color-mix(in srgb, var(--s-content-color), transparent 30%);
+    font-size: 0.9rem;
+    margin: 0;
   }
 
   .usage-history__record {

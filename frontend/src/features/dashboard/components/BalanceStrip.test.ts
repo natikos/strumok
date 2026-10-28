@@ -4,7 +4,10 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vites
 import { appPlugins } from "@/shared/testing/mount";
 import type { Component } from "vue";
 
-const { getBalance } = vi.hoisted(() => ({ getBalance: vi.fn() }));
+const { getBalance, listMyStatements } = vi.hoisted(() => ({
+  getBalance: vi.fn(),
+  listMyStatements: vi.fn(),
+}));
 
 // The suite runs with isolate: false, so mock the API late (see AuditLogPanel.test).
 let BalanceStrip: Component;
@@ -12,7 +15,7 @@ let setHouseholds: (households: { id: number; name: string }[]) => unknown;
 
 beforeAll(async () => {
   vi.resetModules();
-  vi.doMock("@shared/api/billing", () => ({ getBalance }));
+  vi.doMock("@shared/api/billing", () => ({ getBalance, listMyStatements }));
   BalanceStrip = (await import("./BalanceStrip.vue")).default;
   // Same module instance as the component imports after the reset.
   const household = await import("@/features/households/useCurrentHousehold");
@@ -43,6 +46,7 @@ function mountStrip() {
 describe("BalanceStrip", () => {
   beforeEach(() => {
     getBalance.mockReset();
+    listMyStatements.mockReset().mockResolvedValue([]);
     setHouseholds([{ id: 1, name: "Plot 1" }]);
   });
 
@@ -54,6 +58,18 @@ describe("BalanceStrip", () => {
     expect(wrapper.text()).toContain("You owe");
     expect(wrapper.text()).toContain("250");
     expect(wrapper.text()).toContain("2 unpaid month(s)");
+  });
+
+  it("still counts what is owed on a plot the user gave up", async () => {
+    getBalance.mockResolvedValue(balance({ balance_uah: "100.00" }));
+    listMyStatements.mockResolvedValue([
+      { household_id: 9, is_current_owner: false, balance: balance({ balance_uah: "212.00" }) },
+    ]);
+    const wrapper = mountStrip();
+    await flushPromises();
+
+    expect(wrapper.text()).toContain("You owe");
+    expect(wrapper.text()).toContain("312");
   });
 
   it("shows a positive all-paid-up state, not an absent element", async () => {

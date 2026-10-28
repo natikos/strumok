@@ -5,6 +5,7 @@ import { appApiClient, buildApiError } from "./client";
 export type StatementLineOut = components["schemas"]["StatementLineOut"];
 export type BalanceOut = components["schemas"]["BalanceOut"];
 export type AdjustmentOut = components["schemas"]["AdjustmentOut"];
+export type HouseholdStatementsOut = components["schemas"]["HouseholdStatementsOut"];
 export type CurrentPeriodOut = components["schemas"]["CurrentPeriodOut"];
 
 export async function getCurrentPeriod(): Promise<CurrentPeriodOut> {
@@ -48,6 +49,16 @@ export async function listAdjustments(householdId?: number | null): Promise<Adju
 
   if (error) {
     throw buildApiError(response.status, error);
+  }
+
+  return data;
+}
+
+export async function listMyStatements(): Promise<HouseholdStatementsOut[]> {
+  const { data, response } = await appApiClient.GET("/me/statements");
+
+  if (!data) {
+    throw buildApiError(response.status, null);
   }
 
   return data;

@@ -242,7 +242,10 @@ class TestNewOwnerSeesNothingEarlier:
         assert client.get("/billing/adjustments", params=params).json() == []
         balance = client.get("/billing/balance", params=params).json()
         assert (D(balance["total_due_uah"]), D(balance["balance_uah"])) == (D(0), D(0))
-        assert client.get("/me/statements").json()[0]["statements"] == []
+        (entry,) = client.get("/me/statements").json()
+        assert entry["statements"] == []
+        assert entry["is_current_owner"] is True
+        assert entry["has_previous_owner"] is True
 
     def test_the_old_owner_keeps_their_bills_and_debt_in_me_statements(
         self, client, session: Session
@@ -256,6 +259,7 @@ class TestNewOwnerSeesNothingEarlier:
         (entry,) = response.json()
         assert entry["household_id"] == household.id
         assert entry["is_current_owner"] is False
+        assert entry["has_previous_owner"] is False
         assert entry["owned_until"] is not None
         assert [s["period"] for s in entry["statements"]] == ["2024-01"]
         # 300 charged + 12 adjustment - 100 paid

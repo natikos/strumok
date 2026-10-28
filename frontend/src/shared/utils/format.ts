@@ -46,3 +46,13 @@ export function formatUah(value: number | string | null | undefined, locale: str
     maximumFractionDigits: 2,
   });
 }
+
+/** A calendar date in Kyiv time — the co-op's day, whatever the device's zone. */
+export function formatKyivDate(value: string | null | undefined, locale: string): string {
+  if (!value) {
+    return "—";
+  }
+  return new Intl.DateTimeFormat(locale, { dateStyle: "long", timeZone: "Europe/Kyiv" }).format(
+    new Date(value)
+  );
+}
