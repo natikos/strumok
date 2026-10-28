@@ -491,6 +491,24 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/electricity-rates/{rate_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Delete Electricity Rate */
+        delete: operations["delete_electricity_rate_electricity_rates__rate_id__delete"];
+        options?: never;
+        head?: never;
+        /** Update Electricity Rate */
+        patch: operations["update_electricity_rate_electricity_rates__rate_id__patch"];
+        trace?: never;
+    };
     "/push/vapid-public-key": {
         parameters: {
             query?: never;
@@ -753,6 +771,30 @@ export interface components {
             night_rate_uah: string;
             /** Effective From */
             effective_from: string;
+            /**
+             * Used By Closed Periods
+             * @default []
+             */
+            used_by_closed_periods: string[];
+            /**
+             * History
+             * @default []
+             */
+            history: components["schemas"]["RateChangeOut"][];
+        };
+        /** ElectricityRateUpdateIn */
+        ElectricityRateUpdateIn: {
+            /** Day Rate Uah */
+            day_rate_uah?: number | string | null;
+            /** Night Rate Uah */
+            night_rate_uah?: number | string | null;
+            /** Reason */
+            reason?: string | null;
+            /**
+             * Confirm
+             * @constant
+             */
+            confirm: true;
         };
         /** ErrorOut */
         ErrorOut: {
@@ -933,6 +975,25 @@ export interface components {
         PushUnsubscribeIn: {
             /** Endpoint */
             endpoint: string;
+        };
+        /** RateChangeOut */
+        RateChangeOut: {
+            /** Action */
+            action: string;
+            /** Actor Name */
+            actor_name: string | null;
+            /** Created At */
+            created_at: string;
+            /** Before */
+            before: {
+                [key: string]: unknown;
+            } | null;
+            /** After */
+            after: {
+                [key: string]: unknown;
+            } | null;
+            /** Reason */
+            reason: string | null;
         };
         /** ReconciliationLineOut */
         ReconciliationLineOut: {
@@ -2503,6 +2564,129 @@ export interface operations {
                     /**
                      * @example {
                      *       "detail": "effectiveFromAlreadyExists"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_electricity_rate_electricity_rates__rate_id__delete: {
+        parameters: {
+            query: {
+                confirm: boolean;
+                reason?: string | null;
+            };
+            header?: never;
+            path: {
+                rate_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Rate does not exist */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "detail": "rateNotFound"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description A closed period was billed with this rate */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "detail": "rateUsedByClosedPeriod"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_electricity_rate_electricity_rates__rate_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                rate_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ElectricityRateUpdateIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ElectricityRateOut"];
+                };
+            };
+            /** @description Rate does not exist */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "detail": "rateNotFound"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description A closed period was billed with this rate */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "detail": "rateUsedByClosedPeriod"
                      *     }
                      */
                     "application/json": components["schemas"]["ErrorOut"];

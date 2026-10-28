@@ -11,6 +11,7 @@
           {{ t("admin.dayRateShort") }} {{ formatUah(rate.day_rate_uah, intlLocale) }} ·
           {{ t("admin.nightRateShort") }} {{ formatUah(rate.night_rate_uah, intlLocale) }}
         </span>
+        <RateEditor :rate="rate" @changed="loadRates" />
       </li>
     </ul>
     <p v-else class="electricity-rates__empty">{{ t("admin.noRatesConfigured") }}</p>
@@ -194,7 +195,7 @@
     return t("admin.noRateForPeriod", { period });
   });
 
-  onMounted(async () => {
+  async function loadRates(): Promise<void> {
     isLoading.value = true;
 
     try {
@@ -202,7 +203,9 @@
     } finally {
       isLoading.value = false;
     }
-  });
+  }
+
+  onMounted(loadRates);
 
   function resetForm(): void {
     effectiveFrom.value = "";

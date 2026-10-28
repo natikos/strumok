@@ -26,3 +26,32 @@ export async function createElectricityRate(
 
   return data;
 }
+
+export async function updateElectricityRate(
+  rateId: number,
+  payload: { day_rate_uah?: string; night_rate_uah?: string; reason?: string }
+): Promise<ElectricityRateOut> {
+  const { data, error, response } = await appApiClient.PATCH("/electricity-rates/{rate_id}", {
+    body: { ...payload, confirm: true },
+    params: { path: { rate_id: rateId } },
+  });
+
+  if (error) {
+    throw buildApiError(response.status, error);
+  }
+
+  return data;
+}
+
+export async function deleteElectricityRate(rateId: number, reason?: string): Promise<void> {
+  const { error, response } = await appApiClient.DELETE("/electricity-rates/{rate_id}", {
+    params: {
+      path: { rate_id: rateId },
+      query: { confirm: true, ...(reason ? { reason } : {}) },
+    },
+  });
+
+  if (!response.ok) {
+    throw buildApiError(response.status, error);
+  }
+}

@@ -171,6 +171,24 @@
       "noRemainder": "No rounding remainder.",
       "closedOn": "Closed on {date}",
       "empty": "No readings for this period"
+    },
+    "rateEdit": {
+      "edit": "Edit rate {period}",
+      "save": "Save",
+      "delete": "Delete",
+      "reason": "Reason (optional)",
+      "lockedNote": "This rate was used to bill {periods}. Correcting it creates adjustments residents will see.",
+      "history": "Change history",
+      "by": "{who} · {when}",
+      "saveTitle": "Change the {period} rate?",
+      "saveBody": "Provisional amounts for open periods will update immediately.",
+      "deleteTitle": "Delete the {period} rate?",
+      "deleteBody": "Periods it covered will fall back to the previous rate, or have none.",
+      "confirm": "Confirm",
+      "cancel": "Cancel",
+      "actionRateUpdated": "Changed",
+      "actionRateDeleted": "Deleted",
+      "actionRateCreated": "Added"
     }
   },
   "auth": {
@@ -305,7 +323,9 @@
     "periodAlreadyClosed": "This period is already closed",
     "periodNotEnded": "The submission window for this period is still open",
     "billNotEntered": "Enter the utility bill before closing the period",
-    "periodHasNoReadings": "No household has a reading for this period"
+    "periodHasNoReadings": "No household has a reading for this period",
+    "rateUsedByClosedPeriod": "A closed period was billed with this rate, so it can't be changed directly",
+    "rateNotFound": "This rate no longer exists"
   },
   "household": {
     "switchAria": "Switch household",

@@ -32,9 +32,10 @@ is `open` or `closed` (`billing_periods`); closing writes immutable `household_c
 `backend/app/core/domain/billing.py`. Amounts round `ROUND_HALF_UP` once per final line.
 `GET /billing/statements` returns a household's closed charges plus a read-time
 `provisional` line for the open period (never stored). History before go-live was
-backfilled as closed periods. Slice 1 is tariff-only (`usage × rate`); the loss share of the
-shared bill, estimates and penalties are not built yet — see
-[Known limitations](docs/known-limitations.md). `MeterReading.day/night_usage_kwh` and
+backfilled as closed periods. Closing needs the utility bill (`PUT /admin/periods/{period}/bill`)
+and splits bill − Σ tariff across households pro-rata by usage (largest remainder, so charges
+equal the bill exactly); estimates and penalties are not built yet. A rate can be edited or
+deleted until a closed period was billed with it. `MeterReading.day/night_usage_kwh` and
 `amount_charged_uah` are still written for compatibility and will be dropped.
 
 Keep this section current as the domain evolves — update it in the same change that adds or
