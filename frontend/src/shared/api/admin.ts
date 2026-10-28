@@ -8,6 +8,7 @@ export type AdminUserSummaryOut = components["schemas"]["AdminUserSummaryOut"];
 export type AdminHouseholdOut = components["schemas"]["AdminHouseholdOut"];
 export type AdminDashboardOut = components["schemas"]["AdminDashboardOut"];
 export type PeriodOverviewOut = components["schemas"]["PeriodOverviewOut"];
+export type ReconciliationOut = components["schemas"]["ReconciliationOut"];
 export type AuditLogPageOut = components["schemas"]["AuditLogPageOut"];
 export type AuditLogEntryOut = components["schemas"]["AuditLogEntryOut"];
 type AdminHouseholdCreateIn = components["schemas"]["AdminHouseholdCreateIn"];
@@ -160,6 +161,35 @@ export async function listAdminPeriods(): Promise<PeriodOverviewOut[]> {
 export async function closeAdminPeriod(period: string): Promise<PeriodOverviewOut> {
   const { data, error, response } = await appApiClient.POST("/admin/periods/{period}/close", {
     body: { acknowledge_flags: false, confirm: true },
+    params: { path: { period } },
+  });
+
+  if (error) {
+    throw buildApiError(response.status, error);
+  }
+
+  return data;
+}
+
+export async function getPeriodReconciliation(period: string): Promise<ReconciliationOut> {
+  const { data, error, response } = await appApiClient.GET(
+    "/admin/periods/{period}/reconciliation",
+    { params: { path: { period } } }
+  );
+
+  if (error) {
+    throw buildApiError(response.status, error);
+  }
+
+  return data;
+}
+
+export async function putPeriodBill(
+  period: string,
+  bill: { day_kwh: string; night_kwh: string; total_uah: string }
+): Promise<PeriodOverviewOut> {
+  const { data, error, response } = await appApiClient.PUT("/admin/periods/{period}/bill", {
+    body: { ...bill, confirm: true },
     params: { path: { period } },
   });
 

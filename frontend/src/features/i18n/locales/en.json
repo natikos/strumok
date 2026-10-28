@@ -127,12 +127,50 @@
       "closedOnly": "Closed on {date}",
       "blockers": {
         "periodNotEnded": "The submission window for {period} is still open",
-        "noRateConfigured": "No electricity rate for {period}"
+        "noRateConfigured": "No electricity rate for {period}",
+        "billNotEntered": "Bill not entered for {period}",
+        "noReadings": "No readings for {period}"
       },
       "confirmTitle": "Close {period} billing?",
       "confirmBody": "{charged} household(s) will be charged and {missing} have no reading. Residents can't submit for {period} afterwards, and corrections become adjustments. Take a database backup first.",
       "confirmAccept": "Close period",
       "confirmReject": "Cancel"
+    },
+    "tabReconciliation": "Reconciliation",
+    "reconciliation": {
+      "title": "Reconciliation",
+      "period": "Period {period}",
+      "matches": "Shares add up to the bill: {total}",
+      "surplus": "Shares exceed the bill by {amount} (surplus)",
+      "shortfall": "Shares are {amount} short of the bill (shortfall)",
+      "noBill": "Bill not entered yet. Enter it to compute shares.",
+      "billCard": "Utility bill",
+      "dayKwh": "Day kWh",
+      "nightKwh": "Night kWh",
+      "totalUah": "Total, UAH",
+      "saveBill": "Save bill",
+      "closedNote": "This period is closed, so the bill can't be changed. Corrections become adjustments.",
+      "replaceTitle": "Replace the entered bill?",
+      "replaceBody": "A bill is already entered for {period}. Saving replaces it and recomputes every share.",
+      "replaceAccept": "Replace",
+      "replaceReject": "Cancel",
+      "tileBill": "Bill total",
+      "tileUsage": "Σ household usage",
+      "tileLoss": "Losses",
+      "lossValue": "{kwh} kWh · {uah} ({percent}%)",
+      "lossUnknown": "—",
+      "household": "Household",
+      "usage": "Usage, kWh",
+      "share": "Share",
+      "tariff": "Tariff",
+      "lossShare": "Loss share",
+      "penalty": "Penalty",
+      "total": "Total",
+      "estimated": "estimated",
+      "remainder": "Rounding remainder (kopecks) went to: {names}",
+      "noRemainder": "No rounding remainder.",
+      "closedOn": "Closed on {date}",
+      "empty": "No readings for this period"
     }
   },
   "auth": {
@@ -265,7 +303,9 @@
     "inviteAlreadyAccepted": "This invite was already accepted",
     "periodClosed": "This period has been closed by the head, so readings can't be submitted",
     "periodAlreadyClosed": "This period is already closed",
-    "periodNotEnded": "The submission window for this period is still open"
+    "periodNotEnded": "The submission window for this period is still open",
+    "billNotEntered": "Enter the utility bill before closing the period",
+    "periodHasNoReadings": "No household has a reading for this period"
   },
   "household": {
     "switchAria": "Switch household",
