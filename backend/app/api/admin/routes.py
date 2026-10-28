@@ -1,3 +1,4 @@
+from decimal import Decimal
 from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, Path, Query, Response, status
@@ -18,6 +19,11 @@ from app.api.admin.schemas import (
     BillIn,
     HouseholdOwnerAssignIn,
     ReconciliationOut,
+    BalancesOut,
+    HouseholdBalanceOut,
+    PaymentIn,
+    PaymentOut,
+    PaymentVoidIn,
     PeriodCloseIn,
     ReadingReviewIn,
     AdminReadingCreateIn,
@@ -58,6 +64,15 @@ from app.api.admin.service import (
     list_users,
 )
 from app.api.auth.schemas import ErrorOut
+from app.api.billing.payments import (
+    HouseholdMissingError,
+    PaymentAlreadyVoidedError,
+    PaymentNotFoundError,
+    list_balances,
+    list_payments,
+    record_payment,
+    void_payment,
+)
 from app.api.billing.restatement import (
     Corrections,
     NothingToCorrectError,
@@ -809,3 +824,111 @@ def void_reading(
             status_code=status.HTTP_409_CONFLICT, detail="periodClosed"
         ) from exc
     return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
+PAYMENT_RESPONSES: dict[int | str, dict[str, Any]] = {
+    status.HTTP_404_NOT_FOUND: {
+        "description": "Household or payment does not exist",
+        "model": ErrorOut,
+        "content": {
+            "application/json": {
+                "examples": {
+                    "householdNotFound": {"value": {"detail": "householdNotFound"}},
+                    "paymentNotFound": {"value": {"detail": "paymentNotFound"}},
+                }
+            }
+        },
+    },
+    status.HTTP_409_CONFLICT: {
+        "description": "The payment was already voided",
+        "model": ErrorOut,
+        "content": {
+            "application/json": {"example": {"detail": "paymentAlreadyVoided"}}
+        },
+    },
+}
+
+
+@router.post(
+    "/households/{household_id}/payments",
+    response_model=PaymentOut,
+    responses=PAYMENT_RESPONSES,
+    status_code=status.HTTP_201_CREATED,
+)
+def record_household_payment(
+    household_id: int,
+    payload: PaymentIn,
+    session: Session = Depends(get_session),
+    admin: User = CurrentAdmin,
+) -> PaymentOut:
+    try:
+        payment = record_payment(
+            session=session,
+            household_id=household_id,
+            amount_uah=payload.amount_uah,
+            paid_on=payload.paid_on,
+            method=payload.method,
+            note=payload.note,
+            actor_id=admin.id,
+        )
+    except HouseholdMissingError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="householdNotFound"
+        ) from exc
+    return PaymentOut.model_validate(payment)
+
+
+@router.get(
+    "/households/{household_id}/payments",
+    response_model=list[PaymentOut],
+)
+def get_household_payments(
+    household_id: int, session: Session = Depends(get_session)
+) -> list[PaymentOut]:
+    return [
+        PaymentOut.model_validate(p)
+        for p in list_payments(session=session, household_id=household_id)
+    ]
+
+
+@router.post(
+    "/payments/{payment_id}/void",
+    response_model=PaymentOut,
+    responses=PAYMENT_RESPONSES,
+)
+def void_household_payment(
+    payment_id: int,
+    payload: PaymentVoidIn,
+    session: Session = Depends(get_session),
+    admin: User = CurrentAdmin,
+) -> PaymentOut:
+    try:
+        payment = void_payment(
+            session=session,
+            payment_id=payment_id,
+            reason=payload.reason.strip(),
+            actor_id=admin.id,
+        )
+    except PaymentNotFoundError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="paymentNotFound"
+        ) from exc
+    except PaymentAlreadyVoidedError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT, detail="paymentAlreadyVoided"
+        ) from exc
+    return PaymentOut.model_validate(payment)
+
+
+@router.get("/balances", response_model=BalancesOut)
+def get_admin_balances(session: Session = Depends(get_session)) -> BalancesOut:
+    rows = list_balances(session=session)
+    return BalancesOut(
+        households=[
+            HouseholdBalanceOut.model_validate(row, from_attributes=True)
+            for row in rows
+        ],
+        total_outstanding_uah=sum(
+            (row.balance_uah for row in rows if row.balance_uah > 0), Decimal("0.00")
+        ),
+    )

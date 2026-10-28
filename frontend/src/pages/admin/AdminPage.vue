@@ -10,6 +10,7 @@
         <Tab value="rates">{{ $t("admin.tabRates") }}</Tab>
         <Tab value="submissions">{{ $t("admin.tabSubmissions") }}</Tab>
         <Tab value="reconciliation">{{ $t("admin.tabReconciliation") }}</Tab>
+        <Tab value="balances">{{ $t("admin.tabBalances") }}</Tab>
         <Tab value="residents">{{ $t("admin.tabResidents") }}</Tab>
         <Tab value="log">{{ $t("admin.tabLog") }}</Tab>
       </TabList>
@@ -166,6 +167,13 @@
             </section>
           </TabPanel>
 
+          <TabPanel value="balances">
+            <section class="admin-section admin-section--wide">
+              <h2 class="admin-section__title">{{ $t("admin.balances.title") }}</h2>
+              <BalancesPanel v-if="activeTab === 'balances'" />
+            </section>
+          </TabPanel>
+
           <TabPanel value="residents">
             <section class="admin-section admin-section--wide">
               <h2 class="admin-section__title">{{ $t("admin.users.title") }}</h2>
@@ -191,6 +199,7 @@
 
   import AdminHouseholdAssignment from "@features/admin/AdminHouseholdAssignment.vue";
   import AuditLogPanel from "@features/admin/AuditLogPanel.vue";
+  import BalancesPanel from "@features/admin/BalancesPanel.vue";
   import ElectricityRatesSettings from "@features/admin/ElectricityRatesSettings.vue";
   import PeriodCloseCard from "@features/admin/PeriodCloseCard.vue";
   import ReadingEditor from "@features/admin/ReadingEditor.vue";

@@ -240,7 +240,38 @@
       "enteredBy": "Entered by the head on {date}: {reason}"
     },
     "estimated": "Estimated",
-    "estimatedCount": "Estimated ({count})"
+    "estimatedCount": "Estimated ({count})",
+    "tabBalances": "Balances",
+    "balances": {
+      "title": "Balances",
+      "outstanding": "Total outstanding: {total}",
+      "household": "Household",
+      "owner": "Owner",
+      "balance": "Balance",
+      "unpaid": "Unpaid months",
+      "owes": "Owes {amount}",
+      "credit": "Credit {amount}",
+      "settled": "Settled",
+      "record": "Record payment for {name}",
+      "amount": "Amount, UAH",
+      "paidOn": "Date",
+      "method": "Method",
+      "cash": "Cash",
+      "transfer": "Transfer",
+      "note": "Note (optional)",
+      "save": "Record payment",
+      "cancel": "Cancel",
+      "payments": "Payments",
+      "voided": "Voided: {reason}",
+      "void": "Void",
+      "voidFor": "Void payment of {amount} for {name}",
+      "voidReason": "Reason (required)",
+      "voidTitle": "Void {amount} paid on {date} by {name}?",
+      "voidBody": "This can't be undone and will be logged.",
+      "voidAccept": "Void payment",
+      "noPayments": "No payments recorded yet",
+      "loadError": "Couldn't load balances"
+    }
   },
   "auth": {
     "login": "Login",
@@ -381,7 +412,9 @@
     "readingNotFound": "This reading no longer exists",
     "periodNotClosed": "This period isn't closed yet",
     "nothingToCorrect": "Nothing to correct",
-    "periodInFuture": "That period hasn't started yet"
+    "periodInFuture": "That period hasn't started yet",
+    "paymentNotFound": "This payment no longer exists",
+    "paymentAlreadyVoided": "This payment was already voided"
   },
   "household": {
     "switchAria": "Switch household",
@@ -542,5 +575,18 @@
     "successBody": "Your email was updated. Sign in again with the new address.",
     "errorExpired": "This link is invalid or has expired. Request the change again from Settings.",
     "signIn": "Sign in"
+  },
+  "balance": {
+    "owe": "You owe {amount}",
+    "unpaidMonths": "{count} unpaid month(s)",
+    "paidUp": "You're all paid up",
+    "credit": "Credit: {amount}",
+    "household": "{name}",
+    "loadError": "Couldn't load your balance",
+    "retry": "Retry",
+    "paid": "Paid",
+    "partial": "Partly paid ({paid} of {due})",
+    "unpaid": "Unpaid",
+    "aria": "Your balance"
   }
 }

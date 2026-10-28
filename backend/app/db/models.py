@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import date, datetime
 from decimal import Decimal
 from enum import StrEnum
 from typing import Optional
@@ -391,3 +391,30 @@ event.listen(
     "after_create",
     DDL(CHARGE_ADJUSTMENTS_APPEND_ONLY_SQL),
 )
+
+
+class Payment(SQLModel, table=True):
+    """Money a household handed over. Never deleted, only voided, so the balance
+    can always be explained from the rows."""
+
+    __tablename__ = "payments"  # type: ignore
+    __table_args__ = (
+        CheckConstraint("amount_uah > 0", name="ck_payments_amount_positive"),
+        CheckConstraint("method IN ('cash', 'transfer')", name="ck_payments_method"),
+    )
+
+    id: int = Field(default=None, primary_key=True)
+    household_id: int = Field(foreign_key="households.id", index=True)
+    owner_user_id: Optional[int] = Field(default=None, foreign_key="users.id")
+    amount_uah: Decimal = Field(decimal_places=2, max_digits=12)
+    paid_on: date
+    method: str
+    note: Optional[str] = Field(default=None)
+    recorded_by_user_id: Optional[int] = Field(default=None, foreign_key="users.id")
+    created_at: datetime = Field(
+        default_factory=utc_now,
+        sa_column_kwargs={"server_default": text("CURRENT_TIMESTAMP")},
+    )
+    voided_at: Optional[datetime] = Field(default=None)
+    voided_by_user_id: Optional[int] = Field(default=None, foreign_key="users.id")
+    void_reason: Optional[str] = Field(default=None)

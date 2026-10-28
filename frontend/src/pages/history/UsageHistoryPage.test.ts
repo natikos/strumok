@@ -16,6 +16,17 @@ vi.mock("@shared/api/meter-readings", () => ({
   listMyMeterReadings,
 }));
 
+vi.mock("@shared/api/billing", () => ({
+  getBalance: vi.fn().mockResolvedValue({
+    balance_uah: "50.00",
+    household_id: 1,
+    periods: [{ due_uah: "100.00", paid_uah: "50.00", period: "2026-06", status: "partial" }],
+    total_due_uah: "100.00",
+    total_paid_uah: "50.00",
+    unpaid_months: 1,
+  }),
+}));
+
 function makeReading(overrides: Partial<MeterReadingOut> = {}): MeterReadingOut {
   return {
     id: 1,
@@ -305,5 +316,13 @@ describe("UsageHistoryPage load error handling", () => {
 
     expect(wrapper.find(".usage-history__estimated-tag").text()).toContain("Estimated");
     expect(wrapper.find(".usage-history__charge").exists()).toBe(false);
+  });
+
+  it("shows each period's payment status in words", async () => {
+    listMyMeterReadings.mockResolvedValue([makeReading()]);
+
+    const wrapper = await mountPage();
+
+    expect(wrapper.find(".usage-history__payment").text()).toContain("Partly paid");
   });
 });

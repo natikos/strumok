@@ -21,6 +21,8 @@ declare module 'vue' {
     AuthForm: typeof import('./src/features/auth/AuthForm.vue')['default']
     AuthLayout: typeof import('./src/pages/auth/AuthLayout.vue')['default']
     AuthPage: typeof import('./src/pages/auth/AuthPage.vue')['default']
+    BalancesPanel: typeof import('./src/features/admin/BalancesPanel.vue')['default']
+    BalanceStrip: typeof import('./src/features/dashboard/components/BalanceStrip.vue')['default']
     Button: typeof import('primevue/button')['default']
     Card: typeof import('primevue/card')['default']
     Chart: typeof import('primevue/chart')['default']
