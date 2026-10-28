@@ -717,6 +717,24 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/households/{household_id}/opening-balance": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Read Household Opening Balance */
+        get: operations["read_household_opening_balance_admin_households__household_id__opening_balance_get"];
+        put?: never;
+        /** Create Household Opening Balance */
+        post: operations["create_household_opening_balance_admin_households__household_id__opening_balance_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/admin/balances": {
         parameters: {
             query?: never;
@@ -1486,6 +1504,34 @@ export interface components {
              * @default false
              */
             meter_replaced: boolean;
+        };
+        /** OpeningBalanceIn */
+        OpeningBalanceIn: {
+            /** Amount Uah */
+            amount_uah: number | string;
+            /**
+             * As Of
+             * Format: date
+             */
+            as_of: string;
+            /** Note */
+            note?: string | null;
+        };
+        /** OpeningBalanceOut */
+        OpeningBalanceOut: {
+            /** Household Id */
+            household_id: number;
+            /** Amount Uah */
+            amount_uah: string;
+            /**
+             * As Of
+             * Format: date
+             */
+            as_of: string;
+            /** Note */
+            note: string | null;
+            /** Created At */
+            created_at: string;
         };
         /** PasswordResetConfirmIn */
         PasswordResetConfirmIn: {
@@ -3975,6 +4021,100 @@ export interface operations {
                     /**
                      * @example {
                      *       "detail": "paymentAlreadyVoided"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    read_household_opening_balance_admin_households__household_id__opening_balance_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                household_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpeningBalanceOut"] | null;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_household_opening_balance_admin_households__household_id__opening_balance_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                household_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["OpeningBalanceIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpeningBalanceOut"];
+                };
+            };
+            /** @description Household does not exist */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "detail": "householdNotFound"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description The household already has an opening balance */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "detail": "openingBalanceAlreadySet"
                      *     }
                      */
                     "application/json": components["schemas"]["ErrorOut"];
