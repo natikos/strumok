@@ -1,3 +1,4 @@
+import logging
 from decimal import Decimal
 from typing import Any
 
@@ -114,6 +115,17 @@ def _owner_deltas(session: Session, result) -> dict[int, Decimal]:
             deltas[owner] = deltas.get(owner, Decimal("0.00")) + line.delta_uah
     return deltas
 
+
+def _notify_safely(notify, **kwargs) -> None:
+    """The ledger change has already committed; a notification failure must
+    not turn that success into a 500."""
+    try:
+        notify(**kwargs)
+    except Exception:
+        logger.exception("Billing notification failed")
+
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(
     prefix="/admin",
@@ -529,7 +541,6 @@ def close_admin_period(
             actor_id=admin.id,
             acknowledge_flags=payload.acknowledge_flags,
         )
-        notify_bill_ready(session=session, period=period)
     except PeriodAlreadyClosedError as exc:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT, detail="periodAlreadyClosed"
@@ -555,6 +566,8 @@ def close_admin_period(
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT, detail="periodHasNoReadings"
         ) from exc
+
+    _notify_safely(notify_bill_ready, session=session, period=period)
 
     return next(
         PeriodOverviewOut.model_validate(overview, from_attributes=True)
@@ -696,13 +709,6 @@ def restate_admin_period(
             actor_id=admin.id,
             dry_run=payload.dry_run,
         )
-        if result.restatement_id is not None:
-            notify_corrections(
-                session=session,
-                restatement_id=result.restatement_id,
-                period=period,
-                deltas=_owner_deltas(session, result),
-            )
     except PeriodNotClosedError as exc:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT, detail="periodNotClosed"
@@ -711,6 +717,14 @@ def restate_admin_period(
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT, detail="nothingToCorrect"
         ) from exc
+    if result.restatement_id is not None:
+        _notify_safely(
+            notify_corrections,
+            session=session,
+            restatement_id=result.restatement_id,
+            period=period,
+            deltas=_owner_deltas(session, result),
+        )
     return RestatementOut.from_result(result)
 
 
