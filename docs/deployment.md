@@ -25,7 +25,10 @@ git push origin v1.2.3
 The workflow (`.github/workflows/deployment.yml`) will:
 
 0. Run a `preflight` job that fails the workflow unless `ci.yml` succeeded on
-   the tagged SHA. `deploy` `needs:` it, so nothing deploys on red or missing CI.
+   the tagged SHA, and (via `backend/scripts/check_migrations.py`, read-only)
+   that production has every migration bundled in the tag; unapplied versions
+   are listed in the failure. `deploy` `needs:` it, so nothing deploys on red
+   CI or ahead of its migrations.
 1. Build the frontend (`bun run build` inside `frontend/`)
 2. Deploy the backend to FastAPI Cloud (`uv run fastapi deploy` inside `backend/`)
 
@@ -39,9 +42,8 @@ pg_dump "$DATABASE_URL" -Fc -f pre-migration.dump   # always, first
 cd backend && DATABASE_URL=... uv run alembic upgrade head
 ```
 
-Migrations must be backward-compatible with the previously deployed code
-(add first, remove in a later release). Automating this step in the release
-workflow is a follow-up; it should run before the `deploy` job.
+Order is always: **migrate, then tag.** Migrations must be backward-compatible
+with the previously deployed code (add first, remove in a later release).
 
 **One-time prod baseline:** `0000` was generated from the models, not from prod.
 Diff a `pg_dump --schema-only` of prod against a fresh `alembic upgrade 0000`
@@ -57,6 +59,7 @@ You can also trigger a deployment manually from the GitHub Actions UI using the 
 | ---------------------- | ---------------------------- |
 | `FASTAPI_CLOUD_TOKEN`  | FastAPI Cloud deploy token   |
 | `FASTAPI_CLOUD_APP_ID` | FastAPI Cloud app identifier |
+| `PROD_DATABASE_URL_READONLY` | Read-only production connection string for the migrations preflight |
 
 ## Backups
 
