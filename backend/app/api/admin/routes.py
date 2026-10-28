@@ -1,6 +1,6 @@
 from typing import Any
 
-from fastapi import APIRouter, Depends, HTTPException, Path, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Path, Query, Response, status
 from sqlmodel import Session
 
 from app.api.admin.schemas import (
@@ -19,9 +19,12 @@ from app.api.admin.schemas import (
     HouseholdOwnerAssignIn,
     ReconciliationOut,
     PeriodCloseIn,
+    ReadingReviewIn,
     PeriodOverviewOut,
 )
 from app.api.admin.service import (
+    ReadingNotFoundError,
+    review_reading,
     EmailTakenError,
     InviteAlreadyAcceptedError,
     invite_user,
@@ -45,6 +48,7 @@ from app.api.admin.service import (
 from app.api.auth.schemas import ErrorOut
 from app.api.billing.service import (
     BillNotEnteredError,
+    PeriodHasUnreviewedReadingsError,
     PeriodHasNoReadingsError,
     enter_bill,
     get_reconciliation,
@@ -435,6 +439,9 @@ CLOSE_PERIOD_RESPONSES: dict[int | str, dict[str, Any]] = {
                     "noRateConfigured": {"value": {"detail": "noRateConfigured"}},
                     "billNotEntered": {"value": {"detail": "billNotEntered"}},
                     "periodHasNoReadings": {"value": {"detail": "periodHasNoReadings"}},
+                    "periodHasUnreviewedReadings": {
+                        "value": {"detail": "periodHasUnreviewedReadings"}
+                    },
                 }
             }
         },
@@ -464,7 +471,12 @@ def close_admin_period(
     admin: User = CurrentAdmin,
 ) -> PeriodOverviewOut:
     try:
-        close_period(session=session, period=period, actor_id=admin.id)
+        close_period(
+            session=session,
+            period=period,
+            actor_id=admin.id,
+            acknowledge_flags=payload.acknowledge_flags,
+        )
     except PeriodAlreadyClosedError as exc:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT, detail="periodAlreadyClosed"
@@ -480,6 +492,11 @@ def close_admin_period(
     except BillNotEnteredError as exc:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT, detail="billNotEntered"
+        ) from exc
+    except PeriodHasUnreviewedReadingsError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="periodHasUnreviewedReadings",
         ) from exc
     except PeriodHasNoReadingsError as exc:
         raise HTTPException(
@@ -547,3 +564,29 @@ def _reconciliation(*, session: Session, period: str) -> ReconciliationOut:
             status_code=status.HTTP_409_CONFLICT, detail="noRateConfigured"
         ) from exc
     return ReconciliationOut.model_validate(result, from_attributes=True)
+
+
+@router.post(
+    "/readings/{reading_id}/review",
+    status_code=status.HTTP_204_NO_CONTENT,
+    responses={
+        status.HTTP_404_NOT_FOUND: {
+            "description": "Reading does not exist",
+            "model": ErrorOut,
+            "content": {"application/json": {"example": {"detail": "readingNotFound"}}},
+        }
+    },
+)
+def review_admin_reading(
+    reading_id: int,
+    payload: ReadingReviewIn,
+    session: Session = Depends(get_session),
+    admin: User = CurrentAdmin,
+) -> Response:
+    try:
+        review_reading(session=session, reading_id=reading_id, actor_id=admin.id)
+    except ReadingNotFoundError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="readingNotFound"
+        ) from exc
+    return Response(status_code=status.HTTP_204_NO_CONTENT)

@@ -91,12 +91,29 @@ class AdminHouseholdOut(BaseModel):
         )
 
 
+class AdminReadingOut(BaseModel):
+    id: int
+    day_meter_value: Decimal
+    night_meter_value: Decimal
+    previous_day_meter_value: Decimal | None
+    previous_night_meter_value: Decimal | None
+    needs_review: bool
+    review_reason: Literal["decrease", "spike"] | None
+
+
+class ReadingReviewIn(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    confirm: Literal[True]
+
+
 class AdminDashboardHouseholdOut(BaseModel):
     id: int
     name: str
     owner: AdminUserSummaryOut | None = None
     submission_status: Literal["submitted", "missing"]
     submitted_at: UtcDatetime | None = None
+    reading: AdminReadingOut | None = None
     latest_period: str | None = None
     latest_usage_kwh: Decimal | None = Field(default=None, decimal_places=2)
     latest_amount_charged_uah: Decimal | None = Field(default=None, decimal_places=2)
@@ -133,6 +150,7 @@ class PeriodOverviewOut(BaseModel):
     closed_by_name: str | None
     readings_count: int
     missing_count: int
+    unreviewed_count: int = 0
     blockers: list[str]
 
 

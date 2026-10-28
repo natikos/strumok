@@ -7,7 +7,7 @@ from app.api.billing.service import lock_period_for_submission
 from app.api.electricity_rates.service import get_effective_rate
 from app.api.meter_readings.schemas import MeterReadingOut
 from app.core.domain import current_billing_period
-from app.core.domain.billing import previous_period
+from app.core.domain.billing import derive_usage, detect_review_reason, previous_period
 from app.db.models import Household, MeterReading, User
 
 
@@ -107,6 +107,43 @@ def list_meter_readings(
     return result
 
 
+def _review_reason(
+    *,
+    session: Session,
+    household_id: int,
+    period: str,
+    day_meter_value: Decimal,
+    night_meter_value: Decimal,
+) -> str | None:
+    """Looks at the last four real readings: the newest is the comparison
+    point, the rest give up to three past usages."""
+    history = list(
+        session.exec(
+            select(MeterReading)
+            .where(MeterReading.household_id == household_id)
+            .where(MeterReading.period < period)
+            .where(MeterReading.source != "estimate")
+            .order_by(desc(MeterReading.period))
+            .limit(4)
+        )
+    )
+    if not history:
+        return None
+
+    usages = []
+    for newer, older in zip(history, history[1:]):
+        usages.append(
+            derive_usage(older.day_meter_value, newer.day_meter_value)
+            + derive_usage(older.night_meter_value, newer.night_meter_value)
+        )
+    return detect_review_reason(
+        previous=(history[0].day_meter_value, history[0].night_meter_value),
+        recent_usages_kwh=usages,
+        day_meter_value=day_meter_value,
+        night_meter_value=night_meter_value,
+    )
+
+
 def submit_meter_reading(
     *,
     session: Session,
@@ -137,6 +174,14 @@ def submit_meter_reading(
         day_usage_kwh = Decimal("0")
         night_usage_kwh = Decimal("0")
 
+    review_reason = _review_reason(
+        session=session,
+        household_id=household_id,
+        period=period,
+        day_meter_value=day_meter_value,
+        night_meter_value=night_meter_value,
+    )
+
     rate = get_effective_rate(session=session, period=period)
     amount_charged_uah = (
         day_usage_kwh * rate.day_rate_uah + night_usage_kwh * rate.night_rate_uah
@@ -151,6 +196,8 @@ def submit_meter_reading(
         day_usage_kwh=day_usage_kwh,
         night_usage_kwh=night_usage_kwh,
         amount_charged_uah=amount_charged_uah,
+        needs_review=review_reason is not None,
+        review_reason=review_reason,
     )
     session.add(reading)
 

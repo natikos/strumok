@@ -7,6 +7,7 @@ from sqlmodel import Session, col, func, select
 from app.api.admin.schemas import (
     AdminDashboardHouseholdOut,
     AdminDashboardOut,
+    AdminReadingOut,
     AdminUserOut,
     AdminUserSummaryOut,
 )
@@ -18,6 +19,7 @@ from app.api.auth.throttle import (
 )
 from app.core import audit
 from app.core.domain import current_billing_period
+from app.core.time import utc_now
 from app.db.models import AuditLog, Household, LanguageCode, MeterReading, User
 
 
@@ -205,6 +207,15 @@ def get_admin_dashboard(*, session: Session) -> AdminDashboardOut:
         if reading.period == current_period:
             current_by_household[reading.household_id] = reading
 
+    previous_by_reading: dict[int, MeterReading] = {}
+    by_household: dict[int, list[MeterReading]] = {}
+    for reading in readings:
+        by_household.setdefault(reading.household_id, []).append(reading)
+    for household_readings in by_household.values():
+        # `readings` is newest first per household, so the next one is the prior.
+        for newer, older in zip(household_readings, household_readings[1:]):
+            previous_by_reading[newer.id] = older
+
     households = []
     for household, owner in list_households_with_owners(session=session):
         current = current_by_household.get(household.id)
@@ -216,6 +227,27 @@ def get_admin_dashboard(*, session: Session) -> AdminDashboardOut:
                 owner=AdminUserSummaryOut.model_validate(owner) if owner else None,
                 submission_status="submitted" if current else "missing",
                 submitted_at=current.submitted_at if current else None,
+                reading=(
+                    AdminReadingOut(
+                        id=current.id,
+                        day_meter_value=current.day_meter_value,
+                        night_meter_value=current.night_meter_value,
+                        previous_day_meter_value=(
+                            previous_by_reading[current.id].day_meter_value
+                            if current.id in previous_by_reading
+                            else None
+                        ),
+                        previous_night_meter_value=(
+                            previous_by_reading[current.id].night_meter_value
+                            if current.id in previous_by_reading
+                            else None
+                        ),
+                        needs_review=current.needs_review,
+                        review_reason=current.review_reason,  # type: ignore[arg-type]
+                    )
+                    if current
+                    else None
+                ),
                 latest_period=latest.period if latest else None,
                 latest_usage_kwh=(
                     _summed_usage_kwh(
@@ -484,3 +516,32 @@ def resend_invite(
 
 def _user_out(*, session: Session, user: User) -> AdminUserOut:
     return next(u for u in list_users(session=session) if u.id == user.id)
+
+
+class ReadingNotFoundError(Exception):
+    pass
+
+
+def review_reading(*, session: Session, reading_id: int, actor_id: int) -> MeterReading:
+    reading = session.get(MeterReading, reading_id)
+    if reading is None:
+        raise ReadingNotFoundError
+    if reading.needs_review:
+        audit.record(
+            session,
+            actor_user_id=actor_id,
+            action="readingReviewed",
+            entity_type="meter_reading",
+            entity_id=reading.id,
+            household_id=reading.household_id,
+            period=reading.period,
+            before={"needs_review": True, "review_reason": reading.review_reason},
+            after={"needs_review": False},
+        )
+        reading.needs_review = False
+        reading.reviewed_by_user_id = actor_id
+        reading.reviewed_at = utc_now()
+        session.add(reading)
+        session.commit()
+        session.refresh(reading)
+    return reading

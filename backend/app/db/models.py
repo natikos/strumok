@@ -76,6 +76,10 @@ class MeterReading(SQLModel, table=True):
     __tablename__ = "meter_readings"  # type: ignore
     __table_args__ = (
         UniqueConstraint("household_id", "period", name="uq_household_period"),
+        CheckConstraint(
+            "review_reason IN ('decrease', 'spike')",
+            name="ck_meter_readings_review_reason",
+        ),
     )
 
     id: int = Field(default=None, primary_key=True)
@@ -105,6 +109,14 @@ class MeterReading(SQLModel, table=True):
     source: str = Field(
         default="resident", sa_column_kwargs={"server_default": "resident"}
     )
+    # Set when the reading looks off (a decrease or a spike). It is accepted
+    # either way; the head clears the flag after looking.
+    needs_review: bool = Field(
+        default=False, sa_column_kwargs={"server_default": "false"}
+    )
+    review_reason: Optional[str] = Field(default=None)  # 'decrease' | 'spike'
+    reviewed_by_user_id: Optional[int] = Field(default=None, foreign_key="users.id")
+    reviewed_at: Optional[datetime] = Field(default=None)
 
 
 class PushSubscription(SQLModel, table=True):

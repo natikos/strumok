@@ -207,3 +207,44 @@ def compute_period_statement(
         night_rate_uah=night_rate_uah,
         bill_total_uah=bill_total_uah,
     ).lines
+
+
+SPIKE_FACTOR = Decimal("3")
+SPIKE_FLOOR_KWH = Decimal("50")
+
+
+def median(values: Sequence[Decimal]) -> Decimal:
+    ordered = sorted(values)
+    middle = len(ordered) // 2
+    if len(ordered) % 2:
+        return ordered[middle]
+    return (ordered[middle - 1] + ordered[middle]) / 2
+
+
+def detect_review_reason(
+    *,
+    previous: tuple[Decimal, Decimal] | None,
+    recent_usages_kwh: Sequence[Decimal],
+    day_meter_value: Decimal,
+    night_meter_value: Decimal,
+) -> str | None:
+    """Why a freshly submitted reading deserves the head's eye, or None.
+
+    `previous` is the household's last real (non-estimate) reading; the recent
+    usages are its last up-to-3 real usages. A decrease might be a typo or a
+    replaced meter; a spike is usage over 3x the recent median and over 50 kWh
+    (the floor keeps tiny baselines from tripping it). The reading is always
+    accepted; this only flags it."""
+    if previous is None:
+        return None
+    previous_day, previous_night = previous
+    if day_meter_value < previous_day or night_meter_value < previous_night:
+        return "decrease"
+    usage = (day_meter_value - previous_day) + (night_meter_value - previous_night)
+    if (
+        recent_usages_kwh
+        and usage > SPIKE_FLOOR_KWH
+        and usage > SPIKE_FACTOR * median(recent_usages_kwh)
+    ):
+        return "spike"
+    return None
