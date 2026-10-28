@@ -1,7 +1,7 @@
 <template>
   <NoHouseholdScreen v-if="hasNoHousehold" @unblocked="handleUnblocked" />
 
-  <div v-else class="app-layout">
+  <div v-else-if="me" class="app-layout">
     <aside class="app-sidebar">
       <img
         class="app-sidebar__logo app-sidebar__logo--icon"
@@ -189,6 +189,7 @@
     setTheme(me.value.theme);
 
     if (me.value.households.length === 0) {
+      setHouseholds([]);
       hasNoHousehold.value = true;
       return;
     }
