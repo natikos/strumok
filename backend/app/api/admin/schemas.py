@@ -1,5 +1,5 @@
 from decimal import Decimal
-from typing import Literal
+from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -66,3 +66,22 @@ class AdminDashboardHouseholdOut(BaseModel):
 class AdminDashboardOut(BaseModel):
     current_period: str
     households: list[AdminDashboardHouseholdOut]
+
+
+class AuditLogEntryOut(BaseModel):
+    id: int
+    action: str
+    entity_type: str
+    entity_id: int | None
+    household_id: int | None
+    period: str | None
+    before: dict[str, Any] | None
+    after: dict[str, Any] | None
+    reason: str | None
+    created_at: UtcDatetime
+    actor: AdminUserSummaryOut | None
+
+
+class AuditLogPageOut(BaseModel):
+    items: list[AuditLogEntryOut]
+    next_cursor: int | None

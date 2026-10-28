@@ -45,7 +45,26 @@
     "missing": "Missing",
     "tabSubmissions": "Submissions",
     "tabHouseholds": "Households",
-    "tabRates": "Rates"
+    "tabRates": "Rates",
+    "tabLog": "Log",
+    "audit": {
+      "title": "Log",
+      "empty": "No entries match these filters",
+      "household": "Household",
+      "allHouseholds": "All households",
+      "period": "Period (YYYY-MM)",
+      "action": "Action",
+      "allActions": "All actions",
+      "loadMore": "Load more",
+      "by": "by {name}",
+      "system": "system",
+      "reason": "Reason: {reason}",
+      "actions": {
+        "householdCreated": "Household created",
+        "householdOwnerAssigned": "Owner assigned",
+        "rateCreated": "Rate added"
+      }
+    }
   },
   "auth": {
     "login": "Login",
