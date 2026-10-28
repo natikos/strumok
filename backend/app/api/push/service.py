@@ -1,7 +1,7 @@
+import html
 import json
 import logging
 from datetime import datetime
-from collections.abc import Sequence
 from concurrent.futures import ThreadPoolExecutor
 from enum import StrEnum
 from http import HTTPStatus
@@ -12,6 +12,7 @@ from sqlalchemy import and_
 from sqlalchemy.dialects.postgresql import insert
 from sqlmodel import Session, col, delete, select
 
+from app.api.auth.service import build_action_email_html
 from app.core.config import settings
 from app.core.domain import (
     SUBMISSION_DEADLINE_DAY,
@@ -19,6 +20,7 @@ from app.core.domain import (
     current_billing_period,
 )
 from app.core.domain.billing import kyiv_now
+from app.core.email import EmailSendError, send_email
 from app.core.time import utc_now
 from app.db.models import (
     Household,
@@ -64,6 +66,64 @@ def _content_for(user: User, variant: ReminderVariant) -> dict[str, str]:
         user.language, _NOTIFICATION_CONTENT[LanguageCode.UA]
     )
     return catalog[variant]
+
+
+_EMAIL_CONTENT: dict[LanguageCode, dict[str, str]] = {
+    LanguageCode.EN: {
+        "opening_subject": "[Strumok] Submit your meter reading by {date}",
+        "final_subject": "[Strumok] Last day to submit your meter reading",
+        "greeting": "Hi {name},",
+        "message": "It's day {day} of the submission window for {households}.",
+        "button": "Submit your reading",
+        "link_hint": "If the button doesn't work, copy and paste this link into your browser:",
+        "footer": "Manage reminders in",
+        "settings": "Settings → Notifications",
+    },
+    LanguageCode.UA: {
+        "opening_subject": "[Strumok] Подайте показники лічильника до {date}",
+        "final_subject": "[Strumok] Останній день подання показників лічильника",
+        "greeting": "Вітаємо, {name}!",
+        "message": "Сьогодні {day}-й день періоду подання показників для: {households}.",
+        "button": "Подати показники",
+        "link_hint": "Якщо кнопка не працює, скопіюйте це посилання у браузер:",
+        "footer": "Керуйте нагадуваннями в",
+        "settings": "Налаштування → Сповіщення",
+    },
+}
+
+
+def _send_reminder_email(
+    user: User, variant: ReminderVariant, households: list[str], now: datetime
+) -> bool:
+    text = _EMAIL_CONTENT.get(user.language, _EMAIL_CONTENT[LanguageCode.UA])
+    base_url = settings.brevo.app_base_url
+    deadline = f"{SUBMISSION_DEADLINE_DAY:02}.{now.month:02}.{now.year}"
+    day = SUBMISSION_OPEN_DAY if variant == "opening" else SUBMISSION_DEADLINE_DAY
+    names = html.escape(", ".join(households))
+    settings_link = f"{base_url}/settings"
+    try:
+        send_email(
+            to_email=user.email,
+            to_name=f"{user.first_name} {user.last_name}",
+            subject=text[f"{variant}_subject"].format(date=deadline),
+            html_content=build_action_email_html(
+                first_name=html.escape(user.first_name),
+                greeting=text["greeting"].format(name=html.escape(user.first_name)),
+                message=text["message"].format(day=day, households=names),
+                link=f"{base_url}/",
+                button_label=text["button"],
+                link_hint=text["link_hint"],
+                footer_html=(
+                    '<p class="email-footnote" style="margin: 16px 0 0; font-size: 13px; '
+                    f'color: #64748b;">{text["footer"]} '
+                    f'<a href="{settings_link}" class="email-link" '
+                    f'style="color: #2c8ad7;">{text["settings"]}</a></p>'
+                ),
+            ),
+        )
+    except EmailSendError:
+        return False
+    return True
 
 
 def upsert_subscription(
@@ -151,15 +211,14 @@ def reminder_variant_for(now: datetime) -> ReminderVariant | None:
     return None
 
 
-def _due_subscriptions(
+def _due_households(
     *, session: Session, period: str, variant: ReminderVariant, hour: int
-) -> Sequence[PushSubscription]:
-    """Subscriptions of active users who still owe a reading this period,
-    whose chosen hour has arrived, and who haven't been sent this variant.
-    `<=` rather than `==` so a missed tick is caught up on the next one."""
+) -> dict[int, list[str]]:
+    """Names of the unsubmitted households of each active user whose chosen
+    hour has arrived and who haven't been sent this variant. `<=` rather
+    than `==` so a missed tick is caught up on the next one."""
     query = (
-        select(PushSubscription)
-        .join(User, col(User.id) == PushSubscription.user_id)
+        select(User.id, Household.name)
         .join(Household, col(Household.user_id) == User.id)
         .outerjoin(
             MeterReading,
@@ -183,9 +242,12 @@ def _due_subscriptions(
             col(MeterReading.household_id).is_(None),
             col(NotificationLog.user_id).is_(None),
         )
-        .distinct()
+        .order_by(col(Household.name))
     )
-    return session.exec(query).all()
+    due: dict[int, list[str]] = {}
+    for user_id, name in session.exec(query).all():
+        due.setdefault(user_id, []).append(name)
+    return due
 
 
 def _claim_users(
@@ -218,7 +280,8 @@ def _claim_users(
 
 def send_reminders(*, session: Session, now: datetime) -> tuple[int, int]:
     """Push a reminder to each subscribed, active user with an unsubmitted
-    household reading whose chosen Kyiv hour has arrived. `now` is Kyiv time.
+    household reading whose chosen Kyiv hour has arrived; users with no
+    subscription get an email instead. `now` is Kyiv time.
     At most one push per (user, period, variant): users are claimed in
     NotificationLog before sending, and the claim is released only if every
     send to that user failed, so the next hourly run retries. Returns
@@ -227,16 +290,17 @@ def send_reminders(*, session: Session, now: datetime) -> tuple[int, int]:
     if variant is None:
         return 0, 0
     period = current_billing_period(now)
-    due = _due_subscriptions(
+    due = _due_households(
         session=session, period=period, variant=variant, hour=now.hour
     )
     claimed = _claim_users(
-        session=session,
-        user_ids={sub.user_id for sub in due},
-        period=period,
-        variant=variant,
+        session=session, user_ids=set(due), period=period, variant=variant
     )
-    subscriptions = [sub for sub in due if sub.user_id in claimed]
+    subscriptions = list(
+        session.exec(
+            select(PushSubscription).where(col(PushSubscription.user_id).in_(claimed))
+        ).all()
+    )
     users_by_id = {
         user.id: user
         for user in session.exec(select(User).where(col(User.id).in_(claimed))).all()
@@ -259,7 +323,13 @@ def send_reminders(*, session: Session, now: datetime) -> tuple[int, int]:
     delivered_users = {
         sub.user_id for sub, outcome in results if outcome != SendOutcome.FAILED
     }
-    unreached = claimed - delivered_users
+    # Users with no push subscription get the email instead.
+    emailed = {
+        user_id
+        for user_id in claimed - {sub.user_id for sub in subscriptions}
+        if _send_reminder_email(users_by_id[user_id], variant, due[user_id], now)
+    }
+    unreached = claimed - delivered_users - emailed
 
     for subscription in gone:
         session.delete(subscription)
