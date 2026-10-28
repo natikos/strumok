@@ -40,7 +40,8 @@
           :previous-day-value="normalizedForm.previousDayValue"
           :previous-night-value="normalizedForm.previousNightValue"
           :is-submitting="isSubmitting"
-          :submit-label="submitLabel"
+          :submit-label="warning && warningAcknowledged ? t('meterReadings.submitAnyway') : submitLabel"
+          :warning="warning"
           @update:day-value="$emit('update:dayMeterValue', $event)"
           @update:night-value="$emit('update:nightMeterValue', $event)"
           @submit="$emit('submit')"
@@ -60,6 +61,7 @@
   import type { FieldErrors } from "@/features/dashboard/types";
   import { useLocale } from "@/features/i18n/composables/useLocale";
   import { type DeadlineStatus, getDeadlineMonthIndex } from "@shared/utils/deadline";
+  import type { ReadingWarning } from "@shared/utils/reading-plausibility";
 
   import DeadlineBadge from "./DeadlineBadge.vue";
   import SubmissionForm from "./SubmissionForm.vue";
@@ -115,6 +117,9 @@
     nightMeterValue?: number | null | undefined;
     previousDayMeterValue?: number | string | null | undefined;
     previousNightMeterValue?: number | string | null | undefined;
+    /** Set when the entered values look off; the first tap shows it, the next sends. */
+    warning?: ReadingWarning | null | undefined;
+    warningAcknowledged?: boolean | undefined;
   }
 
   const props = withDefaults(defineProps<Props>(), {
@@ -139,6 +144,8 @@
     nightMeterValue: null,
     previousDayMeterValue: null,
     previousNightMeterValue: null,
+    warning: null,
+    warningAcknowledged: false,
   });
 
   defineEmits<{

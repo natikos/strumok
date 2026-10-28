@@ -25,6 +25,8 @@ import {
   NO_RATE_CONFIGURED_ERROR_CODE,
   submitMyMeterReading,
 } from "@shared/api/meter-readings";
+import { toDecimal } from "@shared/utils/format";
+import { detectReadingWarning } from "@shared/utils/reading-plausibility";
 
 export interface MeterPeriod {
   period: string;
@@ -142,6 +144,32 @@ export function useMeterReadings() {
 
   const insights = useUsageInsights(slots);
 
+  // The warning is shown before sending; acknowledging it turns the button into
+  // "Submit anyway". Changing either value asks again.
+  const warningAcknowledged = ref(false);
+
+  const plausibilityWarning = computed(() => {
+    if (dayMeterValue.value === null || nightMeterValue.value === null) {
+      return null;
+    }
+
+    const history = (readings.value ?? [])
+      .filter((reading) => reading.id !== null)
+      .map((reading) => ({
+        day: toDecimal(reading.day_meter_value),
+        night: toDecimal(reading.night_meter_value),
+      }));
+
+    return detectReadingWarning(history, {
+      day: dayMeterValue.value,
+      night: nightMeterValue.value,
+    });
+  });
+
+  watch([dayMeterValue, nightMeterValue], () => {
+    warningAcknowledged.value = false;
+  });
+
   async function handleSubmit(): Promise<void> {
     errors.value = {};
 
@@ -160,6 +188,11 @@ export function useMeterReadings() {
         next.nightMeterValue = flat.nightMeterValue[0];
       }
       errors.value = next;
+      return;
+    }
+
+    if (plausibilityWarning.value && !warningAcknowledged.value) {
+      warningAcknowledged.value = true;
       return;
     }
 
@@ -184,6 +217,7 @@ export function useMeterReadings() {
 
       dayMeterValue.value = null;
       nightMeterValue.value = null;
+      warningAcknowledged.value = false;
     } catch (error) {
       // noRateConfigured isn't the resident's fault, so it's a neutral `info` notice, not a `form` error.
       if (error instanceof ApiError) {
@@ -209,6 +243,8 @@ export function useMeterReadings() {
     errors,
     dayMeterValue,
     nightMeterValue,
+    plausibilityWarning,
+    warningAcknowledged,
     currentSlot: currentMeterPeriod,
     slots,
     billingMonthIndex,

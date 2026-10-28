@@ -18,6 +18,8 @@
         :last-period="lastSubmittedPeriod"
         :previous-day-meter-value="previousMeterValues.day"
         :previous-night-meter-value="previousMeterValues.night"
+        :warning="plausibilityWarning"
+        :warning-acknowledged="warningAcknowledged"
         @update:day-meter-value="dayMeterValue = $event"
         @update:night-meter-value="nightMeterValue = $event"
         @submit="submitReading"
@@ -93,6 +95,8 @@
     errors,
     dayMeterValue,
     nightMeterValue,
+    plausibilityWarning,
+    warningAcknowledged,
     currentSlot,
     slots,
     billingMonthIndex,

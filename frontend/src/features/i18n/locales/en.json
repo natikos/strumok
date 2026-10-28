@@ -134,7 +134,8 @@
       "confirmTitle": "Close {period} billing?",
       "confirmBody": "{charged} household(s) will be charged and {missing} have no reading. Residents can't submit for {period} afterwards, and corrections become adjustments. Take a database backup first.",
       "confirmAccept": "Close period",
-      "confirmReject": "Cancel"
+      "confirmReject": "Cancel",
+      "acknowledge": "Close anyway ({count} reading(s) not reviewed)"
     },
     "tabReconciliation": "Reconciliation",
     "reconciliation": {
@@ -189,6 +190,17 @@
       "actionRateUpdated": "Changed",
       "actionRateDeleted": "Deleted",
       "actionRateCreated": "Added"
+    },
+    "review": {
+      "pill": "Needs review",
+      "count": "Needs review ({count})",
+      "looksRight": "Looks right",
+      "day": "Day",
+      "night": "Night",
+      "reason": {
+        "decrease": "Lower than last reading",
+        "spike": "Big jump"
+      }
     }
   },
   "auth": {
@@ -325,7 +337,9 @@
     "billNotEntered": "Enter the utility bill before closing the period",
     "periodHasNoReadings": "No household has a reading for this period",
     "rateUsedByClosedPeriod": "A closed period was billed with this rate, so it can't be changed directly",
-    "rateNotFound": "This rate no longer exists"
+    "rateNotFound": "This rate no longer exists",
+    "periodHasUnreviewedReadings": "Some readings still need review",
+    "readingNotFound": "This reading no longer exists"
   },
   "household": {
     "switchAria": "Switch household",
@@ -352,7 +366,10 @@
     "editSubmitted": "Edit reading",
     "lockNote": "You can edit your reading until day 5 of the month",
     "lateApprovalNote": "Late submissions are recorded for information only and won't change this period's charge",
-    "hintText": "Enter the numbers shown on your electricity meter, then press Submit"
+    "hintText": "Enter the numbers shown on your electricity meter, then press Submit",
+    "submitAnyway": "Submit anyway",
+    "warnDecrease": "This is lower than last month's reading. If your meter was replaced or you mistyped, check it; you can still submit.",
+    "warnSpike": "That's a big jump from last month ({usage} vs usual {typical}). Please double-check; you can still submit."
   },
   "months": {
     "long": [

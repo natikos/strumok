@@ -41,6 +41,9 @@
               <div class="admin-section__heading">
                 <div>
                   <h2 class="admin-section__title">{{ $t("admin.submissionOverview") }}</h2>
+                  <p v-if="needsReviewCount > 0" class="admin-section__period">
+                    {{ $t("admin.review.count", { count: needsReviewCount }) }}
+                  </p>
                   <p v-if="dashboard" class="admin-section__period">
                     {{ $t("admin.currentPeriod", { period: dashboard.current_period }) }}
                   </p>
@@ -87,6 +90,27 @@
                           >
                             {{ $t(`admin.${household.submission_status}`) }}
                           </span>
+                          <div v-if="household.reading?.needs_review" class="admin-review">
+                            <span class="admin-status admin-status--review">
+                              <ExclamationTriangle aria-hidden="true" />
+                              {{ $t("admin.review.pill") }}
+                            </span>
+                            <span class="admin-review__diff">
+                              {{ $t(`admin.review.reason.${household.reading.review_reason}`) }} ·
+                              {{ $t("admin.review.day") }}
+                              {{ household.reading.previous_day_meter_value ?? "—" }} →
+                              {{ household.reading.day_meter_value }} ·
+                              {{ $t("admin.review.night") }}
+                              {{ household.reading.previous_night_meter_value ?? "—" }} →
+                              {{ household.reading.night_meter_value }}
+                            </span>
+                            <Button
+                              size="small"
+                              severity="secondary"
+                              :label="$t('admin.review.looksRight')"
+                              @click="markReviewed(household.reading.id)"
+                            />
+                          </div>
                         </td>
                         <td>{{ formatUsage(household.latest_usage_kwh) }}</td>
                         <td>{{ formatCharge(household.latest_amount_charged_uah) }}</td>
@@ -128,7 +152,8 @@
 </template>
 
 <script setup lang="ts">
-  import { onMounted, ref } from "vue";
+  import { ExclamationTriangle } from "@primeicons/vue";
+  import { computed, onMounted, ref } from "vue";
 
   import AdminHouseholdAssignment from "@features/admin/AdminHouseholdAssignment.vue";
   import AuditLogPanel from "@features/admin/AuditLogPanel.vue";
@@ -136,7 +161,7 @@
   import PeriodCloseCard from "@features/admin/PeriodCloseCard.vue";
   import ReconciliationPanel from "@features/admin/ReconciliationPanel.vue";
   import ResidentsPanel from "@features/admin/ResidentsPanel.vue";
-  import { type AdminDashboardOut, getAdminDashboard } from "@shared/api/admin";
+  import { type AdminDashboardOut, getAdminDashboard, reviewAdminReading } from "@shared/api/admin";
   import { formatKwh, formatUah } from "@shared/utils/format";
 
   const dashboard = ref<AdminDashboardOut | null>(null);
@@ -162,6 +187,15 @@
   onMounted(() => {
     void loadDashboard();
   });
+
+  const needsReviewCount = computed(
+    () => dashboard.value?.households.filter((h) => h.reading?.needs_review).length ?? 0
+  );
+
+  async function markReviewed(readingId: number): Promise<void> {
+    await reviewAdminReading(readingId);
+    await loadDashboard();
+  }
 
   function ownerLabel(household: AdminDashboardOut["households"][number]): string {
     return household.owner ? `${household.owner.first_name} ${household.owner.last_name}` : "—";
@@ -337,6 +371,20 @@
     tr:last-child td {
       border-bottom: 0;
     }
+  }
+
+  .admin-review {
+    @include layout.stack(var(--s-app-space-2));
+    margin-top: var(--s-app-space-2);
+    white-space: normal;
+
+    &__diff {
+      font-size: 0.8rem;
+    }
+  }
+
+  .admin-status--review {
+    color: var(--s-amber-500);
   }
 
   .admin-status {

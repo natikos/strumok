@@ -16,13 +16,17 @@
         class="period-close__button"
         severity="danger"
         variant="outlined"
-        :disabled="overview.blockers.length > 0 || isClosing"
+        :disabled="hardBlockers.length > 0 || (needsAcknowledgement && !acknowledged) || isClosing"
         :loading="isClosing"
         :label="t('admin.period.close', { period })"
         @click="askToClose"
       />
+      <label v-if="needsAcknowledgement" class="period-close__ack">
+        <input v-model="acknowledged" type="checkbox" />
+        {{ t("admin.period.acknowledge", { count: overview.unreviewed_count }) }}
+      </label>
       <p
-        v-for="blocker in overview.blockers"
+        v-for="blocker in hardBlockers"
         :key="blocker"
         class="period-close__note period-close__note--blocked"
       >
@@ -49,6 +53,14 @@
 
   const overview = ref<PeriodOverviewOut | null>(null);
   const isClosing = ref(false);
+
+  const acknowledged = ref(false);
+
+  // Unreviewed readings are a soft blocker: the head may close anyway.
+  const hardBlockers = computed(
+    () => overview.value?.blockers.filter((b) => b !== "periodHasUnreviewedReadings") ?? []
+  );
+  const needsAcknowledgement = computed(() => (overview.value?.unreviewed_count ?? 0) > 0);
 
   const closedLine = computed(() => {
     const current = overview.value;
@@ -93,7 +105,7 @@
     isClosing.value = true;
 
     try {
-      overview.value = await closeAdminPeriod(props.period);
+      overview.value = await closeAdminPeriod(props.period, acknowledged.value);
       emit("closed");
     } catch (error: unknown) {
       if (!(error instanceof ApiError)) {
@@ -137,6 +149,11 @@
         align-self: flex-end;
         width: auto;
       }
+    }
+
+    &__ack {
+      @include layout.row(var(--s-app-space-2), center);
+      font-size: 0.85rem;
     }
 
     &__note {

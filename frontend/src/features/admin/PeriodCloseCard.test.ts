@@ -65,7 +65,7 @@ describe("PeriodCloseCard", () => {
     options.accept();
     await flushPromises();
 
-    expect(closeAdminPeriod).toHaveBeenCalledWith("2026-09");
+    expect(closeAdminPeriod).toHaveBeenCalledWith("2026-09", false);
     expect(wrapper.text()).toContain("Closed");
     expect(wrapper.emitted("closed")).toHaveLength(1);
   });
@@ -88,5 +88,24 @@ describe("PeriodCloseCard", () => {
 
     expect(wrapper.text()).toContain("by Head Admin");
     expect(wrapper.find("button").exists()).toBe(false);
+  });
+
+  it("lets the head close anyway after acknowledging unreviewed readings", async () => {
+    listAdminPeriods.mockResolvedValue([
+      { ...open, blockers: ["periodHasUnreviewedReadings"], unreviewed_count: 2 },
+    ]);
+    closeAdminPeriod.mockResolvedValue({ ...open, closed_at: "2026-10-08T10:00:00Z", status: "closed" });
+    const wrapper = mountCard();
+    await flushPromises();
+
+    expect(wrapper.find("button").attributes("disabled")).toBeDefined();
+    await wrapper.find("input[type=checkbox]").setValue(true);
+    expect(wrapper.find("button").attributes("disabled")).toBeUndefined();
+
+    await wrapper.find("button").trigger("click");
+    (confirmRequire.mock.calls[0]![0] as { accept: () => void }).accept();
+    await flushPromises();
+
+    expect(closeAdminPeriod).toHaveBeenCalledWith("2026-09", true);
   });
 });

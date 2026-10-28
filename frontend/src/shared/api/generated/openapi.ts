@@ -473,6 +473,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/readings/{reading_id}/review": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Review Admin Reading */
+        post: operations["review_admin_reading_admin_readings__reading_id__review_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/electricity-rates": {
         parameters: {
             query?: never;
@@ -562,6 +579,7 @@ export interface components {
             submission_status: "submitted" | "missing";
             /** Submitted At */
             submitted_at?: string | null;
+            reading?: components["schemas"]["AdminReadingOut"] | null;
             /** Latest Period */
             latest_period?: string | null;
             /** Latest Usage Kwh */
@@ -630,6 +648,23 @@ export interface components {
             invite_link: string;
             /** Email Sent */
             email_sent: boolean;
+        };
+        /** AdminReadingOut */
+        AdminReadingOut: {
+            /** Id */
+            id: number;
+            /** Day Meter Value */
+            day_meter_value: string;
+            /** Night Meter Value */
+            night_meter_value: string;
+            /** Previous Day Meter Value */
+            previous_day_meter_value: string | null;
+            /** Previous Night Meter Value */
+            previous_night_meter_value: string | null;
+            /** Needs Review */
+            needs_review: boolean;
+            /** Review Reason */
+            review_reason: ("decrease" | "spike") | null;
         };
         /** AdminUserOut */
         AdminUserOut: {
@@ -955,6 +990,11 @@ export interface components {
             readings_count: number;
             /** Missing Count */
             missing_count: number;
+            /**
+             * Unreviewed Count
+             * @default 0
+             */
+            unreviewed_count: number;
             /** Blockers */
             blockers: string[];
         };
@@ -994,6 +1034,14 @@ export interface components {
             } | null;
             /** Reason */
             reason: string | null;
+        };
+        /** ReadingReviewIn */
+        ReadingReviewIn: {
+            /**
+             * Confirm
+             * @constant
+             */
+            confirm: true;
         };
         /** ReconciliationLineOut */
         ReconciliationLineOut: {
@@ -2499,6 +2547,53 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    review_admin_reading_admin_readings__reading_id__review_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                reading_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReadingReviewIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Reading does not exist */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "detail": "readingNotFound"
+                     *     }
+                     */
                     "application/json": components["schemas"]["ErrorOut"];
                 };
             };

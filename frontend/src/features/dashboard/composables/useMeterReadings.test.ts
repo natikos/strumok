@@ -326,4 +326,61 @@ describe("useMeterReadings", () => {
       expect(result.isOverdue).toBe(false);
     });
   });
+
+  describe("implausible reading warning", () => {
+    async function withHistory() {
+      vi.useFakeTimers();
+      vi.setSystemTime(new Date(2026, 6, 15));
+      listMyMeterReadings.mockResolvedValue([
+        makeReading({ id: 2, period: "2026-05", day_meter_value: "120.00", night_meter_value: "0.00" }),
+        makeReading({ id: 1, period: "2026-04", day_meter_value: "100.00", night_meter_value: "0.00" }),
+      ]);
+      const harness = mountComposable();
+      await harness.result.loadHistory();
+      await flushPromises();
+      return harness.result;
+    }
+
+    it("asks for a second tap on a decrease, then submits", async () => {
+      const result = await withHistory();
+      submitMyMeterReading.mockResolvedValue(makeReading({ id: 3, period: "2026-06" }));
+      result.dayMeterValue.value = 110;
+      result.nightMeterValue.value = 0;
+      await nextTick();
+
+      expect(result.plausibilityWarning.value).toEqual({ kind: "decrease" });
+
+      await result.handleSubmit();
+      expect(submitMyMeterReading).not.toHaveBeenCalled();
+      expect(result.warningAcknowledged.value).toBe(true);
+
+      await result.handleSubmit();
+      expect(submitMyMeterReading).toHaveBeenCalledTimes(1);
+    });
+
+    it("asks again when a value changes after acknowledging", async () => {
+      const result = await withHistory();
+      result.dayMeterValue.value = 110;
+      result.nightMeterValue.value = 0;
+      await nextTick();
+      await result.handleSubmit();
+
+      result.dayMeterValue.value = 105;
+      await nextTick();
+
+      expect(result.warningAcknowledged.value).toBe(false);
+    });
+
+    it("submits straight away when nothing looks off", async () => {
+      const result = await withHistory();
+      submitMyMeterReading.mockResolvedValue(makeReading({ id: 3, period: "2026-06" }));
+      result.dayMeterValue.value = 130;
+      result.nightMeterValue.value = 0;
+      await nextTick();
+
+      await result.handleSubmit();
+
+      expect(submitMyMeterReading).toHaveBeenCalledTimes(1);
+    });
+  });
 });
