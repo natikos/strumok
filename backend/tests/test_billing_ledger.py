@@ -254,3 +254,124 @@ class TestStatementsEndpoint:
 
     def test_requires_authentication(self, client) -> None:
         assert client.get("/billing/statements").status_code == 401
+
+
+class TestLossAllocation:
+    def _inputs(self, usages: list[tuple[str, str]]) -> list[ChargeInput]:
+        return [
+            ChargeInput(
+                household_id=i,
+                owner_user_id=None,
+                reading_id=None,
+                day_usage_kwh=D(day),
+                night_usage_kwh=D(night),
+            )
+            for i, (day, night) in enumerate(usages, start=1)
+        ]
+
+    def test_shares_always_add_up_to_the_bill_exactly(self) -> None:
+        from app.core.domain import reconcile_period
+
+        rng = random.Random(42)
+        for _ in range(500):
+            usages = [
+                (
+                    f"{rng.randint(0, 800)}.{rng.randint(0, 99):02d}",
+                    f"{rng.randint(0, 800)}.{rng.randint(0, 99):02d}",
+                )
+                for _ in range(rng.randint(1, 10))
+            ]
+            # Bills below the tariff sum exercise a negative loss.
+            bill = D(f"{rng.randint(0, 9000)}.{rng.randint(0, 99):02d}")
+
+            result = reconcile_period(
+                self._inputs(usages),
+                day_rate_uah=D("4.32"),
+                night_rate_uah=D("2.16"),
+                bill_total_uah=bill,
+            )
+
+            assert sum(line.total_uah for line in result.lines) == bill
+            assert all(
+                line.loss_share_uah == line.loss_share_uah.quantize(D("0.01"))
+                for line in result.lines
+            )
+
+    def test_split_is_pro_rata_by_usage(self) -> None:
+        from app.core.domain import reconcile_period
+
+        result = reconcile_period(
+            self._inputs([("100", "0"), ("300", "0")]),
+            day_rate_uah=D("1"),
+            night_rate_uah=D("1"),
+            bill_total_uah=D("500.00"),  # tariff 400 + loss 100
+        )
+
+        assert [line.loss_share_uah for line in result.lines] == [
+            D("25.00"),
+            D("75.00"),
+        ]
+        assert result.loss_uah == D("100.00")
+
+    def test_negative_loss_reduces_every_share(self) -> None:
+        from app.core.domain import reconcile_period
+
+        result = reconcile_period(
+            self._inputs([("100", "0"), ("100", "0")]),
+            day_rate_uah=D("1"),
+            night_rate_uah=D("1"),
+            bill_total_uah=D("190.00"),
+        )
+
+        assert result.loss_uah == D("-10.00")
+        assert [line.total_uah for line in result.lines] == [D("95.00"), D("95.00")]
+
+    def test_remainder_kopeck_goes_to_the_lowest_id_on_a_tie_and_is_reported(
+        self,
+    ) -> None:
+        from app.core.domain import reconcile_period
+
+        result = reconcile_period(
+            self._inputs([("1", "0"), ("1", "0"), ("1", "0")]),
+            day_rate_uah=D("0"),
+            night_rate_uah=D("0"),
+            bill_total_uah=D("0.10"),
+        )
+
+        assert [line.loss_share_uah for line in result.lines] == [
+            D("0.04"),
+            D("0.03"),
+            D("0.03"),
+        ]
+        assert result.remainder_household_ids == [1]
+
+    def test_zero_usage_everywhere_splits_equally_and_single_household_takes_all(
+        self,
+    ) -> None:
+        from app.core.domain import reconcile_period
+
+        zero = reconcile_period(
+            self._inputs([("0", "0"), ("0", "0")]),
+            day_rate_uah=D("1"),
+            night_rate_uah=D("1"),
+            bill_total_uah=D("10.00"),
+        )
+        single = reconcile_period(
+            self._inputs([("5", "5")]),
+            day_rate_uah=D("1"),
+            night_rate_uah=D("1"),
+            bill_total_uah=D("33.33"),
+        )
+
+        assert [line.total_uah for line in zero.lines] == [D("5.00"), D("5.00")]
+        assert single.lines[0].total_uah == D("33.33")
+
+    def test_without_a_bill_it_is_tariff_only(self) -> None:
+        from app.core.domain import reconcile_period
+
+        result = reconcile_period(
+            self._inputs([("10", "0")]), day_rate_uah=D("2"), night_rate_uah=D("1")
+        )
+
+        assert result.loss_uah is None
+        assert result.lines[0].total_uah == D("20.00")

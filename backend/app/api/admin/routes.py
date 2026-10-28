@@ -15,7 +15,9 @@ from app.api.admin.schemas import (
     AdminUserUpdateIn,
     AuditLogEntryOut,
     AuditLogPageOut,
+    BillIn,
     HouseholdOwnerAssignIn,
+    ReconciliationOut,
     PeriodCloseIn,
     PeriodOverviewOut,
 )
@@ -42,6 +44,10 @@ from app.api.admin.service import (
 )
 from app.api.auth.schemas import ErrorOut
 from app.api.billing.service import (
+    BillNotEnteredError,
+    PeriodHasNoReadingsError,
+    enter_bill,
+    get_reconciliation,
     PeriodAlreadyClosedError,
     PeriodNotEndedError,
     close_period,
@@ -427,6 +433,8 @@ CLOSE_PERIOD_RESPONSES: dict[int | str, dict[str, Any]] = {
                     "periodAlreadyClosed": {"value": {"detail": "periodAlreadyClosed"}},
                     "periodNotEnded": {"value": {"detail": "periodNotEnded"}},
                     "noRateConfigured": {"value": {"detail": "noRateConfigured"}},
+                    "billNotEntered": {"value": {"detail": "billNotEntered"}},
+                    "periodHasNoReadings": {"value": {"detail": "periodHasNoReadings"}},
                 }
             }
         },
@@ -469,9 +477,73 @@ def close_admin_period(
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT, detail="noRateConfigured"
         ) from exc
+    except BillNotEnteredError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT, detail="billNotEntered"
+        ) from exc
+    except PeriodHasNoReadingsError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT, detail="periodHasNoReadings"
+        ) from exc
 
     return next(
         PeriodOverviewOut.model_validate(overview, from_attributes=True)
         for overview in list_period_overviews(session=session)
         if overview.period == period
     )
+
+
+PERIOD_PATH = Path(pattern=r"^\d{4}-(0[1-9]|1[0-2])$")
+
+
+@router.put(
+    "/periods/{period}/bill",
+    response_model=PeriodOverviewOut,
+    responses=CLOSE_PERIOD_RESPONSES,
+)
+def put_admin_period_bill(
+    payload: BillIn,
+    period: str = PERIOD_PATH,
+    session: Session = Depends(get_session),
+    admin: User = CurrentAdmin,
+) -> PeriodOverviewOut:
+    try:
+        enter_bill(
+            session=session,
+            period=period,
+            actor_id=admin.id,
+            day_kwh=payload.day_kwh,
+            night_kwh=payload.night_kwh,
+            total_uah=payload.total_uah,
+        )
+    except PeriodAlreadyClosedError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT, detail="periodAlreadyClosed"
+        ) from exc
+    return next(
+        PeriodOverviewOut.model_validate(overview, from_attributes=True)
+        for overview in list_period_overviews(session=session)
+        if overview.period == period
+    )
+
+
+@router.get(
+    "/periods/{period}/reconciliation",
+    response_model=ReconciliationOut,
+    responses=CLOSE_PERIOD_RESPONSES,
+)
+def get_admin_period_reconciliation(
+    period: str = PERIOD_PATH,
+    session: Session = Depends(get_session),
+) -> ReconciliationOut:
+    return _reconciliation(session=session, period=period)
+
+
+def _reconciliation(*, session: Session, period: str) -> ReconciliationOut:
+    try:
+        result = get_reconciliation(session=session, period=period)
+    except NoRateConfiguredError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT, detail="noRateConfigured"
+        ) from exc
+    return ReconciliationOut.model_validate(result, from_attributes=True)
