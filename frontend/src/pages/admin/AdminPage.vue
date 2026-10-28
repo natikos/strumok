@@ -9,6 +9,7 @@
         <Tab value="households">{{ $t("admin.tabHouseholds") }}</Tab>
         <Tab value="rates">{{ $t("admin.tabRates") }}</Tab>
         <Tab value="submissions">{{ $t("admin.tabSubmissions") }}</Tab>
+        <Tab value="reconciliation">{{ $t("admin.tabReconciliation") }}</Tab>
         <Tab value="residents">{{ $t("admin.tabResidents") }}</Tab>
         <Tab value="log">{{ $t("admin.tabLog") }}</Tab>
       </TabList>
@@ -97,6 +98,16 @@
             </section>
           </TabPanel>
 
+          <TabPanel value="reconciliation">
+            <section class="admin-section admin-section--wide">
+              <h2 class="admin-section__title">{{ $t("admin.reconciliation.title") }}</h2>
+              <ReconciliationPanel
+                v-if="activeTab === 'reconciliation' && dashboard"
+                :period="dashboard.current_period"
+              />
+            </section>
+          </TabPanel>
+
           <TabPanel value="residents">
             <section class="admin-section admin-section--wide">
               <h2 class="admin-section__title">{{ $t("admin.users.title") }}</h2>
@@ -123,6 +134,7 @@
   import AuditLogPanel from "@features/admin/AuditLogPanel.vue";
   import ElectricityRatesSettings from "@features/admin/ElectricityRatesSettings.vue";
   import PeriodCloseCard from "@features/admin/PeriodCloseCard.vue";
+  import ReconciliationPanel from "@features/admin/ReconciliationPanel.vue";
   import ResidentsPanel from "@features/admin/ResidentsPanel.vue";
   import { type AdminDashboardOut, getAdminDashboard } from "@shared/api/admin";
   import { formatKwh, formatUah } from "@shared/utils/format";

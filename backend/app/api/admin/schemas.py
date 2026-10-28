@@ -141,3 +141,43 @@ class PeriodCloseIn(BaseModel):
 
     confirm: Literal[True]
     acknowledge_flags: bool = False
+
+
+class BillIn(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    day_kwh: Decimal = Field(ge=Decimal("0"), max_digits=12, decimal_places=2)
+    night_kwh: Decimal = Field(ge=Decimal("0"), max_digits=12, decimal_places=2)
+    total_uah: Decimal = Field(ge=Decimal("0"), max_digits=12, decimal_places=2)
+    confirm: Literal[True]
+
+
+class ReconciliationLineOut(BaseModel):
+    household_id: int
+    household_name: str
+    usage_kwh: Decimal
+    usage_share_percent: Decimal
+    tariff_uah: Decimal
+    loss_share_uah: Decimal
+    penalty_uah: Decimal
+    total_uah: Decimal
+    is_estimated: bool
+
+
+class ReconciliationOut(BaseModel):
+    period: str
+    status: Literal["open", "closed"]
+    closed_at: UtcDatetime | None
+    bill_day_kwh: Decimal | None
+    bill_night_kwh: Decimal | None
+    bill_total_uah: Decimal | None
+    total_usage_kwh: Decimal
+    total_tariff_uah: Decimal
+    loss_uah: Decimal | None
+    loss_percent: Decimal | None
+    kwh_loss: Decimal | None
+    kwh_loss_percent: Decimal | None
+    shares_total_uah: Decimal
+    variance_uah: Decimal | None
+    lines: list[ReconciliationLineOut]
+    remainder_household_names: list[str]

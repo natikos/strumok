@@ -46,6 +46,7 @@ declare module 'vue' {
     Password: typeof import('primevue/password')['default']
     PeriodCloseCard: typeof import('./src/features/admin/PeriodCloseCard.vue')['default']
     ProgressSpinner: typeof import('primevue/progressspinner')['default']
+    ReconciliationPanel: typeof import('./src/features/admin/ReconciliationPanel.vue')['default']
     ResetPasswordPage: typeof import('./src/pages/auth/ResetPasswordPage.vue')['default']
     ResidentsPanel: typeof import('./src/features/admin/ResidentsPanel.vue')['default']
     RouterLink: typeof import('vue-router')['RouterLink']

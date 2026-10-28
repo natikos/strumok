@@ -439,6 +439,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/periods/{period}/bill": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Put Admin Period Bill */
+        put: operations["put_admin_period_bill_admin_periods__period__bill_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/periods/{period}/reconciliation": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Admin Period Reconciliation */
+        get: operations["get_admin_period_reconciliation_admin_periods__period__reconciliation_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/electricity-rates": {
         parameters: {
             query?: never;
@@ -666,6 +700,20 @@ export interface components {
             /** Next Cursor */
             next_cursor: number | null;
         };
+        /** BillIn */
+        BillIn: {
+            /** Day Kwh */
+            day_kwh: number | string;
+            /** Night Kwh */
+            night_kwh: number | string;
+            /** Total Uah */
+            total_uah: number | string;
+            /**
+             * Confirm
+             * @constant
+             */
+            confirm: true;
+        };
         /** ChangeEmailIn */
         ChangeEmailIn: {
             /** Current Password */
@@ -885,6 +933,65 @@ export interface components {
         PushUnsubscribeIn: {
             /** Endpoint */
             endpoint: string;
+        };
+        /** ReconciliationLineOut */
+        ReconciliationLineOut: {
+            /** Household Id */
+            household_id: number;
+            /** Household Name */
+            household_name: string;
+            /** Usage Kwh */
+            usage_kwh: string;
+            /** Usage Share Percent */
+            usage_share_percent: string;
+            /** Tariff Uah */
+            tariff_uah: string;
+            /** Loss Share Uah */
+            loss_share_uah: string;
+            /** Penalty Uah */
+            penalty_uah: string;
+            /** Total Uah */
+            total_uah: string;
+            /** Is Estimated */
+            is_estimated: boolean;
+        };
+        /** ReconciliationOut */
+        ReconciliationOut: {
+            /** Period */
+            period: string;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "open" | "closed";
+            /** Closed At */
+            closed_at: string | null;
+            /** Bill Day Kwh */
+            bill_day_kwh: string | null;
+            /** Bill Night Kwh */
+            bill_night_kwh: string | null;
+            /** Bill Total Uah */
+            bill_total_uah: string | null;
+            /** Total Usage Kwh */
+            total_usage_kwh: string;
+            /** Total Tariff Uah */
+            total_tariff_uah: string;
+            /** Loss Uah */
+            loss_uah: string | null;
+            /** Loss Percent */
+            loss_percent: string | null;
+            /** Kwh Loss */
+            kwh_loss: string | null;
+            /** Kwh Loss Percent */
+            kwh_loss_percent: string | null;
+            /** Shares Total Uah */
+            shares_total_uah: string;
+            /** Variance Uah */
+            variance_uah: string | null;
+            /** Lines */
+            lines: components["schemas"]["ReconciliationLineOut"][];
+            /** Remainder Household Names */
+            remainder_household_names: string[];
         };
         /**
          * StatementLineOut
@@ -2239,6 +2346,90 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["PeriodOverviewOut"];
+                };
+            };
+            /** @description The period can't be closed */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    put_admin_period_bill_admin_periods__period__bill_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                period: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BillIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PeriodOverviewOut"];
+                };
+            };
+            /** @description The period can't be closed */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_admin_period_reconciliation_admin_periods__period__reconciliation_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                period: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReconciliationOut"];
                 };
             };
             /** @description The period can't be closed */

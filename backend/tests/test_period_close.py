@@ -20,6 +20,14 @@ PAST = "2024-02"
 BODY = {"confirm": True, "acknowledge_flags": False}
 
 
+def _bill(client, period: str = PAST, total: str = "70.00") -> None:
+    response = client.put(
+        f"/admin/periods/{period}/bill",
+        json={"day_kwh": "30", "night_kwh": "10", "total_uah": total, "confirm": True},
+    )
+    assert response.status_code == 200, response.text
+
+
 def _admin(client, session: Session):
     admin = make_user(session, is_admin=True)
     authenticate(client, admin)
@@ -49,6 +57,8 @@ class TestClosePeriod:
             night_meter_value="60",
         )
 
+        _bill(client)
+
         response = client.post(f"/admin/periods/{PAST}/close", json=BODY)
 
         assert response.status_code == 200, response.text
@@ -74,6 +84,8 @@ class TestClosePeriod:
         household = make_household(session)
         make_meter_reading(session, household_id=household.id, period=PAST)
 
+        _bill(client, total="0.00")
+
         first = client.post(f"/admin/periods/{PAST}/close", json=BODY)
         second = client.post(f"/admin/periods/{PAST}/close", json=BODY)
 
@@ -88,6 +100,7 @@ class TestClosePeriod:
         _admin(client, session)
         household = make_household(session)
         make_meter_reading(session, household_id=household.id, period=PAST)
+        _bill(client, total="0.00")
 
         response = client.post(f"/admin/periods/{PAST}/close", json=BODY)
 
@@ -181,3 +194,115 @@ class TestPeriodOverview:
         assert current["status"] == "open"
         assert "noRateConfigured" in current["blockers"]
         assert body[0]["period"] == max(by_period)
+
+
+class TestBillAndReconciliation:
+    def _two_households(self, session: Session):
+        make_electricity_rate(session, day_rate_uah="1", night_rate_uah="1")
+        a = make_household(session, name="A")
+        b = make_household(session, name="B")
+        for household, before, now in ((a, "0", "100"), (b, "0", "300")):
+            make_meter_reading(
+                session,
+                household_id=household.id,
+                period="2024-01",
+                day_meter_value=before,
+            )
+            make_meter_reading(
+                session, household_id=household.id, period=PAST, day_meter_value=now
+            )
+        return a, b
+
+    def test_close_without_a_bill_is_refused(self, client, session: Session) -> None:
+        _admin(client, session)
+        self._two_households(session)
+
+        response = client.post(f"/admin/periods/{PAST}/close", json=BODY)
+
+        assert response.status_code == 409
+        assert response.json()["detail"] == "billNotEntered"
+        assert session.exec(select(HouseholdCharge)).all() == []
+
+    def test_closing_splits_the_loss_so_charges_equal_the_bill(
+        self, client, session: Session
+    ) -> None:
+        _admin(client, session)
+        a, b = self._two_households(session)
+        _bill(client, total="500.00")  # tariff 400 + loss 100
+
+        assert client.post(f"/admin/periods/{PAST}/close", json=BODY).status_code == 200
+
+        charges = {
+            c.household_id: c for c in session.exec(select(HouseholdCharge)).all()
+        }
+        assert charges[a.id].loss_share_uah == D("25.00")
+        assert charges[b.id].loss_share_uah == D("75.00")
+        assert sum(c.total_uah for c in charges.values()) == D("500.00")
+
+    def test_reconciliation_matches_the_stored_charges_after_close(
+        self, client, session: Session
+    ) -> None:
+        _admin(client, session)
+        self._two_households(session)
+        _bill(client, total="500.00")
+
+        before = client.get(f"/admin/periods/{PAST}/reconciliation").json()
+        client.post(f"/admin/periods/{PAST}/close", json=BODY)
+        after = client.get(f"/admin/periods/{PAST}/reconciliation").json()
+
+        assert before["status"] == "open" and after["status"] == "closed"
+        assert before["lines"] == after["lines"]
+        assert after["variance_uah"] == "0.00"
+        assert after["loss_uah"] == "100.00"
+        assert after["total_usage_kwh"] == "400.00"
+
+    def test_bill_is_audited_replaceable_and_locked_once_closed(
+        self, client, session: Session
+    ) -> None:
+        _admin(client, session)
+        self._two_households(session)
+        _bill(client, total="450.00")
+        _bill(client, total="500.00")
+        entries = session.exec(
+            select(AuditLog)
+            .where(AuditLog.action == "billEntered")
+            .order_by(AuditLog.id)
+        ).all()
+        assert [e.after["total_uah"] for e in entries] == ["450.00", "500.00"]
+        assert entries[1].before["total_uah"] == "450.00"
+
+        client.post(f"/admin/periods/{PAST}/close", json=BODY)
+        late = client.put(
+            f"/admin/periods/{PAST}/bill",
+            json={"day_kwh": "1", "night_kwh": "1", "total_uah": "1", "confirm": True},
+        )
+
+        assert late.status_code == 409
+        assert late.json()["detail"] == "periodAlreadyClosed"
+
+    def test_blockers_list_the_missing_bill(self, client, session: Session) -> None:
+        _admin(client, session)
+        self._two_households(session)
+
+        row = next(
+            r for r in client.get("/admin/periods").json() if r["period"] == "2024-01"
+        )
+        assert "billNotEntered" in row["blockers"]
+
+        _bill(client, period="2024-01", total="1.00")
+        row = next(
+            r for r in client.get("/admin/periods").json() if r["period"] == "2024-01"
+        )
+        assert "billNotEntered" not in row["blockers"]
+
+    def test_closing_with_no_readings_is_refused(
+        self, client, session: Session
+    ) -> None:
+        _admin(client, session)
+        make_electricity_rate(session)
+        _bill(client, total="10.00")
+
+        response = client.post(f"/admin/periods/{PAST}/close", json=BODY)
+
+        assert response.status_code == 409
+        assert response.json()["detail"] == "periodHasNoReadings"

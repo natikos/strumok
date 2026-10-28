@@ -3,6 +3,8 @@ from .billing import (
     SUBMISSION_OPEN_DAY,
     ChargeInput,
     ChargeLine,
+    Reconciliation,
+    allocate_by_largest_remainder,
     compute_period_statement,
     current_billing_period,
     derive_usage,
@@ -10,6 +12,7 @@ from .billing import (
     next_period,
     period_window_closed,
     previous_period,
+    reconcile_period,
 )
 
 __all__ = [
@@ -17,7 +20,10 @@ __all__ = [
     "SUBMISSION_OPEN_DAY",
     "ChargeInput",
     "ChargeLine",
+    "Reconciliation",
+    "allocate_by_largest_remainder",
     "compute_period_statement",
+    "reconcile_period",
     "current_billing_period",
     "derive_usage",
     "money",
