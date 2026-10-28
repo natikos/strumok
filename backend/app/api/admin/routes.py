@@ -2,7 +2,7 @@ from decimal import Decimal
 from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, Path, Query, Response, status
-from sqlmodel import Session
+from sqlmodel import Session, col, select
 
 from app.api.admin.schemas import (
     AdminDashboardOut,
@@ -93,8 +93,27 @@ from app.api.billing.service import (
 from app.api.electricity_rates.service import NoRateConfiguredError
 from app.api.auth.throttle import TooManyAttemptsError
 from app.api.deps import require_admin
+from app.api.push.billing_notifications import notify_bill_ready, notify_corrections
 from app.db import get_session
-from app.db.models import User
+from app.db.models import Household, User
+
+
+def _owner_deltas(session: Session, result) -> dict[int, Decimal]:
+    owners = {
+        h.id: h.user_id
+        for h in session.exec(
+            select(Household).where(
+                col(Household.id).in_({line.household_id for line in result.lines})
+            )
+        )
+    }
+    deltas: dict[int, Decimal] = {}
+    for line in result.lines:
+        owner = owners.get(line.household_id)
+        if owner is not None:
+            deltas[owner] = deltas.get(owner, Decimal("0.00")) + line.delta_uah
+    return deltas
+
 
 router = APIRouter(
     prefix="/admin",
@@ -510,6 +529,7 @@ def close_admin_period(
             actor_id=admin.id,
             acknowledge_flags=payload.acknowledge_flags,
         )
+        notify_bill_ready(session=session, period=period)
     except PeriodAlreadyClosedError as exc:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT, detail="periodAlreadyClosed"
@@ -676,6 +696,13 @@ def restate_admin_period(
             actor_id=admin.id,
             dry_run=payload.dry_run,
         )
+        if result.restatement_id is not None:
+            notify_corrections(
+                session=session,
+                restatement_id=result.restatement_id,
+                period=period,
+                deltas=_owner_deltas(session, result),
+            )
     except PeriodNotClosedError as exc:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT, detail="periodNotClosed"

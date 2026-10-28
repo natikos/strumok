@@ -4,9 +4,13 @@ from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.cron import CronTrigger
 from sqlmodel import Session
 
+from app.api.push.billing_notifications import notify_missing_readings
 from app.api.push.service import send_reminders
+from app.core.domain import SUBMISSION_DEADLINE_DAY, current_billing_period
 from app.core.domain.billing import kyiv_now
 from app.db.engine import engine
+
+MISSING_READINGS_DAY = SUBMISSION_DEADLINE_DAY + 1
 
 logger = logging.getLogger(__name__)
 
@@ -14,7 +18,12 @@ logger = logging.getLogger(__name__)
 def _run_reminders() -> None:
     with Session(engine) as session:
         try:
-            sent, removed = send_reminders(session=session, now=kyiv_now())
+            now = kyiv_now()
+            if now.day == MISSING_READINGS_DAY and now.hour >= 9:
+                notify_missing_readings(
+                    session=session, period=current_billing_period(now)
+                )
+            sent, removed = send_reminders(session=session, now=now)
             if sent or removed:
                 logger.info(
                     "Sent %s push reminders (%s dead subscriptions removed)",
