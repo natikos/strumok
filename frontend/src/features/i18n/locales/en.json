@@ -95,7 +95,16 @@
       "confirm": "Confirm",
       "cancel": "Cancel",
       "empty": "No residents match"
-    }
+    },
+    "renameHousehold": "Household name",
+    "rename": "Rename",
+    "inactiveSuffix": "(inactive)",
+    "deactivateHousehold": "Deactivate household",
+    "reactivateHousehold": "Reactivate household",
+    "deactivateHouseholdTitle": "Deactivate {name}?",
+    "deactivateHouseholdBody": "{owner} will no longer be able to submit readings. Their past history stays visible.",
+    "reactivateHouseholdTitle": "Reactivate {name}?",
+    "reactivateHouseholdBody": "{owner} will be able to submit readings again."
   },
   "auth": {
     "login": "Login",
@@ -219,7 +228,8 @@
     "userOwnsActiveHouseholds": "This user still owns households"
   },
   "household": {
-    "switchAria": "Switch household"
+    "switchAria": "Switch household",
+    "switched": "{removed} is no longer active; switched to {next}"
   },
   "layout": {
     "switchToEnglish": "Switch to English",

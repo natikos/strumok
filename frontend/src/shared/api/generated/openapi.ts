@@ -349,6 +349,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/households/{household_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Update Admin Household */
+        patch: operations["update_admin_household_admin_households__household_id__patch"];
+        trace?: never;
+    };
     "/electricity-rates": {
         parameters: {
             query?: never;
@@ -452,6 +469,18 @@ export interface components {
             /** Is Active */
             is_active: boolean;
             owner?: components["schemas"]["AdminUserSummaryOut"] | null;
+        };
+        /** AdminHouseholdUpdateIn */
+        AdminHouseholdUpdateIn: {
+            /** Name */
+            name?: string | null;
+            /** Is Active */
+            is_active?: boolean | null;
+            /**
+             * Confirm
+             * @constant
+             */
+            confirm: true;
         };
         /** AdminUserOut */
         AdminUserOut: {
@@ -1790,6 +1819,55 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["AuditLogPageOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_admin_household_admin_households__household_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                household_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AdminHouseholdUpdateIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminHouseholdOut"];
+                };
+            };
+            /** @description Household does not exist */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "detail": "householdNotFound"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorOut"];
                 };
             };
             /** @description Validation Error */

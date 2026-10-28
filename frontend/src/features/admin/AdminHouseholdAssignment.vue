@@ -44,13 +44,30 @@
       </span>
     </div>
 
-    <div v-else class="admin-assignment__current-owner">
-      {{
-        selectedHouseholdOwnerLabel
-          ? $t("admin.currentOwner", { owner: selectedHouseholdOwnerLabel })
-          : $t("admin.currentOwnerNone")
-      }}
-    </div>
+    <template v-else>
+      <div class="admin-assignment__rename">
+        <InputText
+          v-model="renameValue"
+          class="admin-assignment__input"
+          :aria-label="$t('admin.renameHousehold')"
+          :disabled="isLoading"
+        />
+        <Button
+          :disabled="isLoading || !canRename"
+          :label="$t('admin.rename')"
+          severity="secondary"
+          @click="handleRename"
+        />
+      </div>
+
+      <div class="admin-assignment__current-owner">
+        {{
+          selectedHouseholdOwnerLabel
+            ? $t("admin.currentOwner", { owner: selectedHouseholdOwnerLabel })
+            : $t("admin.currentOwnerNone")
+        }}
+      </div>
+    </template>
 
     <div class="admin-assignment__field">
       <label class="admin-assignment__label" for="admin-user-select">
@@ -87,13 +104,23 @@
       :loading="isLoading"
       @click="handleSubmit"
     />
+
+    <Button
+      v-if="selectedHousehold"
+      class="admin-assignment__status"
+      :disabled="isLoading"
+      :label="selectedHousehold.is_active ? $t('admin.deactivateHousehold') : $t('admin.reactivateHousehold')"
+      :severity="selectedHousehold.is_active ? 'danger' : 'secondary'"
+      variant="outlined"
+      @click="confirmStatusChange"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
   import { useConfirm } from "primevue/useconfirm";
   import { useToast } from "primevue/usetoast";
-  import { computed, onMounted, ref } from "vue";
+  import { computed, onMounted, ref, watch } from "vue";
   import { useI18n } from "vue-i18n";
   import { z } from "zod";
 
@@ -104,6 +131,7 @@
     createAdminHousehold,
     listAdminHouseholds,
     listAdminUsers,
+    updateAdminHousehold,
   } from "@shared/api/admin";
   import { ApiError } from "@shared/api/client";
 
@@ -154,7 +182,12 @@
   );
 
   const householdOptions = computed(() =>
-    households.value.map((household) => ({ label: household.name, value: household.id }))
+    households.value.map((household) => ({
+      label: household.is_active
+        ? household.name
+        : `${household.name} ${t("admin.inactiveSuffix")}`,
+      value: household.id,
+    }))
   );
 
   const selectedHousehold = computed(() =>
@@ -165,6 +198,68 @@
     const owner = selectedHousehold.value?.owner;
     return owner ? userLabel(owner) : null;
   });
+
+  const renameValue = ref("");
+
+  watch(selectedHousehold, (household) => {
+    renameValue.value = household?.name ?? "";
+  });
+
+  const canRename = computed(() => {
+    const trimmed = renameValue.value.trim();
+    return trimmed.length > 0 && trimmed !== selectedHousehold.value?.name;
+  });
+
+  async function applyHouseholdUpdate(
+    payload: Parameters<typeof updateAdminHousehold>[1]
+  ): Promise<void> {
+    const household = selectedHousehold.value;
+
+    if (!household) {
+      return;
+    }
+
+    isLoading.value = true;
+
+    try {
+      const updated = await updateAdminHousehold(household.id, payload);
+      households.value = households.value.map((item) => (item.id === updated.id ? updated : item));
+      renameValue.value = updated.name;
+    } catch (error: unknown) {
+      if (!(error instanceof ApiError)) {
+        throw error;
+      }
+    } finally {
+      isLoading.value = false;
+    }
+  }
+
+  async function handleRename(): Promise<void> {
+    await applyHouseholdUpdate({ name: renameValue.value.trim() });
+  }
+
+  function confirmStatusChange(): void {
+    const household = selectedHousehold.value;
+
+    if (!household) {
+      return;
+    }
+
+    const deactivating = household.is_active;
+    const owner = selectedHouseholdOwnerLabel.value ?? t("admin.currentOwnerNone");
+
+    confirm.require({
+      accept: () => void applyHouseholdUpdate({ is_active: !deactivating }),
+      acceptLabel: t("admin.users.confirm"),
+      header: t(deactivating ? "admin.deactivateHouseholdTitle" : "admin.reactivateHouseholdTitle", {
+        name: household.name,
+      }),
+      message: t(deactivating ? "admin.deactivateHouseholdBody" : "admin.reactivateHouseholdBody", {
+        owner,
+      }),
+      rejectLabel: t("admin.users.cancel"),
+    });
+  }
 
   function resetForm(): void {
     selectedHouseholdId.value = null;
@@ -312,6 +407,15 @@
   .admin-assignment__field-error {
     font-size: 0.75rem;
     color: var(--s-red-500);
+  }
+
+  .admin-assignment__rename {
+    @include layout.row(var(--s-app-space-2), center);
+    min-width: 0;
+  }
+
+  .admin-assignment__status {
+    width: 100%;
   }
 
   .admin-assignment__submit {

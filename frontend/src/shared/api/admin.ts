@@ -104,3 +104,19 @@ export async function updateAdminUser(
 
   return data;
 }
+
+export async function updateAdminHousehold(
+  householdId: number,
+  payload: { is_active?: boolean; name?: string }
+): Promise<AdminHouseholdOut> {
+  const { data, error, response } = await appApiClient.PATCH("/admin/households/{household_id}", {
+    body: { ...payload, confirm: true },
+    params: { path: { household_id: householdId } },
+  });
+
+  if (error) {
+    throw buildApiError(response.status, error);
+  }
+
+  return data;
+}

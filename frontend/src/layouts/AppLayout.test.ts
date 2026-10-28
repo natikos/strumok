@@ -15,6 +15,8 @@ const { getMe, logoutUser } = vi.hoisted(() => ({
   logoutUser: vi.fn(),
 }));
 
+vi.mock("primevue/usetoast", () => ({ useToast: () => ({ add: vi.fn() }) }));
+
 vi.mock("@shared/api/auth", () => ({
   getMe,
   logoutUser,

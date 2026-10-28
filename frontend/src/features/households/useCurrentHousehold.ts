@@ -5,6 +5,14 @@ import type { components } from "@shared/api/generated/openapi";
 export type HouseholdSummary = components["schemas"]["HouseholdSummary"];
 
 const STORAGE_KEY = "strumok:current-household-id";
+// Remembered so a household that disappears between sessions (deactivated by
+// the head) can still be named in the "switched to" notice.
+const NAME_STORAGE_KEY = "strumok:current-household-name";
+
+export interface HouseholdSwitch {
+  removedName: string | null;
+  switchedTo: HouseholdSummary | null;
+}
 
 const households = ref<HouseholdSummary[]>([]);
 const currentId = ref<number | null>(readStoredId());
@@ -15,11 +23,13 @@ function readStoredId(): number | null {
   return Number.isFinite(parsed) ? parsed : null;
 }
 
-function writeStoredId(id: number | null): void {
-  if (id === null) {
+function writeStored(household: HouseholdSummary | null): void {
+  if (household === null) {
     window.localStorage.removeItem(STORAGE_KEY);
+    window.localStorage.removeItem(NAME_STORAGE_KEY);
   } else {
-    window.localStorage.setItem(STORAGE_KEY, String(id));
+    window.localStorage.setItem(STORAGE_KEY, String(household.id));
+    window.localStorage.setItem(NAME_STORAGE_KEY, household.name);
   }
 }
 
@@ -28,21 +38,28 @@ export function useCurrentHousehold() {
     () => households.value.find((h) => h.id === currentId.value) ?? null,
   );
 
-  function setHouseholds(next: HouseholdSummary[]): void {
+  /** Returns what changed when the remembered household is no longer listed. */
+  function setHouseholds(next: HouseholdSummary[]): HouseholdSwitch | null {
+    const previousId = currentId.value;
+    const previousName =
+      households.value.find((h) => h.id === previousId)?.name ??
+      window.localStorage.getItem(NAME_STORAGE_KEY);
     households.value = next;
 
-    const stillExists = next.some((h) => h.id === currentId.value);
-
-    if (!stillExists) {
-      const fallback = next[0]?.id ?? null;
-      currentId.value = fallback;
-      writeStoredId(fallback);
+    if (next.some((h) => h.id === previousId)) {
+      return null;
     }
+
+    const fallback = next[0] ?? null;
+    currentId.value = fallback?.id ?? null;
+    writeStored(fallback);
+
+    return previousId === null ? null : { removedName: previousName, switchedTo: fallback };
   }
 
   function setCurrent(id: number): void {
     currentId.value = id;
-    writeStoredId(id);
+    writeStored(households.value.find((h) => h.id === id) ?? null);
   }
 
   return {
