@@ -7,6 +7,7 @@ from app.api.admin.schemas import (
     AdminDashboardOut,
     AdminHouseholdCreateIn,
     AdminHouseholdOut,
+    AdminHouseholdUpdateIn,
     AdminUserOut,
     AdminUserSummaryOut,
     AdminUserUpdateIn,
@@ -18,6 +19,7 @@ from app.api.admin.service import (
     CannotModifySelfError,
     LastAdminRequiredError,
     UserOwnsActiveHouseholdsError,
+    update_household,
     update_user,
     HouseholdAlreadyAssignedError,
     HouseholdNotFoundError,
@@ -266,3 +268,38 @@ def get_audit_log(
         ],
         next_cursor=next_cursor,
     )
+
+
+@router.patch(
+    "/households/{household_id}",
+    response_model=AdminHouseholdOut,
+    responses={
+        status.HTTP_404_NOT_FOUND: {
+            "description": "Household does not exist",
+            "model": ErrorOut,
+            "content": {
+                "application/json": {"example": {"detail": "householdNotFound"}}
+            },
+        }
+    },
+)
+def update_admin_household(
+    household_id: int,
+    payload: AdminHouseholdUpdateIn,
+    session: Session = Depends(get_session),
+    admin: User = CurrentAdmin,
+) -> AdminHouseholdOut:
+    try:
+        household, owner = update_household(
+            session=session,
+            household_id=household_id,
+            actor_id=admin.id,
+            name=payload.name,
+            is_active=payload.is_active,
+        )
+    except HouseholdNotFoundError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="householdNotFound"
+        ) from exc
+
+    return AdminHouseholdOut.from_household(household, owner=owner)

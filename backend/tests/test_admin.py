@@ -470,3 +470,64 @@ class TestUpdateUser:
 
         assert row["is_admin"] is False
         assert row["household_count"] == 1
+
+
+class TestUpdateHousehold:
+    def test_rename_deactivate_reactivate_are_audited(
+        self, client, session: Session
+    ) -> None:
+        from app.db.models import AuditLog
+
+        admin = make_user(session, is_admin=True)
+        household = make_household(
+            session, name="Plot 1", user_id=make_user(session).id
+        )
+        authenticate(client, admin)
+        url = f"/admin/households/{household.id}"
+
+        renamed = client.patch(url, json={"name": " Plot 1A ", "confirm": True})
+        off = client.patch(url, json={"is_active": False, "confirm": True})
+        on = client.patch(url, json={"is_active": True, "confirm": True})
+
+        assert renamed.json()["name"] == "Plot 1A"
+        assert off.json()["is_active"] is False
+        assert on.json()["is_active"] is True
+        actions = [
+            e.action for e in session.exec(select(AuditLog).order_by(AuditLog.id)).all()
+        ]
+        assert actions == [
+            "householdRenamed",
+            "householdDeactivated",
+            "householdReactivated",
+        ]
+
+    def test_noop_change_writes_no_audit_entry(self, client, session: Session) -> None:
+        from app.db.models import AuditLog
+
+        admin = make_user(session, is_admin=True)
+        household = make_household(session, name="Plot 1")
+        authenticate(client, admin)
+
+        client.patch(
+            f"/admin/households/{household.id}",
+            json={"name": "Plot 1", "is_active": True, "confirm": True},
+        )
+
+        assert session.exec(select(AuditLog)).all() == []
+
+    def test_unknown_household_404_and_confirm_required(
+        self, client, session: Session
+    ) -> None:
+        authenticate(client, make_user(session, is_admin=True))
+        assert (
+            client.patch("/admin/households/999999", json={"confirm": True}).status_code
+            == 404
+        )
+        assert (
+            client.patch("/admin/households/1", json={"name": "x"}).status_code == 422
+        )
+
+    def test_non_admin_is_forbidden(self, client, session: Session) -> None:
+        authenticate(client, make_user(session))
+        response = client.patch("/admin/households/1", json={"confirm": True})
+        assert response.status_code == 403

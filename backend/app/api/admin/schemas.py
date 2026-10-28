@@ -45,6 +45,14 @@ class HouseholdOwnerAssignIn(BaseModel):
     confirm_reassignment: bool = False
 
 
+class AdminHouseholdUpdateIn(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    name: str | None = Field(default=None, min_length=1, max_length=255)
+    is_active: bool | None = None
+    confirm: Literal[True]
+
+
 class AdminHouseholdOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
