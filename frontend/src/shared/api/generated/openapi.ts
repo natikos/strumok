@@ -250,6 +250,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/billing/statements": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get My Statements */
+        get: operations["get_my_statements_billing_statements_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/admin/users": {
         parameters: {
             query?: never;
@@ -801,6 +818,39 @@ export interface components {
         PushUnsubscribeIn: {
             /** Endpoint */
             endpoint: string;
+        };
+        /**
+         * StatementLineOut
+         * @description One household's charge for one period. `provisional` lines are computed
+         *     at read time for the open period and never stored.
+         */
+        StatementLineOut: {
+            /**
+             * Period
+             * @example 2026-07
+             */
+            period: string;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "closed" | "provisional";
+            /** Day Usage Kwh */
+            day_usage_kwh: string;
+            /** Night Usage Kwh */
+            night_usage_kwh: string;
+            /** Is Estimated */
+            is_estimated: boolean;
+            /** Tariff Uah */
+            tariff_uah: string;
+            /** Loss Share Uah */
+            loss_share_uah: string;
+            /** Penalty Uah */
+            penalty_uah: string;
+            /** Penalty Credit Uah */
+            penalty_credit_uah: string;
+            /** Total Uah */
+            total_uah: string;
         };
         /**
          * ThemeMode
@@ -1569,6 +1619,60 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_my_statements_billing_statements_get: {
+        parameters: {
+            query?: {
+                household_id?: number | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StatementLineOut"][];
+                };
+            };
+            /** @description User does not own this household, or it is inactive */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description User is not a member of any household */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "detail": "noHouseholdMembership"
+                     *     }
+                     */
                     "application/json": components["schemas"]["ErrorOut"];
                 };
             };
