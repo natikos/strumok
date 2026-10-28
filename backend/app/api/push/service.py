@@ -92,7 +92,7 @@ def delete_subscription(*, session: Session, user: User, endpoint: str) -> None:
     session.commit()
 
 
-class _SendOutcome(StrEnum):
+class SendOutcome(StrEnum):
     SENT = "sent"
     GONE = "gone"
     FAILED = "failed"
@@ -109,7 +109,9 @@ def _seconds_until_window_closes() -> int:
     return max(int((window_end - now).total_seconds()), 0)
 
 
-def _send_one(subscription: PushSubscription, payload: str) -> _SendOutcome:
+def send_one(
+    subscription: PushSubscription, payload: str, ttl: int | None = None
+) -> SendOutcome:
     """Send to a single subscription. Runs on a worker thread; must not touch the session."""
     try:
         webpush(
@@ -123,19 +125,19 @@ def _send_one(subscription: PushSubscription, payload: str) -> _SendOutcome:
             data=payload,
             vapid_private_key=settings.push.vapid_private_key.get_secret_value(),
             vapid_claims={"sub": settings.push.vapid_subject},
-            ttl=_seconds_until_window_closes(),
+            ttl=_seconds_until_window_closes() if ttl is None else ttl,
             headers={"Urgency": "normal"},
         )
     except WebPushException as exc:
         status_code = getattr(exc.response, "status_code", None)
         if status_code in (HTTPStatus.NOT_FOUND, HTTPStatus.GONE):
-            return _SendOutcome.GONE
+            return SendOutcome.GONE
         logger.exception("Push send failed for subscription %s", subscription.id)
-        return _SendOutcome.FAILED
+        return SendOutcome.FAILED
     except Exception:
         logger.exception("Push send failed for subscription %s", subscription.id)
-        return _SendOutcome.FAILED
-    return _SendOutcome.SENT
+        return SendOutcome.FAILED
+    return SendOutcome.SENT
 
 
 def reminder_variant_for(now: datetime) -> ReminderVariant | None:
@@ -249,13 +251,13 @@ def send_reminders(*, session: Session, now: datetime) -> tuple[int, int]:
     # timing-out endpoint delays all the others. The pool overlaps the waiting, and the
     # worker cap keeps us from opening hundreds of connections at once.
     with ThreadPoolExecutor(max_workers=10) as executor:
-        outcomes = executor.map(_send_one, subscriptions, payloads)
+        outcomes = executor.map(send_one, subscriptions, payloads)
         results = list(zip(subscriptions, outcomes))
 
-    sent = [sub for sub, outcome in results if outcome == _SendOutcome.SENT]
-    gone = [sub for sub, outcome in results if outcome == _SendOutcome.GONE]
+    sent = [sub for sub, outcome in results if outcome == SendOutcome.SENT]
+    gone = [sub for sub, outcome in results if outcome == SendOutcome.GONE]
     delivered_users = {
-        sub.user_id for sub, outcome in results if outcome != _SendOutcome.FAILED
+        sub.user_id for sub, outcome in results if outcome != SendOutcome.FAILED
     }
     unreached = claimed - delivered_users
 

@@ -1,8 +1,9 @@
+import logging
 from decimal import Decimal
 from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, Path, Query, Response, status
-from sqlmodel import Session
+from sqlmodel import Session, col, select
 
 from app.api.admin.schemas import (
     AdminDashboardOut,
@@ -93,8 +94,38 @@ from app.api.billing.service import (
 from app.api.electricity_rates.service import NoRateConfiguredError
 from app.api.auth.throttle import TooManyAttemptsError
 from app.api.deps import require_admin
+from app.api.push.billing_notifications import notify_bill_ready, notify_corrections
 from app.db import get_session
-from app.db.models import User
+from app.db.models import Household, User
+
+
+def _owner_deltas(session: Session, result) -> dict[int, Decimal]:
+    owners = {
+        h.id: h.user_id
+        for h in session.exec(
+            select(Household).where(
+                col(Household.id).in_({line.household_id for line in result.lines})
+            )
+        )
+    }
+    deltas: dict[int, Decimal] = {}
+    for line in result.lines:
+        owner = owners.get(line.household_id)
+        if owner is not None:
+            deltas[owner] = deltas.get(owner, Decimal("0.00")) + line.delta_uah
+    return deltas
+
+
+def _notify_safely(notify, **kwargs) -> None:
+    """The ledger change has already committed; a notification failure must
+    not turn that success into a 500."""
+    try:
+        notify(**kwargs)
+    except Exception:
+        logger.exception("Billing notification failed")
+
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(
     prefix="/admin",
@@ -536,6 +567,8 @@ def close_admin_period(
             status_code=status.HTTP_409_CONFLICT, detail="periodHasNoReadings"
         ) from exc
 
+    _notify_safely(notify_bill_ready, session=session, period=period)
+
     return next(
         PeriodOverviewOut.model_validate(overview, from_attributes=True)
         for overview in list_period_overviews(session=session)
@@ -684,6 +717,14 @@ def restate_admin_period(
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT, detail="nothingToCorrect"
         ) from exc
+    if result.restatement_id is not None:
+        _notify_safely(
+            notify_corrections,
+            session=session,
+            restatement_id=result.restatement_id,
+            period=period,
+            deltas=_owner_deltas(session, result),
+        )
     return RestatementOut.from_result(result)
 
 
