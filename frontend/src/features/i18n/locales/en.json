@@ -444,6 +444,7 @@
     "lateApprovalNote": "Late submissions are recorded for information only and won't change this period's charge",
     "hintText": "Enter the numbers shown on your electricity meter, then press Submit",
     "submitAnyway": "Submit anyway",
+    "offline": "You're offline. Your numbers stay here; submit once you have signal.",
     "warnDecrease": "This is lower than last month's reading. If your meter was replaced or you mistyped, check it; you can still submit.",
     "warnSpike": "That's a big jump from last month ({usage} vs usual {typical}). Please double-check; you can still submit.",
     "periodClosed": "{month} is closed, so readings can't be submitted for it any more.",

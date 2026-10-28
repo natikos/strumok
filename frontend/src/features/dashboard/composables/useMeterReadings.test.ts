@@ -262,6 +262,53 @@ describe("useMeterReadings", () => {
     });
   });
 
+  describe("offline submit", () => {
+    it("keeps the values and sends nothing offline, then submits once back online", async () => {
+      listMyMeterReadings.mockResolvedValue([]);
+      submitMyMeterReading.mockResolvedValue(makeReading());
+      Object.defineProperty(navigator, "onLine", { configurable: true, value: false });
+
+      const { result } = mountComposable();
+      await result.loadHistory();
+      await flushPromises();
+      result.dayMeterValue.value = 120;
+      result.nightMeterValue.value = 60;
+      window.dispatchEvent(new Event("offline"));
+
+      await result.handleSubmit();
+
+      expect(submitMyMeterReading).not.toHaveBeenCalled();
+      expect(result.isOffline.value).toBe(true);
+      expect(result.dayMeterValue.value).toBe(120);
+      expect(result.nightMeterValue.value).toBe(60);
+
+      Object.defineProperty(navigator, "onLine", { configurable: true, value: true });
+      window.dispatchEvent(new Event("online"));
+      await nextTick();
+      expect(result.isOffline.value).toBe(false);
+
+      await result.handleSubmit();
+      expect(submitMyMeterReading).toHaveBeenCalledTimes(1);
+    });
+
+    it("treats a fetch TypeError as offline and keeps the values", async () => {
+      listMyMeterReadings.mockResolvedValue([]);
+      submitMyMeterReading.mockRejectedValue(new TypeError("Failed to fetch"));
+
+      const { result } = mountComposable();
+      await result.loadHistory();
+      await flushPromises();
+      result.dayMeterValue.value = 120;
+      result.nightMeterValue.value = 60;
+
+      await result.handleSubmit();
+
+      expect(result.isOffline.value).toBe(true);
+      expect(result.errors.value.form).toBeUndefined();
+      expect(result.dayMeterValue.value).toBe(120);
+    });
+  });
+
   describe("handleSubmit error routing", () => {
     it("routes periodAlreadySubmitted to errors.form", async () => {
       listMyMeterReadings.mockResolvedValue([]);

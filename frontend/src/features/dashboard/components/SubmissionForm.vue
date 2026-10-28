@@ -34,6 +34,16 @@
         {{ warningText }}
       </Message>
 
+      <Message
+        v-if="isOffline"
+        severity="warn"
+        class="submission-form__offline"
+        role="status"
+        aria-live="polite"
+      >
+        {{ t("meterReadings.offline") }}
+      </Message>
+
       <Message v-if="errors.info" severity="info" class="submission-form__info">
         {{ t(errors.info) }}
       </Message>
@@ -82,6 +92,7 @@
     isSubmitting: boolean;
     submitLabel: string;
     warning?: ReadingWarning | null | undefined;
+    isOffline?: boolean | undefined;
   }
 
   const props = defineProps<Props>();
