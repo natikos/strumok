@@ -450,6 +450,7 @@
     "periodInFuture": "That period hasn't started yet",
     "paymentNotFound": "This payment no longer exists",
     "paymentAlreadyVoided": "This payment was already voided",
+    "openingBalanceAlreadySet": "This household already has an opening balance",
     "baselineNotFirst": "A starting reading can only be set before the household has any reading",
     "meterChangeAlreadyRecorded": "A meter replacement is already recorded for this period",
     "handoverReadingRequired": "Enter the meter values at the handover",

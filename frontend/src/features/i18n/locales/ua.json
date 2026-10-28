@@ -450,6 +450,7 @@
     "periodInFuture": "Цей період ще не настав",
     "paymentNotFound": "Цієї оплати вже не існує",
     "paymentAlreadyVoided": "Цю оплату вже анульовано",
+    "openingBalanceAlreadySet": "Для цього господарства вже встановлено початкове сальдо",
     "baselineNotFirst": "Початкові показники можна встановити лише до першого показника ділянки",
     "meterChangeAlreadyRecorded": "Заміну лічильника за цей період уже записано",
     "handoverReadingRequired": "Введіть показники лічильників при передачі",
