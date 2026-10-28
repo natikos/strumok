@@ -718,3 +718,65 @@ class TestReminderHour:
         assert first == (0, 0)
         assert second == (1, 0)
         assert mock_webpush.call_count == 1
+
+
+class TestEmailFallback:
+    """Issue #166: residents with no push subscription get an email."""
+
+    def test_unsubscribed_user_gets_one_localized_email_per_variant(
+        self, session: Session
+    ) -> None:
+        user = make_user(session)
+        make_household(session, name="Plot 7", user_id=user.id)
+
+        with patch("app.api.push.service.send_email") as mock_email:
+            _send(session, "opening")
+            _send(session, "opening")
+            _send(session, "final")
+
+        assert mock_email.call_count == 2
+        first = mock_email.call_args_list[0].kwargs
+        assert first["to_email"] == user.email
+        assert first["subject"].startswith("[Strumok] Подайте показники")
+        assert "Plot 7" in first["html_content"]
+        assert "/settings" in first["html_content"]
+
+    def test_english_user_gets_english_subject(self, session: Session) -> None:
+        user = make_user(session)
+        user.language = LanguageCode.EN
+        session.add(user)
+        session.commit()
+        make_household(session, user_id=user.id)
+
+        with patch("app.api.push.service.send_email") as mock_email:
+            _send(session, "final")
+
+        assert mock_email.call_args.kwargs["subject"] == (
+            "[Strumok] Last day to submit your meter reading"
+        )
+
+    def test_subscribed_user_gets_no_email(self, session: Session) -> None:
+        user = make_user(session)
+        make_household(session, user_id=user.id)
+        make_push_subscription(session, user_id=user.id)
+
+        with (
+            patch("app.api.push.service.webpush"),
+            patch("app.api.push.service.send_email") as mock_email,
+        ):
+            _send(session, "opening")
+
+        mock_email.assert_not_called()
+
+    def test_failed_email_releases_the_claim_for_retry(self, session: Session) -> None:
+        from app.core.email import EmailSendError
+
+        user = make_user(session)
+        make_household(session, user_id=user.id)
+
+        with patch("app.api.push.service.send_email", side_effect=EmailSendError("x")):
+            _send(session, "opening")
+        with patch("app.api.push.service.send_email") as mock_email:
+            _send(session, "opening")
+
+        assert mock_email.call_count == 1

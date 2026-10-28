@@ -40,6 +40,7 @@ deleted until a closed period was billed with it. `MeterReading.day/night_usage_
 
 Deadline push reminders go out on days 1 and 5 at each user's chosen Kyiv hour
 (`User.reminder_hour`, default 9, set via `PATCH /auth/preferences`).
+Users with no push subscription get the reminder by email (Brevo) instead.
 
 Keep this section current as the domain evolves — update it in the same change that adds or
 changes a concept, not as separate cleanup later.
