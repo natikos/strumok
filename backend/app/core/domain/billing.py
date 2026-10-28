@@ -54,13 +54,25 @@ def current_billing_period(now: datetime | None = None) -> str:
 
 
 CENT = Decimal("0.01")
+LATE_PENALTY_RATE = Decimal("0.30")
 
 
-def derive_usage(previous_value: Decimal | None, value: Decimal) -> Decimal:
+def derive_usage(
+    previous_value: Decimal | None,
+    value: Decimal,
+    *,
+    previous_is_estimate: bool = False,
+) -> Decimal:
     """kWh used since the previous reading. The first reading is a baseline
-    (no usage), and a meter that reads lower than before counts as zero."""
+    (no usage), and a meter that reads lower than before counts as zero.
+
+    Measured against an *estimate*, a lower real reading is a true-up, not a
+    meter fault: the difference stays negative so the over-estimate comes back
+    as a credit instead of being clamped away."""
     if previous_value is None:
         return Decimal("0")
+    if previous_is_estimate:
+        return value - previous_value
     return max(value - previous_value, Decimal("0"))
 
 
@@ -169,6 +181,29 @@ def reconcile_period(
             {i.household_id: i.day_usage_kwh + i.night_usage_kwh for i in ordered},
         )
 
+    # A household that didn't submit pays a late fee on its estimated tariff
+    # (not on its loss share). The fees are handed back pro-rata by usage to the
+    # households that did submit, so the charges still add up to the bill.
+    on_time = [i for i in ordered if not i.is_estimated]
+    penalties = {
+        item.household_id: (
+            money(tariffs[item.household_id] * LATE_PENALTY_RATE)
+            if item.is_estimated and tariffs[item.household_id] > 0 and on_time
+            else Decimal("0.00")
+        )
+        for item in ordered
+    }
+    total_penalty = sum(penalties.values(), Decimal("0.00"))
+    credits: dict[int, Decimal] = {
+        item.household_id: Decimal("0.00") for item in ordered
+    }
+    if total_penalty:
+        shared, _ = allocate_by_largest_remainder(
+            total_penalty,
+            {i.household_id: i.day_usage_kwh + i.night_usage_kwh for i in on_time},
+        )
+        credits.update(shared)
+
     lines = [
         ChargeLine(
             household_id=item.household_id,
@@ -179,9 +214,14 @@ def reconcile_period(
             is_estimated=item.is_estimated,
             tariff_uah=tariffs[item.household_id],
             loss_share_uah=shares[item.household_id],
-            penalty_uah=Decimal("0.00"),
-            penalty_credit_uah=Decimal("0.00"),
-            total_uah=tariffs[item.household_id] + shares[item.household_id],
+            penalty_uah=penalties[item.household_id],
+            penalty_credit_uah=credits[item.household_id],
+            total_uah=(
+                tariffs[item.household_id]
+                + shares[item.household_id]
+                + penalties[item.household_id]
+                - credits[item.household_id]
+            ),
         )
         for item in ordered
     ]

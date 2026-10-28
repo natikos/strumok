@@ -83,12 +83,17 @@ def derive_reading_usage(
         .where(MeterReading.period < reading.period)
         .order_by(desc(MeterReading.period))
     ).first()
+    after_estimate = previous is not None and previous.source == "estimate"
     return (
         derive_usage(
-            previous.day_meter_value if previous else None, reading.day_meter_value
+            previous.day_meter_value if previous else None,
+            reading.day_meter_value,
+            previous_is_estimate=after_estimate,
         ),
         derive_usage(
-            previous.night_meter_value if previous else None, reading.night_meter_value
+            previous.night_meter_value if previous else None,
+            reading.night_meter_value,
+            previous_is_estimate=after_estimate,
         ),
     )
 
@@ -157,6 +162,93 @@ def list_statements(*, session: Session, household_id: int) -> list[StatementLin
     return [provisional, *lines] if provisional else lines
 
 
+def _median(values: list[Decimal]) -> Decimal:
+    ordered = sorted(values)
+    middle = len(ordered) // 2
+    if len(ordered) % 2:
+        return ordered[middle]
+    return (ordered[middle - 1] + ordered[middle]) / 2
+
+
+def create_estimates(*, session: Session, period: str) -> list[MeterReading]:
+    """Writes an estimate for every active household that has a reading history
+    but none for `period`. Its meter values are virtual cumulative values: the
+    previous reading plus the estimated usage (last real month's usage, or the
+    co-op median when there's no usage history yet), so the next real reading
+    is measured against them and the over- or under-estimate is trued up.
+    Households that never submitted anything have nothing to anchor to and are
+    skipped."""
+    have_reading = set(
+        session.exec(
+            select(MeterReading.household_id).where(MeterReading.period == period)
+        )
+    )
+    candidates = [
+        h
+        for h in session.exec(select(Household).where(Household.is_active))
+        if h.id not in have_reading
+    ]
+
+    usages_this_period = [
+        derive_reading_usage(session=session, reading=reading)
+        for reading in session.exec(
+            select(MeterReading).where(
+                MeterReading.period == period, MeterReading.source != "estimate"
+            )
+        )
+    ]
+    median_day = (
+        _median([d for d, _ in usages_this_period])
+        if usages_this_period
+        else Decimal("0")
+    )
+    median_night = (
+        _median([n for _, n in usages_this_period])
+        if usages_this_period
+        else Decimal("0")
+    )
+
+    created = []
+    for household in candidates:
+        history = list(
+            session.exec(
+                select(MeterReading)
+                .where(MeterReading.household_id == household.id)
+                .where(MeterReading.period < period)
+                .order_by(desc(MeterReading.period))
+            )
+        )
+        if not history:
+            continue
+
+        last_real_index = next(
+            (i for i, r in enumerate(history) if r.source != "estimate"), None
+        )
+        usage = None
+        if last_real_index is not None and last_real_index + 1 < len(history):
+            real = history[last_real_index]
+            before = history[last_real_index + 1]
+            usage = (
+                max(real.day_meter_value - before.day_meter_value, Decimal("0")),
+                max(real.night_meter_value - before.night_meter_value, Decimal("0")),
+            )
+        if usage is None or usage == (Decimal("0"), Decimal("0")):
+            usage = (max(median_day, Decimal("0")), max(median_night, Decimal("0")))
+
+        base = history[0]
+        reading = MeterReading(
+            household_id=household.id,
+            period=period,
+            day_meter_value=base.day_meter_value + usage[0],
+            night_meter_value=base.night_meter_value + usage[1],
+            source="estimate",
+        )
+        session.add(reading)
+        created.append(reading)
+    session.flush()
+    return created
+
+
 def _unreviewed_count(*, session: Session, period: str) -> int:
     return session.exec(
         select(func.count())
@@ -189,6 +281,7 @@ def charge_inputs_for_period(*, session: Session, period: str) -> list[ChargeInp
                 reading_id=reading.id,
                 day_usage_kwh=day,
                 night_usage_kwh=night,
+                is_estimated=reading.source == "estimate",
             )
         )
     return inputs
@@ -256,14 +349,16 @@ def close_period(
 
     rate = get_effective_rate(session=session, period=period)
 
-    inputs = charge_inputs_for_period(session=session, period=period)
-    if not inputs:
+    if not charge_inputs_for_period(session=session, period=period):
         raise PeriodHasNoReadingsError
     if row.bill_total_uah is None:
         raise BillNotEnteredError
     unreviewed = _unreviewed_count(session=session, period=period)
     if unreviewed and not acknowledge_flags:
         raise PeriodHasUnreviewedReadingsError
+
+    estimated = create_estimates(session=session, period=period)
+    inputs = charge_inputs_for_period(session=session, period=period)
 
     charges = [
         HouseholdCharge(
@@ -305,6 +400,7 @@ def close_period(
             "total_uah": sum((c.total_uah for c in charges), Decimal("0.00")),
             "rate_id": rate.id,
             "unreviewed_readings_acknowledged": unreviewed,
+            "households_estimated": len(estimated),
         },
     )
     session.commit()
