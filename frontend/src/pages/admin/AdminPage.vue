@@ -9,6 +9,7 @@
         <Tab value="households">{{ $t("admin.tabHouseholds") }}</Tab>
         <Tab value="rates">{{ $t("admin.tabRates") }}</Tab>
         <Tab value="submissions">{{ $t("admin.tabSubmissions") }}</Tab>
+        <Tab value="residents">{{ $t("admin.tabResidents") }}</Tab>
         <Tab value="log">{{ $t("admin.tabLog") }}</Tab>
       </TabList>
     </Tabs>
@@ -90,6 +91,13 @@
             </section>
           </TabPanel>
 
+          <TabPanel value="residents">
+            <section class="admin-section admin-section--wide">
+              <h2 class="admin-section__title">{{ $t("admin.users.title") }}</h2>
+              <ResidentsPanel v-if="activeTab === 'residents'" />
+            </section>
+          </TabPanel>
+
           <TabPanel value="log">
             <section class="admin-section">
               <h2 class="admin-section__title">{{ $t("admin.audit.title") }}</h2>
@@ -108,6 +116,7 @@
   import AdminHouseholdAssignment from "@features/admin/AdminHouseholdAssignment.vue";
   import AuditLogPanel from "@features/admin/AuditLogPanel.vue";
   import ElectricityRatesSettings from "@features/admin/ElectricityRatesSettings.vue";
+  import ResidentsPanel from "@features/admin/ResidentsPanel.vue";
   import { type AdminDashboardOut, getAdminDashboard } from "@shared/api/admin";
   import { formatKwh, formatUah } from "@shared/utils/format";
 

@@ -2,6 +2,7 @@ import type { components } from "./generated/openapi.ts";
 
 import { ApiError, appApiClient, buildApiError } from "./client";
 
+export type AdminUserOut = components["schemas"]["AdminUserOut"];
 export type AdminUserSummaryOut = components["schemas"]["AdminUserSummaryOut"];
 export type AdminHouseholdOut = components["schemas"]["AdminHouseholdOut"];
 export type AdminDashboardOut = components["schemas"]["AdminDashboardOut"];
@@ -10,7 +11,7 @@ export type AuditLogEntryOut = components["schemas"]["AuditLogEntryOut"];
 type AdminHouseholdCreateIn = components["schemas"]["AdminHouseholdCreateIn"];
 type HouseholdOwnerAssignIn = components["schemas"]["HouseholdOwnerAssignIn"];
 
-export async function listAdminUsers(): Promise<AdminUserSummaryOut[]> {
+export async function listAdminUsers(): Promise<AdminUserOut[]> {
   const { data } = await appApiClient.GET("/admin/users");
 
   return data ?? [];
@@ -79,6 +80,22 @@ export async function getAuditLog(query: {
 }): Promise<AuditLogPageOut> {
   const { data, error, response } = await appApiClient.GET("/admin/audit-log", {
     params: { query },
+  });
+
+  if (error) {
+    throw buildApiError(response.status, error);
+  }
+
+  return data;
+}
+
+export async function updateAdminUser(
+  userId: number,
+  payload: { is_active?: boolean; is_admin?: boolean; unassign_households?: boolean }
+): Promise<AdminUserOut> {
+  const { data, error, response } = await appApiClient.PATCH("/admin/users/{user_id}", {
+    body: { unassign_households: false, ...payload, confirm: true },
+    params: { path: { user_id: userId } },
   });
 
   if (error) {
