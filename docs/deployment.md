@@ -29,9 +29,25 @@ The workflow (`.github/workflows/deployment.yml`) will:
 1. Build the frontend (`bun run build` inside `frontend/`)
 2. Deploy the backend to FastAPI Cloud (`uv run fastapi deploy` inside `backend/`)
 
-Once migrations land (#140), apply them to production *before* tagging, and
-preflight will also verify that every bundled migration is recorded in
-`schema_migrations`. That check is not implemented yet.
+### Migrations
+
+Apply migrations to production *before* tagging, since the app refuses to start
+on an outdated schema:
+
+```bash
+pg_dump "$DATABASE_URL" -Fc -f pre-migration.dump   # always, first
+cd backend && DATABASE_URL=... uv run alembic upgrade head
+```
+
+Migrations must be backward-compatible with the previously deployed code
+(add first, remove in a later release). Automating this step in the release
+workflow is a follow-up; it should run before the `deploy` job.
+
+**One-time prod baseline:** `0000` was generated from the models, not from prod.
+Diff a `pg_dump --schema-only` of prod against a fresh `alembic upgrade 0000`
+schema, fix any drift in a new migration, then `alembic stamp 0000` in prod
+(do not run `0000` there). `0001` adds a unique index on
+`electricity_rates.effective_from` and fails if prod has duplicates.
 
 You can also trigger a deployment manually from the GitHub Actions UI using the **workflow_dispatch** option.
 
