@@ -73,5 +73,8 @@ class HouseholdStatementsOut(BaseModel):
     is_current_owner: bool
     owned_since: UtcDatetime | None
     owned_until: UtcDatetime | None
+    # Someone else owned the plot before this user's tenure began, so records
+    # older than `owned_since` belong to them.
+    has_previous_owner: bool
     balance: BalanceOut
     statements: list[StatementLineOut]

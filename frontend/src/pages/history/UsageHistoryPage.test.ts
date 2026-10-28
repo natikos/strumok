@@ -19,6 +19,7 @@ vi.mock("@shared/api/meter-readings", () => ({
 vi.mock("@shared/api/billing", () => ({
   listAdjustments: vi.fn().mockResolvedValue([]),
   listStatements: vi.fn().mockResolvedValue([]),
+  listMyStatements: vi.fn().mockResolvedValue([]),
   getBalance: vi.fn().mockResolvedValue({
     balance_uah: "50.00",
     household_id: 1,

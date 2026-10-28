@@ -666,5 +666,12 @@
         "body": "To correct your data, get a copy of it or have it deleted, contact the head of the co-op. Requests are handled by hand. Deleting an account anonymizes you but keeps the billing lines, because the co-op's charges and payments must stay on record."
       }
     }
+  },
+  "ownership": {
+    "noLongerOwner": "You no longer own {name} as of {date}. Your past bills and any balance remain below.",
+    "pastTitle": "Past households",
+    "ownedUntil": "Owned until {date}",
+    "noStatements": "No bills for this household.",
+    "previousOwnerNote": "Records before {date} belong to the previous owner."
   }
 }

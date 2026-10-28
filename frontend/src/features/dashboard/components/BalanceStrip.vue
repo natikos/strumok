@@ -4,7 +4,13 @@
 
     <ErrorState v-else-if="error" :message-key="error" @retry="load" />
 
-    <button v-else-if="balance" type="button" class="balance-strip__body" :class="`balance-strip__body--${state}`" @click="$emit('open-history')">
+    <button
+      v-else-if="balance"
+      type="button"
+      class="balance-strip__body"
+      :class="`balance-strip__body--${state}`"
+      @click="$emit('open-history')"
+    >
       <span class="balance-strip__text">
         <CheckCircle v-if="state === 'paid'" aria-hidden="true" />
         {{ text }}
@@ -23,6 +29,7 @@
   import { useI18n } from "vue-i18n";
 
   import { useCurrentHousehold } from "@/features/households/useCurrentHousehold";
+  import { useHouseholdTenures } from "@/features/households/useHouseholdTenures";
   import { type BalanceOut, getBalance } from "@shared/api/billing";
   import { formatUah, toDecimal } from "@shared/utils/format";
 
@@ -32,11 +39,14 @@
   const { current, currentId, households } = useCurrentHousehold();
   const locale = navigator.language;
 
+  const { pastBalance, load: loadTenures } = useHouseholdTenures();
+
   const balance = ref<BalanceOut | null>(null);
   const isLoading = ref(true);
   const error = ref<string | null>(null);
 
-  const amount = computed(() => toDecimal(balance.value?.balance_uah));
+  // Debt on plots the user gave up is still theirs, so it stays in the total.
+  const amount = computed(() => toDecimal(balance.value?.balance_uah) + pastBalance.value);
   const state = computed<"credit" | "owe" | "paid">(() =>
     amount.value > 0 ? "owe" : amount.value < 0 ? "credit" : "paid"
   );
@@ -60,7 +70,7 @@
     error.value = null;
 
     try {
-      balance.value = await getBalance(currentId.value);
+      [balance.value] = await Promise.all([getBalance(currentId.value), loadTenures()]);
     } catch {
       // Never fall through to "all paid up" when we simply don't know.
       balance.value = null;

@@ -109,6 +109,14 @@ def get_all_my_statements(
     household_ids = {t.household_id for t in tenures} | set(
         session.exec(select(Household.id).where(Household.user_id == current_user.id))
     )
+    earlier_owners = {
+        (t.household_id, t.user_id, t.valid_from)
+        for t in session.exec(
+            select(HouseholdOwnership).where(
+                col(HouseholdOwnership.household_id).in_(household_ids)
+            )
+        )
+    }
     result = []
     for household in session.exec(
         select(Household).where(col(Household.id).in_(household_ids))
@@ -123,6 +131,13 @@ def get_all_my_statements(
                 is_current_owner=is_current,
                 owned_since=mine[0].valid_from if mine else None,
                 owned_until=None if is_current or not mine else mine[-1].valid_to,
+                has_previous_owner=bool(mine)
+                and any(
+                    hid == household.id
+                    and uid != current_user.id
+                    and valid_from < mine[0].valid_from
+                    for hid, uid, valid_from in earlier_owners
+                ),
                 balance=BalanceOut.model_validate(
                     get_balance(
                         session=session,
