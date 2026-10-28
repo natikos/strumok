@@ -43,6 +43,7 @@ function makeReading(overrides: Partial<MeterReadingOut> = {}): MeterReadingOut 
     source: "resident",
     corrected_at: null,
     correction_reason: null,
+    meter_replaced: false,
     submitted_at: "2026-07-02T09:00:00.000Z",
     ...overrides,
   };
@@ -307,6 +308,14 @@ describe("UsageHistoryPage load error handling", () => {
     const wrapper = await mountPage();
 
     expect(wrapper.text()).toContain("Corrected by the head on 2026-07-05: typo in the day value");
+  });
+
+  it("notes a period in which the meter was replaced", async () => {
+    listMyMeterReadings.mockResolvedValue([makeReading({ meter_replaced: true })]);
+
+    const wrapper = await mountPage();
+
+    expect(wrapper.text()).toContain("Meter replaced in");
   });
 
   it("labels an estimated period as Estimated and never as a normal charge", async () => {

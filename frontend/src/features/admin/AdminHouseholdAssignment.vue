@@ -44,6 +44,41 @@
       </span>
     </div>
 
+    <div v-if="selectedHouseholdId === null" class="admin-assignment__starting">
+      <div class="admin-assignment__field">
+        <label class="admin-assignment__label" for="admin-household-start-day">
+          {{ $t("admin.startingDay") }}
+        </label>
+        <InputNumber
+          v-model="startingDay"
+          input-id="admin-household-start-day"
+          :min="0"
+          :min-fraction-digits="2"
+          :max-fraction-digits="2"
+          fluid
+          :disabled="isLoading"
+        />
+      </div>
+      <div class="admin-assignment__field">
+        <label class="admin-assignment__label" for="admin-household-start-night">
+          {{ $t("admin.startingNight") }}
+        </label>
+        <InputNumber
+          v-model="startingNight"
+          input-id="admin-household-start-night"
+          :min="0"
+          :min-fraction-digits="2"
+          :max-fraction-digits="2"
+          fluid
+          :disabled="isLoading"
+        />
+      </div>
+      <p class="admin-assignment__hint">{{ $t("admin.startingHint") }}</p>
+      <span v-if="errors.starting" role="alert" class="admin-assignment__field-error">
+        {{ $t(errors.starting) }}
+      </span>
+    </div>
+
     <template v-else>
       <div class="admin-assignment__rename">
         <InputText
@@ -138,6 +173,7 @@
   interface FieldErrors {
     newHouseholdName?: string;
     selectedUserId?: string;
+    starting?: string;
   }
 
   const schema = z.object({
@@ -157,6 +193,8 @@
   const selectedHouseholdId = ref<number | null>(null);
   const newHouseholdName = ref("");
   const selectedUserId = ref<number | null>(null);
+  const startingDay = ref<number | null>(null);
+  const startingNight = ref<number | null>(null);
 
   onMounted(async () => {
     isLoading.value = true;
@@ -265,6 +303,8 @@
     selectedHouseholdId.value = null;
     newHouseholdName.value = "";
     selectedUserId.value = null;
+    startingDay.value = null;
+    startingNight.value = null;
     errors.value = {};
   }
 
@@ -285,6 +325,13 @@
 
     if (selectedHouseholdId.value === null && newHouseholdName.value.trim().length === 0) {
       next.newHouseholdName = "admin.newHouseholdNameRequired";
+    }
+
+    if (
+      selectedHouseholdId.value === null &&
+      (startingDay.value === null) !== (startingNight.value === null)
+    ) {
+      next.starting = "admin.startingBoth";
     }
 
     errors.value = next;
@@ -310,6 +357,12 @@
         household = await createAdminHousehold({
           name: newHouseholdName.value.trim(),
           user_id: selectedUserId.value,
+          ...(startingDay.value !== null && startingNight.value !== null
+            ? {
+                starting_day_meter_value: String(startingDay.value),
+                starting_night_meter_value: String(startingNight.value),
+              }
+            : {}),
         });
         households.value = [...households.value, household];
       }
@@ -407,6 +460,17 @@
   .admin-assignment__field-error {
     font-size: 0.75rem;
     color: var(--s-red-500);
+  }
+
+  .admin-assignment__starting {
+    @include layout.stack(var(--s-app-space-3));
+    min-width: 0;
+  }
+
+  .admin-assignment__hint {
+    color: color-mix(in srgb, var(--s-content-color), transparent 35%);
+    font-size: 0.8rem;
+    margin: 0;
   }
 
   .admin-assignment__rename {

@@ -19,6 +19,7 @@ function makeReading(overrides: Partial<MeterReadingOut> = {}): MeterReadingOut 
     source: "resident",
     corrected_at: null,
     correction_reason: null,
+    meter_replaced: false,
     submitted_at: "2026-06-02T09:00:00.000Z",
     ...overrides,
   };
