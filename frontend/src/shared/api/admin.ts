@@ -11,6 +11,8 @@ export type AdminDashboardOut = components["schemas"]["AdminDashboardOut"];
 export type PeriodOverviewOut = components["schemas"]["PeriodOverviewOut"];
 export type ReconciliationOut = components["schemas"]["ReconciliationOut"];
 export type RestatementOut = components["schemas"]["RestatementOut"];
+export type BalancesOut = components["schemas"]["BalancesOut"];
+export type PaymentOut = components["schemas"]["PaymentOut"];
 export type AuditLogPageOut = components["schemas"]["AuditLogPageOut"];
 export type AuditLogEntryOut = components["schemas"]["AuditLogEntryOut"];
 type AdminHouseholdCreateIn = components["schemas"]["AdminHouseholdCreateIn"];
@@ -281,4 +283,51 @@ export async function voidAdminReading(readingId: number, reason: string): Promi
   if (!response.ok) {
     throw buildApiError(response.status, error);
   }
+}
+
+export async function listAdminBalances(): Promise<BalancesOut> {
+  const { data } = await appApiClient.GET("/admin/balances");
+
+  if (!data) {
+    throw new Error("Balances response was empty");
+  }
+
+  return data;
+}
+
+export async function listHouseholdPayments(householdId: number): Promise<PaymentOut[]> {
+  const { data } = await appApiClient.GET("/admin/households/{household_id}/payments", {
+    params: { path: { household_id: householdId } },
+  });
+
+  return data ?? [];
+}
+
+export async function recordHouseholdPayment(
+  householdId: number,
+  payload: { amount_uah: string; method: "cash" | "transfer"; note?: string; paid_on: string }
+): Promise<PaymentOut> {
+  const { data, error, response } = await appApiClient.POST(
+    "/admin/households/{household_id}/payments",
+    { body: payload, params: { path: { household_id: householdId } } }
+  );
+
+  if (error) {
+    throw buildApiError(response.status, error);
+  }
+
+  return data;
+}
+
+export async function voidHouseholdPayment(paymentId: number, reason: string): Promise<PaymentOut> {
+  const { data, error, response } = await appApiClient.POST("/admin/payments/{payment_id}/void", {
+    body: { reason },
+    params: { path: { payment_id: paymentId } },
+  });
+
+  if (error) {
+    throw buildApiError(response.status, error);
+  }
+
+  return data;
 }

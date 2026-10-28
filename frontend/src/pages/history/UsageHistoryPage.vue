@@ -196,6 +196,10 @@
                 }}
               </p>
 
+              <p v-if="paymentLine(entry.period)" class="usage-history__payment">
+                {{ paymentLine(entry.period) }}
+              </p>
+
               <div
                 class="usage-history__charge"
                 :class="{ 'usage-history__charge--credit': entry.amountCharged < 0 }"
@@ -255,6 +259,7 @@
 
   import { useCurrentHousehold } from "@features/households/useCurrentHousehold";
   import { useLocale } from "@features/i18n/composables/useLocale";
+  import { type BalanceOut, getBalance } from "@shared/api/billing";
   import { listMyMeterReadings, type MeterReadingOut } from "@shared/api/meter-readings";
   import { ROUTES } from "@shared/routing/routes";
   import {
@@ -297,6 +302,7 @@
   }
 
   const readings = ref<MeterReadingOut[]>([]);
+  const balance = ref<BalanceOut | null>(null);
   const status = ref<"loading" | "error" | "ready">("loading");
 
   const { t } = useI18n();
@@ -304,6 +310,24 @@
   const { currentId } = useCurrentHousehold();
 
   const currentBillingPeriod = getCurrentBillingPeriod();
+
+  // Text, never colour alone: paid / partly paid (X of Y) / unpaid per period.
+  function paymentLine(period: string): string {
+    const item = balance.value?.periods.find((p) => p.period === period);
+
+    if (!item) {
+      return "";
+    }
+
+    if (item.status === "partial") {
+      return t("balance.partial", {
+        due: formatUah(toDecimal(item.due_uah)),
+        paid: formatUah(toDecimal(item.paid_uah)),
+      });
+    }
+
+    return t(`balance.${item.status}`);
+  }
 
   const sortedEntries = computed<HistoryEntry[]>(() => {
     const entries = readings.value.map((reading) => {
@@ -458,6 +482,9 @@
     try {
       readings.value = await listMyMeterReadings(currentId.value);
       status.value = "ready";
+      // Payment status is a nicety on top of the history: if it fails the
+      // charges still show, just without the paid/unpaid line.
+      balance.value = await getBalance(currentId.value).catch(() => null);
     } catch {
       status.value = "error";
     }
@@ -861,6 +888,12 @@
     display: inline-flex;
     font-size: 0.8rem;
     gap: var(--s-app-space-1);
+  }
+
+  .usage-history__payment {
+    color: color-mix(in srgb, var(--s-content-color), transparent 35%);
+    font-size: 0.8rem;
+    margin: var(--s-app-space-2) 0 0;
   }
 
   .usage-history__charge {

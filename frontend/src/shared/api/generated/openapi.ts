@@ -301,6 +301,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/billing/balance": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get My Balance */
+        get: operations["get_my_balance_billing_balance_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/admin/users": {
         parameters: {
             query?: never;
@@ -586,6 +603,58 @@ export interface paths {
         put?: never;
         /** Void Reading */
         post: operations["void_reading_admin_readings__reading_id__void_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/households/{household_id}/payments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Household Payments */
+        get: operations["get_household_payments_admin_households__household_id__payments_get"];
+        put?: never;
+        /** Record Household Payment */
+        post: operations["record_household_payment_admin_households__household_id__payments_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/payments/{payment_id}/void": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Void Household Payment */
+        post: operations["void_household_payment_admin_payments__payment_id__void_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/balances": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Admin Balances */
+        get: operations["get_admin_balances_admin_balances_get"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -941,6 +1010,31 @@ export interface components {
             /** Next Cursor */
             next_cursor: number | null;
         };
+        /**
+         * BalanceOut
+         * @description What a household owes in total. Negative `balance_uah` is a credit.
+         */
+        BalanceOut: {
+            /** Household Id */
+            household_id: number;
+            /** Total Due Uah */
+            total_due_uah: string;
+            /** Total Paid Uah */
+            total_paid_uah: string;
+            /** Balance Uah */
+            balance_uah: string;
+            /** Unpaid Months */
+            unpaid_months: number;
+            /** Periods */
+            periods: components["schemas"]["PeriodBalanceOut"][];
+        };
+        /** BalancesOut */
+        BalancesOut: {
+            /** Households */
+            households: components["schemas"]["HouseholdBalanceOut"][];
+            /** Total Outstanding Uah */
+            total_outstanding_uah: string;
+        };
         /** BillIn */
         BillIn: {
             /** Day Kwh */
@@ -1056,6 +1150,19 @@ export interface components {
         HTTPValidationError: {
             /** Detail */
             detail?: components["schemas"]["ValidationError"][];
+        };
+        /** HouseholdBalanceOut */
+        HouseholdBalanceOut: {
+            /** Household Id */
+            household_id: number;
+            /** Household Name */
+            household_name: string;
+            /** Owner Name */
+            owner_name: string | null;
+            /** Balance Uah */
+            balance_uah: string;
+            /** Unpaid Months */
+            unpaid_months: number;
         };
         /** HouseholdOwnerAssignIn */
         HouseholdOwnerAssignIn: {
@@ -1190,6 +1297,69 @@ export interface components {
              * Format: email
              */
             email: string;
+        };
+        /** PaymentIn */
+        PaymentIn: {
+            /** Amount Uah */
+            amount_uah: number | string;
+            /**
+             * Paid On
+             * Format: date
+             */
+            paid_on: string;
+            /**
+             * Method
+             * @enum {string}
+             */
+            method: "cash" | "transfer";
+            /** Note */
+            note?: string | null;
+        };
+        /** PaymentOut */
+        PaymentOut: {
+            /** Id */
+            id: number;
+            /** Household Id */
+            household_id: number;
+            /** Amount Uah */
+            amount_uah: string;
+            /**
+             * Paid On
+             * Format: date
+             */
+            paid_on: string;
+            /**
+             * Method
+             * @enum {string}
+             */
+            method: "cash" | "transfer";
+            /** Note */
+            note: string | null;
+            /** Created At */
+            created_at: string;
+            /** Voided At */
+            voided_at: string | null;
+            /** Void Reason */
+            void_reason: string | null;
+        };
+        /** PaymentVoidIn */
+        PaymentVoidIn: {
+            /** Reason */
+            reason: string;
+        };
+        /** PeriodBalanceOut */
+        PeriodBalanceOut: {
+            /** Period */
+            period: string;
+            /** Due Uah */
+            due_uah: string;
+            /** Paid Uah */
+            paid_uah: string;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "paid" | "partial" | "unpaid";
         };
         /** PeriodCloseIn */
         PeriodCloseIn: {
@@ -2361,6 +2531,60 @@ export interface operations {
             };
         };
     };
+    get_my_balance_billing_balance_get: {
+        parameters: {
+            query?: {
+                household_id?: number | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BalanceOut"];
+                };
+            };
+            /** @description User does not own this household, or it is inactive */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description User is not a member of any household */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "detail": "noHouseholdMembership"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     list_admin_users_admin_users_get: {
         parameters: {
             query?: never;
@@ -3196,6 +3420,173 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_household_payments_admin_households__household_id__payments_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                household_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaymentOut"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    record_household_payment_admin_households__household_id__payments_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                household_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PaymentIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaymentOut"];
+                };
+            };
+            /** @description Household or payment does not exist */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description The payment was already voided */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "detail": "paymentAlreadyVoided"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    void_household_payment_admin_payments__payment_id__void_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                payment_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PaymentVoidIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaymentOut"];
+                };
+            };
+            /** @description Household or payment does not exist */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description The payment was already voided */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "detail": "paymentAlreadyVoided"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_admin_balances_admin_balances_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BalancesOut"];
                 };
             };
         };

@@ -1,5 +1,7 @@
 <template>
   <div class="dashboard">
+    <BalanceStrip @open-history="goToHistory" />
+
     <div class="dashboard__top">
       <SubmissionCard
         class="dashboard__submission"
@@ -73,6 +75,7 @@
   import { useI18n } from "vue-i18n";
   import { useRouter } from "vue-router";
 
+  import BalanceStrip from "@/features/dashboard/components/BalanceStrip.vue";
   import DayNightSplitCard from "@/features/dashboard/components/DayNightSplitCard.vue";
   import EmptyUsageCard from "@/features/dashboard/components/EmptyUsageCard.vue";
   import FirstRunGuideCard from "@/features/dashboard/components/FirstRunGuideCard.vue";

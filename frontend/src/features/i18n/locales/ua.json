@@ -240,7 +240,38 @@
       "enteredBy": "Внесено головою {date}: {reason}"
     },
     "estimated": "Оцінка",
-    "estimatedCount": "Оцінка ({count})"
+    "estimatedCount": "Оцінка ({count})",
+    "tabBalances": "Баланси",
+    "balances": {
+      "title": "Баланси",
+      "outstanding": "Усього заборгованість: {total}",
+      "household": "Ділянка",
+      "owner": "Власник",
+      "balance": "Баланс",
+      "unpaid": "Неоплачених місяців",
+      "owes": "Заборгованість {amount}",
+      "credit": "Переплата {amount}",
+      "settled": "Розраховано",
+      "record": "Внести оплату для {name}",
+      "amount": "Сума, грн",
+      "paidOn": "Дата",
+      "method": "Спосіб",
+      "cash": "Готівка",
+      "transfer": "Переказ",
+      "note": "Примітка (необов'язково)",
+      "save": "Внести оплату",
+      "cancel": "Скасувати",
+      "payments": "Оплати",
+      "voided": "Анульовано: {reason}",
+      "void": "Анулювати",
+      "voidFor": "Анулювати оплату {amount} для {name}",
+      "voidReason": "Причина (обов'язково)",
+      "voidTitle": "Анулювати {amount}, сплачені {date}, ({name})?",
+      "voidBody": "Це не можна скасувати, дію буде записано в журнал.",
+      "voidAccept": "Анулювати оплату",
+      "noPayments": "Оплат ще не внесено",
+      "loadError": "Не вдалося завантажити баланси"
+    }
   },
   "auth": {
     "login": "Вхід",
@@ -381,7 +412,9 @@
     "readingNotFound": "Цього показника вже не існує",
     "periodNotClosed": "Цей період ще не закрито",
     "nothingToCorrect": "Нічого виправляти",
-    "periodInFuture": "Цей період ще не настав"
+    "periodInFuture": "Цей період ще не настав",
+    "paymentNotFound": "Цієї оплати вже не існує",
+    "paymentAlreadyVoided": "Цю оплату вже анульовано"
   },
   "household": {
     "switchAria": "Обрати домогосподарство",
@@ -556,5 +589,18 @@
     "successBody": "Пошту оновлено. Увійдіть знову з новою адресою.",
     "errorExpired": "Це посилання недійсне або прострочене. Запросіть зміну ще раз у налаштуваннях.",
     "signIn": "Увійти"
+  },
+  "balance": {
+    "owe": "Ви винні {amount}",
+    "unpaidMonths": "Неоплачених місяців: {count}",
+    "paidUp": "Усе сплачено",
+    "credit": "Переплата: {amount}",
+    "household": "{name}",
+    "loadError": "Не вдалося завантажити ваш баланс",
+    "retry": "Повторити",
+    "paid": "Сплачено",
+    "partial": "Частково сплачено ({paid} з {due})",
+    "unpaid": "Не сплачено",
+    "aria": "Ваш баланс"
   }
 }
