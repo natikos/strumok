@@ -42,6 +42,11 @@ You can also trigger a deployment manually from the GitHub Actions UI using the 
 | `FASTAPI_CLOUD_TOKEN`  | FastAPI Cloud deploy token   |
 | `FASTAPI_CLOUD_APP_ID` | FastAPI Cloud app identifier |
 
+## Backups
+
+The database is backed up on day 6 and day 11 of each month by `.github/workflows/db-backup.yml`. Setup, restore, and
+the quarterly drill are in [operations.md](operations.md#database-backups).
+
 ## Push Reminders
 
 Deadline push reminders run on an in-process APScheduler

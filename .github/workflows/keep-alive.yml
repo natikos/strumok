@@ -1,0 +1,21 @@
+name: Keep database awake
+on:
+  schedule:
+    - cron: "23 5 */3 * *"
+permissions: {}
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Call /health
+        env:
+          APP_ORIGIN: ${{ vars.APP_ORIGIN }}
+        run: |
+          if [ -z "$APP_ORIGIN" ]; then
+            echo "::error::Repository variable APP_ORIGIN is not set"
+            exit 1
+          fi
+          curl --fail --silent --show-error --max-time 30 \
+            --retry 3 --retry-delay 20 --retry-all-errors \
+            "${APP_ORIGIN%/}/health"
