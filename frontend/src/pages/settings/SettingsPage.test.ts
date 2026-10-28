@@ -5,6 +5,7 @@ import { ref } from "vue";
 
 import { appPlugins } from "@/shared/testing/mount";
 import type { PushToggleState } from "@features/push-notifications/usePushNotifications";
+import type * as AuthApi from "@shared/api/auth";
 
 import SettingsPage from "./SettingsPage.vue";
 
@@ -21,6 +22,11 @@ const { usePushNotifications } = vi.hoisted(() => ({
 vi.mock("@features/push-notifications/usePushNotifications", () => ({
   usePushNotifications,
 }));
+
+vi.mock("@shared/api/auth", async (importOriginal) => {
+  const actual = await importOriginal<typeof AuthApi>();
+  return { ...actual, getMe: vi.fn().mockResolvedValue({ email: "resident@example.com" }) };
+});
 
 vi.mock("primevue/usetoast", () => ({
   useToast: () => ({ add: vi.fn() }),

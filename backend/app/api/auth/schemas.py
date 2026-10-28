@@ -24,6 +24,16 @@ class VerifyEmailIn(BaseModel):
     token: str = Field(min_length=1, max_length=2048)
 
 
+class ChangePasswordIn(BaseModel):
+    current_password: str = Field(min_length=1, max_length=128)
+    new_password: str = Field(min_length=8, max_length=128)
+
+
+class ChangeEmailIn(BaseModel):
+    current_password: str = Field(min_length=1, max_length=128)
+    new_email: EmailStr
+
+
 class HouseholdSummary(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 

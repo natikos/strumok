@@ -37,6 +37,12 @@
         </div>
       </section>
 
+      <section v-if="me" class="settings-section">
+        <h2 class="settings-section__title">{{ t("settings.account.title") }}</h2>
+
+        <AccountSettings :current-email="me.email" />
+      </section>
+
       <section class="settings-section">
         <h2 class="settings-section__title">{{ t("settings.notifications.title") }}</h2>
 
@@ -75,14 +81,14 @@
 
 <script setup lang="ts">
   import { Bell, Language, Palette, Spinner } from "@primeicons/vue";
-  import { computed } from "vue";
+  import { computed, onMounted, ref } from "vue";
   import { useI18n } from "vue-i18n";
 
   import { useLocale } from "@features/i18n/composables/useLocale";
   import type { LanguageCode, ThemeMode } from "@features/preferences/preferences.storage";
   import { usePushNotifications } from "@features/push-notifications/usePushNotifications";
   import { useTheme } from "@features/theme/composables/useTheme";
-  import { updateMyPreferences } from "@shared/api/auth";
+  import { getMe, updateMyPreferences, type UserWithHouseholdsOut } from "@shared/api/auth";
   import LanguageToggleButton from "@shared/components/i18n/LanguageToggleButton.vue";
   import ThemeToggleButton from "@shared/components/theme/ThemeToggleButton.vue";
 
@@ -90,6 +96,11 @@
   const { setTheme, isDarkTheme } = useTheme();
   const { state: pushState, enable: enablePush, disable: disablePush } = usePushNotifications();
   const { t } = useI18n();
+  const me = ref<UserWithHouseholdsOut | null>(null);
+
+  onMounted(async () => {
+    me.value = await getMe();
+  });
 
   const notificationIcon = computed(() => (pushState.value === "requesting" ? Spinner : Bell));
 

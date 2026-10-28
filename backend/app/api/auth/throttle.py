@@ -17,6 +17,7 @@ class Limit:
 
 LOGIN_EMAIL_LIMIT = Limit(max_attempts=5, window=timedelta(minutes=15))
 LOGIN_IP_LIMIT = Limit(max_attempts=30, window=timedelta(minutes=15))
+ACCOUNT_CHANGE_LIMIT = Limit(max_attempts=5, window=timedelta(minutes=15))
 
 
 class TooManyAttemptsError(Exception):

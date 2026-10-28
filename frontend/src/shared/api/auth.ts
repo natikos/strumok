@@ -91,3 +91,38 @@ export async function confirmEmailVerification(token: string): Promise<UserOut> 
   setAuthSessionState(true, data.email_verified);
   return data;
 }
+
+export async function changePassword(payload: {
+  current_password: string;
+  new_password: string;
+}): Promise<void> {
+  const { error, response } = await appApiClient.POST("/auth/password", { body: payload });
+
+  if (!response.ok) {
+    throw buildApiError(response.status, error, response.headers);
+  }
+}
+
+export async function requestEmailChange(payload: {
+  current_password: string;
+  new_email: string;
+}): Promise<void> {
+  const { error, response } = await appApiClient.POST("/auth/email", { body: payload });
+
+  if (!response.ok) {
+    throw buildApiError(response.status, error, response.headers);
+  }
+}
+
+export async function confirmEmailChange(token: string): Promise<void> {
+  const { error, response } = await appApiClient.POST("/auth/confirm-email-change", {
+    body: { token },
+  });
+
+  if (!response.ok) {
+    throw buildApiError(response.status, error);
+  }
+
+  // Every session is revoked on change, this one included.
+  setAuthSessionState(false, false);
+}
