@@ -124,3 +124,20 @@ class AuditLogEntryOut(BaseModel):
 class AuditLogPageOut(BaseModel):
     items: list[AuditLogEntryOut]
     next_cursor: int | None
+
+
+class PeriodOverviewOut(BaseModel):
+    period: str
+    status: Literal["open", "closed"]
+    closed_at: UtcDatetime | None
+    closed_by_name: str | None
+    readings_count: int
+    missing_count: int
+    blockers: list[str]
+
+
+class PeriodCloseIn(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    confirm: Literal[True]
+    acknowledge_flags: bool = False
