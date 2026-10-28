@@ -36,6 +36,7 @@ declare module 'vue' {
     ElectricityRatesSettings: typeof import('./src/features/admin/ElectricityRatesSettings.vue')['default']
     EmptyUsageCard: typeof import('./src/features/dashboard/components/EmptyUsageCard.vue')['default']
     ErrorState: typeof import('./src/shared/components/ErrorState.vue')['default']
+    ExportCsvButton: typeof import('./src/features/admin/ExportCsvButton.vue')['default']
     FirstRunGuideCard: typeof import('./src/features/dashboard/components/FirstRunGuideCard.vue')['default']
     ForgotPasswordPage: typeof import('./src/pages/auth/ForgotPasswordPage.vue')['default']
     FormFieldControl: typeof import('./src/shared/FormFieldControl.vue')['default']

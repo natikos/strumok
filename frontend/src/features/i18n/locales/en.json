@@ -1,5 +1,6 @@
 {
   "admin": {
+    "export": "Export CSV",
     "title": "Admin",
     "householdAssignment": "Household assignment",
     "household": "Household",

@@ -1,5 +1,6 @@
 <template>
   <div class="balances">
+    <ExportCsvButton path="balances" />
     <ErrorState v-if="error" :message-key="error" @retry="load" />
 
     <template v-else-if="data">

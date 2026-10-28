@@ -1,5 +1,6 @@
 <template>
   <div class="audit-log">
+    <ExportCsvButton path="audit-log" />
     <div class="audit-log__filters">
       <Select
         v-model="householdId"

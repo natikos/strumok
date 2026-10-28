@@ -1,5 +1,6 @@
 {
   "admin": {
+    "export": "Експорт CSV",
     "title": "Адміністрування",
     "householdAssignment": "Призначення господарств",
     "household": "Господарство",
