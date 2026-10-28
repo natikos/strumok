@@ -315,6 +315,23 @@ export interface paths {
         patch: operations["assign_admin_household_owner_admin_households__household_id__owner_patch"];
         trace?: never;
     };
+    "/admin/audit-log": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Audit Log */
+        get: operations["get_audit_log_admin_audit_log_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/electricity-rates": {
         parameters: {
             query?: never;
@@ -431,6 +448,41 @@ export interface components {
             last_name: string;
             /** Is Active */
             is_active: boolean;
+        };
+        /** AuditLogEntryOut */
+        AuditLogEntryOut: {
+            /** Id */
+            id: number;
+            /** Action */
+            action: string;
+            /** Entity Type */
+            entity_type: string;
+            /** Entity Id */
+            entity_id: number | null;
+            /** Household Id */
+            household_id: number | null;
+            /** Period */
+            period: string | null;
+            /** Before */
+            before: {
+                [key: string]: unknown;
+            } | null;
+            /** After */
+            after: {
+                [key: string]: unknown;
+            } | null;
+            /** Reason */
+            reason: string | null;
+            /** Created At */
+            created_at: string;
+            actor: components["schemas"]["AdminUserSummaryOut"] | null;
+        };
+        /** AuditLogPageOut */
+        AuditLogPageOut: {
+            /** Items */
+            items: components["schemas"]["AuditLogEntryOut"][];
+            /** Next Cursor */
+            next_cursor: number | null;
         };
         /** ChangeEmailIn */
         ChangeEmailIn: {
@@ -1595,6 +1647,40 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_audit_log_admin_audit_log_get: {
+        parameters: {
+            query?: {
+                household_id?: number | null;
+                period?: string | null;
+                action?: string | null;
+                cursor?: number | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AuditLogPageOut"];
                 };
             };
             /** @description Validation Error */

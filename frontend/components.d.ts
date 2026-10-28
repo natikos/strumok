@@ -17,6 +17,7 @@ declare module 'vue' {
     App: typeof import('./src/App.vue')['default']
     AppLayout: typeof import('./src/layouts/AppLayout.vue')['default']
     AppLoader: typeof import('./src/shared/components/AppLoader.vue')['default']
+    AuditLogPanel: typeof import('./src/features/admin/AuditLogPanel.vue')['default']
     AuthForm: typeof import('./src/features/auth/AuthForm.vue')['default']
     AuthLayout: typeof import('./src/pages/auth/AuthLayout.vue')['default']
     AuthPage: typeof import('./src/pages/auth/AuthPage.vue')['default']

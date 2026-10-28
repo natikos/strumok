@@ -45,7 +45,26 @@
     "missing": "Не подано",
     "tabSubmissions": "Подання",
     "tabHouseholds": "Господарства",
-    "tabRates": "Тарифи"
+    "tabRates": "Тарифи",
+    "tabLog": "Журнал",
+    "audit": {
+      "title": "Журнал",
+      "empty": "Записів за цими фільтрами немає",
+      "household": "Ділянка",
+      "allHouseholds": "Усі ділянки",
+      "period": "Період (РРРР-ММ)",
+      "action": "Дія",
+      "allActions": "Усі дії",
+      "loadMore": "Показати ще",
+      "by": "виконав(ла) {name}",
+      "system": "система",
+      "reason": "Причина: {reason}",
+      "actions": {
+        "householdCreated": "Ділянку створено",
+        "householdOwnerAssigned": "Власника призначено",
+        "rateCreated": "Тариф додано"
+      }
+    }
   },
   "auth": {
     "login": "Вхід",

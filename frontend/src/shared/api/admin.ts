@@ -5,6 +5,8 @@ import { ApiError, appApiClient, buildApiError } from "./client";
 export type AdminUserSummaryOut = components["schemas"]["AdminUserSummaryOut"];
 export type AdminHouseholdOut = components["schemas"]["AdminHouseholdOut"];
 export type AdminDashboardOut = components["schemas"]["AdminDashboardOut"];
+export type AuditLogPageOut = components["schemas"]["AuditLogPageOut"];
+export type AuditLogEntryOut = components["schemas"]["AuditLogEntryOut"];
 type AdminHouseholdCreateIn = components["schemas"]["AdminHouseholdCreateIn"];
 type HouseholdOwnerAssignIn = components["schemas"]["HouseholdOwnerAssignIn"];
 
@@ -67,4 +69,21 @@ export async function assignAdminHouseholdOwner(
 
 export function isHouseholdAlreadyAssignedError(error: unknown): boolean {
   return error instanceof ApiError && error.message === HOUSEHOLD_ALREADY_ASSIGNED_ERROR_CODE;
+}
+
+export async function getAuditLog(query: {
+  action?: string;
+  cursor?: number;
+  household_id?: number;
+  period?: string;
+}): Promise<AuditLogPageOut> {
+  const { data, error, response } = await appApiClient.GET("/admin/audit-log", {
+    params: { query },
+  });
+
+  if (error) {
+    throw buildApiError(response.status, error);
+  }
+
+  return data;
 }
