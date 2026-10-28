@@ -17,6 +17,20 @@ class AdminUserSummaryOut(BaseModel):
     is_active: bool
 
 
+class AdminUserOut(AdminUserSummaryOut):
+    is_admin: bool
+    household_count: int
+
+
+class AdminUserUpdateIn(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    is_active: bool | None = None
+    is_admin: bool | None = None
+    unassign_households: bool = False
+    confirm: Literal[True]
+
+
 class AdminHouseholdCreateIn(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
