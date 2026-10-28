@@ -1,10 +1,12 @@
 import logging
+from datetime import date
 from decimal import Decimal
 from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, Path, Query, Response, status
 from sqlmodel import Session, col, select
 
+from app.api.admin.export import CsvFormat, audit_rows, payment_rows, render_csv
 from app.api.admin.schemas import (
     AdminDashboardOut,
     AdminHouseholdCreateIn,
@@ -973,3 +975,158 @@ def get_admin_balances(session: Session = Depends(get_session)) -> BalancesOut:
             (row.balance_uah for row in rows if row.balance_uah > 0), Decimal("0.00")
         ),
     )
+
+
+def _csv_response(content: str, filename: str) -> Response:
+    return Response(
+        content=content,
+        media_type="text/csv; charset=utf-8",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
+
+
+@router.get("/export/period/{period}")
+def export_period_reconciliation(
+    period: str = PERIOD_PATH,
+    format: CsvFormat = "standard",
+    session: Session = Depends(get_session),
+) -> Response:
+    result = _reconciliation(session=session, period=period)
+    rows = [
+        (
+            line.household_id,
+            line.household_name,
+            line.usage_kwh,
+            line.usage_share_percent,
+            line.tariff_uah,
+            line.loss_share_uah,
+            line.penalty_uah,
+            line.total_uah,
+            line.is_estimated,
+        )
+        for line in result.lines
+    ]
+    content = render_csv(
+        [
+            "household_id",
+            "household",
+            "usage_kwh",
+            "usage_share_percent",
+            "tariff_uah",
+            "loss_share_uah",
+            "penalty_uah",
+            "total_uah",
+            "is_estimated",
+        ],
+        rows,
+        format,
+    )
+    return _csv_response(content, f"reconciliation-{period}.csv")
+
+
+@router.get("/export/balances")
+def export_balances(
+    format: CsvFormat = "standard", session: Session = Depends(get_session)
+) -> Response:
+    rows = [
+        (
+            r.household_id,
+            r.household_name,
+            r.owner_name,
+            r.balance_uah,
+            r.unpaid_months,
+        )
+        for r in list_balances(session=session)
+    ]
+    content = render_csv(
+        ["household_id", "household", "owner", "balance_uah", "unpaid_months"],
+        rows,
+        format,
+    )
+    return _csv_response(content, "balances.csv")
+
+
+@router.get("/export/payments")
+def export_payments(
+    date_from: date | None = Query(default=None, alias="from"),
+    date_to: date | None = Query(default=None, alias="to"),
+    format: CsvFormat = "standard",
+    session: Session = Depends(get_session),
+) -> Response:
+    rows = [
+        (
+            p.id,
+            p.household_id,
+            name,
+            p.amount_uah,
+            p.paid_on,
+            p.method,
+            p.note,
+            p.voided_at,
+            p.void_reason,
+        )
+        for p, name in payment_rows(
+            session=session, date_from=date_from, date_to=date_to
+        )
+    ]
+    content = render_csv(
+        [
+            "id",
+            "household_id",
+            "household",
+            "amount_uah",
+            "paid_on",
+            "method",
+            "note",
+            "voided_at",
+            "void_reason",
+        ],
+        rows,
+        format,
+    )
+    return _csv_response(content, "payments.csv")
+
+
+@router.get("/export/audit-log")
+def export_audit_log(
+    date_from: date | None = Query(default=None, alias="from"),
+    date_to: date | None = Query(default=None, alias="to"),
+    format: CsvFormat = "standard",
+    session: Session = Depends(get_session),
+) -> Response:
+    rows = [
+        (
+            e.id,
+            e.created_at,
+            f"{actor.first_name} {actor.last_name}" if actor else None,
+            e.action,
+            e.entity_type,
+            e.entity_id,
+            e.household_id,
+            e.period,
+            e.before,
+            e.after,
+            e.reason,
+        )
+        for e, actor in audit_rows(
+            session=session, date_from=date_from, date_to=date_to
+        )
+    ]
+    content = render_csv(
+        [
+            "id",
+            "created_at",
+            "actor",
+            "action",
+            "entity_type",
+            "entity_id",
+            "household_id",
+            "period",
+            "before",
+            "after",
+            "reason",
+        ],
+        rows,
+        format,
+    )
+    return _csv_response(content, "audit-log.csv")
