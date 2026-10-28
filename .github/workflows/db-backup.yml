@@ -1,0 +1,61 @@
+name: Database backup
+on:
+  schedule:
+    - cron: "0 6 6 * *"
+    - cron: "0 18 11 * *"
+permissions:
+  contents: read
+concurrency: db-backup
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      KIND: ${{ github.event.schedule == '0 6 6 * *' && 'window-closed' || 'payments-verified' }}
+      BACKUP_DATABASE_URL: ${{ secrets.BACKUP_DATABASE_URL }}
+      AWS_ACCESS_KEY_ID: ${{ secrets.BACKUP_S3_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.BACKUP_S3_SECRET_ACCESS_KEY }}
+      AWS_DEFAULT_REGION: ${{ secrets.BACKUP_S3_REGION }}
+      AWS_REQUEST_CHECKSUM_CALCULATION: when_required
+      AWS_RESPONSE_CHECKSUM_VALIDATION: when_required
+      S3_ENDPOINT: ${{ secrets.BACKUP_S3_ENDPOINT }}
+      S3_BUCKET: ${{ secrets.BACKUP_S3_BUCKET }}
+      AGE_RECIPIENT: ${{ vars.BACKUP_AGE_RECIPIENT }}
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Check configuration
+        run: |
+          for v in BACKUP_DATABASE_URL AWS_ACCESS_KEY_ID AWS_SECRET_ACCESS_KEY AWS_DEFAULT_REGION S3_ENDPOINT S3_BUCKET; do
+            if [ -z "${!v}" ]; then
+              echo "::error::Missing secret for $v"
+              exit 1
+            fi
+          done
+          case "$AGE_RECIPIENT" in
+            age1*) ;;
+            *) echo "::error::Repository variable BACKUP_AGE_RECIPIENT is not an age public key"; exit 1 ;;
+          esac
+
+      - name: Install pg_dump 17 and age
+        run: |
+          sudo install -d /usr/share/postgresql-common/pgdg
+          sudo curl -fsSL -o /usr/share/postgresql-common/pgdg/apt.postgresql.org.asc https://www.postgresql.org/media/keys/ACCC4CF8.asc
+          echo "deb [signed-by=/usr/share/postgresql-common/pgdg/apt.postgresql.org.asc] https://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" | sudo tee /etc/apt/sources.list.d/pgdg.list
+          sudo apt-get update
+          sudo apt-get install -y postgresql-client-17 age
+
+      - name: Dump, encrypt, upload
+        run: |
+          set -euo pipefail
+          key="period-close/$KIND-$(date -u +%Y%m%dT%H%M%SZ).dump.age"
+          /usr/lib/postgresql/17/bin/pg_dump -Fc --no-owner --no-privileges "$BACKUP_DATABASE_URL" \
+            | age -r "$AGE_RECIPIENT" > backup.dump.age
+          size=$(stat -c %s backup.dump.age)
+          if [ "$size" -lt 1024 ]; then
+            echo "::error::Backup is suspiciously small ($size bytes)"
+            exit 1
+          fi
+          aws s3 cp backup.dump.age "s3://$S3_BUCKET/$key" --endpoint-url "$S3_ENDPOINT"
+          aws s3api head-object --bucket "$S3_BUCKET" --key "$key" --endpoint-url "$S3_ENDPOINT" > /dev/null
+          echo "Uploaded $key ($size bytes)"
