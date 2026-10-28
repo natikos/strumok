@@ -46,6 +46,7 @@
           :is-submitting="isSubmitting"
           :submit-label="warning && warningAcknowledged ? t('meterReadings.submitAnyway') : submitLabel"
           :warning="warning"
+          :is-offline="isOffline"
           @update:day-value="$emit('update:dayMeterValue', $event)"
           @update:night-value="$emit('update:nightMeterValue', $event)"
           @submit="$emit('submit')"
@@ -126,6 +127,7 @@
     closedNote?: string | null | undefined;
     warning?: ReadingWarning | null | undefined;
     warningAcknowledged?: boolean | undefined;
+    isOffline?: boolean | undefined;
   }
 
   const props = withDefaults(defineProps<Props>(), {
@@ -153,6 +155,7 @@
     closedNote: null,
     warning: null,
     warningAcknowledged: false,
+    isOffline: false,
   });
 
   defineEmits<{

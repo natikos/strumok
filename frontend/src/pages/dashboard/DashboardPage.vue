@@ -23,6 +23,7 @@
         :closed-note="closedNote"
         :warning="plausibilityWarning"
         :warning-acknowledged="warningAcknowledged"
+        :is-offline="isOffline"
         @update:day-meter-value="dayMeterValue = $event"
         @update:night-meter-value="nightMeterValue = $event"
         @submit="submitReading"
@@ -103,6 +104,7 @@
   const {
     isLoading,
     isSubmitting,
+    isOffline,
     errors,
     dayMeterValue,
     nightMeterValue,

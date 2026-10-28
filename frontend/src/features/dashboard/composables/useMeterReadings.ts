@@ -8,6 +8,7 @@ import type { FieldErrors } from "@/features/dashboard/types";
 import { useCurrentHousehold } from "@/features/households/useCurrentHousehold";
 import { useLocale } from "@/features/i18n/composables/useLocale";
 import { useAsyncData } from "@/shared/composables/useAsyncData";
+import { useOnlineStatus } from "@/shared/composables/useOnlineStatus";
 import {
   formatPeriodMonth,
   currentBillingPeriod as getCurrentBillingPeriod,
@@ -51,6 +52,17 @@ export function useMeterReadings() {
   const errors = ref<FieldErrors>({});
   const dayMeterValue = ref<null | number>(null);
   const nightMeterValue = ref<null | number>(null);
+
+  // `navigator.onLine` can claim true on a dead connection, so a network-level
+  // fetch failure also counts as offline until the next `online` event or retry.
+  const { isOnline } = useOnlineStatus();
+  const networkFailed = ref(false);
+  const isOffline = computed(() => !isOnline.value || networkFailed.value);
+  watch(isOnline, (online) => {
+    if (online) {
+      networkFailed.value = false;
+    }
+  });
 
   const { currentId } = useCurrentHousehold();
   const { intlLocale } = useLocale();
@@ -177,6 +189,12 @@ export function useMeterReadings() {
   async function handleSubmit(): Promise<void> {
     errors.value = {};
 
+    // Offline: keep the entered values and don't fire a request that can only fail.
+    if (!isOnline.value) {
+      return;
+    }
+    networkFailed.value = false;
+
     const parsed = schema.safeParse({
       dayMeterValue: dayMeterValue.value,
       nightMeterValue: nightMeterValue.value,
@@ -228,6 +246,8 @@ export function useMeterReadings() {
         const key = `errors.${error.message}`;
         errors.value =
           error.message === NO_RATE_CONFIGURED_ERROR_CODE ? { info: key } : { form: key };
+      } else if (error instanceof TypeError) {
+        networkFailed.value = true;
       } else if (error instanceof Error) {
         console.error(error);
         errors.value = { form: "errors.requestFailed" };
@@ -244,6 +264,7 @@ export function useMeterReadings() {
   return {
     isLoading,
     isSubmitting,
+    isOffline,
     errors,
     dayMeterValue,
     nightMeterValue,
