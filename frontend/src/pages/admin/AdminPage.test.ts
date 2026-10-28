@@ -23,6 +23,7 @@ const stubs = {
   TabPanel: { template: "<div><slot /></div>" },
   AdminHouseholdAssignment: true,
   ElectricityRatesSettings: true,
+  PaymentDetailsSettings: true,
   PeriodCloseCard: true,
   ProgressSpinner: true,
 };

@@ -1,22 +1,26 @@
 import { flushPromises, mount } from "@vue/test-utils";
+import Button from "primevue/button";
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { appPlugins } from "@/shared/testing/mount";
 import type { Component } from "vue";
 
-const { getBalance, listMyStatements } = vi.hoisted(() => ({
+const { getBalance, getPaymentDetails, listMyStatements } = vi.hoisted(() => ({
   getBalance: vi.fn(),
+  getPaymentDetails: vi.fn(),
   listMyStatements: vi.fn(),
 }));
 
 // The suite runs with isolate: false, so mock the API late (see AuditLogPanel.test).
 let BalanceStrip: Component;
+let PaySheet: Component;
 let setHouseholds: (households: { id: number; name: string }[]) => unknown;
 
 beforeAll(async () => {
   vi.resetModules();
-  vi.doMock("@shared/api/billing", () => ({ getBalance, listMyStatements }));
+  vi.doMock("@shared/api/billing", () => ({ getBalance, getPaymentDetails, listMyStatements }));
   BalanceStrip = (await import("./BalanceStrip.vue")).default;
+  PaySheet = (await import("./PaySheet.vue")).default;
   // Same module instance as the component imports after the reset.
   const household = await import("@/features/households/useCurrentHousehold");
   setHouseholds = household.useCurrentHousehold().setHouseholds;
@@ -39,13 +43,18 @@ const balance = (overrides = {}) => ({
 
 function mountStrip() {
   return mount(BalanceStrip, {
-    global: { plugins: appPlugins(), stubs: { ErrorState: true, Skeleton: true } },
+    global: {
+      plugins: appPlugins(),
+      components: { Button, PaySheet },
+      stubs: { ErrorState: true, Skeleton: true, Dialog: { template: "<div><slot /></div>" } },
+    },
   });
 }
 
 describe("BalanceStrip", () => {
   beforeEach(() => {
     getBalance.mockReset();
+    getPaymentDetails.mockReset().mockResolvedValue(null);
     listMyStatements.mockReset().mockResolvedValue([]);
     setHouseholds([{ id: 1, name: "Plot 1" }]);
   });
@@ -108,5 +117,52 @@ describe("BalanceStrip", () => {
     await flushPromises();
 
     expect(wrapper.find(".balance-strip__household").text()).toBe("Plot 1");
+  });
+
+  describe("pay action", () => {
+    const details = { iban: "UA213223130000026007233566001", recipient_name: "Strumok Co-op" };
+
+    it("offers Pay with this plot's balance when money is owed and details exist", async () => {
+      getBalance.mockResolvedValue(balance({ balance_uah: "250.50" }));
+      getPaymentDetails.mockResolvedValue(details);
+      const wrapper = mountStrip();
+      await flushPromises();
+
+      expect(wrapper.find(".balance-strip__pay").exists()).toBe(true);
+
+      expect(wrapper.findComponent({ name: "PaySheet" }).props()).toMatchObject({
+        amount: "250.50",
+        iban: details.iban,
+        recipient: "Strumok Co-op",
+        comment: "Plot 1",
+      });
+    });
+
+    it("hides Pay when nothing is owed", async () => {
+      getBalance.mockResolvedValue(balance({ balance_uah: "-10.00" }));
+      getPaymentDetails.mockResolvedValue(details);
+      const wrapper = mountStrip();
+      await flushPromises();
+
+      expect(wrapper.find(".balance-strip__pay").exists()).toBe(false);
+    });
+
+    it("hides Pay when the head has not set payment details", async () => {
+      getBalance.mockResolvedValue(balance({ balance_uah: "250.00" }));
+      const wrapper = mountStrip();
+      await flushPromises();
+
+      expect(wrapper.find(".balance-strip__pay").exists()).toBe(false);
+    });
+
+    it("keeps the balance visible when payment details fail to load", async () => {
+      getBalance.mockResolvedValue(balance({ balance_uah: "250.00" }));
+      getPaymentDetails.mockRejectedValue(new Error("boom"));
+      const wrapper = mountStrip();
+      await flushPromises();
+
+      expect(wrapper.text()).toContain("You owe");
+      expect(wrapper.find(".balance-strip__pay").exists()).toBe(false);
+    });
   });
 });

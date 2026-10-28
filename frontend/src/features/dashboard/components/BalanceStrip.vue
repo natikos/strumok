@@ -20,6 +20,22 @@
       </span>
       <span v-if="householdName" class="balance-strip__household">{{ householdName }}</span>
     </button>
+
+    <template v-if="payable">
+      <Button
+        type="button"
+        class="balance-strip__pay"
+        :label="t('balance.pay')"
+        @click="isPayOpen = true"
+      />
+      <PaySheet
+        v-model:visible="isPayOpen"
+        :amount="payAmount"
+        :iban="paymentDetails!.iban"
+        :recipient="paymentDetails!.recipient_name"
+        :comment="payComment"
+      />
+    </template>
   </section>
 </template>
 
@@ -30,7 +46,7 @@
 
   import { useCurrentHousehold } from "@/features/households/useCurrentHousehold";
   import { useHouseholdTenures } from "@/features/households/useHouseholdTenures";
-  import { type BalanceOut, getBalance } from "@shared/api/billing";
+  import { type BalanceOut, getBalance, getPaymentDetails, type PaymentDetailsOut } from "@shared/api/billing";
   import { formatUah, toDecimal } from "@shared/utils/format";
 
   defineEmits<{ "open-history": [] }>();
@@ -42,6 +58,8 @@
   const { pastBalance, load: loadTenures } = useHouseholdTenures();
 
   const balance = ref<BalanceOut | null>(null);
+  const paymentDetails = ref<PaymentDetailsOut | null>(null);
+  const isPayOpen = ref(false);
   const isLoading = ref(true);
   const error = ref<string | null>(null);
 
@@ -50,6 +68,12 @@
   const state = computed<"credit" | "owe" | "paid">(() =>
     amount.value > 0 ? "owe" : amount.value < 0 ? "credit" : "paid"
   );
+  // Pay only the current plot's own balance (not the gave-up-plots debt shown in
+  // the strip total): the head reconciles per household.
+  const ownBalance = computed(() => toDecimal(balance.value?.balance_uah));
+  const payable = computed(() => ownBalance.value > 0 && paymentDetails.value !== null);
+  const payAmount = computed(() => ownBalance.value.toFixed(2));
+  const payComment = computed(() => current.value?.name ?? "");
   const householdName = computed(() =>
     households.value.length > 1 ? (current.value?.name ?? "") : ""
   );
@@ -71,6 +95,8 @@
 
     try {
       [balance.value] = await Promise.all([getBalance(currentId.value), loadTenures()]);
+      // Paying is optional: if the details can't load, just hide the action.
+      paymentDetails.value = await getPaymentDetails(currentId.value).catch(() => null);
     } catch {
       // Never fall through to "all paid up" when we simply don't know.
       balance.value = null;
@@ -105,6 +131,12 @@
       &--owe {
         border-color: var(--s-amber-500);
       }
+    }
+
+    &__pay {
+      margin-top: var(--s-app-space-3);
+      min-height: 44px;
+      width: 100%;
     }
 
     &__text {

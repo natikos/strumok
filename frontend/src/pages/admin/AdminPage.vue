@@ -35,6 +35,12 @@
                 <ElectricityRatesSettings />
               </div>
             </section>
+            <section class="admin-section">
+              <h2 class="admin-section__title">{{ $t("admin.paymentDetails.title") }}</h2>
+              <div class="admin-card admin-card--padded">
+                <PaymentDetailsSettings />
+              </div>
+            </section>
           </TabPanel>
 
           <TabPanel value="submissions">
@@ -201,6 +207,7 @@
   import AuditLogPanel from "@features/admin/AuditLogPanel.vue";
   import BalancesPanel from "@features/admin/BalancesPanel.vue";
   import ElectricityRatesSettings from "@features/admin/ElectricityRatesSettings.vue";
+  import PaymentDetailsSettings from "@features/admin/PaymentDetailsSettings.vue";
   import PeriodCloseCard from "@features/admin/PeriodCloseCard.vue";
   import ReadingEditor from "@features/admin/ReadingEditor.vue";
   import ReconciliationPanel from "@features/admin/ReconciliationPanel.vue";

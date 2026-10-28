@@ -6,6 +6,7 @@ export type StatementLineOut = components["schemas"]["StatementLineOut"];
 export type BalanceOut = components["schemas"]["BalanceOut"];
 export type AdjustmentOut = components["schemas"]["AdjustmentOut"];
 export type HouseholdStatementsOut = components["schemas"]["HouseholdStatementsOut"];
+export type PaymentDetailsOut = components["schemas"]["PaymentDetailsOut"];
 export type CurrentPeriodOut = components["schemas"]["CurrentPeriodOut"];
 
 export async function getCurrentPeriod(): Promise<CurrentPeriodOut> {
@@ -62,4 +63,19 @@ export async function listMyStatements(): Promise<HouseholdStatementsOut[]> {
   }
 
   return data;
+}
+
+/** Where to send money; null until the head has configured it. */
+export async function getPaymentDetails(
+  householdId?: number | null
+): Promise<PaymentDetailsOut | null> {
+  const { data, error, response } = await appApiClient.GET("/billing/payment-details", {
+    params: { query: householdId == null ? {} : { household_id: householdId } },
+  });
+
+  if (error) {
+    throw buildApiError(response.status, error);
+  }
+
+  return data ?? null;
 }

@@ -318,6 +318,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/billing/payment-details": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get My Payment Details */
+        get: operations["get_my_payment_details_billing_payment_details_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/me/statements": {
         parameters: {
             query?: never;
@@ -424,6 +441,24 @@ export interface paths {
         head?: never;
         /** Assign Admin Household Owner */
         patch: operations["assign_admin_household_owner_admin_households__household_id__owner_patch"];
+        trace?: never;
+    };
+    "/admin/payment-details": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Admin Payment Details */
+        get: operations["get_admin_payment_details_admin_payment_details_get"];
+        /** Put Admin Payment Details */
+        put: operations["put_admin_payment_details_admin_payment_details_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
         trace?: never;
     };
     "/admin/audit-log": {
@@ -1481,6 +1516,23 @@ export interface components {
              * Format: email
              */
             email: string;
+        };
+        /** PaymentDetailsIn */
+        PaymentDetailsIn: {
+            /** Iban */
+            iban: string;
+            /** Recipient Name */
+            recipient_name: string;
+        };
+        /** PaymentDetailsOut */
+        PaymentDetailsOut: {
+            /**
+             * Iban
+             * @example UA213223130000026007233566001
+             */
+            iban: string;
+            /** Recipient Name */
+            recipient_name: string;
         };
         /** PaymentIn */
         PaymentIn: {
@@ -2778,6 +2830,60 @@ export interface operations {
             };
         };
     };
+    get_my_payment_details_billing_payment_details_get: {
+        parameters: {
+            query?: {
+                household_id?: number | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaymentDetailsOut"] | null;
+                };
+            };
+            /** @description User does not own this household, or it is inactive */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description User is not a member of any household */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "detail": "noHouseholdMembership"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     get_all_my_statements_me_statements_get: {
         parameters: {
             query?: never;
@@ -3091,6 +3197,64 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_admin_payment_details_admin_payment_details_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaymentDetailsOut"] | null;
+                };
+            };
+        };
+    };
+    put_admin_payment_details_admin_payment_details_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PaymentDetailsIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaymentDetailsOut"];
+                };
+            };
+            /** @description IBAN is malformed or fails its checksum */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "detail": "invalidIban"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorOut"];
                 };
             };
         };
