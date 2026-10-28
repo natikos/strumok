@@ -608,5 +608,33 @@
       "lateFeeCredit": "Credit from other households' late fees",
       "correction": "Correction"
     }
+  },
+  "privacy": {
+    "link": "Privacy notice",
+    "title": "Privacy notice",
+    "back": "Back",
+    "intro": "Strumok is used only to split the co-op's shared electricity bill between households.",
+    "sections": {
+      "collected": {
+        "title": "What we collect",
+        "body": "Your name and email, the meter readings you submit, and the charges and payments worked out from them. Monthly consumption can show when a plot is in use, so we treat it as personal data. We use it for co-op billing and nothing else."
+      },
+      "access": {
+        "title": "Who can see it",
+        "body": "You see your own households. The head of the co-op and the administrators see everyone's data, because they reconcile the shared bill. It is not shared with anyone else or used for advertising."
+      },
+      "hosting": {
+        "title": "Where it is kept",
+        "body": "The app runs on FastAPI Cloud and the database is hosted on Supabase. Encrypted backups are stored with Backblaze. Email goes through Brevo and reminders through your browser's push service."
+      },
+      "retention": {
+        "title": "How long we keep it",
+        "body": "Billing records are kept for as long as the co-op needs its accounts. Encrypted backups are deleted after about 90 days."
+      },
+      "rights": {
+        "title": "Correction, export and deletion",
+        "body": "To correct your data, get a copy of it or have it deleted, contact the head of the co-op. Requests are handled by hand. Deleting an account anonymizes you but keeps the billing lines, because the co-op's charges and payments must stay on record."
+      }
+    }
   }
 }

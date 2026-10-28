@@ -58,6 +58,9 @@
           </Message>
         </Form>
         <p class="auth-form__invite-note">{{ $t("auth.inviteNote") }}</p>
+        <RouterLink class="auth-form__forgot" :to="ROUTES.privacy">
+          {{ $t("privacy.link") }}
+        </RouterLink>
       </div>
     </template>
   </Card>

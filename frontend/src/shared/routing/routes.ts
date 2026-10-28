@@ -13,6 +13,7 @@ export const ROUTES = {
   confirmEmailChange: "/confirm-email-change",
   forgotPassword: "/forgot-password",
   history: "/history",
+  privacy: "/privacy",
   resetPassword: "/reset-password",
   root: "/",
   setPassword: "/set-password",

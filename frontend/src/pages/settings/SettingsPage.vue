@@ -98,6 +98,10 @@
           </div>
         </div>
       </section>
+
+      <RouterLink class="settings-privacy" :to="ROUTES.privacy">
+        {{ t("privacy.link") }}
+      </RouterLink>
     </div>
   </div>
 </template>
@@ -115,6 +119,7 @@
   import { getMe, updateMyPreferences, type UserWithHouseholdsOut } from "@shared/api/auth";
   import LanguageToggleButton from "@shared/components/i18n/LanguageToggleButton.vue";
   import ThemeToggleButton from "@shared/components/theme/ThemeToggleButton.vue";
+  import { ROUTES } from "@shared/routing/routes";
 
   const { setLocale, currentLocale } = useLocale();
   const { setTheme, isDarkTheme } = useTheme();
@@ -177,6 +182,12 @@
   .settings-body {
     @include layout.stack(var(--s-app-space-8));
     max-width: 40rem;
+  }
+
+  .settings-privacy {
+    color: var(--p-primary-color);
+    font-size: 0.875rem;
+    align-self: flex-start;
   }
 
   .settings-section {

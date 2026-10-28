@@ -50,6 +50,7 @@ declare module 'vue' {
     NoHouseholdScreen: typeof import('./src/layouts/NoHouseholdScreen.vue')['default']
     Password: typeof import('primevue/password')['default']
     PeriodCloseCard: typeof import('./src/features/admin/PeriodCloseCard.vue')['default']
+    PrivacyPage: typeof import('./src/pages/auth/PrivacyPage.vue')['default']
     ProgressSpinner: typeof import('primevue/progressspinner')['default']
     RateEditor: typeof import('./src/features/admin/RateEditor.vue')['default']
     ReadingEditor: typeof import('./src/features/admin/ReadingEditor.vue')['default']
