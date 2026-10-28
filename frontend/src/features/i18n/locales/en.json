@@ -94,7 +94,21 @@
       "revokeBody": "They'll lose admin access.",
       "confirm": "Confirm",
       "cancel": "Cancel",
-      "empty": "No residents match"
+      "empty": "No residents match",
+      "invite": "Invite resident",
+      "inviteFirstName": "First name",
+      "inviteLastName": "Last name",
+      "inviteEmail": "Email",
+      "inviteLanguage": "Language",
+      "inviteHousehold": "Household (optional)",
+      "inviteSend": "Send invite",
+      "inviteSent": "Invite sent to {email}",
+      "inviteNotSent": "Account created, but the email didn't go out. Copy the link and send it yourself.",
+      "copyLink": "Copy invite link",
+      "linkCopied": "Link copied",
+      "sendInvite": "Send invite",
+      "invitePending": "Invite pending",
+      "close": "Close"
     },
     "renameHousehold": "Household name",
     "rename": "Rename",
@@ -138,7 +152,13 @@
     "resetSubmit": "Save password",
     "resetExpired": "This link is invalid or has expired, or was already used.",
     "requestNewLink": "Request a new link",
-    "resetDone": "Password changed. Sign in with your new password."
+    "resetDone": "Password changed. Sign in with your new password.",
+    "inviteNote": "Strumok is for co-op members. Ask the head for an invite.",
+    "setTitle": "Set your password",
+    "setSubtitle": "From your invite",
+    "setSubmit": "Set password and continue",
+    "setExpired": "This invite link has expired or was already used. Ask the head for a new one.",
+    "setDone": "Welcome! Your password is set."
   },
   "dashboard": {
     "awaitingReading": "{month} awaiting reading",
@@ -225,7 +245,9 @@
     "verificationEmailSendFailed": "We couldn't send the verification email. Please try again later",
     "cannotModifySelf": "You can't change your own account",
     "lastAdminRequired": "At least one active admin is required",
-    "userOwnsActiveHouseholds": "This user still owns households"
+    "userOwnsActiveHouseholds": "This user still owns households",
+    "registrationClosed": "Registration is by invitation only",
+    "inviteAlreadyAccepted": "This invite was already accepted"
   },
   "household": {
     "switchAria": "Switch household",

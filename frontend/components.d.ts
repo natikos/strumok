@@ -52,6 +52,7 @@ declare module 'vue' {
     SeasonCard: typeof import('./src/features/dashboard/components/SeasonCard.vue')['default']
     Select: typeof import('primevue/select')['default']
     SelectButton: typeof import('primevue/selectbutton')['default']
+    SetPasswordPage: typeof import('./src/pages/auth/SetPasswordPage.vue')['default']
     SettingsPage: typeof import('./src/pages/settings/SettingsPage.vue')['default']
     Skeleton: typeof import('primevue/skeleton')['default']
     StatTilesCard: typeof import('./src/features/dashboard/components/StatTilesCard.vue')['default']

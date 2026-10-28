@@ -3,6 +3,7 @@ import type { components } from "./generated/openapi.ts";
 import { ApiError, appApiClient, buildApiError } from "./client";
 
 export type AdminUserOut = components["schemas"]["AdminUserOut"];
+export type AdminInviteOut = components["schemas"]["AdminInviteOut"];
 export type AdminUserSummaryOut = components["schemas"]["AdminUserSummaryOut"];
 export type AdminHouseholdOut = components["schemas"]["AdminHouseholdOut"];
 export type AdminDashboardOut = components["schemas"]["AdminDashboardOut"];
@@ -116,6 +117,34 @@ export async function updateAdminHousehold(
 
   if (error) {
     throw buildApiError(response.status, error);
+  }
+
+  return data;
+}
+
+export async function inviteAdminUser(payload: {
+  email: string;
+  first_name: string;
+  household_id?: number;
+  language: "en" | "ua";
+  last_name: string;
+}): Promise<AdminInviteOut> {
+  const { data, error, response } = await appApiClient.POST("/admin/users", { body: payload });
+
+  if (error) {
+    throw buildApiError(response.status, error);
+  }
+
+  return data;
+}
+
+export async function resendAdminInvite(userId: number): Promise<AdminInviteOut> {
+  const { data, error, response } = await appApiClient.POST("/admin/users/{user_id}/invite", {
+    params: { path: { user_id: userId } },
+  });
+
+  if (error) {
+    throw buildApiError(response.status, error, response.headers);
   }
 
   return data;

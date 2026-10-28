@@ -15,6 +15,7 @@ export const ROUTES = {
   history: "/history",
   resetPassword: "/reset-password",
   root: "/",
+  setPassword: "/set-password",
   settings: "/settings",
   verifyEmail: "/verify-email",
 } as const;
