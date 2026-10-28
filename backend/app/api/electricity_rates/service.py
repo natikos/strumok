@@ -1,5 +1,6 @@
 from decimal import Decimal
 
+from sqlalchemy.exc import IntegrityError
 from sqlmodel import Session, desc, select
 
 from app.db.models import ElectricityRate
@@ -53,6 +54,11 @@ def create_rate(
         effective_from=effective_from,
     )
     session.add(rate)
-    session.commit()
+    try:
+        session.commit()
+    except IntegrityError as exc:
+        # Lost the race with a concurrent request; the unique index caught it.
+        session.rollback()
+        raise EffectiveFromAlreadyExistsError from exc
     session.refresh(rate)
     return rate
