@@ -588,5 +588,21 @@
     "partial": "Partly paid ({paid} of {due})",
     "unpaid": "Unpaid",
     "aria": "Your balance"
+  },
+  "bill": {
+    "for": "for {month}",
+    "plain": "Your {usage} at the co-op rate, plus your share of the co-op's shared costs.",
+    "plainEstimated": "Estimated (no reading received) + 30% late fee.",
+    "howCalculated": "How was this calculated?",
+    "soFar": "So far this month (estimate): about {amount}",
+    "usage": "Your usage",
+    "total": "Total",
+    "rows": {
+      "tariff": "At the co-op rate",
+      "sharedLosses": "Your share of shared costs",
+      "lateFee": "Late fee (no reading received)",
+      "lateFeeCredit": "Credit from other households' late fees",
+      "correction": "Correction"
+    }
   }
 }

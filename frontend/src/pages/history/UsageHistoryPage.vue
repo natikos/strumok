@@ -200,6 +200,18 @@
                 {{ paymentLine(entry.period) }}
               </p>
 
+              <template v-if="bills.get(entry.period)">
+                <Button
+                  class="usage-history__calc-toggle"
+                  severity="secondary"
+                  variant="text"
+                  :aria-expanded="openBreakdown === entry.period"
+                  :label="$t('bill.howCalculated')"
+                  @click="openBreakdown = openBreakdown === entry.period ? null : entry.period"
+                />
+                <BillBreakdown v-if="openBreakdown === entry.period" :bill="bills.get(entry.period)!" />
+              </template>
+
               <div
                 class="usage-history__charge"
                 :class="{ 'usage-history__charge--credit': entry.amountCharged < 0 }"
@@ -257,11 +269,13 @@
   import { computed, onMounted, ref, watch } from "vue";
   import { useI18n } from "vue-i18n";
 
+  import BillBreakdown from "@/features/dashboard/components/BillBreakdown.vue";
   import { useCurrentHousehold } from "@features/households/useCurrentHousehold";
   import { useLocale } from "@features/i18n/composables/useLocale";
-  import { type BalanceOut, getBalance } from "@shared/api/billing";
+  import { type BalanceOut, getBalance, listAdjustments, listStatements } from "@shared/api/billing";
   import { listMyMeterReadings, type MeterReadingOut } from "@shared/api/meter-readings";
   import { ROUTES } from "@shared/routing/routes";
+  import { type Bill, buildBill } from "@shared/utils/bill";
   import {
     formatPeriodMonth,
     currentBillingPeriod as getCurrentBillingPeriod,
@@ -303,6 +317,8 @@
 
   const readings = ref<MeterReadingOut[]>([]);
   const balance = ref<BalanceOut | null>(null);
+  const bills = ref(new Map<string, Bill>());
+  const openBreakdown = ref<string | null>(null);
   const status = ref<"loading" | "error" | "ready">("loading");
 
   const { t } = useI18n();
@@ -485,6 +501,15 @@
       // Payment status is a nicety on top of the history: if it fails the
       // charges still show, just without the paid/unpaid line.
       balance.value = await getBalance(currentId.value).catch(() => null);
+      const [lines, adjustments] = await Promise.all([
+        listStatements(currentId.value).catch(() => []),
+        listAdjustments(currentId.value).catch(() => []),
+      ]);
+      bills.value = new Map(
+        lines
+          .filter((line) => line.status === "closed")
+          .map((line) => [line.period, buildBill(line, adjustments)])
+      );
     } catch {
       status.value = "error";
     }
