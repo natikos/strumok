@@ -14,6 +14,7 @@ from app.db.models import (
     ChargeAdjustment,
     Household,
     HouseholdCharge,
+    OpeningBalance,
     Payment,
     User,
 )
@@ -30,6 +31,10 @@ class PaymentAlreadyVoidedError(Exception):
 
 
 class HouseholdMissingError(Exception):
+    pass
+
+
+class OpeningBalanceAlreadySetError(Exception):
     pass
 
 
@@ -94,6 +99,71 @@ def record_payment(
     return payment
 
 
+def set_opening_balance(
+    *,
+    session: Session,
+    household_id: int,
+    amount_uah: Decimal,
+    as_of: date,
+    note: str | None,
+    actor_id: int | None,
+    commit: bool = True,
+) -> OpeningBalance:
+    """Records what the household owed (positive) or was owed (negative) at
+    go-live. Once only: the figure is the starting point every later balance
+    builds on, so changing it silently would rewrite history."""
+    household = session.get(Household, household_id)
+    if household is None:
+        raise HouseholdMissingError
+    existing = session.exec(
+        select(OpeningBalance).where(OpeningBalance.household_id == household_id)
+    ).first()
+    if existing is not None:
+        raise OpeningBalanceAlreadySetError
+    opening = OpeningBalance(
+        household_id=household_id,
+        owner_user_id=household.user_id,
+        amount_uah=amount_uah,
+        as_of=as_of,
+        note=note,
+        created_by_user_id=actor_id,
+    )
+    session.add(opening)
+    session.flush()
+    audit.record(
+        session,
+        actor_user_id=actor_id,
+        action="openingBalanceSet",
+        entity_type="opening_balance",
+        entity_id=opening.id,
+        household_id=household_id,
+        after={"amount_uah": amount_uah, "as_of": as_of, "note": note},
+    )
+    if commit:
+        session.commit()
+        session.refresh(opening)
+    return opening
+
+
+def get_opening_balance(
+    *, session: Session, household_id: int
+) -> OpeningBalance | None:
+    return session.exec(
+        select(OpeningBalance).where(OpeningBalance.household_id == household_id)
+    ).first()
+
+
+def _opening_amount(
+    *, session: Session, household_id: int, owner_user_id: int | None = None
+) -> Decimal:
+    query = select(func.coalesce(func.sum(OpeningBalance.amount_uah), 0)).where(
+        OpeningBalance.household_id == household_id
+    )
+    if owner_user_id is not None:
+        query = query.where(OpeningBalance.owner_user_id == owner_user_id)
+    return Decimal(session.exec(query).one() or ZERO)
+
+
 def void_payment(
     *, session: Session, payment_id: int, reason: str, actor_id: int
 ) -> Payment:
@@ -134,7 +204,9 @@ def list_payments(*, session: Session, household_id: int) -> list[Payment]:
 def _dues_by_period(
     *, session: Session, household_id: int, owner_user_id: int | None = None
 ) -> dict[str, Decimal]:
-    charges = select(HouseholdCharge).where(HouseholdCharge.household_id == household_id)
+    charges = select(HouseholdCharge).where(
+        HouseholdCharge.household_id == household_id
+    )
     adjustments = select(ChargeAdjustment).where(
         ChargeAdjustment.household_id == household_id
     )
@@ -164,7 +236,8 @@ def _paid_total(
 def get_balance(
     *, session: Session, household_id: int, owner_user_id: int | None = None
 ) -> Balance:
-    """Oldest periods are settled first, so a partial payment covers the early
+    """The opening balance (debt carried over from the spreadsheets, or credit)
+    counts in the total and is settled first. Oldest periods are settled next, so a partial payment covers the early
     months and the status of each period reads naturally. With `owner_user_id`
     only that owner's charges, adjustments and payments count: a plot that
     changed hands keeps each owner's debt separate."""
@@ -176,7 +249,13 @@ def get_balance(
             session=session, household_id=household_id, owner_user_id=owner_user_id
         )
     )
+    opening = _opening_amount(
+        session=session, household_id=household_id, owner_user_id=owner_user_id
+    )
     remaining = paid_total
+    # Carried-over debt is the oldest money owed, so payments settle it first.
+    if opening > 0:
+        remaining -= min(opening, remaining)
 
     periods = []
     for period in sorted(dues):
@@ -195,7 +274,7 @@ def get_balance(
             PeriodBalance(period=period, due_uah=due, paid_uah=applied, status=status)
         )
 
-    total_due = sum(dues.values(), ZERO)
+    total_due = sum(dues.values(), ZERO) + opening
     return Balance(
         household_id=household_id,
         total_due_uah=total_due,

@@ -473,6 +473,29 @@ class Payment(SQLModel, table=True):
     void_reason: Optional[str] = Field(default=None)
 
 
+class OpeningBalance(SQLModel, table=True):
+    """What a household already owed (positive) or was owed (negative) when the
+    app took over from the spreadsheets. One row per household, never edited:
+    a wrong figure is fixed with an adjustment or payment, like any other."""
+
+    __tablename__ = "opening_balances"  # type: ignore
+    __table_args__ = (
+        UniqueConstraint("household_id", name="uq_opening_balances_household"),
+    )
+
+    id: int = Field(default=None, primary_key=True)
+    household_id: int = Field(foreign_key="households.id", index=True)
+    owner_user_id: Optional[int] = Field(default=None, foreign_key="users.id")
+    amount_uah: Decimal = Field(decimal_places=2, max_digits=12)
+    as_of: date
+    note: Optional[str] = Field(default=None)
+    created_by_user_id: Optional[int] = Field(default=None, foreign_key="users.id")
+    created_at: datetime = Field(
+        default_factory=utc_now,
+        sa_column_kwargs={"server_default": text("CURRENT_TIMESTAMP")},
+    )
+
+
 class PaymentDetails(SQLModel, table=True):
     """Where residents send money. A single row (id=1): the co-op has one
     account, and changes are audited because a swapped IBAN would redirect

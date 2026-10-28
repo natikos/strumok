@@ -24,6 +24,8 @@ from app.api.admin.schemas import (
     ReconciliationOut,
     BalancesOut,
     HouseholdBalanceOut,
+    OpeningBalanceIn,
+    OpeningBalanceOut,
     PaymentIn,
     PaymentOut,
     PaymentVoidIn,
@@ -82,10 +84,13 @@ from app.api.billing.payment_details import (
 from app.api.billing.schemas import PaymentDetailsIn, PaymentDetailsOut
 from app.api.billing.payments import (
     HouseholdMissingError,
+    OpeningBalanceAlreadySetError,
     PaymentAlreadyVoidedError,
     PaymentNotFoundError,
     list_balances,
+    get_opening_balance,
     list_payments,
+    set_opening_balance,
     record_payment,
     void_payment,
 )
@@ -398,9 +403,7 @@ def put_admin_payment_details(
             recipient_name=payload.recipient_name,
         )
     except InvalidIbanError as exc:
-        raise HTTPException(
-            status_code=422, detail="invalidIban"
-        ) from exc
+        raise HTTPException(status_code=422, detail="invalidIban") from exc
     return PaymentDetailsOut.model_validate(row)
 
 
@@ -892,9 +895,7 @@ METER_CHANGE_RESPONSES: dict[int | str, dict[str, Any]] = {
     status.HTTP_404_NOT_FOUND: {
         "description": "Household does not exist",
         "model": ErrorOut,
-        "content": {
-            "application/json": {"example": {"detail": "householdNotFound"}}
-        },
+        "content": {"application/json": {"example": {"detail": "householdNotFound"}}},
     },
     status.HTTP_409_CONFLICT: {
         "description": "The period is in the future or closed, or a replacement is already recorded for it",
@@ -1119,6 +1120,65 @@ def void_household_payment(
             status_code=status.HTTP_409_CONFLICT, detail="paymentAlreadyVoided"
         ) from exc
     return PaymentOut.model_validate(payment)
+
+
+OPENING_BALANCE_RESPONSES: dict[int | str, dict[str, Any]] = {
+    status.HTTP_404_NOT_FOUND: {
+        "description": "Household does not exist",
+        "model": ErrorOut,
+        "content": {"application/json": {"example": {"detail": "householdNotFound"}}},
+    },
+    status.HTTP_409_CONFLICT: {
+        "description": "The household already has an opening balance",
+        "model": ErrorOut,
+        "content": {
+            "application/json": {"example": {"detail": "openingBalanceAlreadySet"}}
+        },
+    },
+}
+
+
+@router.post(
+    "/households/{household_id}/opening-balance",
+    response_model=OpeningBalanceOut,
+    responses=OPENING_BALANCE_RESPONSES,
+    status_code=status.HTTP_201_CREATED,
+)
+def create_household_opening_balance(
+    household_id: int,
+    payload: OpeningBalanceIn,
+    session: Session = Depends(get_session),
+    admin: User = CurrentAdmin,
+) -> OpeningBalanceOut:
+    try:
+        opening = set_opening_balance(
+            session=session,
+            household_id=household_id,
+            amount_uah=payload.amount_uah,
+            as_of=payload.as_of,
+            note=payload.note,
+            actor_id=admin.id,
+        )
+    except HouseholdMissingError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="householdNotFound"
+        ) from exc
+    except OpeningBalanceAlreadySetError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT, detail="openingBalanceAlreadySet"
+        ) from exc
+    return OpeningBalanceOut.model_validate(opening)
+
+
+@router.get(
+    "/households/{household_id}/opening-balance",
+    response_model=OpeningBalanceOut | None,
+)
+def read_household_opening_balance(
+    household_id: int, session: Session = Depends(get_session)
+) -> OpeningBalanceOut | None:
+    opening = get_opening_balance(session=session, household_id=household_id)
+    return OpeningBalanceOut.model_validate(opening) if opening else None
 
 
 @router.get("/balances", response_model=BalancesOut)

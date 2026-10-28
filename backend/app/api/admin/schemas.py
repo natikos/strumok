@@ -407,6 +407,25 @@ class PaymentOut(BaseModel):
     void_reason: str | None
 
 
+class OpeningBalanceIn(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    # Positive: the household owes the co-op. Negative: the co-op owes it.
+    amount_uah: Decimal = Field(max_digits=12, decimal_places=2)
+    as_of: date
+    note: str | None = Field(default=None, max_length=500)
+
+
+class OpeningBalanceOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    household_id: int
+    amount_uah: Decimal
+    as_of: date
+    note: str | None
+    created_at: UtcDatetime
+
+
 class HouseholdBalanceOut(BaseModel):
     household_id: int
     household_name: str
