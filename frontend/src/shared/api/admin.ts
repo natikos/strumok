@@ -7,6 +7,7 @@ export type AdminInviteOut = components["schemas"]["AdminInviteOut"];
 export type AdminUserSummaryOut = components["schemas"]["AdminUserSummaryOut"];
 export type AdminHouseholdOut = components["schemas"]["AdminHouseholdOut"];
 export type AdminDashboardOut = components["schemas"]["AdminDashboardOut"];
+export type PeriodOverviewOut = components["schemas"]["PeriodOverviewOut"];
 export type AuditLogPageOut = components["schemas"]["AuditLogPageOut"];
 export type AuditLogEntryOut = components["schemas"]["AuditLogEntryOut"];
 type AdminHouseholdCreateIn = components["schemas"]["AdminHouseholdCreateIn"];
@@ -145,6 +146,25 @@ export async function resendAdminInvite(userId: number): Promise<AdminInviteOut>
 
   if (error) {
     throw buildApiError(response.status, error, response.headers);
+  }
+
+  return data;
+}
+
+export async function listAdminPeriods(): Promise<PeriodOverviewOut[]> {
+  const { data } = await appApiClient.GET("/admin/periods");
+
+  return data ?? [];
+}
+
+export async function closeAdminPeriod(period: string): Promise<PeriodOverviewOut> {
+  const { data, error, response } = await appApiClient.POST("/admin/periods/{period}/close", {
+    body: { acknowledge_flags: false, confirm: true },
+    params: { path: { period } },
+  });
+
+  if (error) {
+    throw buildApiError(response.status, error);
   }
 
   return data;

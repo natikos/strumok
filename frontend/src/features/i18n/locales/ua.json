@@ -118,7 +118,22 @@
     "deactivateHouseholdTitle": "Деактивувати {name}?",
     "deactivateHouseholdBody": "{owner} більше не зможе подавати показники. Попередня історія залишиться доступною.",
     "reactivateHouseholdTitle": "Активувати {name}?",
-    "reactivateHouseholdBody": "{owner} знову зможе подавати показники."
+    "reactivateHouseholdBody": "{owner} знову зможе подавати показники.",
+    "period": {
+      "open": "Відкритий",
+      "closed": "Закритий",
+      "close": "Закрити {period}",
+      "closedOn": "Закрито {date} ({name})",
+      "closedOnly": "Закрито {date}",
+      "blockers": {
+        "periodNotEnded": "Вікно подання показників за {period} ще відкрите",
+        "noRateConfigured": "Немає тарифу на {period}"
+      },
+      "confirmTitle": "Закрити розрахунок за {period}?",
+      "confirmBody": "Нарахування отримають {charged} ділянок, без показників — {missing}. Після цього мешканці не зможуть подати показники за {period}, а виправлення стануть коригуваннями. Спершу зробіть резервну копію бази.",
+      "confirmAccept": "Закрити період",
+      "confirmReject": "Скасувати"
+    }
   },
   "auth": {
     "login": "Вхід",
@@ -247,7 +262,10 @@
     "lastAdminRequired": "Потрібен принаймні один активний адмін",
     "userOwnsActiveHouseholds": "Користувач досі володіє ділянками",
     "registrationClosed": "Реєстрація лише за запрошенням",
-    "inviteAlreadyAccepted": "Це запрошення вже прийнято"
+    "inviteAlreadyAccepted": "Це запрошення вже прийнято",
+    "periodClosed": "Голова закрив цей період, тому показники подати не можна",
+    "periodAlreadyClosed": "Цей період уже закрито",
+    "periodNotEnded": "Вікно подання за цей період ще відкрите"
   },
   "household": {
     "switchAria": "Обрати домогосподарство",

@@ -405,6 +405,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/periods": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Admin Periods */
+        get: operations["get_admin_periods_admin_periods_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/periods/{period}/close": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Close Admin Period */
+        post: operations["close_admin_period_admin_periods__period__close_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/electricity-rates": {
         parameters: {
             query?: never;
@@ -800,6 +834,39 @@ export interface components {
              * Format: email
              */
             email: string;
+        };
+        /** PeriodCloseIn */
+        PeriodCloseIn: {
+            /**
+             * Confirm
+             * @constant
+             */
+            confirm: true;
+            /**
+             * Acknowledge Flags
+             * @default false
+             */
+            acknowledge_flags: boolean;
+        };
+        /** PeriodOverviewOut */
+        PeriodOverviewOut: {
+            /** Period */
+            period: string;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "open" | "closed";
+            /** Closed At */
+            closed_at: string | null;
+            /** Closed By Name */
+            closed_by_name: string | null;
+            /** Readings Count */
+            readings_count: number;
+            /** Missing Count */
+            missing_count: number;
+            /** Blockers */
+            blockers: string[];
         };
         /** PushSubscriptionIn */
         PushSubscriptionIn: {
@@ -2126,6 +2193,70 @@ export interface operations {
                      *     }
                      */
                     "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    get_admin_periods_admin_periods_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PeriodOverviewOut"][];
+                };
+            };
+        };
+    };
+    close_admin_period_admin_periods__period__close_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                period: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PeriodCloseIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PeriodOverviewOut"];
+                };
+            };
+            /** @description The period can't be closed */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };
