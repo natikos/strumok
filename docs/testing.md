@@ -151,7 +151,7 @@ tests. Highest-value gaps, roughly in order:
    user owning several households resolves to the oldest one.
 2. **Usage maths.** The service clamps negative usage and takes the previous reading
    as the latest one before the submitted period; both behaviours still want pinning
-   in tests, as does agreement with `scripts/calculate_meter_usage.py`.
+   in tests.
 3. **Duplicate periods**, including the concurrent case that the unique constraint
    catches.
 4. **`shared/api/client.ts` refresh path** — single in-flight refresh, one retry, no

@@ -19,15 +19,15 @@ from app.api.auth.throttle import (
 )
 from app.core import audit
 from app.core.ownership import set_owner
-from app.api.electricity_rates.service import NoRateConfiguredError, get_effective_rate
 from app.api.billing.payments import get_balance
-from app.api.billing.service import usage_since
-from app.core.domain import current_billing_period, money, previous_period
+from app.api.billing.service import derive_reading_usage
+from app.core.domain import current_billing_period, previous_period
 from app.core.time import utc_now
 from app.db.models import (
     AuditLog,
     BillingPeriod,
     Household,
+    HouseholdCharge,
     LanguageCode,
     MeterReading,
     MeterSegment,
@@ -227,6 +227,12 @@ def get_admin_dashboard(*, session: Session) -> AdminDashboardOut:
         for newer, older in zip(household_readings, household_readings[1:]):
             previous_by_reading[newer.id] = older
 
+    # Only a closed period has a charge; an open period's figure isn't one yet.
+    charges_by_key = {
+        (charge.household_id, charge.period): charge.total_uah
+        for charge in session.exec(select(HouseholdCharge)).all()
+    }
+
     households = []
     for household, owner in list_households_with_owners(session=session):
         current = current_by_household.get(household.id)
@@ -266,14 +272,15 @@ def get_admin_dashboard(*, session: Session) -> AdminDashboardOut:
                 latest_period=latest.period if latest else None,
                 latest_usage_kwh=(
                     _summed_usage_kwh(
-                        latest.day_usage_kwh,
-                        latest.night_usage_kwh,
+                        *derive_reading_usage(session=session, reading=latest)
                     )
                     if latest
                     else None
                 ),
                 latest_amount_charged_uah=(
-                    latest.amount_charged_uah if latest else None
+                    charges_by_key.get((latest.household_id, latest.period))
+                    if latest
+                    else None
                 ),
             )
         )
@@ -656,38 +663,6 @@ def _is_closed(*, session: Session, period: str) -> bool:
     return row is not None and row.status == "closed"
 
 
-def _compat_usage_and_amount(
-    *, session: Session, household_id: int, period: str, day: Decimal, night: Decimal
-) -> tuple[Decimal, Decimal, Decimal]:
-    """The columns the resident UI still reads (see the ledger contract
-    follow-up): usage since the previous reading and the provisional amount."""
-    previous = session.exec(
-        select(MeterReading)
-        .where(MeterReading.household_id == household_id)
-        .where(MeterReading.period < period)
-        .order_by(col(MeterReading.period).desc())
-    ).first()
-    day_usage, night_usage = usage_since(
-        session=session,
-        household_id=household_id,
-        period=period,
-        previous_values=(
-            (previous.day_meter_value, previous.night_meter_value) if previous else None
-        ),
-        previous_is_estimate=False,
-        day=day,
-        night=night,
-    )
-    try:
-        rate = get_effective_rate(session=session, period=period)
-        amount = money(
-            day_usage * rate.day_rate_uah + night_usage * rate.night_rate_uah
-        )
-    except NoRateConfiguredError:
-        amount = Decimal("0.00")
-    return day_usage, night_usage, amount
-
-
 def admin_submit_reading(
     *,
     session: Session,
@@ -718,18 +693,12 @@ def admin_submit_reading(
     ).first():
         raise BaselineNotFirstError
 
-    day_usage, night_usage, amount = _compat_usage_and_amount(
-        session=session, household_id=household_id, period=period, day=day, night=night
-    )
     reading = MeterReading(
         household_id=household_id,
         submitted_by_user_id=actor_id,
         period=period,
         day_meter_value=day,
         night_meter_value=night,
-        day_usage_kwh=day_usage,
-        night_usage_kwh=night_usage,
-        amount_charged_uah=amount,
         source="baseline" if kind == "baseline" else "admin",
         corrected_at=utc_now(),
         correction_reason=reason,
@@ -800,17 +769,6 @@ def record_meter_change(
         .where(MeterReading.period == period)
     ).first()
     if reading is not None:
-        (
-            reading.day_usage_kwh,
-            reading.night_usage_kwh,
-            reading.amount_charged_uah,
-        ) = _compat_usage_and_amount(
-            session=session,
-            household_id=household_id,
-            period=period,
-            day=reading.day_meter_value,
-            night=reading.night_meter_value,
-        )
         if reading.review_reason == "decrease":
             reading.needs_review = False
             reading.review_reason = None
@@ -855,17 +813,6 @@ def admin_correct_reading(
     reading.day_meter_value = day if day is not None else reading.day_meter_value
     reading.night_meter_value = (
         night if night is not None else reading.night_meter_value
-    )
-    (
-        reading.day_usage_kwh,
-        reading.night_usage_kwh,
-        reading.amount_charged_uah,
-    ) = _compat_usage_and_amount(
-        session=session,
-        household_id=reading.household_id,
-        period=reading.period,
-        day=reading.day_meter_value,
-        night=reading.night_meter_value,
     )
     reading.needs_review = False
     reading.corrected_at = utc_now()

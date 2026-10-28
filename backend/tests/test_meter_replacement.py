@@ -4,6 +4,7 @@ from decimal import Decimal
 
 from sqlmodel import Session, select
 
+from app.api.billing.service import derive_reading_usage
 from app.core.domain import current_billing_period, previous_period
 from app.db.models import AuditLog, HouseholdCharge, MeterReading, MeterSegment
 from tests.factories import (
@@ -119,7 +120,7 @@ class TestMeterChange:
 
         session.refresh(reading)
         assert (reading.needs_review, reading.review_reason) == (False, None)
-        assert (reading.day_usage_kwh, reading.night_usage_kwh) == (D(50), D(15))
+        assert derive_reading_usage(session=session, reading=reading) == (D(50), D(15))
 
     def test_a_recorded_swap_means_a_lower_resident_value_is_not_flagged(
         self, client, session: Session
@@ -162,7 +163,7 @@ class TestMeterChange:
             select(MeterReading).where(MeterReading.period == CURRENT)
         ).one()
         assert reading.needs_review is False
-        assert (reading.day_usage_kwh, reading.night_usage_kwh) == (D(30), D(14))
+        assert derive_reading_usage(session=session, reading=reading) == (D(30), D(14))
 
     def test_it_is_audited_and_shown_in_the_residents_history(
         self, client, session: Session
@@ -268,13 +269,8 @@ class TestBaseline:
         )
 
         assert submit.status_code == 201, submit.text
-        assert (
-            D(submit.json()["day_usage_kwh"]),
-            D(submit.json()["night_usage_kwh"]),
-        ) == (
-            D(40),
-            D(10),
-        )
+        reading = session.get(MeterReading, submit.json()["id"])
+        assert derive_reading_usage(session=session, reading=reading) == (D(40), D(10))
         assert session.exec(
             select(AuditLog).where(AuditLog.action == "baselineSet")
         ).one()

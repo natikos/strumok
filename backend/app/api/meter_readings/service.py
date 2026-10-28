@@ -6,7 +6,6 @@ from sqlmodel import Session, asc, desc, select
 from app.api.billing.service import (
     get_meter_segment,
     lock_period_for_submission,
-    usage_since,
 )
 from app.api.electricity_rates.service import get_effective_rate
 from app.api.meter_readings.schemas import MeterReadingOut
@@ -101,9 +100,6 @@ def list_meter_readings(
                     period=period,
                     day_meter_value=None,
                     night_meter_value=None,
-                    day_usage_kwh=Decimal("0"),
-                    night_usage_kwh=Decimal("0"),
-                    amount_charged_uah=Decimal("0"),
                     submitted_at=None,
                     source="resident",
                     corrected_at=None,
@@ -177,25 +173,6 @@ def submit_meter_reading(
 
     lock_period_for_submission(session=session, period=period)
 
-    previous = session.exec(
-        select(MeterReading)
-        .where(MeterReading.household_id == household_id)
-        .where(MeterReading.period < period)
-        .order_by(desc(MeterReading.period))
-    ).first()
-
-    day_usage_kwh, night_usage_kwh = usage_since(
-        session=session,
-        household_id=household_id,
-        period=period,
-        previous_values=(
-            (previous.day_meter_value, previous.night_meter_value) if previous else None
-        ),
-        previous_is_estimate=False,
-        day=day_meter_value,
-        night=night_meter_value,
-    )
-
     review_reason = _review_reason(
         session=session,
         household_id=household_id,
@@ -204,10 +181,9 @@ def submit_meter_reading(
         night_meter_value=night_meter_value,
     )
 
-    rate = get_effective_rate(session=session, period=period)
-    amount_charged_uah = (
-        day_usage_kwh * rate.day_rate_uah + night_usage_kwh * rate.night_rate_uah
-    ).quantize(Decimal("0.01"))
+    # Charges live in the ledger now, but a period with no rate can't be billed,
+    # so residents are still told before they submit (noRateConfigured).
+    get_effective_rate(session=session, period=period)
 
     reading = MeterReading(
         household_id=household_id,
@@ -215,9 +191,6 @@ def submit_meter_reading(
         period=period,
         day_meter_value=day_meter_value,
         night_meter_value=night_meter_value,
-        day_usage_kwh=day_usage_kwh,
-        night_usage_kwh=night_usage_kwh,
-        amount_charged_uah=amount_charged_uah,
         needs_review=review_reason is not None,
         review_reason=review_reason,
     )

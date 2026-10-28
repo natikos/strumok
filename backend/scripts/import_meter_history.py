@@ -29,10 +29,13 @@ from datetime import datetime, timezone
 from decimal import ROUND_HALF_UP, Decimal, InvalidOperation
 from pathlib import Path
 
+from app.api.electricity_rates.service import NoRateConfiguredError, get_effective_rate
+from app.core.domain import current_billing_period
+from app.core.time import utc_now
 from app.db.engine import engine
-from app.db.models import Household, MeterReading
+from app.db.models import BillingPeriod, Household, HouseholdCharge, MeterReading
 from sqlalchemy.dialects.postgresql import insert
-from sqlmodel import Session, select
+from sqlmodel import Session, col, select
 
 
 class ImportValidationError(Exception):
@@ -243,8 +246,10 @@ def insert_meter_history(
     matched: list[tuple[ParsedRow, int]], period: str
 ) -> tuple[int, list[tuple[ParsedRow, int]]]:
     """Writes matched rows with ON CONFLICT DO NOTHING -- an existing
-    (household_id, period) reading is never overwritten. Returns
-    (inserted_count, conflicts)."""
+    (household_id, period) reading is never overwritten. Each new reading gets
+    a ledger charge with the sheet's exact amount, in a closed period, because
+    those amounts include manual adjustments and must not be recomputed from
+    rates. Returns (inserted_count, conflicts)."""
     if not matched:
         return 0, []
 
@@ -259,40 +264,68 @@ def insert_meter_history(
             "period": period,
             "day_meter_value": row.day_meter,
             "night_meter_value": row.night_meter,
-            "day_usage_kwh": row.day_usage,
-            "night_usage_kwh": row.night_usage,
-            "amount_charged_uah": row.amount_charged,
             "submitted_at": submitted_at,
         }
         for row, household_id in matched
     ]
 
     with Session(engine) as session:
-        existing_household_ids = set(
-            session.exec(
-                select(MeterReading.household_id).where(MeterReading.period == period)
-            ).all()
-        )
-        conflicts = [
-            (row, household_id)
-            for row, household_id in matched
-            if household_id in existing_household_ids
-        ]
-
         stmt = (
             insert(MeterReading)
             .values(values)
             .on_conflict_do_nothing(index_elements=["household_id", "period"])
+            .returning(MeterReading.household_id, MeterReading.id)
         )
-        session.exec(stmt)
-        session.commit()
-        # psycopg3 reports rowcount as -1 ("not determined") for a batched
-        # INSERT ... ON CONFLICT DO NOTHING, so the actual inserted count has
-        # to be derived from what we already know rather than trusted from
-        # the driver: every matched row not already flagged as a conflict.
-        inserted = len(matched) - len(conflicts)
+        reading_ids = dict(session.exec(stmt).all())
+        conflicts = [
+            (row, household_id)
+            for row, household_id in matched
+            if household_id not in reading_ids
+        ]
 
-    return inserted, conflicts
+        if reading_ids:
+            _close_period(session, period)
+            owners = dict(
+                session.exec(
+                    select(Household.id, Household.user_id).where(
+                        col(Household.id).in_(reading_ids)
+                    )
+                ).all()
+            )
+            for row, household_id in matched:
+                if household_id not in reading_ids:
+                    continue
+                session.add(
+                    HouseholdCharge(
+                        period=period,
+                        household_id=household_id,
+                        owner_user_id=owners.get(household_id),
+                        reading_id=reading_ids[household_id],
+                        day_usage_kwh=row.day_usage,
+                        night_usage_kwh=row.night_usage,
+                        tariff_uah=row.amount_charged,
+                        total_uah=row.amount_charged,
+                    )
+                )
+        session.commit()
+
+    return len(reading_ids), conflicts
+
+
+def _close_period(session: Session, period: str) -> None:
+    """History is billed already, so its period is closed (charges are immutable
+    once written; corrections go through restatements)."""
+    billing_period = session.get(BillingPeriod, period)
+    if billing_period is None:
+        try:
+            rate_id = get_effective_rate(session=session, period=period).id
+        except NoRateConfiguredError:
+            rate_id = None
+        billing_period = BillingPeriod(period=period, rate_id=rate_id)
+    billing_period.status = "closed"
+    billing_period.closed_at = billing_period.closed_at or utc_now()
+    session.add(billing_period)
+    session.flush()
 
 
 def main() -> int:
@@ -321,6 +354,13 @@ def main() -> int:
         return 1
 
     period = get_period(args.csv_path)
+    if period >= current_billing_period():
+        # The import closes the period it writes, which is only right for history.
+        print(
+            f"Aborting: {period} is not a past period, so it can't be imported as billed history",
+            file=sys.stderr,
+        )
+        return 1
     valid_household_ids = get_valid_household_ids()
     matched, unmatched = match_rows(rows, mapping, valid_household_ids)
 

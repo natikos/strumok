@@ -135,15 +135,6 @@ class MeterReading(SQLModel, table=True):
     night_meter_value: Decimal = Field(
         default=Decimal("0"), decimal_places=2, max_digits=12
     )
-    day_usage_kwh: Decimal = Field(
-        default=Decimal("0"), decimal_places=2, max_digits=12
-    )
-    night_usage_kwh: Decimal = Field(
-        default=Decimal("0"), decimal_places=2, max_digits=12
-    )
-    amount_charged_uah: Decimal = Field(
-        default=Decimal("0"), decimal_places=2, max_digits=12
-    )
     submitted_at: datetime = Field(default_factory=utc_now)
     # Where the values came from. Readings are raw facts; charges live in
     # household_charges once the period closes.
