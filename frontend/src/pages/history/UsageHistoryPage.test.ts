@@ -8,8 +8,9 @@ import ErrorState from "@shared/components/ErrorState.vue";
 
 import UsageHistoryPage from "./UsageHistoryPage.vue";
 
-const { listMyMeterReadings } = vi.hoisted(() => ({
+const { listMyMeterReadings, listStatements } = vi.hoisted(() => ({
   listMyMeterReadings: vi.fn(),
+  listStatements: vi.fn(),
 }));
 
 vi.mock("@shared/api/meter-readings", () => ({
@@ -18,7 +19,7 @@ vi.mock("@shared/api/meter-readings", () => ({
 
 vi.mock("@shared/api/billing", () => ({
   listAdjustments: vi.fn().mockResolvedValue([]),
-  listStatements: vi.fn().mockResolvedValue([]),
+  listStatements,
   listMyStatements: vi.fn().mockResolvedValue([]),
   getBalance: vi.fn().mockResolvedValue({
     balance_uah: "50.00",
@@ -70,6 +71,7 @@ async function mountPage() {
 describe("UsageHistoryPage submissionRecord", () => {
   beforeEach(() => {
     listMyMeterReadings.mockReset();
+    listStatements.mockReset().mockResolvedValue([]);
     useCurrentHousehold().setHouseholds([]);
   });
 
@@ -328,6 +330,29 @@ describe("UsageHistoryPage load error handling", () => {
 
     expect(wrapper.find(".usage-history__estimated-tag").text()).toContain("Estimated");
     expect(wrapper.find(".usage-history__charge").exists()).toBe(false);
+  });
+
+  it("takes the period's charge from the ledger, not the reading's legacy column", async () => {
+    listMyMeterReadings.mockResolvedValue([makeReading({ amount_charged_uah: "999.00" })]);
+    listStatements.mockResolvedValue([
+      {
+        period: "2026-06",
+        status: "closed",
+        day_usage_kwh: "10.00",
+        night_usage_kwh: "5.00",
+        is_estimated: false,
+        tariff_uah: "123.00",
+        loss_share_uah: "0.00",
+        penalty_uah: "0.00",
+        penalty_credit_uah: "0.00",
+        total_uah: "123.00",
+      },
+    ]);
+
+    const wrapper = await mountPage();
+
+    expect(wrapper.find(".usage-history__charge").text()).toContain("123");
+    expect(wrapper.text()).not.toContain("999");
   });
 
   it("shows each period's payment status in words", async () => {
