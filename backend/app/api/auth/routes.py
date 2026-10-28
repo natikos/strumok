@@ -9,6 +9,8 @@ from app.api.auth.schemas import (
     ChangePasswordIn,
     ErrorOut,
     LoginIn,
+    PasswordResetConfirmIn,
+    PasswordResetRequestIn,
     RegisterIn,
     UserOut,
     UserPreferencesIn,
@@ -26,6 +28,7 @@ from app.api.auth.service import (
     change_password,
     confirm_email_change,
     confirm_email_verification,
+    confirm_password_reset,
     create_access_token,
     get_user_id_and_version_for_logout,
     list_user_households,
@@ -33,11 +36,14 @@ from app.api.auth.service import (
     register_user,
     request_email_change,
     request_email_verification_link,
+    request_password_reset,
 )
 from app.api.auth.throttle import (
     ACCOUNT_CHANGE_LIMIT,
     LOGIN_EMAIL_LIMIT,
     LOGIN_IP_LIMIT,
+    RESET_EMAIL_LIMIT,
+    RESET_IP_LIMIT,
     TooManyAttemptsError,
     check_not_throttled,
     record_failure,
@@ -476,6 +482,48 @@ def confirm_email_change_route(
 ) -> Response:
     try:
         confirm_email_change(session=session, token=payload.token)
+    except InvalidOrExpiredTokenError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="invalidOrExpiredToken"
+        ) from exc
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
+@router.post("/password-reset/request", status_code=status.HTTP_204_NO_CONTENT)
+def password_reset_request(
+    payload: PasswordResetRequestIn,
+    request: Request,
+    session: Session = Depends(get_session),
+) -> Response:
+    """Always 204, throttled or not, so nothing reveals which emails exist."""
+    email_key = f"reset:email:{payload.email.strip().lower()}"
+    ip_key = f"reset:ip:{request.client.host if request.client else 'unknown'}"
+
+    try:
+        check_not_throttled(session=session, key=email_key, limit=RESET_EMAIL_LIMIT)
+        check_not_throttled(session=session, key=ip_key, limit=RESET_IP_LIMIT)
+    except TooManyAttemptsError:
+        return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+    record_failure(session=session, key=email_key, limit=RESET_EMAIL_LIMIT)
+    record_failure(session=session, key=ip_key, limit=RESET_IP_LIMIT)
+    request_password_reset(session=session, email=payload.email)
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
+@router.post(
+    "/password-reset/confirm",
+    status_code=status.HTTP_204_NO_CONTENT,
+    responses=VERIFY_EMAIL_RESPONSES,
+)
+def password_reset_confirm(
+    payload: PasswordResetConfirmIn,
+    session: Session = Depends(get_session),
+) -> Response:
+    try:
+        confirm_password_reset(
+            session=session, token=payload.token, password=payload.password
+        )
     except InvalidOrExpiredTokenError as exc:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST, detail="invalidOrExpiredToken"
