@@ -158,9 +158,12 @@ export async function listAdminPeriods(): Promise<PeriodOverviewOut[]> {
   return data ?? [];
 }
 
-export async function closeAdminPeriod(period: string): Promise<PeriodOverviewOut> {
+export async function closeAdminPeriod(
+  period: string,
+  acknowledgeFlags = false
+): Promise<PeriodOverviewOut> {
   const { data, error, response } = await appApiClient.POST("/admin/periods/{period}/close", {
-    body: { acknowledge_flags: false, confirm: true },
+    body: { acknowledge_flags: acknowledgeFlags, confirm: true },
     params: { path: { period } },
   });
 
@@ -198,4 +201,15 @@ export async function putPeriodBill(
   }
 
   return data;
+}
+
+export async function reviewAdminReading(readingId: number): Promise<void> {
+  const { error, response } = await appApiClient.POST("/admin/readings/{reading_id}/review", {
+    body: { confirm: true },
+    params: { path: { reading_id: readingId } },
+  });
+
+  if (!response.ok) {
+    throw buildApiError(response.status, error);
+  }
 }

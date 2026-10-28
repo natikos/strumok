@@ -43,6 +43,10 @@ class PeriodHasNoReadingsError(Exception):
     pass
 
 
+class PeriodHasUnreviewedReadingsError(Exception):
+    pass
+
+
 class PeriodClosedError(Exception):
     """A resident tried to submit for a period the head has closed."""
 
@@ -152,6 +156,14 @@ def list_statements(*, session: Session, household_id: int) -> list[StatementLin
     return [provisional, *lines] if provisional else lines
 
 
+def _unreviewed_count(*, session: Session, period: str) -> int:
+    return session.exec(
+        select(func.count())
+        .select_from(MeterReading)
+        .where(MeterReading.period == period, MeterReading.needs_review)
+    ).one()
+
+
 def charge_inputs_for_period(*, session: Session, period: str) -> list[ChargeInput]:
     """One input per household that has a reading for `period`, with usage
     derived from its consecutive readings."""
@@ -222,7 +234,12 @@ def enter_bill(
 
 
 def close_period(
-    *, session: Session, period: str, actor_id: int, now: datetime | None = None
+    *,
+    session: Session,
+    period: str,
+    actor_id: int,
+    acknowledge_flags: bool = False,
+    now: datetime | None = None,
 ) -> list[HouseholdCharge]:
     """Closes `period` in one transaction: locks the row, computes every
     household's charge from its reading, inserts the ledger rows and flips the
@@ -243,6 +260,9 @@ def close_period(
         raise PeriodHasNoReadingsError
     if row.bill_total_uah is None:
         raise BillNotEnteredError
+    unreviewed = _unreviewed_count(session=session, period=period)
+    if unreviewed and not acknowledge_flags:
+        raise PeriodHasUnreviewedReadingsError
 
     charges = [
         HouseholdCharge(
@@ -283,6 +303,7 @@ def close_period(
             "households_charged": len(charges),
             "total_uah": sum((c.total_uah for c in charges), Decimal("0.00")),
             "rate_id": rate.id,
+            "unreviewed_readings_acknowledged": unreviewed,
         },
     )
     session.commit()
@@ -297,6 +318,7 @@ class PeriodOverview:
     closed_by_name: str | None
     readings_count: int
     missing_count: int
+    unreviewed_count: int
     blockers: list[str]
 
 
@@ -317,6 +339,13 @@ def list_period_overviews(
     )
     periods = sorted(
         {*rows, *reading_counts, current_billing_period(now)}, reverse=True
+    )
+    unreviewed_counts = dict(
+        session.exec(
+            select(MeterReading.period, func.count())
+            .where(MeterReading.needs_review)
+            .group_by(col(MeterReading.period))
+        ).all()
     )
     closers = {
         user.id: f"{user.first_name} {user.last_name}"
@@ -342,6 +371,8 @@ def list_period_overviews(
                 blockers.append("noReadings")
             if row is None or row.bill_total_uah is None:
                 blockers.append("billNotEntered")
+            if unreviewed_counts.get(period, 0):
+                blockers.append("periodHasUnreviewedReadings")
             try:
                 get_effective_rate(session=session, period=period)
             except NoRateConfiguredError:
@@ -356,6 +387,7 @@ def list_period_overviews(
                 else None,
                 readings_count=readings,
                 missing_count=max(active_households - readings, 0),
+                unreviewed_count=unreviewed_counts.get(period, 0),
                 blockers=blockers,
             )
         )

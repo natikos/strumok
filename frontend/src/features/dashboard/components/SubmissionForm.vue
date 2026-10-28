@@ -25,6 +25,15 @@
         {{ t(errors.form) }}
       </p>
 
+      <Message
+        v-if="warning"
+        severity="warn"
+        class="submission-form__warning"
+        role="alert"
+      >
+        {{ warningText }}
+      </Message>
+
       <Message v-if="errors.info" severity="info" class="submission-form__info">
         {{ t(errors.info) }}
       </Message>
@@ -52,11 +61,13 @@
 
 <script setup lang="ts">
   import { Shield, TimesCircle } from "@primeicons/vue";
+  import { computed } from "vue";
   import { useI18n } from "vue-i18n";
 
   import type { FieldErrors } from "@/features/dashboard/types";
   import { useLocale } from "@/features/i18n/composables/useLocale";
   import { formatKwh } from "@shared/utils/format";
+  import type { ReadingWarning } from "@shared/utils/reading-plausibility";
 
   import MeterValueField from "./MeterValueField.vue";
   import WindowStrip from "./WindowStrip.vue";
@@ -70,6 +81,7 @@
     previousNightValue?: number | string | null | undefined;
     isSubmitting: boolean;
     submitLabel: string;
+    warning?: ReadingWarning | null | undefined;
   }
 
   const props = defineProps<Props>();
@@ -84,6 +96,23 @@
   const { intlLocale } = useLocale();
 
   const kwh = t("units.kwh");
+
+  const warningText = computed(() => {
+    const warning = props.warning;
+
+    if (!warning) {
+      return "";
+    }
+
+    if (warning.kind === "decrease") {
+      return t("meterReadings.warnDecrease");
+    }
+
+    return t("meterReadings.warnSpike", {
+      typical: formatKwh(warning.typicalKwh, intlLocale.value, kwh),
+      usage: formatKwh(warning.usageKwh, intlLocale.value, kwh),
+    });
+  });
 
   const dayHint = props.previousDayValue == null ? undefined : hint(props.previousDayValue);
   const nightHint = props.previousNightValue == null ? undefined : hint(props.previousNightValue);
