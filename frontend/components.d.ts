@@ -50,6 +50,8 @@ declare module 'vue' {
     MeterValueField: typeof import('./src/features/dashboard/components/MeterValueField.vue')['default']
     NoHouseholdScreen: typeof import('./src/layouts/NoHouseholdScreen.vue')['default']
     Password: typeof import('primevue/password')['default']
+    PastHouseholdNotice: typeof import('./src/features/households/components/PastHouseholdNotice.vue')['default']
+    PastHouseholds: typeof import('./src/features/households/components/PastHouseholds.vue')['default']
     PeriodCloseCard: typeof import('./src/features/admin/PeriodCloseCard.vue')['default']
     PrivacyPage: typeof import('./src/pages/auth/PrivacyPage.vue')['default']
     ProgressSpinner: typeof import('primevue/progressspinner')['default']
