@@ -267,6 +267,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/billing/adjustments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get My Adjustments */
+        get: operations["get_my_adjustments_billing_adjustments_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/admin/users": {
         parameters: {
             query?: never;
@@ -490,6 +507,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/periods/{period}/restate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Restate Admin Period */
+        post: operations["restate_admin_period_admin_periods__period__restate_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/electricity-rates": {
         parameters: {
             query?: never;
@@ -524,6 +558,26 @@ export interface paths {
         head?: never;
         /** Update Electricity Rate */
         patch: operations["update_electricity_rate_electricity_rates__rate_id__patch"];
+        trace?: never;
+    };
+    "/electricity-rates/{rate_id}/correct": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Correct Electricity Rate
+         * @description Fix a rate that already billed closed periods: restate them, then update it.
+         */
+        post: operations["correct_electricity_rate_electricity_rates__rate_id__correct_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
         trace?: never;
     };
     "/push/vapid-public-key": {
@@ -565,6 +619,25 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /**
+         * AdjustmentOut
+         * @description A correction posted to a household's bill: positive is an extra charge,
+         *     negative a refund.
+         */
+        AdjustmentOut: {
+            /** Id */
+            id: number;
+            /** Applies To Period */
+            applies_to_period: string;
+            /** Posted In Period */
+            posted_in_period: string;
+            /** Amount Uah */
+            amount_uah: string;
+            /** Reason Code */
+            reason_code: string;
+            /** Reason */
+            reason: string;
+        };
         /** AdminDashboardHouseholdOut */
         AdminDashboardHouseholdOut: {
             /** Id */
@@ -783,6 +856,17 @@ export interface components {
             current_password: string;
             /** New Password */
             new_password: string;
+        };
+        /** CorrectionsIn */
+        CorrectionsIn: {
+            rate?: components["schemas"]["RateCorrectionIn"] | null;
+            /** Bill Total Uah */
+            bill_total_uah?: number | string | null;
+            /**
+             * Readings
+             * @default []
+             */
+            readings: components["schemas"]["ReadingCorrectionIn"][];
         };
         /** ElectricityRateCreateIn */
         ElectricityRateCreateIn: {
@@ -1035,6 +1119,46 @@ export interface components {
             /** Reason */
             reason: string | null;
         };
+        /**
+         * RateCorrectIn
+         * @description Correct a rate that already billed closed periods, via a restatement.
+         */
+        RateCorrectIn: {
+            /** Day Rate Uah */
+            day_rate_uah: number | string;
+            /** Night Rate Uah */
+            night_rate_uah: number | string;
+            /** Reason */
+            reason?: string | null;
+            /**
+             * Dry Run
+             * @default false
+             */
+            dry_run: boolean;
+            /**
+             * Confirm
+             * @constant
+             */
+            confirm: true;
+        };
+        /** RateCorrectionIn */
+        RateCorrectionIn: {
+            /** Day Rate Uah */
+            day_rate_uah: number | string;
+            /** Night Rate Uah */
+            night_rate_uah: number | string;
+        };
+        /** ReadingCorrectionIn */
+        ReadingCorrectionIn: {
+            /** Household Id */
+            household_id: number;
+            /** Period */
+            period?: string | null;
+            /** Day Meter Value */
+            day_meter_value: number | string;
+            /** Night Meter Value */
+            night_meter_value: number | string;
+        };
         /** ReadingReviewIn */
         ReadingReviewIn: {
             /**
@@ -1101,6 +1225,52 @@ export interface components {
             lines: components["schemas"]["ReconciliationLineOut"][];
             /** Remainder Household Names */
             remainder_household_names: string[];
+        };
+        /** RestateIn */
+        RestateIn: {
+            corrections: components["schemas"]["CorrectionsIn"];
+            /** Reason */
+            reason?: string | null;
+            /**
+             * Dry Run
+             * @default false
+             */
+            dry_run: boolean;
+            /**
+             * Confirm
+             * @constant
+             */
+            confirm: true;
+        };
+        /** RestatementLineOut */
+        RestatementLineOut: {
+            /** Period */
+            period: string;
+            /** Household Id */
+            household_id: number;
+            /** Household Name */
+            household_name: string;
+            /** Before Uah */
+            before_uah: string;
+            /** After Uah */
+            after_uah: string;
+            /** Delta Uah */
+            delta_uah: string;
+        };
+        /** RestatementOut */
+        RestatementOut: {
+            /** Lines */
+            lines: components["schemas"]["RestatementLineOut"][];
+            /** Affected Periods */
+            affected_periods: string[];
+            /** Total Delta Uah */
+            total_delta_uah: string;
+            /** Restatement Id */
+            restatement_id: number | null;
+            /** Posted In Period */
+            posted_in_period: string;
+            /** Is Zero Sum */
+            is_zero_sum: boolean;
         };
         /**
          * StatementLineOut
@@ -1970,6 +2140,60 @@ export interface operations {
             };
         };
     };
+    get_my_adjustments_billing_adjustments_get: {
+        parameters: {
+            query?: {
+                household_id?: number | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdjustmentOut"][];
+                };
+            };
+            /** @description User does not own this household, or it is inactive */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description User is not a member of any household */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "detail": "noHouseholdMembership"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     list_admin_users_admin_users_get: {
         parameters: {
             query?: never;
@@ -2608,6 +2832,50 @@ export interface operations {
             };
         };
     };
+    restate_admin_period_admin_periods__period__restate_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                period: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RestateIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RestatementOut"];
+                };
+            };
+            /** @description The period isn't closed, or nothing was corrected */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     list_electricity_rates_electricity_rates_get: {
         parameters: {
             query?: never;
@@ -2757,6 +3025,69 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ElectricityRateOut"];
+                };
+            };
+            /** @description Rate does not exist */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "detail": "rateNotFound"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description A closed period was billed with this rate */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "detail": "rateUsedByClosedPeriod"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    correct_electricity_rate_electricity_rates__rate_id__correct_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                rate_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RateCorrectIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RestatementOut"];
                 };
             };
             /** @description Rate does not exist */

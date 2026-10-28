@@ -11,9 +11,32 @@
     />
 
     <div v-if="isOpen" class="rate-editor__panel">
-      <p v-if="locked" class="rate-editor__note">
-        {{ t("admin.rateEdit.lockedNote", { periods: rate.used_by_closed_periods.join(", ") }) }}
-      </p>
+      <template v-if="locked">
+        <p class="rate-editor__note">
+          {{ t("admin.rateEdit.lockedNote", { periods: rate.used_by_closed_periods.join(", ") }) }}
+        </p>
+        <template v-if="!correcting">
+          <div class="rate-editor__field">
+            <label :for="`rate-day-${rate.id}`">{{ t("admin.dayRate") }}</label>
+            <InputNumber v-model="day" :input-id="`rate-day-${rate.id}`" :min="0" :min-fraction-digits="2" :max-fraction-digits="4" fluid />
+          </div>
+          <div class="rate-editor__field">
+            <label :for="`rate-night-${rate.id}`">{{ t("admin.nightRate") }}</label>
+            <InputNumber v-model="night" :input-id="`rate-night-${rate.id}`" :min="0" :min-fraction-digits="2" :max-fraction-digits="4" fluid />
+          </div>
+          <Button
+            :disabled="!canSave"
+            :label="t('admin.restatement.correctAndPreview')"
+            @click="correcting = true"
+          />
+        </template>
+        <RestatementPreview
+          v-else
+          :request="requestCorrection"
+          @cancel="correcting = false"
+          @posted="onPosted"
+        />
+      </template>
 
       <template v-else>
         <div class="rate-editor__field">
@@ -85,6 +108,7 @@
 
   import { ApiError } from "@shared/api/client";
   import {
+    correctElectricityRate,
     deleteElectricityRate,
     type ElectricityRateOut,
     updateElectricityRate,
@@ -98,6 +122,7 @@
   const confirm = useConfirm();
 
   const isOpen = ref(false);
+  const correcting = ref(false);
   const isBusy = ref(false);
   const day = ref<number | null>(toDecimal(props.rate.day_rate_uah));
   const night = ref<number | null>(toDecimal(props.rate.night_rate_uah));
@@ -138,6 +163,20 @@
     } finally {
       isBusy.value = false;
     }
+  }
+
+  function requestCorrection(options: { dryRun: boolean; reason: string }) {
+    return correctElectricityRate(
+      props.rate.id,
+      { day_rate_uah: String(day.value), night_rate_uah: String(night.value) },
+      options
+    );
+  }
+
+  function onPosted(): void {
+    correcting.value = false;
+    isOpen.value = false;
+    emit("changed");
   }
 
   function askSave(): void {
