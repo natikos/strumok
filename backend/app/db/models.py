@@ -3,7 +3,17 @@ from decimal import Decimal
 from enum import StrEnum
 from typing import Optional
 
-from sqlalchemy import DDL, BigInteger, Column, UniqueConstraint, event, text
+from sqlalchemy import (
+    DDL,
+    BigInteger,
+    CheckConstraint,
+    Column,
+    ForeignKey,
+    String,
+    UniqueConstraint,
+    event,
+    text,
+)
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlmodel import Field, SQLModel
 
@@ -90,6 +100,11 @@ class MeterReading(SQLModel, table=True):
         default=Decimal("0"), decimal_places=2, max_digits=12
     )
     submitted_at: datetime = Field(default_factory=utc_now)
+    # Where the values came from. Readings are raw facts; charges live in
+    # household_charges once the period closes.
+    source: str = Field(
+        default="resident", sa_column_kwargs={"server_default": "resident"}
+    )
 
 
 class PushSubscription(SQLModel, table=True):
@@ -200,3 +215,84 @@ class AuditLog(SQLModel, table=True):
 # create_all (used by the test suite) builds the trigger too; Alembic's 0002
 # migration runs the same SQL, so both paths enforce append-only.
 event.listen(AuditLog.__table__, "after_create", DDL(AUDIT_LOG_APPEND_ONLY_SQL))  # type: ignore[attr-defined]
+
+
+class BillingPeriod(SQLModel, table=True):
+    """One row per billing period, created lazily. `closed` is final: charges
+    exist and corrections happen as adjustments, never by reopening."""
+
+    __tablename__ = "billing_periods"  # type: ignore
+    __table_args__ = (
+        CheckConstraint(
+            "status IN ('open', 'closed')", name="ck_billing_periods_status"
+        ),
+    )
+
+    period: str = Field(sa_column=Column(String(7), primary_key=True))
+    status: str = Field(default="open", sa_column_kwargs={"server_default": "open"})
+    bill_day_kwh: Optional[Decimal] = Field(
+        default=None, decimal_places=2, max_digits=12
+    )
+    bill_night_kwh: Optional[Decimal] = Field(
+        default=None, decimal_places=2, max_digits=12
+    )
+    bill_total_uah: Optional[Decimal] = Field(
+        default=None, decimal_places=2, max_digits=12
+    )
+    rate_id: Optional[int] = Field(default=None, foreign_key="electricity_rates.id")
+    closed_at: Optional[datetime] = None
+    closed_by_user_id: Optional[int] = Field(default=None, foreign_key="users.id")
+
+
+HOUSEHOLD_CHARGES_APPEND_ONLY_SQL = """
+CREATE FUNCTION household_charges_reject_change() RETURNS trigger AS $$
+BEGIN
+    RAISE EXCEPTION 'household_charges is append-only';
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER household_charges_append_only
+BEFORE UPDATE OR DELETE ON household_charges
+FOR EACH ROW EXECUTE FUNCTION household_charges_reject_change();
+"""
+
+
+class HouseholdCharge(SQLModel, table=True):
+    """What one household owes for one closed period. Inserted at close and
+    never updated; a trigger enforces it."""
+
+    __tablename__ = "household_charges"  # type: ignore
+    __table_args__ = (
+        UniqueConstraint(
+            "period", "household_id", name="uq_household_charges_period_household"
+        ),
+    )
+
+    id: int = Field(default=None, primary_key=True)
+    period: str = Field(
+        sa_column=Column(
+            String(7), ForeignKey("billing_periods.period"), nullable=False, index=True
+        )
+    )
+    household_id: int = Field(foreign_key="households.id", index=True)
+    owner_user_id: Optional[int] = Field(default=None, foreign_key="users.id")
+    reading_id: Optional[int] = Field(default=None, foreign_key="meter_readings.id")
+    day_usage_kwh: Decimal = Field(decimal_places=2, max_digits=12)
+    night_usage_kwh: Decimal = Field(decimal_places=2, max_digits=12)
+    is_estimated: bool = Field(default=False)
+    tariff_uah: Decimal = Field(decimal_places=2, max_digits=12)
+    loss_share_uah: Decimal = Field(
+        default=Decimal("0"), decimal_places=2, max_digits=12
+    )
+    penalty_uah: Decimal = Field(default=Decimal("0"), decimal_places=2, max_digits=12)
+    penalty_credit_uah: Decimal = Field(
+        default=Decimal("0"), decimal_places=2, max_digits=12
+    )
+    total_uah: Decimal = Field(decimal_places=2, max_digits=12)
+
+
+event.listen(
+    HouseholdCharge.__table__,  # type: ignore[attr-defined]
+    "after_create",
+    DDL(HOUSEHOLD_CHARGES_APPEND_ONLY_SQL),
+)

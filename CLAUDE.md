@@ -25,9 +25,17 @@ the one shared utility bill. A user can
 hold multiple households (frontend tracks a "current household" in localStorage), but a
 household has at most one owning user.
 
-Per-household billing is partly implemented: `amount_charged_uah` is computed at submit
-time from a flat day/night tariff (`ElectricityRate`) and frozen on the reading. It is not
-yet a share of the shared bill — see [Known limitations](docs/known-limitations.md).
+Billing lives in a ledger. `MeterReading` is a raw fact (meter values + `source`); usage is
+derived from consecutive readings (`derive_usage`, the first reading is a baseline). A period
+is `open` or `closed` (`billing_periods`); closing writes immutable `household_charges` rows
+(a DB trigger rejects UPDATE/DELETE) computed by the pure `compute_period_statement` in
+`backend/app/core/domain/billing.py`. Amounts round `ROUND_HALF_UP` once per final line.
+`GET /billing/statements` returns a household's closed charges plus a read-time
+`provisional` line for the open period (never stored). History before go-live was
+backfilled as closed periods. Slice 1 is tariff-only (`usage × rate`); the loss share of the
+shared bill, estimates and penalties are not built yet — see
+[Known limitations](docs/known-limitations.md). `MeterReading.day/night_usage_kwh` and
+`amount_charged_uah` are still written for compatibility and will be dropped.
 
 Keep this section current as the domain evolves — update it in the same change that adds or
 changes a concept, not as separate cleanup later.
