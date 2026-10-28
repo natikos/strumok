@@ -101,3 +101,25 @@ Restore the latest dump as above and check that row counts per table match the
 live database. Once the billing ledger exists, also check that Σ
 `household_charges.total_uah` per closed period equals that period's bill total.
 Record the date and result on a comment of the tracking issue.
+
+## Personal data requests
+
+Residents are told (at `/privacy`) to ask the head to correct, export or delete
+their data. Handle each request by hand, and confirm the person by replying to
+the email on their account.
+
+- **Correct**: fix name or email from the admin user management screen, or
+  with an `UPDATE` on `users` for anything the UI doesn't cover. Readings are
+  corrected through the admin reading screen, never by editing rows.
+- **Export**: give the person their `users` row, their households' meter
+  readings, and their charges and payments (`household_charges`, payments),
+  as a spreadsheet or CSV sent to the email on the account.
+- **Delete**: anonymize, don't drop. Replace `users.name` and `users.email`
+  with a placeholder (for example `deleted-<id>@invalid`), clear the password
+  hash and any push subscriptions, and keep the readings, charges and payments
+  because the co-op's accounts must survive. `household_charges` is immutable
+  by trigger, so never delete from it.
+
+Backups still contain the old values until they age out (about 90 days); say
+so when you confirm a deletion. Record the request and date in the audit log
+or the tracking issue.
