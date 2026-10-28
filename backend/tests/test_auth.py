@@ -753,3 +753,141 @@ class TestVerificationLinkCooldown:
 
         assert response.status_code == 401
         assert response.json()["detail"] == "missingAuthenticationToken"
+
+
+class TestChangePassword:
+    def test_changes_password_and_signs_out_other_devices(
+        self, client: TestClient, session
+    ) -> None:
+        user = make_user(session, email="resident@example.com")
+        authenticate(client, user)
+        stale_token = client.cookies.get(settings.auth.auth_cookie_name)
+
+        response = client.post(
+            "/auth/password",
+            json={
+                "current_password": DEFAULT_PASSWORD,
+                "new_password": "brand-new-pass-1",
+            },
+        )
+
+        assert response.status_code == 204
+        assert client.get("/auth/me").status_code == 200  # fresh cookie on this device
+        other_device = client.get(
+            "/auth/me",
+            headers={"Cookie": f"{settings.auth.auth_cookie_name}={stale_token}"},
+        )
+        assert other_device.status_code == 401
+        assert (
+            client.post(
+                "/auth/login",
+                json={"email": "resident@example.com", "password": "brand-new-pass-1"},
+            ).status_code
+            == 200
+        )
+
+    def test_wrong_current_password_returns_400(
+        self, client: TestClient, session
+    ) -> None:
+        user = make_user(session, email="resident@example.com")
+        authenticate(client, user)
+
+        response = client.post(
+            "/auth/password",
+            json={
+                "current_password": "not-my-password",
+                "new_password": "brand-new-pass-1",
+            },
+        )
+
+        assert response.status_code == 400
+        assert response.json()["detail"] == "invalidCredentials"
+
+    def test_repeated_wrong_passwords_are_throttled(
+        self, client: TestClient, session
+    ) -> None:
+        user = make_user(session, email="resident@example.com")
+        authenticate(client, user)
+        body = {
+            "current_password": "not-my-password",
+            "new_password": "brand-new-pass-1",
+        }
+
+        for _ in range(5):
+            assert client.post("/auth/password", json=body).status_code == 400
+
+        response = client.post("/auth/password", json=body)
+        assert response.status_code == 429
+        assert "Retry-After" in response.headers
+
+
+class TestChangeEmail:
+    @patch("app.api.auth.service.send_email")
+    def test_email_switches_only_after_confirmation(
+        self, mock_send_email, client: TestClient, session
+    ) -> None:
+        user = make_user(session, email="old@example.com")
+        authenticate(client, user)
+
+        response = client.post(
+            "/auth/email",
+            json={"current_password": DEFAULT_PASSWORD, "new_email": "New@Example.com"},
+        )
+
+        assert response.status_code == 204
+        session.refresh(user)
+        assert user.email == "old@example.com"
+        sent = mock_send_email.call_args.kwargs
+        assert sent["to_email"] == "new@example.com"
+        token = sent["html_content"].split("token=")[1].split('"')[0]
+
+        confirm = client.post("/auth/confirm-email-change", json={"token": token})
+
+        assert confirm.status_code == 204
+        session.refresh(user)
+        assert user.email == "new@example.com"
+        assert user.email_verified is True
+        assert mock_send_email.call_args.kwargs["to_email"] == "old@example.com"
+        assert client.get("/auth/me").status_code == 401  # token_version bumped
+
+        again = client.post("/auth/confirm-email-change", json={"token": token})
+        assert again.status_code == 400
+
+    @patch("app.api.auth.service.send_email")
+    def test_wrong_password_returns_400_and_sends_nothing(
+        self, mock_send_email, client: TestClient, session
+    ) -> None:
+        user = make_user(session, email="old@example.com")
+        authenticate(client, user)
+
+        response = client.post(
+            "/auth/email",
+            json={"current_password": "nope-nope-nope", "new_email": "new@example.com"},
+        )
+
+        assert response.status_code == 400
+        mock_send_email.assert_not_called()
+
+    @patch("app.api.auth.service.send_email")
+    def test_taken_email_returns_409(
+        self, mock_send_email, client: TestClient, session
+    ) -> None:
+        make_user(session, email="taken@example.com")
+        user = make_user(session, email="old@example.com")
+        authenticate(client, user)
+
+        response = client.post(
+            "/auth/email",
+            json={
+                "current_password": DEFAULT_PASSWORD,
+                "new_email": "taken@example.com",
+            },
+        )
+
+        assert response.status_code == 409
+        assert response.json()["detail"] == "emailAlreadyRegistered"
+        mock_send_email.assert_not_called()
+
+    def test_garbage_token_returns_400(self, client: TestClient) -> None:
+        response = client.post("/auth/confirm-email-change", json={"token": "x"})
+        assert response.status_code == 400

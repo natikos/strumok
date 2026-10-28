@@ -12,6 +12,7 @@ from app.core.time import utc_now
 from app.db.models import Household, User
 
 VERIFICATION_TOKEN_TYPE = "email_verification"
+EMAIL_CHANGE_TOKEN_TYPE = "email_change"
 
 
 def list_user_households(*, session: Session, user: User) -> list[Any]:
@@ -271,8 +272,30 @@ def confirm_email_verification(*, session: Session, token: str) -> User:
     return user
 
 
-def _build_verification_email_html(*, first_name: str, link: str) -> str:
+def _build_action_email_html(
+    *,
+    first_name: str,
+    message: str,
+    link: str | None = None,
+    button_label: str | None = None,
+) -> str:
     logo_url = f"{settings.brevo.app_base_url}/logo-email.png"
+    action_html = ""
+    if link is not None and button_label is not None:
+        action_html = f"""
+              <p style="margin: 0 0 24px;">
+                <a href="{link}"
+                   style="display: inline-block; padding: 12px 24px; background-color: #2c8ad7;
+                          color: #ffffff; text-decoration: none; border-radius: 8px;
+                          font-size: 15px; font-weight: 600;">
+                  {button_label}
+                </a>
+              </p>
+              <p class="email-footnote" style="margin: 0; font-size: 13px; line-height: 1.5; color: #64748b;">
+                If the button doesn't work, copy and paste this link into your browser:<br />
+                <a href="{link}" class="email-link" style="color: #2c8ad7;">{link}</a>
+              </p>
+        """
     return f"""
     <!DOCTYPE html>
     <html>
@@ -316,20 +339,9 @@ def _build_verification_email_html(*, first_name: str, link: str) -> str:
                 Hi {first_name},
               </p>
               <p class="email-body" style="margin: 0 0 24px; font-size: 15px; line-height: 1.5; color: #334155;">
-                Please confirm your email address to finish setting up your Strumok account.
+                {message}
               </p>
-              <p style="margin: 0 0 24px;">
-                <a href="{link}"
-                   style="display: inline-block; padding: 12px 24px; background-color: #2c8ad7;
-                          color: #ffffff; text-decoration: none; border-radius: 8px;
-                          font-size: 15px; font-weight: 600;">
-                  Verify email
-                </a>
-              </p>
-              <p class="email-footnote" style="margin: 0; font-size: 13px; line-height: 1.5; color: #64748b;">
-                If the button doesn't work, copy and paste this link into your browser:<br />
-                <a href="{link}" class="email-link" style="color: #2c8ad7;">{link}</a>
-              </p>
+              {action_html}
             </div>
           </div>
         </div>
@@ -357,8 +369,11 @@ def request_email_verification_link(*, session: Session, user: User) -> None:
             to_email=user.email,
             to_name=user.first_name,
             subject="Verify your Strumok email",
-            html_content=_build_verification_email_html(
-                first_name=user.first_name, link=link
+            html_content=_build_action_email_html(
+                first_name=user.first_name,
+                message="Please confirm your email address to finish setting up your Strumok account.",
+                link=link,
+                button_label="Verify email",
             ),
         )
     except EmailSendError as exc:
@@ -367,3 +382,114 @@ def request_email_verification_link(*, session: Session, user: User) -> None:
     user.verification_email_last_sent_at = now
     session.add(user)
     session.commit()
+
+
+def change_password(
+    *, session: Session, user: User, current_password: str, new_password: str
+) -> None:
+    """Replaces the password and signs out every device; the caller issues a
+    fresh cookie for the current one."""
+    if not pwd_context.verify(current_password, user.password_hash):
+        raise InvalidCredentialsError
+
+    user.password_hash = pwd_context.hash(new_password)
+    user.token_version += 1
+    session.add(user)
+    session.commit()
+    session.refresh(user)
+
+
+def _email_taken(*, session: Session, email: str) -> bool:
+    return session.exec(select(User.id).where(User.email == email)).first() is not None
+
+
+def request_email_change(
+    *, session: Session, user: User, current_password: str, new_email: str
+) -> None:
+    """Sends a confirmation link to `new_email`. Nothing changes on the user
+    until the link is confirmed."""
+    if not pwd_context.verify(current_password, user.password_hash):
+        raise InvalidCredentialsError
+
+    new_email = new_email.strip().lower()
+    if new_email == user.email or _email_taken(session=session, email=new_email):
+        raise EmailAlreadyRegisteredError
+
+    expires = utc_now() + timedelta(minutes=settings.auth.verification_token_expiration)
+    token = jwt.encode(
+        {
+            "sub": str(user.id),
+            "from": user.email,
+            "email": new_email,
+            "exp": expires,
+            "type": EMAIL_CHANGE_TOKEN_TYPE,
+        },
+        settings.auth.secret_key.get_secret_value(),
+        algorithm=settings.auth.algorithm,
+    )
+    link = f"{settings.brevo.app_base_url}/confirm-email-change?token={token}"
+    try:
+        send_email(
+            to_email=new_email,
+            to_name=user.first_name,
+            subject="Confirm your new Strumok email",
+            html_content=_build_action_email_html(
+                first_name=user.first_name,
+                message="Confirm this address to use it for your Strumok account.",
+                link=link,
+                button_label="Confirm email",
+            ),
+        )
+    except EmailSendError as exc:
+        raise VerificationEmailSendFailedError from exc
+
+
+def confirm_email_change(*, session: Session, token: str) -> User:
+    try:
+        payload = jwt.decode(
+            token,
+            settings.auth.secret_key.get_secret_value(),
+            algorithms=[settings.auth.algorithm],
+        )
+        if payload.get("type") != EMAIL_CHANGE_TOKEN_TYPE:
+            raise ValueError("Unexpected token type")
+        user_id = int(payload["sub"])
+        old_email = payload["from"]
+        new_email = payload["email"]
+    except (JWTError, ValueError, TypeError, KeyError) as exc:
+        raise InvalidOrExpiredTokenError from exc
+
+    user = session.get(User, user_id)
+
+    # `from` must still match: a link is spent once the email has changed.
+    if user is None or not user.is_active or user.email != old_email:
+        raise InvalidOrExpiredTokenError
+
+    user.email = new_email
+    user.email_verified = True
+    user.token_version += 1
+    session.add(user)
+    try:
+        session.commit()
+    except IntegrityError as exc:
+        session.rollback()
+        raise InvalidOrExpiredTokenError from exc
+    session.refresh(user)
+
+    try:
+        send_email(
+            to_email=old_email,
+            to_name=user.first_name,
+            subject="Your Strumok email was changed",
+            html_content=_build_action_email_html(
+                first_name=user.first_name,
+                message=(
+                    f"The email on your Strumok account was changed to {new_email}. "
+                    "If this wasn't you, contact the co-op head."
+                ),
+            ),
+        )
+    except EmailSendError:
+        pass
+
+    return user
