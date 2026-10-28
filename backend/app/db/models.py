@@ -115,6 +115,10 @@ class MeterReading(SQLModel, table=True):
         default=False, sa_column_kwargs={"server_default": "false"}
     )
     review_reason: Optional[str] = Field(default=None)  # 'decrease' | 'spike'
+    # Set when the head entered or changed the values; shown to the resident so
+    # a correction is never a silent overwrite.
+    corrected_at: Optional[datetime] = Field(default=None)
+    correction_reason: Optional[str] = Field(default=None)
     reviewed_by_user_id: Optional[int] = Field(default=None, foreign_key="users.id")
     reviewed_at: Optional[datetime] = Field(default=None)
 
