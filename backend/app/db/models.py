@@ -133,6 +133,27 @@ class MeterReading(SQLModel, table=True):
     reviewed_at: Optional[datetime] = Field(default=None)
 
 
+class MeterSegment(SQLModel, table=True):
+    """A meter replacement. `period` is the first period read on the new meter:
+    its usage is (old_final - previous reading) + (reading - new_start)."""
+
+    __tablename__ = "meter_segments"  # type: ignore
+    __table_args__ = (
+        UniqueConstraint("household_id", "period", name="uq_meter_segment_period"),
+    )
+
+    id: int = Field(default=None, primary_key=True)
+    household_id: int = Field(foreign_key="households.id", index=True)
+    period: str  # YYYY-MM
+    old_final_day: Decimal = Field(decimal_places=2, max_digits=12)
+    old_final_night: Decimal = Field(decimal_places=2, max_digits=12)
+    new_start_day: Decimal = Field(decimal_places=2, max_digits=12)
+    new_start_night: Decimal = Field(decimal_places=2, max_digits=12)
+    reason: str
+    created_by_user_id: Optional[int] = Field(default=None, foreign_key="users.id")
+    created_at: datetime = Field(default_factory=utc_now)
+
+
 class PushSubscription(SQLModel, table=True):
     """A browser's Web Push (VAPID) subscription for a user's device."""
 

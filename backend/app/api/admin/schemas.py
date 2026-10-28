@@ -54,6 +54,23 @@ class AdminHouseholdCreateIn(BaseModel):
 
     name: str = Field(min_length=1, max_length=255)
     user_id: int
+    # Optional opening meter values. They are stored as an unbilled baseline for
+    # the period before the first one residents submit, so the first month is
+    # measured instead of reading 0.
+    starting_day_meter_value: Decimal | None = Field(
+        default=None, ge=Decimal("0"), max_digits=12, decimal_places=2
+    )
+    starting_night_meter_value: Decimal | None = Field(
+        default=None, ge=Decimal("0"), max_digits=12, decimal_places=2
+    )
+
+    @model_validator(mode="after")
+    def _both_or_neither(self) -> "AdminHouseholdCreateIn":
+        if (self.starting_day_meter_value is None) != (
+            self.starting_night_meter_value is None
+        ):
+            raise ValueError("Provide both starting meter values or neither")
+        return self
 
 
 class HouseholdOwnerAssignIn(BaseModel):
@@ -286,6 +303,9 @@ class AdminReadingCreateIn(BaseModel):
     day_meter_value: Decimal = Field(ge=Decimal("0"), max_digits=12, decimal_places=2)
     night_meter_value: Decimal = Field(ge=Decimal("0"), max_digits=12, decimal_places=2)
     reason: str = Field(min_length=1, max_length=500)
+    # 'baseline' sets the household's starting cumulative values; it is never
+    # billed and only allowed before any other reading exists.
+    kind: Literal["reading", "baseline"] = "reading"
 
     @model_validator(mode="after")
     def _reason_not_blank(self) -> "AdminReadingCreateIn":
@@ -381,3 +401,30 @@ class HouseholdBalanceOut(BaseModel):
 class BalancesOut(BaseModel):
     households: list[HouseholdBalanceOut]
     total_outstanding_uah: Decimal
+
+
+class MeterChangeIn(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    period: str = Field(pattern=r"^\d{4}-(0[1-9]|1[0-2])$", examples=["2026-07"])
+    old_final_day: Decimal = Field(ge=Decimal("0"), max_digits=12, decimal_places=2)
+    old_final_night: Decimal = Field(ge=Decimal("0"), max_digits=12, decimal_places=2)
+    new_start_day: Decimal = Field(ge=Decimal("0"), max_digits=12, decimal_places=2)
+    new_start_night: Decimal = Field(ge=Decimal("0"), max_digits=12, decimal_places=2)
+    reason: str = Field(min_length=1, max_length=500)
+
+    @model_validator(mode="after")
+    def _reason_not_blank(self) -> "MeterChangeIn":
+        if not self.reason.strip():
+            raise ValueError("A reason is required")
+        return self
+
+
+class MeterChangeOut(BaseModel):
+    id: int
+    household_id: int
+    period: str
+    # Usage the household's reading for the period now derives to; None while
+    # that reading hasn't been submitted.
+    day_usage_kwh: Decimal | None
+    night_usage_kwh: Decimal | None

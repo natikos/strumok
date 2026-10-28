@@ -76,6 +76,22 @@ def derive_usage(
     return max(value - previous_value, Decimal("0"))
 
 
+def derive_usage_across_replacement(
+    previous_value: Decimal | None,
+    value: Decimal,
+    *,
+    old_final: Decimal,
+    new_start: Decimal,
+    previous_is_estimate: bool = False,
+) -> Decimal:
+    """kWh in a period where the meter was replaced: what the old meter
+    recorded after the previous reading, plus what the new one recorded since
+    its starting value."""
+    return derive_usage(
+        previous_value, old_final, previous_is_estimate=previous_is_estimate
+    ) + max(value - new_start, Decimal("0"))
+
+
 def money(amount: Decimal) -> Decimal:
     """Final rounding for a UAH amount. ROUND_HALF_UP so a resident can
     reproduce it with a calculator."""

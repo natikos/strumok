@@ -14,6 +14,7 @@ from app.core.domain import (
     reconcile_period,
     current_billing_period,
     derive_usage,
+    derive_usage_across_replacement,
     period_window_closed,
 )
 from app.core.time import utc_now
@@ -24,6 +25,7 @@ from app.db.models import (
     Household,
     HouseholdCharge,
     MeterReading,
+    MeterSegment,
     User,
 )
 
@@ -72,6 +74,56 @@ def lock_period_for_submission(*, session: Session, period: str) -> None:
         raise PeriodClosedError
 
 
+def get_meter_segment(
+    *, session: Session, household_id: int, period: str
+) -> MeterSegment | None:
+    return session.exec(
+        select(MeterSegment)
+        .where(MeterSegment.household_id == household_id)
+        .where(MeterSegment.period == period)
+    ).first()
+
+
+def usage_since(
+    *,
+    session: Session,
+    household_id: int,
+    period: str,
+    previous_values: tuple[Decimal, Decimal] | None,
+    previous_is_estimate: bool,
+    day: Decimal,
+    night: Decimal,
+) -> tuple[Decimal, Decimal]:
+    """Day and night kWh for `period` given the previous reading's values.
+    A meter replacement recorded for the period splits the usage across the
+    old and the new meter."""
+    segment = get_meter_segment(
+        session=session, household_id=household_id, period=period
+    )
+    prev_day, prev_night = previous_values if previous_values else (None, None)
+    if segment is not None:
+        return (
+            derive_usage_across_replacement(
+                prev_day,
+                day,
+                old_final=segment.old_final_day,
+                new_start=segment.new_start_day,
+                previous_is_estimate=previous_is_estimate,
+            ),
+            derive_usage_across_replacement(
+                prev_night,
+                night,
+                old_final=segment.old_final_night,
+                new_start=segment.new_start_night,
+                previous_is_estimate=previous_is_estimate,
+            ),
+        )
+    return (
+        derive_usage(prev_day, day, previous_is_estimate=previous_is_estimate),
+        derive_usage(prev_night, night, previous_is_estimate=previous_is_estimate),
+    )
+
+
 def derive_reading_usage(
     *, session: Session, reading: MeterReading
 ) -> tuple[Decimal, Decimal]:
@@ -83,18 +135,16 @@ def derive_reading_usage(
         .where(MeterReading.period < reading.period)
         .order_by(desc(MeterReading.period))
     ).first()
-    after_estimate = previous is not None and previous.source == "estimate"
-    return (
-        derive_usage(
-            previous.day_meter_value if previous else None,
-            reading.day_meter_value,
-            previous_is_estimate=after_estimate,
+    return usage_since(
+        session=session,
+        household_id=reading.household_id,
+        period=reading.period,
+        previous_values=(
+            (previous.day_meter_value, previous.night_meter_value) if previous else None
         ),
-        derive_usage(
-            previous.night_meter_value if previous else None,
-            reading.night_meter_value,
-            previous_is_estimate=after_estimate,
-        ),
+        previous_is_estimate=previous is not None and previous.source == "estimate",
+        day=reading.day_meter_value,
+        night=reading.night_meter_value,
     )
 
 

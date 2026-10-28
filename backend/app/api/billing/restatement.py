@@ -11,13 +11,12 @@ from decimal import Decimal
 
 from sqlmodel import Session, col, desc, func, select
 
-from app.api.billing.service import ensure_period
+from app.api.billing.service import ensure_period, usage_since
 from app.core import audit
 from app.core.time import utc_now
 from app.core.domain import (
     ChargeInput,
     current_billing_period,
-    derive_usage,
     money,
     next_period,
     reconcile_period,
@@ -163,21 +162,22 @@ def _inputs_with_overrides(
                 (household_id, previous.period),
                 (previous.day_meter_value, previous.night_meter_value),
             )
+        day_usage, night_usage = usage_since(
+            session=session,
+            household_id=household_id,
+            period=period,
+            previous_values=prev_values,
+            previous_is_estimate=after_estimate,
+            day=day,
+            night=night,
+        )
         inputs.append(
             ChargeInput(
                 household_id=household_id,
                 owner_user_id=owners.get(household_id),
                 reading_id=reading.id if reading else None,
-                day_usage_kwh=derive_usage(
-                    prev_values[0] if prev_values else None,
-                    day,
-                    previous_is_estimate=after_estimate,
-                ),
-                night_usage_kwh=derive_usage(
-                    prev_values[1] if prev_values else None,
-                    night,
-                    previous_is_estimate=after_estimate,
-                ),
+                day_usage_kwh=day_usage,
+                night_usage_kwh=night_usage,
                 is_estimated=(
                     reading is not None
                     and reading.source == "estimate"

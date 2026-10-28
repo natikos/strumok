@@ -34,7 +34,7 @@ is `open` or `closed` (`billing_periods`); closing writes immutable `household_c
 `provisional` line for the open period (never stored). History before go-live was
 backfilled as closed periods. Closing needs the utility bill (`PUT /admin/periods/{period}/bill`)
 and splits bill − Σ tariff across households pro-rata by usage (largest remainder, so charges
-equal the bill exactly); estimates and penalties are not built yet. A rate can be edited or
+equal the bill exactly); estimates and penalties are not built yet. A meter replacement is a `meter_segments` row (`POST /admin/households/{id}/meter-change`): the period's usage is (old final − previous reading) + (reading − new start), and it clears a `decrease` flag. A household's opening values are a `baseline` reading (`kind='baseline'` on `POST /admin/households/{id}/readings`, or the starting-values fields on household creation): never billed, the first resident reading is measured against it. A rate can be edited or
 deleted until a closed period was billed with it. `MeterReading.day/night_usage_kwh` and
 `amount_charged_uah` are still written for compatibility and will be dropped.
 

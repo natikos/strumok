@@ -44,3 +44,7 @@ class MeterReadingOut(BaseModel):
     source: str = Field(examples=["resident"])
     corrected_at: UtcDatetime | None = Field(examples=[None])
     correction_reason: str | None = Field(examples=[None])
+    meter_replaced: bool = Field(
+        default=False,
+        description="The household's meter was replaced during this period.",
+    )
