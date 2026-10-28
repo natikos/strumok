@@ -20,6 +20,7 @@ class AdminUserSummaryOut(BaseModel):
 class AdminUserOut(AdminUserSummaryOut):
     is_admin: bool
     household_count: int
+    invite_pending: bool = False
 
 
 class AdminInviteIn(BaseModel):

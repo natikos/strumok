@@ -75,7 +75,11 @@ def list_users(*, session: Session) -> list[AdminUserOut]:
     users = session.exec(select(User).order_by(User.first_name, User.last_name))
     return [
         AdminUserOut.model_validate(
-            {**user.model_dump(), "household_count": counts.get(user.id, 0)}
+            {
+                **user.model_dump(),
+                "household_count": counts.get(user.id, 0),
+                "invite_pending": user.password_hash is None,
+            }
         )
         for user in users
     ]
