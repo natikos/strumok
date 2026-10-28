@@ -295,4 +295,15 @@ describe("UsageHistoryPage load error handling", () => {
 
     expect(wrapper.text()).toContain("Corrected by the head on 2026-07-05: typo in the day value");
   });
+
+  it("labels an estimated period as Estimated and never as a normal charge", async () => {
+    listMyMeterReadings.mockResolvedValue([
+      makeReading({ amount_charged_uah: "0.00", source: "estimate" }),
+    ]);
+
+    const wrapper = await mountPage();
+
+    expect(wrapper.find(".usage-history__estimated-tag").text()).toContain("Estimated");
+    expect(wrapper.find(".usage-history__charge").exists()).toBe(false);
+  });
 });

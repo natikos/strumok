@@ -18,6 +18,7 @@
         :last-period="lastSubmittedPeriod"
         :previous-day-meter-value="previousMeterValues.day"
         :previous-night-meter-value="previousMeterValues.night"
+        :closed-note="closedNote"
         :warning="plausibilityWarning"
         :warning-acknowledged="warningAcknowledged"
         @update:day-meter-value="dayMeterValue = $event"
@@ -80,12 +81,16 @@
   import SubmissionCard from "@/features/dashboard/components/SubmissionCard.vue";
   import UsageChartCard from "@/features/dashboard/components/UsageChartCard.vue";
   import YearOverYearCard from "@/features/dashboard/components/YearOverYearCard.vue";
+  import { useCurrentPeriodState } from "@/features/dashboard/composables/useCurrentPeriodState";
   import { useMeterReadings } from "@/features/dashboard/composables/useMeterReadings.ts";
   import { useCurrentHousehold } from "@/features/households/useCurrentHousehold";
+  import { useLocale } from "@/features/i18n/composables/useLocale";
   import { ROUTES } from "@shared/routing/routes";
   import { periodToDate } from "@shared/utils/billing-period";
+  import { formatKwh, formatUah } from "@shared/utils/format";
 
   const { currentId } = useCurrentHousehold();
+  const { intlLocale } = useLocale();
   const router = useRouter();
   const { t } = useI18n();
 
@@ -103,6 +108,7 @@
     daysLeft,
     deadlineStatus,
     isFirstPeriod,
+    readings,
     loadHistory,
     handleSubmit,
     lastSubmittedPeriod,
@@ -116,6 +122,28 @@
     submittedPeriods,
     missedPeriods,
   } = useMeterReadings();
+
+  const periodState = useCurrentPeriodState(readings, currentId);
+
+  // Closed beats open: residents get a plain explanation instead of a form that
+  // would only answer periodClosed. An estimate says so, with its numbers.
+  const closedNote = computed(() => {
+    if (!periodState.isClosed.value) {
+      return null;
+    }
+
+    const month = t(`months.long.${billingMonthIndex.value}`);
+
+    if (periodState.isEstimated.value && periodState.estimate.value) {
+      return t("meterReadings.periodEstimated", {
+        month,
+        total: formatUah(periodState.estimate.value.totalUah, intlLocale.value),
+        usage: formatKwh(periodState.estimate.value.usageKwh, intlLocale.value, t("units.kwh")),
+      });
+    }
+
+    return t("meterReadings.periodClosed", { month });
+  });
 
   const hasAnyReading = computed(() => submittedPeriods.value.length > 0);
 
@@ -152,10 +180,13 @@
     await handleSubmit();
   }
 
-  onMounted(loadHistory);
+  onMounted(async () => {
+    await loadHistory();
+    await periodState.load();
+  });
 
   watch(currentId, () => {
-    void loadHistory();
+    void loadHistory().then(periodState.load);
   });
 </script>
 

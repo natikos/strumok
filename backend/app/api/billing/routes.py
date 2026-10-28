@@ -1,8 +1,10 @@
 from fastapi import APIRouter, Depends
 from sqlmodel import Session
 
-from app.api.billing.schemas import AdjustmentOut, StatementLineOut
+from app.api.billing.schemas import AdjustmentOut, CurrentPeriodOut, StatementLineOut
 from app.api.billing.service import list_adjustments, list_statements
+from app.core.domain import current_billing_period
+from app.db.models import BillingPeriod
 from app.api.meter_readings.routes import NO_HOUSEHOLD_RESPONSES, require_household_id
 from app.db import get_session
 
@@ -37,3 +39,14 @@ def get_my_adjustments(
         AdjustmentOut.model_validate(a)
         for a in list_adjustments(session=session, household_id=household_id)
     ]
+
+
+@router.get("/current-period", response_model=CurrentPeriodOut)
+def get_current_period(
+    session: Session = Depends(get_session),
+) -> CurrentPeriodOut:
+    period = current_billing_period()
+    row = session.get(BillingPeriod, period)
+    return CurrentPeriodOut(
+        period=period, status="closed" if row and row.status == "closed" else "open"
+    )

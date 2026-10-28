@@ -386,4 +386,21 @@ describe("useMeterReadings", () => {
       expect(submitMyMeterReading).toHaveBeenCalledTimes(1);
     });
   });
+
+  describe("estimated readings", () => {
+    it("does not count an estimate as a submission", async () => {
+      vi.useFakeTimers();
+      vi.setSystemTime(new Date(2026, 6, 15));
+      listMyMeterReadings.mockResolvedValue([
+        makeReading({ id: 5, period: "2026-06", source: "estimate" }),
+      ]);
+      const { result } = mountComposable();
+
+      await result.loadHistory();
+      await flushPromises();
+
+      expect(result.currentSlot.value?.reading).toBeUndefined();
+      expect(result.isFirstPeriod.value).toBe(true);
+    });
+  });
 });

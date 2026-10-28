@@ -30,6 +30,10 @@
           @edit="$emit('edit')"
         />
 
+        <Message v-else-if="closedNote" class="submission__closed" severity="info" role="status">
+          {{ closedNote }}
+        </Message>
+
         <SubmissionForm
           v-else
           class="submission__form"
@@ -118,6 +122,8 @@
     previousDayMeterValue?: number | string | null | undefined;
     previousNightMeterValue?: number | string | null | undefined;
     /** Set when the entered values look off; the first tap shows it, the next sends. */
+    /** Set once the head has closed the period: replaces the form with this note. */
+    closedNote?: string | null | undefined;
     warning?: ReadingWarning | null | undefined;
     warningAcknowledged?: boolean | undefined;
   }
@@ -144,6 +150,7 @@
     nightMeterValue: null,
     previousDayMeterValue: null,
     previousNightMeterValue: null,
+    closedNote: null,
     warning: null,
     warningAcknowledged: false,
   });

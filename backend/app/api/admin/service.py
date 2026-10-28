@@ -233,7 +233,11 @@ def get_admin_dashboard(*, session: Session) -> AdminDashboardOut:
                 id=household.id,
                 name=household.name,
                 owner=AdminUserSummaryOut.model_validate(owner) if owner else None,
-                submission_status="submitted" if current else "missing",
+                submission_status=(
+                    ("estimated" if current.source == "estimate" else "submitted")
+                    if current
+                    else "missing"
+                ),
                 submitted_at=current.submitted_at if current else None,
                 reading=(
                     AdminReadingOut(

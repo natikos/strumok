@@ -157,6 +157,7 @@ def _inputs_with_overrides(
             .order_by(desc(MeterReading.period))
         ).first()
         prev_values = None
+        after_estimate = previous is not None and previous.source == "estimate"
         if previous is not None:
             prev_values = corrections.readings.get(
                 (household_id, previous.period),
@@ -168,10 +169,19 @@ def _inputs_with_overrides(
                 owner_user_id=owners.get(household_id),
                 reading_id=reading.id if reading else None,
                 day_usage_kwh=derive_usage(
-                    prev_values[0] if prev_values else None, day
+                    prev_values[0] if prev_values else None,
+                    day,
+                    previous_is_estimate=after_estimate,
                 ),
                 night_usage_kwh=derive_usage(
-                    prev_values[1] if prev_values else None, night
+                    prev_values[1] if prev_values else None,
+                    night,
+                    previous_is_estimate=after_estimate,
+                ),
+                is_estimated=(
+                    reading is not None
+                    and reading.source == "estimate"
+                    and override is None
                 ),
             )
         )
@@ -415,6 +425,9 @@ def _apply_corrections(
             )
         reading.day_meter_value = day
         reading.night_meter_value = night
+        if reading.source == "estimate":
+            # A real value replaces the estimate.
+            reading.source = "admin"
         reading.needs_review = False
         reading.corrected_at = utc_now()
         reading.correction_reason = reason
