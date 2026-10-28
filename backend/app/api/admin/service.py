@@ -325,3 +325,46 @@ def list_audit_log(
     rows = list(session.exec(query.order_by(col(AuditLog.id).desc()).limit(limit + 1)))
     next_cursor = rows[limit - 1][0].id if len(rows) > limit else None
     return rows[:limit], next_cursor
+
+
+def update_household(
+    *,
+    session: Session,
+    household_id: int,
+    actor_id: int,
+    name: str | None,
+    is_active: bool | None,
+) -> tuple[Household, User | None]:
+    household = session.get(Household, household_id)
+    if household is None:
+        raise HouseholdNotFoundError
+
+    def change(field: str, value: object, action: str) -> None:
+        if getattr(household, field) == value:
+            return
+        audit.record(
+            session,
+            actor_user_id=actor_id,
+            action=action,
+            entity_type="household",
+            entity_id=household.id,
+            household_id=household.id,
+            before={field: getattr(household, field)},
+            after={field: value},
+        )
+        setattr(household, field, value)
+
+    if name is not None:
+        change("name", name.strip(), "householdRenamed")
+    if is_active is not None:
+        change(
+            "is_active",
+            is_active,
+            "householdReactivated" if is_active else "householdDeactivated",
+        )
+
+    session.add(household)
+    session.commit()
+    session.refresh(household)
+    owner = session.get(User, household.user_id) if household.user_id else None
+    return household, owner

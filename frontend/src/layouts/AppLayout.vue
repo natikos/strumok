@@ -119,12 +119,13 @@
 <script setup lang="ts">
   import { ChartLine, Cog, Home, Shield, SignOut } from "@primeicons/vue";
   import Menu from "primevue/menu";
+  import { useToast } from "primevue/usetoast";
   import { computed, onMounted, ref } from "vue";
   import { useI18n } from "vue-i18n";
   import { RouterView, useRoute, useRouter } from "vue-router";
 
   import NoHouseholdScreen from "@/layouts/NoHouseholdScreen.vue";
-  import { useCurrentHousehold } from "@features/households/useCurrentHousehold";
+  import { type HouseholdSwitch, useCurrentHousehold } from "@features/households/useCurrentHousehold";
   import { useLocale } from "@features/i18n/composables/useLocale";
   import { useTheme } from "@features/theme/composables/useTheme";
   import { getMe, logoutUser } from "@shared/api/auth";
@@ -140,6 +141,7 @@
   const { households, currentId, setHouseholds, setCurrent } = useCurrentHousehold();
 
   const { t } = useI18n();
+  const toast = useToast();
 
   const me = ref<UserOut | null>(null);
   const isLoggingOut = ref(false);
@@ -191,8 +193,20 @@
       return;
     }
 
-    setHouseholds(me.value.households);
+    notifyIfSwitched(setHouseholds(me.value.households));
   });
+
+  function notifyIfSwitched(change: HouseholdSwitch | null): void {
+    if (!change?.removedName || !change.switchedTo) {
+      return;
+    }
+
+    toast.add({
+      detail: t("household.switched", { next: change.switchedTo.name, removed: change.removedName }),
+      life: 8000,
+      severity: "info",
+    });
+  }
 
   function handleUnblocked(updatedMe: UserOut): void {
     me.value = updatedMe;

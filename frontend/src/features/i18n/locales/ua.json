@@ -95,7 +95,16 @@
       "confirm": "Підтвердити",
       "cancel": "Скасувати",
       "empty": "Нікого не знайдено"
-    }
+    },
+    "renameHousehold": "Назва ділянки",
+    "rename": "Перейменувати",
+    "inactiveSuffix": "(неактивна)",
+    "deactivateHousehold": "Деактивувати ділянку",
+    "reactivateHousehold": "Активувати ділянку",
+    "deactivateHouseholdTitle": "Деактивувати {name}?",
+    "deactivateHouseholdBody": "{owner} більше не зможе подавати показники. Попередня історія залишиться доступною.",
+    "reactivateHouseholdTitle": "Активувати {name}?",
+    "reactivateHouseholdBody": "{owner} знову зможе подавати показники."
   },
   "auth": {
     "login": "Вхід",
@@ -219,7 +228,8 @@
     "userOwnsActiveHouseholds": "Користувач досі володіє ділянками"
   },
   "household": {
-    "switchAria": "Обрати домогосподарство"
+    "switchAria": "Обрати домогосподарство",
+    "switched": "{removed} більше не активна; переключено на {next}"
   },
   "layout": {
     "switchToEnglish": "Перемкнути мову на англійську",

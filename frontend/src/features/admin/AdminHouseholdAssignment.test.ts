@@ -105,7 +105,7 @@ describe("AdminHouseholdAssignment", () => {
     await wrapper.findComponent(Select).setValue(household.id);
     const selects = wrapper.findAllComponents(Select);
     await selects[1]!.setValue(newTarget.id);
-    await wrapper.findComponent(Button).trigger("click");
+    await wrapper.find(".admin-assignment__submit").trigger("click");
     await flushPromises();
 
     expect(confirmRequire).toHaveBeenCalledTimes(1);
@@ -128,7 +128,7 @@ describe("AdminHouseholdAssignment", () => {
     const selects = wrapper.findAllComponents(Select);
     await selects[0]!.setValue(unownedHousehold.id);
     await selects[1]!.setValue(targetUser.id);
-    await wrapper.findComponent(Button).trigger("click");
+    await wrapper.find(".admin-assignment__submit").trigger("click");
     await flushPromises();
 
     expect(confirmRequire).not.toHaveBeenCalled();
