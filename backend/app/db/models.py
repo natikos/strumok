@@ -480,3 +480,21 @@ class Payment(SQLModel, table=True):
     voided_at: Optional[datetime] = Field(default=None)
     voided_by_user_id: Optional[int] = Field(default=None, foreign_key="users.id")
     void_reason: Optional[str] = Field(default=None)
+
+
+class PaymentDetails(SQLModel, table=True):
+    """Where residents send money. A single row (id=1): the co-op has one
+    account, and changes are audited because a swapped IBAN would redirect
+    every resident's payment."""
+
+    __tablename__ = "payment_details"  # type: ignore
+    __table_args__ = (CheckConstraint("id = 1", name="ck_payment_details_single"),)
+
+    id: int = Field(default=1, primary_key=True)
+    iban: str
+    recipient_name: str
+    updated_at: datetime = Field(
+        default_factory=utc_now,
+        sa_column_kwargs={"server_default": text("CURRENT_TIMESTAMP")},
+    )
+    updated_by_user_id: Optional[int] = Field(default=None, foreign_key="users.id")

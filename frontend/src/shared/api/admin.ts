@@ -15,6 +15,7 @@ export type BalancesOut = components["schemas"]["BalancesOut"];
 export type PaymentOut = components["schemas"]["PaymentOut"];
 export type AuditLogPageOut = components["schemas"]["AuditLogPageOut"];
 export type AuditLogEntryOut = components["schemas"]["AuditLogEntryOut"];
+export type PaymentDetailsOut = components["schemas"]["PaymentDetailsOut"];
 type AdminHouseholdCreateIn = components["schemas"]["AdminHouseholdCreateIn"];
 type HouseholdOwnerAssignIn = components["schemas"]["HouseholdOwnerAssignIn"];
 
@@ -342,6 +343,24 @@ export async function voidHouseholdPayment(paymentId: number, reason: string): P
     body: { reason },
     params: { path: { payment_id: paymentId } },
   });
+
+  if (error) {
+    throw buildApiError(response.status, error);
+  }
+
+  return data;
+}
+
+export async function getAdminPaymentDetails(): Promise<PaymentDetailsOut | null> {
+  const { data } = await appApiClient.GET("/admin/payment-details");
+
+  return data ?? null;
+}
+
+export async function putAdminPaymentDetails(
+  body: components["schemas"]["PaymentDetailsIn"]
+): Promise<PaymentDetailsOut> {
+  const { data, error, response } = await appApiClient.PUT("/admin/payment-details", { body });
 
   if (error) {
     throw buildApiError(response.status, error);

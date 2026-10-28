@@ -297,7 +297,16 @@
     "handoverRequired": "Enter both meter values at the handover",
     "balanceConfirmTitle": "Previous owner has an unpaid balance",
     "balanceConfirmBody": "{owner} still owes money for this household. The balance stays with them and is not passed on to the new owner. Transfer anyway?",
-    "balanceConfirmAccept": "Transfer anyway"
+    "balanceConfirmAccept": "Transfer anyway",
+    "paymentDetails": {
+      "title": "Payment details",
+      "hint": "Residents see this IBAN when they pay. Changes are recorded in the audit log.",
+      "iban": "IBAN",
+      "recipient": "Recipient name",
+      "save": "Save",
+      "saved": "Saved",
+      "empty": "Not set yet"
+    }
   },
   "auth": {
     "login": "Login",
@@ -444,7 +453,8 @@
     "baselineNotFirst": "A starting reading can only be set before the household has any reading",
     "meterChangeAlreadyRecorded": "A meter replacement is already recorded for this period",
     "handoverReadingRequired": "Enter the meter values at the handover",
-    "householdHasOutstandingBalance": "The previous owner has an unpaid balance"
+    "householdHasOutstandingBalance": "The previous owner has an unpaid balance",
+    "invalidIban": "This IBAN isn't valid. Check it and try again"
   },
   "household": {
     "switchAria": "Switch household",
@@ -621,7 +631,17 @@
     "paid": "Paid",
     "partial": "Partly paid ({paid} of {due})",
     "unpaid": "Unpaid",
-    "aria": "Your balance"
+    "aria": "Your balance",
+    "pay": "Pay",
+    "payTitle": "Pay your balance",
+    "payHint": "Send this in your bank app. Copy each field below. The head confirms receipt manually.",
+    "payAmount": "Amount",
+    "payIban": "IBAN",
+    "payRecipient": "Recipient",
+    "payComment": "Comment",
+    "payCopy": "Copy",
+    "payCopied": "Copied",
+    "payCopyFailed": "Couldn't copy — select the text instead"
   },
   "bill": {
     "for": "for {month}",
