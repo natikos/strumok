@@ -42,3 +42,21 @@ class CurrentPeriodOut(BaseModel):
 
     period: str = Field(examples=["2026-07"])
     status: Literal["open", "closed"]
+
+
+class PeriodBalanceOut(BaseModel):
+    period: str
+    due_uah: Decimal
+    paid_uah: Decimal
+    status: Literal["paid", "partial", "unpaid"]
+
+
+class BalanceOut(BaseModel):
+    """What a household owes in total. Negative `balance_uah` is a credit."""
+
+    household_id: int
+    total_due_uah: Decimal
+    total_paid_uah: Decimal
+    balance_uah: Decimal
+    unpaid_months: int
+    periods: list[PeriodBalanceOut]

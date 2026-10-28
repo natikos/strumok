@@ -1,7 +1,13 @@
 from fastapi import APIRouter, Depends
 from sqlmodel import Session
 
-from app.api.billing.schemas import AdjustmentOut, CurrentPeriodOut, StatementLineOut
+from app.api.billing.payments import get_balance
+from app.api.billing.schemas import (
+    AdjustmentOut,
+    BalanceOut,
+    CurrentPeriodOut,
+    StatementLineOut,
+)
 from app.api.billing.service import list_adjustments, list_statements
 from app.core.domain import current_billing_period
 from app.db.models import BillingPeriod
@@ -49,4 +55,18 @@ def get_current_period(
     row = session.get(BillingPeriod, period)
     return CurrentPeriodOut(
         period=period, status="closed" if row and row.status == "closed" else "open"
+    )
+
+
+@router.get(
+    "/balance",
+    response_model=BalanceOut,
+    responses=NO_HOUSEHOLD_RESPONSES,
+)
+def get_my_balance(
+    household_id: int = Depends(require_household_id),
+    session: Session = Depends(get_session),
+) -> BalanceOut:
+    return BalanceOut.model_validate(
+        get_balance(session=session, household_id=household_id), from_attributes=True
     )

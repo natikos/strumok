@@ -1,3 +1,4 @@
+from datetime import date
 from decimal import Decimal
 from typing import Any, Literal
 
@@ -332,3 +333,51 @@ class AdminReadingResultOut(BaseModel):
     source: str
     corrected_at: UtcDatetime | None
     correction_reason: str | None
+
+
+class PaymentIn(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    amount_uah: Decimal = Field(gt=0, max_digits=12, decimal_places=2)
+    paid_on: date
+    method: Literal["cash", "transfer"]
+    note: str | None = Field(default=None, max_length=500)
+
+
+class PaymentVoidIn(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    reason: str = Field(min_length=1, max_length=500)
+
+    @model_validator(mode="after")
+    def _reason_not_blank(self) -> "PaymentVoidIn":
+        if not self.reason.strip():
+            raise ValueError("A reason is required")
+        return self
+
+
+class PaymentOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    household_id: int
+    amount_uah: Decimal
+    paid_on: date
+    method: Literal["cash", "transfer"]
+    note: str | None
+    created_at: UtcDatetime
+    voided_at: UtcDatetime | None
+    void_reason: str | None
+
+
+class HouseholdBalanceOut(BaseModel):
+    household_id: int
+    household_name: str
+    owner_name: str | None
+    balance_uah: Decimal
+    unpaid_months: int
+
+
+class BalancesOut(BaseModel):
+    households: list[HouseholdBalanceOut]
+    total_outstanding_uah: Decimal
