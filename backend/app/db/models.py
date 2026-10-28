@@ -308,3 +308,82 @@ event.listen(
     "after_create",
     DDL(HOUSEHOLD_CHARGES_APPEND_ONLY_SQL),
 )
+
+
+class PeriodRestatement(SQLModel, table=True):
+    """One correction of a closed period (wrong rate, reading or bill). The
+    closed charges are never touched; the per-household differences are posted
+    as ChargeAdjustment rows into the current open period."""
+
+    __tablename__ = "period_restatements"  # type: ignore
+
+    id: int = Field(default=None, primary_key=True)
+    period: str = Field(
+        sa_column=Column(
+            String(7), ForeignKey("billing_periods.period"), nullable=False, index=True
+        )
+    )
+    reason: str
+    inputs: dict = Field(default_factory=dict, sa_column=Column(JSONB, nullable=False))
+    created_by_user_id: Optional[int] = Field(default=None, foreign_key="users.id")
+    created_at: datetime = Field(
+        default_factory=utc_now,
+        sa_column_kwargs={"server_default": text("CURRENT_TIMESTAMP")},
+    )
+
+
+CHARGE_ADJUSTMENTS_APPEND_ONLY_SQL = """
+CREATE FUNCTION charge_adjustments_reject_change() RETURNS trigger AS $$
+BEGIN
+    RAISE EXCEPTION 'charge_adjustments is append-only';
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER charge_adjustments_append_only
+BEFORE UPDATE OR DELETE ON charge_adjustments
+FOR EACH ROW EXECUTE FUNCTION charge_adjustments_reject_change();
+"""
+
+
+class ChargeAdjustment(SQLModel, table=True):
+    """A signed correction to what a household owes for `applies_to_period`,
+    shown on the bill of `posted_in_period`. Positive is an extra charge,
+    negative a refund."""
+
+    __tablename__ = "charge_adjustments"  # type: ignore
+    __table_args__ = (
+        CheckConstraint(
+            "reason_code IN ('rateCorrection', 'readingCorrection', 'billCorrection', 'manual')",
+            name="ck_charge_adjustments_reason_code",
+        ),
+    )
+
+    id: int = Field(default=None, primary_key=True)
+    household_id: int = Field(foreign_key="households.id", index=True)
+    owner_user_id: Optional[int] = Field(default=None, foreign_key="users.id")
+    applies_to_period: str = Field(
+        sa_column=Column(
+            String(7), ForeignKey("billing_periods.period"), nullable=False, index=True
+        )
+    )
+    posted_in_period: str = Field(
+        sa_column=Column(
+            String(7), ForeignKey("billing_periods.period"), nullable=False, index=True
+        )
+    )
+    amount_uah: Decimal = Field(decimal_places=2, max_digits=12)
+    reason_code: str
+    reason: str
+    restatement_id: int = Field(foreign_key="period_restatements.id", index=True)
+    created_by_user_id: Optional[int] = Field(default=None, foreign_key="users.id")
+    created_at: datetime = Field(
+        default_factory=utc_now,
+        sa_column_kwargs={"server_default": text("CURRENT_TIMESTAMP")},
+    )
+
+
+event.listen(
+    ChargeAdjustment.__table__,  # type: ignore[attr-defined]
+    "after_create",
+    DDL(CHARGE_ADJUSTMENTS_APPEND_ONLY_SQL),
+)

@@ -19,6 +19,7 @@ from app.core.domain import (
 from app.core.time import utc_now
 from app.db.models import (
     BillingPeriod,
+    ChargeAdjustment,
     ElectricityRate,
     Household,
     HouseholdCharge,
@@ -541,4 +542,16 @@ def get_reconciliation(*, session: Session, period: str) -> PeriodReconciliation
         ),
         lines=lines,
         remainder_household_names=[names.get(i, "") for i in remainder_ids],
+    )
+
+
+def list_adjustments(*, session: Session, household_id: int) -> list[ChargeAdjustment]:
+    return list(
+        session.exec(
+            select(ChargeAdjustment)
+            .where(ChargeAdjustment.household_id == household_id)
+            .order_by(
+                desc(ChargeAdjustment.posted_in_period), desc(ChargeAdjustment.id)
+            )
+        )
     )

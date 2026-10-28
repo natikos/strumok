@@ -20,3 +20,17 @@ class StatementLineOut(BaseModel):
     penalty_uah: Decimal = Field(max_digits=12, decimal_places=2)
     penalty_credit_uah: Decimal = Field(max_digits=12, decimal_places=2)
     total_uah: Decimal = Field(max_digits=12, decimal_places=2)
+
+
+class AdjustmentOut(BaseModel):
+    """A correction posted to a household's bill: positive is an extra charge,
+    negative a refund."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    applies_to_period: str
+    posted_in_period: str
+    amount_uah: Decimal = Field(max_digits=12, decimal_places=2)
+    reason_code: str
+    reason: str

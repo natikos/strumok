@@ -1,7 +1,7 @@
 from decimal import Decimal
 from typing import Any, Literal
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from app.core.time import UtcDatetime
 
@@ -45,3 +45,21 @@ class ElectricityRateCreateIn(BaseModel):
     day_rate_uah: Decimal = Field(gt=0)
     night_rate_uah: Decimal = Field(gt=0)
     effective_from: str = Field(pattern=PERIOD_PATTERN, examples=["2026-07"])
+
+
+class RateCorrectIn(BaseModel):
+    """Correct a rate that already billed closed periods, via a restatement."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    day_rate_uah: Decimal = Field(gt=0)
+    night_rate_uah: Decimal = Field(gt=0)
+    reason: str | None = Field(default=None, max_length=500)
+    dry_run: bool = False
+    confirm: Literal[True]
+
+    @model_validator(mode="after")
+    def _reason_required_to_post(self) -> "RateCorrectIn":
+        if not self.dry_run and not (self.reason or "").strip():
+            raise ValueError("A reason is required to post a correction")
+        return self

@@ -1,7 +1,7 @@
 from decimal import Decimal
 from typing import Any, Literal
 
-from pydantic import BaseModel, ConfigDict, EmailStr, Field
+from pydantic import BaseModel, ConfigDict, EmailStr, Field, model_validator
 
 from app.core.time import UtcDatetime
 from app.db.models import Household, LanguageCode, User
@@ -199,3 +199,80 @@ class ReconciliationOut(BaseModel):
     variance_uah: Decimal | None
     lines: list[ReconciliationLineOut]
     remainder_household_names: list[str]
+
+
+class RateCorrectionIn(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    day_rate_uah: Decimal = Field(gt=0, max_digits=12, decimal_places=4)
+    night_rate_uah: Decimal = Field(gt=0, max_digits=12, decimal_places=4)
+
+
+class ReadingCorrectionIn(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    household_id: int
+    # Defaults to the period being restated; the following period is derived.
+    period: str | None = Field(default=None, pattern=r"^\d{4}-(0[1-9]|1[0-2])$")
+    day_meter_value: Decimal = Field(ge=0, max_digits=12, decimal_places=2)
+    night_meter_value: Decimal = Field(ge=0, max_digits=12, decimal_places=2)
+
+
+class CorrectionsIn(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    rate: RateCorrectionIn | None = None
+    bill_total_uah: Decimal | None = Field(
+        default=None, ge=0, max_digits=12, decimal_places=2
+    )
+    readings: list[ReadingCorrectionIn] = []
+
+
+class RestateIn(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    corrections: CorrectionsIn
+    reason: str | None = Field(default=None, max_length=500)
+    dry_run: bool = False
+    confirm: Literal[True]
+
+    @model_validator(mode="after")
+    def _reason_required_to_post(self) -> "RestateIn":
+        if not self.dry_run and not (self.reason or "").strip():
+            raise ValueError("A reason is required to post a restatement")
+        return self
+
+
+class RestatementLineOut(BaseModel):
+    period: str
+    household_id: int
+    household_name: str
+    before_uah: Decimal
+    after_uah: Decimal
+    delta_uah: Decimal
+
+
+class RestatementOut(BaseModel):
+    lines: list[RestatementLineOut]
+    affected_periods: list[str]
+    total_delta_uah: Decimal
+    restatement_id: int | None
+    posted_in_period: str
+    # True when the households' changes cancel out, which is what a pure rate
+    # correction does under the loss-split formula.
+    is_zero_sum: bool
+
+    @classmethod
+    def from_result(cls, result: Any) -> "RestatementOut":
+        """Builds the response from a billing RestatementResult."""
+        return cls(
+            lines=[
+                RestatementLineOut.model_validate(line, from_attributes=True)
+                for line in result.lines
+            ],
+            affected_periods=result.affected_periods,
+            total_delta_uah=result.total_delta_uah,
+            restatement_id=result.restatement_id,
+            posted_in_period=result.posted_in_period,
+            is_zero_sum=result.total_delta_uah == 0,
+        )

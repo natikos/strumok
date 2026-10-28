@@ -20,6 +20,8 @@ from app.api.admin.schemas import (
     ReconciliationOut,
     PeriodCloseIn,
     ReadingReviewIn,
+    RestateIn,
+    RestatementOut,
     PeriodOverviewOut,
 )
 from app.api.admin.service import (
@@ -46,6 +48,12 @@ from app.api.admin.service import (
     list_users,
 )
 from app.api.auth.schemas import ErrorOut
+from app.api.billing.restatement import (
+    Corrections,
+    NothingToCorrectError,
+    PeriodNotClosedError,
+    restate_period,
+)
 from app.api.billing.service import (
     BillNotEnteredError,
     PeriodHasUnreviewedReadingsError,
@@ -590,3 +598,65 @@ def review_admin_reading(
             status_code=status.HTTP_404_NOT_FOUND, detail="readingNotFound"
         ) from exc
     return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
+@router.post(
+    "/periods/{period}/restate",
+    response_model=RestatementOut,
+    responses={
+        status.HTTP_409_CONFLICT: {
+            "description": "The period isn't closed, or nothing was corrected",
+            "model": ErrorOut,
+            "content": {
+                "application/json": {
+                    "examples": {
+                        "periodNotClosed": {"value": {"detail": "periodNotClosed"}},
+                        "nothingToCorrect": {"value": {"detail": "nothingToCorrect"}},
+                    }
+                }
+            },
+        }
+    },
+)
+def restate_admin_period(
+    payload: RestateIn,
+    period: str = PERIOD_PATH,
+    session: Session = Depends(get_session),
+    admin: User = CurrentAdmin,
+) -> RestatementOut:
+    corrections = Corrections(
+        rate=(
+            (
+                payload.corrections.rate.day_rate_uah,
+                payload.corrections.rate.night_rate_uah,
+            )
+            if payload.corrections.rate
+            else None
+        ),
+        bill_total_uah=payload.corrections.bill_total_uah,
+        readings={
+            (r.household_id, r.period or period): (
+                r.day_meter_value,
+                r.night_meter_value,
+            )
+            for r in payload.corrections.readings
+        },
+    )
+    try:
+        result = restate_period(
+            session=session,
+            period=period,
+            corrections=corrections,
+            reason=(payload.reason or "").strip(),
+            actor_id=admin.id,
+            dry_run=payload.dry_run,
+        )
+    except PeriodNotClosedError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT, detail="periodNotClosed"
+        ) from exc
+    except NothingToCorrectError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT, detail="nothingToCorrect"
+        ) from exc
+    return RestatementOut.from_result(result)

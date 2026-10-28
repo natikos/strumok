@@ -7,15 +7,15 @@ from sqlmodel import Session
 from app.db.models import AuditLog
 
 
-def _jsonable(value: Any) -> Any:
+def jsonable(value: Any) -> Any:
     if isinstance(value, Decimal):
         return str(value)
     if isinstance(value, (datetime, date)):
         return value.isoformat()
     if isinstance(value, dict):
-        return {key: _jsonable(item) for key, item in value.items()}
+        return {key: jsonable(item) for key, item in value.items()}
     if isinstance(value, (list, tuple)):
-        return [_jsonable(item) for item in value]
+        return [jsonable(item) for item in value]
     return value
 
 
@@ -42,8 +42,8 @@ def record(
         entity_id=entity_id,
         household_id=household_id,
         period=period,
-        before=_jsonable(before),
-        after=_jsonable(after),
+        before=jsonable(before),
+        after=jsonable(after),
         reason=reason,
     )
     session.add(entry)
