@@ -42,6 +42,7 @@ function makeMe(overrides: Partial<UserWithHouseholdsOut> = {}): UserWithHouseho
     verification_email_retry_after_seconds: 0,
     theme: "light",
     language: "en",
+    reminder_hour: 9,
     households: [],
     ...overrides,
   };

@@ -73,6 +73,29 @@
               t("settings.notifications.unsupported")
             }}</span>
           </div>
+
+          <div v-if="me && pushState === 'on'" class="settings-row">
+            <div class="settings-row__info">
+              <Clock class="settings-row__icon" />
+              <div>
+                <span class="settings-row__label">{{
+                  t("settings.notifications.reminderHour")
+                }}</span>
+                <span class="settings-row__hint">{{
+                  t("settings.notifications.reminderHourHint")
+                }}</span>
+              </div>
+            </div>
+            <Select
+              :model-value="me.reminder_hour"
+              :options="reminderHourOptions"
+              option-label="label"
+              option-value="value"
+              :aria-label="t('settings.notifications.reminderHour')"
+              class="settings-row__select"
+              @update:model-value="handleReminderHourChange"
+            />
+          </div>
         </div>
       </section>
     </div>
@@ -80,7 +103,8 @@
 </template>
 
 <script setup lang="ts">
-  import { Bell, Language, Palette, Spinner } from "@primeicons/vue";
+  import { Bell, Clock, Language, Palette, Spinner } from "@primeicons/vue";
+  import { format, setHours, startOfDay } from "date-fns";
   import { computed, onMounted, ref } from "vue";
   import { useI18n } from "vue-i18n";
 
@@ -111,6 +135,18 @@
     const updated = await updateMyPreferences(payload);
     setLocale(updated.language);
     setTheme(updated.theme);
+  }
+
+  const reminderHourOptions = Array.from({ length: 24 }, (_, hour) => ({
+    value: hour,
+    label: format(setHours(startOfDay(new Date()), hour), "HH:mm"),
+  }));
+
+  async function handleReminderHourChange(reminderHour: number): Promise<void> {
+    const updated = await updateMyPreferences({ reminder_hour: reminderHour });
+    if (me.value) {
+      me.value.reminder_hour = updated.reminder_hour;
+    }
   }
 
   async function handlePushToggle(next: boolean): Promise<void> {
@@ -186,6 +222,11 @@
 
     &__info {
       @include layout.row(var(--s-app-space-3), center);
+      min-width: 0;
+    }
+
+    &__select {
+      flex-shrink: 0;
     }
 
     &__icon {

@@ -38,6 +38,9 @@ equal the bill exactly); estimates and penalties are not built yet. A rate can b
 deleted until a closed period was billed with it. `MeterReading.day/night_usage_kwh` and
 `amount_charged_uah` are still written for compatibility and will be dropped.
 
+Deadline push reminders go out on days 1 and 5 at each user's chosen Kyiv hour
+(`User.reminder_hour`, default 9, set via `PATCH /auth/preferences`).
+
 Keep this section current as the domain evolves — update it in the same change that adds or
 changes a concept, not as separate cleanup later.
 
