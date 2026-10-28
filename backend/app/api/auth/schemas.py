@@ -8,13 +8,6 @@ from app.core.time import utc_now
 from app.db.models import LanguageCode, ThemeMode, User
 
 
-class RegisterIn(BaseModel):
-    email: EmailStr
-    first_name: str = Field(min_length=2, max_length=255)
-    last_name: str = Field(min_length=2, max_length=255)
-    password: str = Field(min_length=8, max_length=128)
-
-
 class LoginIn(BaseModel):
     email: EmailStr
     password: str = Field(min_length=1, max_length=128)

@@ -11,7 +11,6 @@ from app.api.auth.schemas import (
     LoginIn,
     PasswordResetConfirmIn,
     PasswordResetRequestIn,
-    RegisterIn,
     UserOut,
     UserPreferencesIn,
     UserWithHouseholdsOut,
@@ -33,7 +32,6 @@ from app.api.auth.service import (
     get_user_id_and_version_for_logout,
     list_user_households,
     refresh_access_token,
-    register_user,
     request_email_change,
     request_email_verification_link,
     request_password_reset,
@@ -165,36 +163,21 @@ def set_auth_cookie(response: Response, *, token: str) -> None:
 
 @router.post(
     "/register",
-    response_model=UserOut,
-    responses=REGISTER_RESPONSES,
-    status_code=status.HTTP_201_CREATED,
+    status_code=status.HTTP_403_FORBIDDEN,
+    responses={
+        status.HTTP_403_FORBIDDEN: {
+            "description": "Self-registration is closed; the head invites residents",
+            "model": ErrorOut,
+            "content": {
+                "application/json": {"example": {"detail": "registrationClosed"}}
+            },
+        }
+    },
 )
-def register(
-    payload: RegisterIn,
-    response: Response,
-    session: Session = Depends(get_session),
-) -> UserOut:
-    try:
-        user = register_user(
-            session=session,
-            email=payload.email,
-            first_name=payload.first_name,
-            last_name=payload.last_name,
-            password=payload.password,
-        )
-        set_auth_cookie(response, token=create_access_token(user))
-
-        try:
-            request_email_verification_link(session=session, user=user)
-        except VerificationEmailSendFailedError:
-            logger.exception("Verification email failed to send during registration")
-
-        return UserOut.from_user(user)
-    except EmailAlreadyRegisteredError as exc:
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail="emailAlreadyRegistered",
-        ) from exc
+def register() -> None:
+    raise HTTPException(
+        status_code=status.HTTP_403_FORBIDDEN, detail="registrationClosed"
+    )
 
 
 @router.post("/login", response_model=UserOut, responses=LOGIN_RESPONSES)
@@ -513,19 +496,23 @@ def password_reset_request(
 
 @router.post(
     "/password-reset/confirm",
-    status_code=status.HTTP_204_NO_CONTENT,
+    response_model=UserOut,
     responses=VERIFY_EMAIL_RESPONSES,
 )
 def password_reset_confirm(
     payload: PasswordResetConfirmIn,
+    response: Response,
     session: Session = Depends(get_session),
-) -> Response:
+) -> UserOut:
+    """Also the set-password step of an invite. Signs the user in: they just
+    proved ownership of the inbox."""
     try:
-        confirm_password_reset(
+        user = confirm_password_reset(
             session=session, token=payload.token, password=payload.password
         )
     except InvalidOrExpiredTokenError as exc:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST, detail="invalidOrExpiredToken"
         ) from exc
-    return Response(status_code=status.HTTP_204_NO_CONTENT)
+    set_auth_cookie(response, token=create_access_token(user))
+    return UserOut.from_user(user)
