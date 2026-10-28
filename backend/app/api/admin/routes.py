@@ -985,13 +985,26 @@ def _csv_response(content: str, filename: str) -> Response:
     )
 
 
-@router.get("/export/period/{period}")
+@router.get(
+    "/export/period/{period}",
+    responses={
+        status.HTTP_409_CONFLICT: {
+            "description": "Period is still open, or no rate is configured",
+            "model": ErrorOut,
+            "content": {"application/json": {"example": {"detail": "periodNotClosed"}}},
+        }
+    },
+)
 def export_period_reconciliation(
     period: str = PERIOD_PATH,
     format: CsvFormat = "standard",
     session: Session = Depends(get_session),
 ) -> Response:
     result = _reconciliation(session=session, period=period)
+    if result.status != "closed":
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT, detail="periodNotClosed"
+        )
     rows = [
         (
             line.household_id,
@@ -1059,6 +1072,7 @@ def export_payments(
             p.household_id,
             name,
             p.amount_uah,
+            p.voided_at is not None,
             p.paid_on,
             p.method,
             p.note,
@@ -1075,10 +1089,11 @@ def export_payments(
             "household_id",
             "household",
             "amount_uah",
+            "voided",
             "paid_on",
             "method",
             "note",
-            "voided_at",
+            "voided_at_utc",
             "void_reason",
         ],
         rows,
@@ -1115,7 +1130,7 @@ def export_audit_log(
     content = render_csv(
         [
             "id",
-            "created_at",
+            "created_at_utc",
             "actor",
             "action",
             "entity_type",
