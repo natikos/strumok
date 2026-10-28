@@ -12,7 +12,10 @@ from app.db.models import AuditLog, Household, Payment, User
 
 CsvFormat = Literal["standard", "ua"]
 
-BOM = "﻿"
+BOM = "\ufeff"
+
+# Spreadsheets evaluate cells starting with these as formulas.
+_FORMULA_PREFIXES = ("=", "+", "-", "@", "\t", "\r")
 
 
 def _cell(value: Any, fmt: CsvFormat) -> str:
@@ -24,10 +27,11 @@ def _cell(value: Any, fmt: CsvFormat) -> str:
     if isinstance(value, bool):
         return "true" if value else "false"
     if isinstance(value, datetime):
-        return value.isoformat()
+        return value.isoformat() + "Z"
     if isinstance(value, dict):
         return json.dumps(value, ensure_ascii=False, sort_keys=True)
-    return str(value)
+    text = str(value)
+    return "'" + text if text.startswith(_FORMULA_PREFIXES) else text
 
 
 def render_csv(
