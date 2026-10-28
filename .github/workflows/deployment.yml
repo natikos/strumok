@@ -21,6 +21,34 @@ jobs:
             exit 1
           fi
 
+      - uses: actions/checkout@v6
+
+      - uses: astral-sh/setup-uv@v7
+        with:
+          working-directory: backend
+
+      - name: Require production migrations applied
+        working-directory: backend
+        env:
+          PROD_DATABASE_URL: ${{ secrets.PROD_DATABASE_URL_READONLY }}
+          # Migration files import app settings; these are never connected to.
+          DATABASE_URL: postgresql+psycopg://unused@localhost/unused
+          ENVIRONMENT: development
+          AUTH_SECRET_KEY: preflight-only
+          PUSH_VAPID_PUBLIC_KEY: preflight-only
+          PUSH_VAPID_PRIVATE_KEY: preflight-only
+          PUSH_VAPID_SUBJECT: mailto:ci@example.com
+        run: |
+          if [ -z "$PROD_DATABASE_URL" ]; then
+            echo "::error::Missing secret PROD_DATABASE_URL_READONLY"
+            exit 1
+          fi
+          uv sync
+          uv run python scripts/check_migrations.py || {
+            echo "::error::Apply the listed migrations to production before deploying."
+            exit 1
+          }
+
   deploy:
     needs: preflight
     runs-on: ubuntu-latest
