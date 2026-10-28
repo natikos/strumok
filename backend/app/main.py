@@ -16,6 +16,7 @@ from app.api import (
     meter_readings_router,
     push_router,
 )
+from app.api.billing.routes import me_router as me_billing_router
 from app.api.push.scheduler import start_reminder_scheduler
 from app.core.config import settings
 from app.core.csrf import CsrfMiddleware
@@ -46,6 +47,7 @@ app.add_middleware(
 app.include_router(auth_router)
 app.include_router(meter_readings_router)
 app.include_router(billing_router)
+app.include_router(me_billing_router)
 app.include_router(admin_router)
 app.include_router(electricity_rates_router)
 app.include_router(push_router)

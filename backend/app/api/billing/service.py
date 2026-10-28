@@ -8,6 +8,7 @@ from sqlmodel import Session, col, desc, func, select
 from app.api.billing.schemas import StatementLineOut
 from app.api.electricity_rates.service import NoRateConfiguredError, get_effective_rate
 from app.core import audit
+from app.core.ownership import owner_at, period_end, tenure_start_period
 from app.core.domain import (
     ChargeInput,
     compute_period_statement,
@@ -151,6 +152,9 @@ def derive_reading_usage(
 def provisional_line(*, session: Session, household_id: int) -> StatementLineOut | None:
     """The open period's figure for a household: usage × rate, not stored."""
     period = current_billing_period()
+    first_visible = tenure_start_period(session, household_id)
+    if first_visible is not None and period < first_visible:
+        return None
     closed = session.get(BillingPeriod, period)
     if closed is not None and closed.status == "closed":
         return None
@@ -197,18 +201,28 @@ def provisional_line(*, session: Session, household_id: int) -> StatementLineOut
     )
 
 
-def list_statements(*, session: Session, household_id: int) -> list[StatementLineOut]:
-    """Closed charges (newest first) plus the provisional open-period line."""
-    charges = session.exec(
-        select(HouseholdCharge)
-        .where(HouseholdCharge.household_id == household_id)
-        .order_by(desc(HouseholdCharge.period))
-    ).all()
+def list_statements(
+    *,
+    session: Session,
+    household_id: int,
+    owner_user_id: int | None = None,
+    include_provisional: bool = True,
+) -> list[StatementLineOut]:
+    """Closed charges (newest first) plus the provisional open-period line.
+    With `owner_user_id`, only that owner's charges."""
+    query = select(HouseholdCharge).where(HouseholdCharge.household_id == household_id)
+    if owner_user_id is not None:
+        query = query.where(HouseholdCharge.owner_user_id == owner_user_id)
+    charges = session.exec(query.order_by(desc(HouseholdCharge.period))).all()
     lines = [
         StatementLineOut.model_validate({**charge.model_dump(), "status": "closed"})
         for charge in charges
     ]
-    provisional = provisional_line(session=session, household_id=household_id)
+    provisional = (
+        provisional_line(session=session, household_id=household_id)
+        if include_provisional
+        else None
+    )
     return [provisional, *lines] if provisional else lines
 
 
@@ -313,8 +327,10 @@ def charge_inputs_for_period(*, session: Session, period: str) -> list[ChargeInp
     readings = session.exec(
         select(MeterReading).where(MeterReading.period == period)
     ).all()
+    # The billed owner is whoever held the plot when the period ended.
+    ends = period_end(period)
     owners = {
-        household.id: household.user_id
+        household.id: owner_at(session, household, ends)
         for household in session.exec(
             select(Household).where(
                 col(Household.id).in_([r.household_id for r in readings])
@@ -691,12 +707,17 @@ def get_reconciliation(*, session: Session, period: str) -> PeriodReconciliation
     )
 
 
-def list_adjustments(*, session: Session, household_id: int) -> list[ChargeAdjustment]:
+def list_adjustments(
+    *, session: Session, household_id: int, owner_user_id: int | None = None
+) -> list[ChargeAdjustment]:
+    query = select(ChargeAdjustment).where(
+        ChargeAdjustment.household_id == household_id
+    )
+    if owner_user_id is not None:
+        query = query.where(ChargeAdjustment.owner_user_id == owner_user_id)
     return list(
         session.exec(
-            select(ChargeAdjustment)
-            .where(ChargeAdjustment.household_id == household_id)
-            .order_by(
+            query.order_by(
                 desc(ChargeAdjustment.posted_in_period), desc(ChargeAdjustment.id)
             )
         )

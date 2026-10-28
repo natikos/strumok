@@ -9,6 +9,7 @@ from sqlalchemy import (
     CheckConstraint,
     Column,
     ForeignKey,
+    Index,
     SmallInteger,
     String,
     UniqueConstraint,
@@ -77,6 +78,36 @@ class Household(SQLModel, table=True):
     created_at: datetime = Field(default_factory=utc_now)
     updated_at: datetime = Field(
         default_factory=utc_now, sa_column_kwargs={"onupdate": utc_now}
+    )
+
+
+class HouseholdOwnership(SQLModel, table=True):
+    """Who owned a household and when. `households.user_id` mirrors the open
+    row (valid_to IS NULL) and is updated in the same transaction. The billed
+    owner of a period is whoever held the plot at its end."""
+
+    __tablename__ = "household_ownerships"  # type: ignore
+    __table_args__ = (
+        Index(
+            "uq_household_open_ownership",
+            "household_id",
+            unique=True,
+            postgresql_where=text("valid_to IS NULL"),
+        ),
+    )
+
+    id: int = Field(default=None, primary_key=True)
+    household_id: int = Field(foreign_key="households.id", index=True)
+    user_id: int = Field(foreign_key="users.id", index=True)
+    valid_from: datetime = Field(default_factory=utc_now)
+    valid_to: Optional[datetime] = Field(default=None)
+    # Meter values the head recorded when the plot changed hands (set on the
+    # row that ends with a transfer).
+    handover_day_meter_value: Optional[Decimal] = Field(
+        default=None, decimal_places=2, max_digits=12
+    )
+    handover_night_meter_value: Optional[Decimal] = Field(
+        default=None, decimal_places=2, max_digits=12
     )
 
 

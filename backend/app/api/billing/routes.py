@@ -1,16 +1,19 @@
 from fastapi import APIRouter, Depends
-from sqlmodel import Session
+from sqlmodel import Session, col, select
 
 from app.api.billing.payments import get_balance
 from app.api.billing.schemas import (
     AdjustmentOut,
     BalanceOut,
     CurrentPeriodOut,
+    HouseholdStatementsOut,
     StatementLineOut,
 )
 from app.api.billing.service import list_adjustments, list_statements
+from app.api.deps import get_current_user
 from app.core.domain import current_billing_period
-from app.db.models import BillingPeriod
+from app.core.ownership import owner_scope
+from app.db.models import BillingPeriod, Household, HouseholdOwnership, User
 from app.api.meter_readings.routes import NO_HOUSEHOLD_RESPONSES, require_household_id
 from app.db import get_session
 
@@ -27,9 +30,14 @@ router = APIRouter(
 )
 def get_my_statements(
     household_id: int = Depends(require_household_id),
+    current_user: User = Depends(get_current_user),
     session: Session = Depends(get_session),
 ) -> list[StatementLineOut]:
-    return list_statements(session=session, household_id=household_id)
+    return list_statements(
+        session=session,
+        household_id=household_id,
+        owner_user_id=owner_scope(session, household_id, current_user.id),
+    )
 
 
 @router.get(
@@ -39,11 +47,16 @@ def get_my_statements(
 )
 def get_my_adjustments(
     household_id: int = Depends(require_household_id),
+    current_user: User = Depends(get_current_user),
     session: Session = Depends(get_session),
 ) -> list[AdjustmentOut]:
     return [
         AdjustmentOut.model_validate(a)
-        for a in list_adjustments(session=session, household_id=household_id)
+        for a in list_adjustments(
+            session=session,
+            household_id=household_id,
+            owner_user_id=owner_scope(session, household_id, current_user.id),
+        )
     ]
 
 
@@ -65,8 +78,65 @@ def get_current_period(
 )
 def get_my_balance(
     household_id: int = Depends(require_household_id),
+    current_user: User = Depends(get_current_user),
     session: Session = Depends(get_session),
 ) -> BalanceOut:
     return BalanceOut.model_validate(
-        get_balance(session=session, household_id=household_id), from_attributes=True
+        get_balance(
+            session=session,
+            household_id=household_id,
+            owner_user_id=owner_scope(session, household_id, current_user.id),
+        ),
+        from_attributes=True,
     )
+
+
+me_router = APIRouter(prefix="/me", tags=["billing"])
+
+
+@me_router.get("/statements", response_model=list[HouseholdStatementsOut])
+def get_all_my_statements(
+    current_user: User = Depends(get_current_user),
+    session: Session = Depends(get_session),
+) -> list[HouseholdStatementsOut]:
+    """Every household the user has owned, including ones handed over since:
+    what they were billed, and what they still owe on each."""
+    tenures = session.exec(
+        select(HouseholdOwnership)
+        .where(HouseholdOwnership.user_id == current_user.id)
+        .order_by(col(HouseholdOwnership.valid_from))
+    ).all()
+    household_ids = {t.household_id for t in tenures} | set(
+        session.exec(select(Household.id).where(Household.user_id == current_user.id))
+    )
+    result = []
+    for household in session.exec(
+        select(Household).where(col(Household.id).in_(household_ids))
+    ):
+        is_current = household.user_id == current_user.id
+        mine = [t for t in tenures if t.household_id == household.id]
+        scope = owner_scope(session, household.id, current_user.id)
+        result.append(
+            HouseholdStatementsOut(
+                household_id=household.id,
+                household_name=household.name,
+                is_current_owner=is_current,
+                owned_since=mine[0].valid_from if mine else None,
+                owned_until=None if is_current or not mine else mine[-1].valid_to,
+                balance=BalanceOut.model_validate(
+                    get_balance(
+                        session=session,
+                        household_id=household.id,
+                        owner_user_id=scope,
+                    ),
+                    from_attributes=True,
+                ),
+                statements=list_statements(
+                    session=session,
+                    household_id=household.id,
+                    owner_user_id=scope,
+                    include_provisional=is_current,
+                ),
+            )
+        )
+    return sorted(result, key=lambda r: (not r.is_current_owner, r.household_name))

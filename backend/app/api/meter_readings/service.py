@@ -66,23 +66,24 @@ def get_user_household_id(*, session: Session, user: User) -> int:
 
 
 def list_meter_readings(
-    *, session: Session, household_id: int
+    *, session: Session, household_id: int, since_period: str | None = None
 ) -> list[MeterReadingOut]:
+    """`since_period` hides everything before it: an owner who took a plot over
+    doesn't see the previous owner's readings."""
     household_created_at = session.exec(
         select(Household.created_at).where(Household.id == household_id)
     ).one()
 
-    readings = list(
-        session.exec(
-            select(MeterReading)
-            .where(MeterReading.household_id == household_id)
-            .order_by(desc(MeterReading.period))
-        ).all()
-    )
+    query = select(MeterReading).where(MeterReading.household_id == household_id)
+    if since_period is not None:
+        query = query.where(MeterReading.period >= since_period)
+    readings = list(session.exec(query.order_by(desc(MeterReading.period))).all())
 
     start_period = (
         readings[-1].period if readings else household_created_at.strftime("%Y-%m")
     )
+    if since_period is not None:
+        start_period = max(start_period, since_period)
     readings_by_period = {reading.period: reading for reading in readings}
 
     result: list[MeterReadingOut] = []

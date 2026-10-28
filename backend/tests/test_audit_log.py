@@ -52,16 +52,26 @@ class TestWiredActions:
         ).json()
         client.patch(
             f"/admin/households/{created['id']}/owner",
-            json={"user_id": other.id, "confirm_reassignment": True},
+            json={
+                "user_id": other.id,
+                "confirm_reassignment": True,
+                "handover_day_meter_value": "10",
+                "handover_night_meter_value": "5",
+            },
         )
 
         (made,) = _entries(session, "householdCreated")
         assert made.actor_user_id == admin.id
         assert made.household_id == created["id"]
         assert made.after == {"name": "Plot 7", "user_id": owner.id}
-        (moved,) = _entries(session, "householdOwnerAssigned")
+        (moved,) = _entries(session, "householdTransferred")
         assert moved.before == {"user_id": owner.id}
-        assert moved.after == {"user_id": other.id}
+        assert moved.after == {
+            "user_id": other.id,
+            "handover_day": "10",
+            "handover_night": "5",
+            "balance_acknowledged": False,
+        }
 
     def test_rate_creation_is_audited_with_decimals_as_strings(
         self, client, session: Session

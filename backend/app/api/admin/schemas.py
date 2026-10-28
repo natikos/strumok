@@ -78,6 +78,23 @@ class HouseholdOwnerAssignIn(BaseModel):
 
     user_id: int | None
     confirm_reassignment: bool = False
+    # Handing a plot from one owner to another needs the meter values at the
+    # handover; an outgoing owner who still owes money must be acknowledged.
+    handover_day_meter_value: Decimal | None = Field(
+        default=None, ge=Decimal("0"), max_digits=12, decimal_places=2
+    )
+    handover_night_meter_value: Decimal | None = Field(
+        default=None, ge=Decimal("0"), max_digits=12, decimal_places=2
+    )
+    acknowledge_balance: bool = False
+
+    @model_validator(mode="after")
+    def _handover_pair(self) -> "HouseholdOwnerAssignIn":
+        if (self.handover_day_meter_value is None) != (
+            self.handover_night_meter_value is None
+        ):
+            raise ValueError("Provide both handover meter values or neither")
+        return self
 
 
 class AdminHouseholdUpdateIn(BaseModel):
