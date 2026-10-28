@@ -60,7 +60,9 @@ from app.api.admin.service import (
     UserOwnsActiveHouseholdsError,
     update_household,
     update_user,
+    HandoverReadingRequiredError,
     HouseholdAlreadyAssignedError,
+    HouseholdHasOutstandingBalanceError,
     HouseholdNotFoundError,
     UserInactiveError,
     UserNotFoundError,
@@ -181,6 +183,13 @@ ASSIGN_OWNER_RESPONSES: dict[int | str, dict[str, Any]] = {
                         "value": {"detail": "householdAlreadyAssigned"}
                     },
                     "userInactive": {"value": {"detail": "userInactive"}},
+                    "handoverReadingRequired": {
+                        "value": {"detail": "handoverReadingRequired"}
+                    },
+                    "householdHasOutstandingBalance": {
+                        "summary": "The outgoing owner owes money; resend with acknowledge_balance",
+                        "value": {"detail": "householdHasOutstandingBalance"},
+                    },
                 }
             }
         },
@@ -318,6 +327,9 @@ def assign_admin_household_owner(
             user_id=payload.user_id,
             confirm_reassignment=payload.confirm_reassignment,
             actor_id=admin.id,
+            handover_day=payload.handover_day_meter_value,
+            handover_night=payload.handover_night_meter_value,
+            acknowledge_balance=payload.acknowledge_balance,
         )
     except HouseholdNotFoundError as exc:
         raise HTTPException(
@@ -334,6 +346,15 @@ def assign_admin_household_owner(
     except HouseholdAlreadyAssignedError as exc:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT, detail="householdAlreadyAssigned"
+        ) from exc
+    except HandoverReadingRequiredError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT, detail="handoverReadingRequired"
+        ) from exc
+    except HouseholdHasOutstandingBalanceError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="householdHasOutstandingBalance",
         ) from exc
 
     return AdminHouseholdOut.from_household(household, owner=owner)

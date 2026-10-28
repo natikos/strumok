@@ -18,7 +18,9 @@ from app.api.auth.throttle import (
     record_failure,
 )
 from app.core import audit
+from app.core.ownership import set_owner
 from app.api.electricity_rates.service import NoRateConfiguredError, get_effective_rate
+from app.api.billing.payments import get_balance
 from app.api.billing.service import usage_since
 from app.core.domain import current_billing_period, money, previous_period
 from app.core.time import utc_now
@@ -146,8 +148,7 @@ def update_user(
                 after={"user_id": None},
                 reason="ownerDeactivated",
             )
-            household.user_id = None
-            session.add(household)
+            set_owner(session, household, None)
 
     def change(field: str, value: bool, action: str) -> None:
         if getattr(user, field) == value:
@@ -303,9 +304,10 @@ def create_household_for_user(
 ) -> tuple[Household, User]:
     owner = _get_active_user(session=session, user_id=user_id)
 
-    household = Household(name=name, user_id=user_id)
+    household = Household(name=name)
     session.add(household)
     session.flush()
+    set_owner(session, household, user_id)
     audit.record(
         session,
         actor_user_id=actor_id,
@@ -347,6 +349,16 @@ def create_household_for_user(
     return household, owner
 
 
+class HandoverReadingRequiredError(Exception):
+    """Handing a plot from one owner to another needs the meter values at the
+    handover."""
+
+
+class HouseholdHasOutstandingBalanceError(Exception):
+    """The outgoing owner still owes money; the head must acknowledge that it
+    stays with them."""
+
+
 def assign_household_owner(
     *,
     session: Session,
@@ -354,6 +366,9 @@ def assign_household_owner(
     user_id: int | None,
     confirm_reassignment: bool,
     actor_id: int,
+    handover_day: Decimal | None = None,
+    handover_night: Decimal | None = None,
+    acknowledge_balance: bool = False,
 ) -> tuple[Household, User | None]:
     household = session.get(Household, household_id)
     if household is None:
@@ -365,22 +380,45 @@ def assign_household_owner(
         else None
     )
 
-    is_reassignment = household.user_id is not None and household.user_id != user_id
+    previous_owner_id = household.user_id
+    is_reassignment = previous_owner_id is not None and previous_owner_id != user_id
     if is_reassignment and not confirm_reassignment:
         raise HouseholdAlreadyAssignedError
+
+    is_transfer = is_reassignment and user_id is not None
+    handover = None
+    if is_transfer:
+        if handover_day is None or handover_night is None:
+            raise HandoverReadingRequiredError
+        handover = (handover_day, handover_night)
+        owed = get_balance(
+            session=session, household_id=household.id, owner_user_id=previous_owner_id
+        ).balance_uah
+        if owed > 0 and not acknowledge_balance:
+            raise HouseholdHasOutstandingBalanceError
 
     audit.record(
         session,
         actor_user_id=actor_id,
-        action="householdOwnerAssigned",
+        action="householdTransferred" if is_transfer else "householdOwnerAssigned",
         entity_type="household",
         entity_id=household.id,
         household_id=household.id,
-        before={"user_id": household.user_id},
-        after={"user_id": user_id},
+        before={"user_id": previous_owner_id},
+        after={
+            "user_id": user_id,
+            **(
+                {
+                    "handover_day": handover_day,
+                    "handover_night": handover_night,
+                    "balance_acknowledged": acknowledge_balance,
+                }
+                if is_transfer
+                else {}
+            ),
+        },
     )
-    household.user_id = user_id
-    session.add(household)
+    set_owner(session, household, user_id, handover=handover)
     session.commit()
     session.refresh(household)
     return household, owner
@@ -523,8 +561,7 @@ def invite_user(
             before={"user_id": None},
             after={"user_id": user.id},
         )
-        household.user_id = user.id
-        session.add(household)
+        set_owner(session, household, user.id)
     session.commit()
     session.refresh(user)
 

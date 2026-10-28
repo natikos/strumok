@@ -131,36 +131,51 @@ def list_payments(*, session: Session, household_id: int) -> list[Payment]:
     )
 
 
-def _dues_by_period(*, session: Session, household_id: int) -> dict[str, Decimal]:
+def _dues_by_period(
+    *, session: Session, household_id: int, owner_user_id: int | None = None
+) -> dict[str, Decimal]:
+    charges = select(HouseholdCharge).where(HouseholdCharge.household_id == household_id)
+    adjustments = select(ChargeAdjustment).where(
+        ChargeAdjustment.household_id == household_id
+    )
+    if owner_user_id is not None:
+        charges = charges.where(HouseholdCharge.owner_user_id == owner_user_id)
+        adjustments = adjustments.where(ChargeAdjustment.owner_user_id == owner_user_id)
     dues: dict[str, Decimal] = {}
-    for charge in session.exec(
-        select(HouseholdCharge).where(HouseholdCharge.household_id == household_id)
-    ):
+    for charge in session.exec(charges):
         dues[charge.period] = dues.get(charge.period, ZERO) + charge.total_uah
-    for adjustment in session.exec(
-        select(ChargeAdjustment).where(ChargeAdjustment.household_id == household_id)
-    ):
+    for adjustment in session.exec(adjustments):
         key = adjustment.applies_to_period
         dues[key] = dues.get(key, ZERO) + adjustment.amount_uah
     return dues
 
 
-def _paid_total(*, session: Session, household_id: int) -> Decimal:
-    return (
-        session.exec(
-            select(func.coalesce(func.sum(Payment.amount_uah), 0)).where(
-                Payment.household_id == household_id, col(Payment.voided_at).is_(None)
-            )
-        ).one()
-        or ZERO
+def _paid_total(
+    *, session: Session, household_id: int, owner_user_id: int | None = None
+) -> Decimal:
+    query = select(func.coalesce(func.sum(Payment.amount_uah), 0)).where(
+        Payment.household_id == household_id, col(Payment.voided_at).is_(None)
     )
+    if owner_user_id is not None:
+        query = query.where(Payment.owner_user_id == owner_user_id)
+    return session.exec(query).one() or ZERO
 
 
-def get_balance(*, session: Session, household_id: int) -> Balance:
+def get_balance(
+    *, session: Session, household_id: int, owner_user_id: int | None = None
+) -> Balance:
     """Oldest periods are settled first, so a partial payment covers the early
-    months and the status of each period reads naturally."""
-    dues = _dues_by_period(session=session, household_id=household_id)
-    paid_total = Decimal(_paid_total(session=session, household_id=household_id))
+    months and the status of each period reads naturally. With `owner_user_id`
+    only that owner's charges, adjustments and payments count: a plot that
+    changed hands keeps each owner's debt separate."""
+    dues = _dues_by_period(
+        session=session, household_id=household_id, owner_user_id=owner_user_id
+    )
+    paid_total = Decimal(
+        _paid_total(
+            session=session, household_id=household_id, owner_user_id=owner_user_id
+        )
+    )
     remaining = paid_total
 
     periods = []

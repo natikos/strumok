@@ -7,6 +7,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { appPlugins } from "@/shared/testing/mount";
 import type { AdminHouseholdOut, AdminUserSummaryOut } from "@shared/api/admin";
+import { ApiError } from "@shared/api/client";
 
 import AdminHouseholdAssignment from "./AdminHouseholdAssignment.vue";
 
@@ -59,6 +60,12 @@ function makeHousehold(overrides: Partial<AdminHouseholdOut> = {}): AdminHouseho
   };
 }
 
+function fillHandover(wrapper: Awaited<ReturnType<typeof mountForm>>) {
+  const numbers = wrapper.findAllComponents(InputNumber);
+  numbers[0]!.vm.$emit("update:modelValue", 500);
+  numbers[1]!.vm.$emit("update:modelValue", 200);
+}
+
 async function mountForm() {
   const wrapper = mount(AdminHouseholdAssignment, {
     global: {
@@ -106,11 +113,67 @@ describe("AdminHouseholdAssignment", () => {
     await wrapper.findComponent(Select).setValue(household.id);
     const selects = wrapper.findAllComponents(Select);
     await selects[1]!.setValue(newTarget.id);
+    fillHandover(wrapper);
     await wrapper.find(".admin-assignment__submit").trigger("click");
     await flushPromises();
 
     expect(confirmRequire).toHaveBeenCalledTimes(1);
     expect(assignAdminHouseholdOwner).not.toHaveBeenCalled();
+  });
+
+  it("will not transfer a household without the handover meter values", async () => {
+    const currentOwner = makeUser({ id: 1 });
+    const newTarget = makeUser({ email: "t@example.com", id: 2 });
+    const household = makeHousehold({ id: 10, owner: currentOwner, user_id: currentOwner.id });
+    listAdminUsers.mockResolvedValue([currentOwner, newTarget]);
+    listAdminHouseholds.mockResolvedValue([household]);
+
+    const wrapper = await mountForm();
+    await wrapper.findComponent(Select).setValue(household.id);
+    await wrapper.findAllComponents(Select)[1]!.setValue(newTarget.id);
+    await wrapper.find(".admin-assignment__submit").trigger("click");
+    await flushPromises();
+
+    expect(confirmRequire).not.toHaveBeenCalled();
+    expect(wrapper.text()).toContain("Enter both meter values at the handover");
+  });
+
+  it("sends the handover values and asks again when the previous owner owes money", async () => {
+    const currentOwner = makeUser({ id: 1 });
+    const newTarget = makeUser({ email: "t@example.com", id: 2 });
+    const household = makeHousehold({ id: 10, owner: currentOwner, user_id: currentOwner.id });
+    listAdminUsers.mockResolvedValue([currentOwner, newTarget]);
+    listAdminHouseholds.mockResolvedValue([household]);
+    assignAdminHouseholdOwner
+      .mockRejectedValueOnce(new ApiError("householdHasOutstandingBalance", 409))
+      .mockResolvedValueOnce({ ...household, owner: newTarget, user_id: newTarget.id });
+
+    const wrapper = await mountForm();
+    await wrapper.findComponent(Select).setValue(household.id);
+    await wrapper.findAllComponents(Select)[1]!.setValue(newTarget.id);
+    fillHandover(wrapper);
+    await wrapper.find(".admin-assignment__submit").trigger("click");
+    await flushPromises();
+    confirmRequire.mock.calls[0]![0].accept();
+    await flushPromises();
+    expect(assignAdminHouseholdOwner).toHaveBeenLastCalledWith(10, {
+      acknowledge_balance: false,
+      confirm_reassignment: true,
+      handover_day_meter_value: "500",
+      handover_night_meter_value: "200",
+      user_id: 2,
+    });
+
+    confirmRequire.mock.calls[1]![0].accept();
+    await flushPromises();
+
+    expect(assignAdminHouseholdOwner).toHaveBeenLastCalledWith(10, {
+      acknowledge_balance: true,
+      confirm_reassignment: true,
+      handover_day_meter_value: "500",
+      handover_night_meter_value: "200",
+      user_id: 2,
+    });
   });
 
   it("submits directly without a confirmation dialog when the household is currently unowned", async () => {
@@ -134,6 +197,7 @@ describe("AdminHouseholdAssignment", () => {
 
     expect(confirmRequire).not.toHaveBeenCalled();
     expect(assignAdminHouseholdOwner).toHaveBeenCalledWith(unownedHousehold.id, {
+      acknowledge_balance: false,
       confirm_reassignment: false,
       user_id: targetUser.id,
     });

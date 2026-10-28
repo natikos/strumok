@@ -286,7 +286,12 @@ class TestAssignHouseholdOwner:
 
         response = client.patch(
             f"/admin/households/{household.id}/owner",
-            json={"user_id": new_owner.id, "confirm_reassignment": True},
+            json={
+                "user_id": new_owner.id,
+                "confirm_reassignment": True,
+                "handover_day_meter_value": "100",
+                "handover_night_meter_value": "50",
+            },
         )
 
         assert response.status_code == 200, response.text

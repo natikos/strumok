@@ -318,6 +318,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/me/statements": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get All My Statements
+         * @description Every household the user has owned, including ones handed over since:
+         *     what they were billed, and what they still owe on each.
+         */
+        get: operations["get_all_my_statements_me_statements_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/admin/users": {
         parameters: {
             query?: never;
@@ -1268,6 +1289,35 @@ export interface components {
              * @default false
              */
             confirm_reassignment: boolean;
+            /** Handover Day Meter Value */
+            handover_day_meter_value?: number | string | null;
+            /** Handover Night Meter Value */
+            handover_night_meter_value?: number | string | null;
+            /**
+             * Acknowledge Balance
+             * @default false
+             */
+            acknowledge_balance: boolean;
+        };
+        /**
+         * HouseholdStatementsOut
+         * @description One household's bills as the current user was billed for them, including
+         *     plots they no longer own.
+         */
+        HouseholdStatementsOut: {
+            /** Household Id */
+            household_id: number;
+            /** Household Name */
+            household_name: string;
+            /** Is Current Owner */
+            is_current_owner: boolean;
+            /** Owned Since */
+            owned_since: string | null;
+            /** Owned Until */
+            owned_until: string | null;
+            balance: components["schemas"]["BalanceOut"];
+            /** Statements */
+            statements: components["schemas"]["StatementLineOut"][];
         };
         /** HouseholdSummary */
         HouseholdSummary: {
@@ -2722,6 +2772,26 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_all_my_statements_me_statements_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HouseholdStatementsOut"][];
                 };
             };
         };

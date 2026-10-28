@@ -5,6 +5,7 @@ from sqlmodel import Session
 
 from app.api.auth.schemas import ErrorOut
 from app.api.deps import get_current_user
+from app.core.ownership import tenure_start_period
 from app.api.electricity_rates.service import NoRateConfiguredError
 from app.api.meter_readings.schemas import MeterReadingIn, MeterReadingOut
 from app.api.billing.service import PeriodClosedError
@@ -117,7 +118,11 @@ def list_my_meter_readings(
     household_id: int = Depends(require_household_id),
     session: Session = Depends(get_session),
 ) -> list[MeterReadingOut]:
-    return list_meter_readings(session=session, household_id=household_id)
+    return list_meter_readings(
+        session=session,
+        household_id=household_id,
+        since_period=tenure_start_period(session, household_id),
+    )
 
 
 @router.post(

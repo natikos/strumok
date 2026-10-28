@@ -3,6 +3,8 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from app.core.time import UtcDatetime
+
 
 class StatementLineOut(BaseModel):
     """One household's charge for one period. `provisional` lines are computed
@@ -60,3 +62,16 @@ class BalanceOut(BaseModel):
     balance_uah: Decimal
     unpaid_months: int
     periods: list[PeriodBalanceOut]
+
+
+class HouseholdStatementsOut(BaseModel):
+    """One household's bills as the current user was billed for them, including
+    plots they no longer own."""
+
+    household_id: int
+    household_name: str
+    is_current_owner: bool
+    owned_since: UtcDatetime | None
+    owned_until: UtcDatetime | None
+    balance: BalanceOut
+    statements: list[StatementLineOut]
