@@ -2,18 +2,31 @@ import { flushPromises, mount } from "@vue/test-utils";
 import Button from "primevue/button";
 import InputText from "primevue/inputtext";
 import Select from "primevue/select";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { appPlugins } from "@/shared/testing/mount";
+import type { Component } from "vue";
 
-import AuditLogPanel from "./AuditLogPanel.vue";
 
 const { getAuditLog, listAdminHouseholds } = vi.hoisted(() => ({
   getAuditLog: vi.fn(),
   listAdminHouseholds: vi.fn(),
 }));
 
-vi.mock("@shared/api/admin", () => ({ getAuditLog, listAdminHouseholds }));
+// The suite runs with isolate: false, so another file's mock of this module may
+// already be cached; mock it late and import the component afterwards.
+let AuditLogPanel: Component;
+
+beforeAll(async () => {
+  vi.resetModules();
+  vi.doMock("@shared/api/admin", () => ({ getAuditLog, listAdminHouseholds }));
+  AuditLogPanel = (await import("./AuditLogPanel.vue")).default;
+});
+
+afterAll(() => {
+  vi.doUnmock("@shared/api/admin");
+  vi.resetModules();
+});
 
 const entry = {
   action: "rateCreated",

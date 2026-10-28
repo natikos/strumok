@@ -1,3 +1,4 @@
+from collections.abc import Sequence
 from decimal import Decimal
 
 from sqlmodel import Session, col, select
@@ -192,7 +193,7 @@ def list_audit_log(
     action: str | None = None,
     cursor: int | None = None,
     limit: int = AUDIT_PAGE_SIZE,
-) -> tuple[list[tuple[AuditLog, User | None]], int | None]:
+) -> tuple[Sequence[tuple[AuditLog, User | None]], int | None]:
     """Newest first. `cursor` is the id of the last row of the previous page;
     returns the next cursor, or None on the last page."""
     query = select(AuditLog, User).join(
