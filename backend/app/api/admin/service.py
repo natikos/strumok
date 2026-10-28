@@ -1,11 +1,12 @@
 from collections.abc import Sequence
 from decimal import Decimal
 
-from sqlmodel import Session, col, select
+from sqlmodel import Session, col, func, select
 
 from app.api.admin.schemas import (
     AdminDashboardHouseholdOut,
     AdminDashboardOut,
+    AdminUserOut,
     AdminUserSummaryOut,
 )
 from app.core import audit
@@ -41,8 +42,121 @@ class HouseholdAlreadyAssignedError(Exception):
     pass
 
 
-def list_users(*, session: Session) -> list[User]:
-    return list(session.exec(select(User).order_by(User.first_name, User.last_name)))
+class CannotModifySelfError(Exception):
+    pass
+
+
+class LastAdminRequiredError(Exception):
+    pass
+
+
+class UserOwnsActiveHouseholdsError(Exception):
+    pass
+
+
+def _active_household_counts(*, session: Session) -> dict[int, int]:
+    rows = session.exec(
+        select(col(Household.user_id), func.count())
+        .where(col(Household.user_id).is_not(None), Household.is_active)
+        .group_by(col(Household.user_id))
+    )
+    return {user_id: count for user_id, count in rows if user_id is not None}
+
+
+def list_users(*, session: Session) -> list[AdminUserOut]:
+    counts = _active_household_counts(session=session)
+    users = session.exec(select(User).order_by(User.first_name, User.last_name))
+    return [
+        AdminUserOut.model_validate(
+            {**user.model_dump(), "household_count": counts.get(user.id, 0)}
+        )
+        for user in users
+    ]
+
+
+def _active_admin_count(*, session: Session) -> int:
+    return session.exec(
+        select(func.count()).select_from(User).where(User.is_admin, User.is_active)
+    ).one()
+
+
+def update_user(
+    *,
+    session: Session,
+    user_id: int,
+    actor_id: int,
+    is_active: bool | None,
+    is_admin: bool | None,
+    unassign_households: bool,
+) -> AdminUserOut:
+    user = session.get(User, user_id)
+    if user is None:
+        raise UserNotFoundError
+    if user.id == actor_id:
+        raise CannotModifySelfError
+
+    losing_admin_access = (
+        user.is_admin and user.is_active and (is_active is False or is_admin is False)
+    )
+    if losing_admin_access and _active_admin_count(session=session) <= 1:
+        raise LastAdminRequiredError
+
+    if is_active is False and user.is_active:
+        owned = list(
+            session.exec(
+                select(Household).where(
+                    Household.user_id == user.id, Household.is_active
+                )
+            )
+        )
+        if owned and not unassign_households:
+            raise UserOwnsActiveHouseholdsError
+        for household in owned:
+            audit.record(
+                session,
+                actor_user_id=actor_id,
+                action="householdOwnerAssigned",
+                entity_type="household",
+                entity_id=household.id,
+                household_id=household.id,
+                before={"user_id": user.id},
+                after={"user_id": None},
+                reason="ownerDeactivated",
+            )
+            household.user_id = None
+            session.add(household)
+
+    def change(field: str, value: bool, action: str) -> None:
+        if getattr(user, field) == value:
+            return
+        audit.record(
+            session,
+            actor_user_id=actor_id,
+            action=action,
+            entity_type="user",
+            entity_id=user.id,
+            before={field: getattr(user, field)},
+            after={field: value},
+        )
+        setattr(user, field, value)
+
+    if is_active is not None:
+        was_active = user.is_active
+        change(
+            "is_active",
+            is_active,
+            "userDeactivated" if not is_active else "userReactivated",
+        )
+        if was_active and not is_active:
+            # Signs the user out everywhere; their cookie stops working at once.
+            user.token_version += 1
+    if is_admin is not None:
+        change("is_admin", is_admin, "adminGranted" if is_admin else "adminRevoked")
+
+    session.add(user)
+    session.commit()
+    session.refresh(user)
+    return next(u for u in list_users(session=session) if u.id == user.id)
 
 
 def list_households_with_owners(

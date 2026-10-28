@@ -263,6 +263,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/users/{user_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Update Admin User */
+        patch: operations["update_admin_user_admin_users__user_id__patch"];
+        trace?: never;
+    };
     "/admin/dashboard": {
         parameters: {
             query?: never;
@@ -436,6 +453,23 @@ export interface components {
             is_active: boolean;
             owner?: components["schemas"]["AdminUserSummaryOut"] | null;
         };
+        /** AdminUserOut */
+        AdminUserOut: {
+            /** Id */
+            id: number;
+            /** Email */
+            email: string;
+            /** First Name */
+            first_name: string;
+            /** Last Name */
+            last_name: string;
+            /** Is Active */
+            is_active: boolean;
+            /** Is Admin */
+            is_admin: boolean;
+            /** Household Count */
+            household_count: number;
+        };
         /** AdminUserSummaryOut */
         AdminUserSummaryOut: {
             /** Id */
@@ -448,6 +482,23 @@ export interface components {
             last_name: string;
             /** Is Active */
             is_active: boolean;
+        };
+        /** AdminUserUpdateIn */
+        AdminUserUpdateIn: {
+            /** Is Active */
+            is_active?: boolean | null;
+            /** Is Admin */
+            is_admin?: boolean | null;
+            /**
+             * Unassign Households
+             * @default false
+             */
+            unassign_households: boolean;
+            /**
+             * Confirm
+             * @constant
+             */
+            confirm: true;
         };
         /** AuditLogEntryOut */
         AuditLogEntryOut: {
@@ -1501,7 +1552,65 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["AdminUserSummaryOut"][];
+                    "application/json": components["schemas"]["AdminUserOut"][];
+                };
+            };
+        };
+    };
+    update_admin_user_admin_users__user_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                user_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AdminUserUpdateIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminUserOut"];
+                };
+            };
+            /** @description User does not exist */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "detail": "userNotFound"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description The change would lock out the co-op or orphan households */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };

@@ -64,6 +64,37 @@
         "householdOwnerAssigned": "Owner assigned",
         "rateCreated": "Rate added"
       }
+    },
+    "tabResidents": "Residents",
+    "users": {
+      "title": "Residents",
+      "filter": "Filter by name or email",
+      "name": "Name",
+      "email": "Email",
+      "households": "Households",
+      "status": "Status",
+      "role": "Role",
+      "active": "Active",
+      "inactive": "Inactive",
+      "admin": "Admin",
+      "resident": "Resident",
+      "actions": "Actions for {name}",
+      "deactivate": "Deactivate",
+      "reactivate": "Reactivate",
+      "grantAdmin": "Grant admin",
+      "revokeAdmin": "Revoke admin",
+      "deactivateTitle": "Deactivate {name}?",
+      "deactivateBody": "They'll be signed out and can't log in or submit readings.",
+      "deactivateOwnerBody": "They'll be signed out and can't log in or submit readings. Their {count} household(s) will be unassigned.",
+      "reactivateTitle": "Reactivate {name}?",
+      "reactivateBody": "They'll be able to log in again.",
+      "grantTitle": "Grant admin to {name}?",
+      "grantBody": "Give {name} full admin access, including billing, payments and household reassignment?",
+      "revokeTitle": "Revoke admin from {name}?",
+      "revokeBody": "They'll lose admin access.",
+      "confirm": "Confirm",
+      "cancel": "Cancel",
+      "empty": "No residents match"
     }
   },
   "auth": {
@@ -182,7 +213,10 @@
     "unauthorized": "Please sign in and try again",
     "validationError": "Please check your data and try again",
     "verificationEmailCooldown": "Please wait before requesting another verification email",
-    "verificationEmailSendFailed": "We couldn't send the verification email. Please try again later"
+    "verificationEmailSendFailed": "We couldn't send the verification email. Please try again later",
+    "cannotModifySelf": "You can't change your own account",
+    "lastAdminRequired": "At least one active admin is required",
+    "userOwnsActiveHouseholds": "This user still owns households"
   },
   "household": {
     "switchAria": "Switch household"

@@ -12,7 +12,7 @@ from decimal import Decimal
 import pytest
 
 from app.api.admin.service import _summed_usage_kwh
-from sqlmodel import Session
+from sqlmodel import Session, select
 from tests.factories import authenticate, make_household, make_meter_reading, make_user
 
 ADMIN_ROUTES_REQUIRING_AUTH = [
@@ -352,3 +352,121 @@ class TestAssignHouseholdOwner:
         body = response.json()
         assert body["user_id"] == new_owner.id
         assert body["owner"]["id"] == new_owner.id
+
+
+class TestUpdateUser:
+    def _setup(self, client, session: Session):
+        admin = make_user(session, is_admin=True)
+        target = make_user(session)
+        authenticate(client, admin)
+        return admin, target
+
+    def test_deactivation_revokes_the_session_at_once_and_is_audited(
+        self, client, session: Session
+    ) -> None:
+
+        from app.core.config import settings
+        from app.db.models import AuditLog
+        from app.api.auth.service import create_access_token
+
+        admin, target = self._setup(client, session)
+        target_token = create_access_token(target)
+
+        response = client.patch(
+            f"/admin/users/{target.id}", json={"is_active": False, "confirm": True}
+        )
+
+        assert response.status_code == 200, response.text
+        assert response.json()["is_active"] is False
+        as_target = client.get(
+            "/auth/me",
+            headers={"Cookie": f"{settings.auth.auth_cookie_name}={target_token}"},
+        )
+        assert as_target.status_code == 401
+        entry = session.exec(
+            select(AuditLog).where(AuditLog.action == "userDeactivated")
+        ).one()
+        assert (entry.actor_user_id, entry.entity_id) == (admin.id, target.id)
+
+    def test_reactivation_and_admin_role_changes(
+        self, client, session: Session
+    ) -> None:
+        _, target = self._setup(client, session)
+        target.is_active = False
+        session.flush()
+
+        reactivated = client.patch(
+            f"/admin/users/{target.id}", json={"is_active": True, "confirm": True}
+        ).json()
+        granted = client.patch(
+            f"/admin/users/{target.id}", json={"is_admin": True, "confirm": True}
+        ).json()
+
+        assert reactivated["is_active"] is True
+        assert granted["is_admin"] is True
+
+    def test_cannot_modify_self(self, client, session: Session) -> None:
+        admin, _ = self._setup(client, session)
+
+        response = client.patch(
+            f"/admin/users/{admin.id}", json={"is_admin": False, "confirm": True}
+        )
+
+        assert response.status_code == 409
+        assert response.json()["detail"] == "cannotModifySelf"
+
+    def test_service_refuses_to_remove_the_last_active_admin(
+        self, session: Session
+    ) -> None:
+        from app.api.admin.service import LastAdminRequiredError, update_user
+
+        only_admin = make_user(session, is_admin=True)
+        bystander = make_user(session)
+        make_user(session, is_admin=True, is_active=False)  # doesn't count
+
+        for change in ({"is_admin": False}, {"is_active": False}):
+            with pytest.raises(LastAdminRequiredError):
+                update_user(
+                    session=session,
+                    user_id=only_admin.id,
+                    actor_id=bystander.id,
+                    is_active=change.get("is_active"),
+                    is_admin=change.get("is_admin"),
+                    unassign_households=False,
+                )
+
+    def test_owner_deactivation_requires_explicit_unassignment(
+        self, client, session: Session
+    ) -> None:
+        _, target = self._setup(client, session)
+        household = make_household(session, user_id=target.id)
+
+        blocked = client.patch(
+            f"/admin/users/{target.id}", json={"is_active": False, "confirm": True}
+        )
+        assert blocked.status_code == 409
+        assert blocked.json()["detail"] == "userOwnsActiveHouseholds"
+
+        allowed = client.patch(
+            f"/admin/users/{target.id}",
+            json={"is_active": False, "unassign_households": True, "confirm": True},
+        )
+        assert allowed.status_code == 200
+        session.refresh(household)
+        assert household.user_id is None
+
+    def test_requires_confirm(self, client, session: Session) -> None:
+        _, target = self._setup(client, session)
+        response = client.patch(f"/admin/users/{target.id}", json={"is_active": False})
+        assert response.status_code == 422
+
+    def test_list_includes_role_and_household_count(
+        self, client, session: Session
+    ) -> None:
+        _, target = self._setup(client, session)
+        make_household(session, user_id=target.id)
+
+        row = next(r for r in client.get("/admin/users").json() if r["id"] == target.id)
+
+        assert row["is_admin"] is False
+        assert row["household_count"] == 1

@@ -7,12 +7,18 @@ from app.api.admin.schemas import (
     AdminDashboardOut,
     AdminHouseholdCreateIn,
     AdminHouseholdOut,
+    AdminUserOut,
     AdminUserSummaryOut,
+    AdminUserUpdateIn,
     AuditLogEntryOut,
     AuditLogPageOut,
     HouseholdOwnerAssignIn,
 )
 from app.api.admin.service import (
+    CannotModifySelfError,
+    LastAdminRequiredError,
+    UserOwnsActiveHouseholdsError,
+    update_user,
     HouseholdAlreadyAssignedError,
     HouseholdNotFoundError,
     UserInactiveError,
@@ -82,9 +88,67 @@ ASSIGN_OWNER_RESPONSES: dict[int | str, dict[str, Any]] = {
 }
 
 
-@router.get("/users", response_model=list[AdminUserSummaryOut])
-def list_admin_users(session: Session = Depends(get_session)) -> list[User]:
+UPDATE_USER_RESPONSES: dict[int | str, dict[str, Any]] = {
+    status.HTTP_404_NOT_FOUND: USER_LOOKUP_RESPONSES[status.HTTP_404_NOT_FOUND],
+    status.HTTP_409_CONFLICT: {
+        "description": "The change would lock out the co-op or orphan households",
+        "model": ErrorOut,
+        "content": {
+            "application/json": {
+                "examples": {
+                    "cannotModifySelf": {"value": {"detail": "cannotModifySelf"}},
+                    "lastAdminRequired": {"value": {"detail": "lastAdminRequired"}},
+                    "userOwnsActiveHouseholds": {
+                        "value": {"detail": "userOwnsActiveHouseholds"}
+                    },
+                }
+            }
+        },
+    },
+}
+
+
+@router.get("/users", response_model=list[AdminUserOut])
+def list_admin_users(session: Session = Depends(get_session)) -> list[AdminUserOut]:
     return list_users(session=session)
+
+
+@router.patch(
+    "/users/{user_id}",
+    response_model=AdminUserOut,
+    responses=UPDATE_USER_RESPONSES,
+)
+def update_admin_user(
+    user_id: int,
+    payload: AdminUserUpdateIn,
+    session: Session = Depends(get_session),
+    admin: User = CurrentAdmin,
+) -> AdminUserOut:
+    try:
+        return update_user(
+            session=session,
+            user_id=user_id,
+            actor_id=admin.id,
+            is_active=payload.is_active,
+            is_admin=payload.is_admin,
+            unassign_households=payload.unassign_households,
+        )
+    except UserNotFoundError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="userNotFound"
+        ) from exc
+    except CannotModifySelfError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT, detail="cannotModifySelf"
+        ) from exc
+    except LastAdminRequiredError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT, detail="lastAdminRequired"
+        ) from exc
+    except UserOwnsActiveHouseholdsError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT, detail="userOwnsActiveHouseholds"
+        ) from exc
 
 
 @router.get("/dashboard", response_model=AdminDashboardOut)
