@@ -247,3 +247,26 @@ def notify_missing_readings(*, session: Session, period: str) -> int:
     return notify_users(
         session=session, period=period, variant="missingReadings", content_for=content
     )
+
+
+def bank_queue_content(user: User) -> Content:
+    if _lang(user) == LanguageCode.EN:
+        return {
+            "title": "Bank payments to review",
+            "body": "A new statement has payments waiting for review.",
+        }
+    return {
+        "title": "Платежі банку на розгляд",
+        "body": "Нова виписка містить платежі, що чекають на розгляд.",
+    }
+
+
+def notify_bank_queue(*, session: Session, file_id: int) -> int:
+    """Tells each active admin a statement added rows to the review queue."""
+    admins = session.exec(select(User).where(User.is_admin, User.is_active)).all()
+    return notify_users(
+        session=session,
+        period=f"bank-file-{file_id}",
+        variant="bankQueue",
+        content_for={a.id: bank_queue_content(a) for a in admins},
+    )

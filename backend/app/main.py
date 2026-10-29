@@ -11,6 +11,7 @@ from fastapi.staticfiles import StaticFiles
 from app.api import (
     admin_router,
     auth_router,
+    bank_router,
     billing_router,
     electricity_rates_router,
     meter_readings_router,
@@ -49,6 +50,7 @@ app.include_router(meter_readings_router)
 app.include_router(billing_router)
 app.include_router(me_billing_router)
 app.include_router(admin_router)
+app.include_router(bank_router)
 app.include_router(electricity_rates_router)
 app.include_router(push_router)
 
