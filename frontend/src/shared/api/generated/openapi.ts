@@ -1317,6 +1317,8 @@ export interface components {
             suggested_household_id: number | null;
             /** Suggestion Source */
             suggestion_source: string | null;
+            /** Suggestions */
+            suggestions: components["schemas"]["SuggestionOut"][];
             /** Link Candidates */
             link_candidates: components["schemas"]["LinkCandidateOut"][];
         };
@@ -2066,6 +2068,13 @@ export interface components {
             penalty_credit_uah: string;
             /** Total Uah */
             total_uah: string;
+        };
+        /** SuggestionOut */
+        SuggestionOut: {
+            /** Household Id */
+            household_id: number;
+            /** Source */
+            source: string;
         };
         /**
          * ThemeMode

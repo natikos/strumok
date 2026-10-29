@@ -15,6 +15,7 @@ from sqlmodel import Session
 
 from app.api.auth.schemas import ErrorOut
 from app.api.bank import review
+from app.api.bank.matching import suggest_households
 from app.api.bank.schemas import (
     BankStatementErrorOut,
     BankTransactionOut,
@@ -23,6 +24,7 @@ from app.api.bank.schemas import (
     LinkCandidateOut,
     LinkIn,
     StatementImportOut,
+    SuggestionOut,
 )
 from app.api.bank.service import (
     MAX_BYTES,
@@ -146,6 +148,8 @@ _RESOLVE_RESPONSES: dict[int | str, dict[str, Any]] = {
 
 @review_router.get("", response_model=list[BankTransactionOut])
 def list_queue(session: Session = Depends(get_session)) -> list[BankTransactionOut]:
+    items = review.list_queue(session)
+    suggestions = suggest_households(session, [i.transaction for i in items])
     return [
         BankTransactionOut(
             id=item.transaction.id,
@@ -153,8 +157,12 @@ def list_queue(session: Session = Depends(get_session)) -> list[BankTransactionO
             amount_uah=item.transaction.amount_uah,
             payer_name=item.transaction.payer_name,
             purpose=item.transaction.purpose,
-            suggested_household_id=item.transaction.suggested_household_id,
-            suggestion_source=item.transaction.suggestion_source,
+            suggested_household_id=found[0].household_id if found else None,
+            suggestion_source=found[0].source if found else None,
+            suggestions=[
+                SuggestionOut(household_id=s.household_id, source=s.source)
+                for s in found
+            ],
             link_candidates=[
                 LinkCandidateOut(
                     payment_id=p.id, household_id=p.household_id, paid_on=p.paid_on
@@ -162,7 +170,7 @@ def list_queue(session: Session = Depends(get_session)) -> list[BankTransactionO
                 for p in item.link_candidates
             ],
         )
-        for item in review.list_queue(session)
+        for item, found in zip(items, suggestions)
     ]
 
 

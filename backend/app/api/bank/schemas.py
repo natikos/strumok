@@ -24,6 +24,11 @@ class LinkCandidateOut(BaseModel):
     paid_on: date
 
 
+class SuggestionOut(BaseModel):
+    household_id: int
+    source: str
+
+
 class BankTransactionOut(BaseModel):
     id: int
     operation_date: date
@@ -32,6 +37,7 @@ class BankTransactionOut(BaseModel):
     purpose: str
     suggested_household_id: int | None
     suggestion_source: str | None
+    suggestions: list[SuggestionOut]
     link_candidates: list[LinkCandidateOut]
 
 

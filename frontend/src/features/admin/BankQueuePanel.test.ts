@@ -38,7 +38,8 @@ const credit = {
   payer_name: "Payer",
   purpose: "plot 1",
   suggested_household_id: 1,
-  suggestion_source: null,
+  suggestion_source: "reference",
+  suggestions: [{ household_id: 1, source: "reference" }],
   link_candidates: [{ payment_id: 9, household_id: 1, paid_on: "2026-10-08" }],
 };
 
