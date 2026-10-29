@@ -11,8 +11,10 @@ from app.api.billing.schemas import (
     CurrentPeriodOut,
     HouseholdStatementsOut,
     PaymentDetailsOut,
+    ShortfallOut,
     StatementLineOut,
 )
+from app.api.billing.shortfall import settled_window, shortfall_for_household_id
 from app.api.billing.service import list_adjustments, list_statements
 from app.api.deps import get_current_user
 from app.core.domain import current_billing_period
@@ -119,6 +121,22 @@ def get_bank_coverage(
         awaiting_statement=is_awaiting_statement(covered),
         last_imported_at=uploaded if current_user.is_admin else None,
     )
+
+
+@router.get(
+    "/shortfall",
+    response_model=ShortfallOut,
+    responses=NO_HOUSEHOLD_RESPONSES,
+)
+def get_my_shortfall(
+    household_id: int = Depends(require_household_id),
+    session: Session = Depends(get_session),
+) -> ShortfallOut:
+    window = settled_window(session)
+    owed = shortfall_for_household_id(session, window, household_id)
+    if window is None or owed <= 0:
+        return ShortfallOut(active=False)
+    return ShortfallOut(active=True, due_date=window.due_date, owed_uah=owed)
 
 
 me_router = APIRouter(prefix="/me", tags=["billing"])

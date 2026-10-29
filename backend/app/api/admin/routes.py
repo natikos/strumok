@@ -115,7 +115,11 @@ from app.api.billing.service import (
 from app.api.electricity_rates.service import NoRateConfiguredError
 from app.api.auth.throttle import TooManyAttemptsError
 from app.api.deps import require_admin
-from app.api.push.billing_notifications import notify_bill_ready, notify_corrections
+from app.api.push.billing_notifications import (
+    notify_bill_ready,
+    notify_corrections,
+    notify_shortfall,
+)
 from app.db import get_session
 from app.db.models import Household, User
 
@@ -646,6 +650,7 @@ def close_admin_period(
         ) from exc
 
     _notify_safely(notify_bill_ready, session=session, period=period)
+    _notify_safely(notify_shortfall, session=session)
 
     return next(
         PeriodOverviewOut.model_validate(overview, from_attributes=True)

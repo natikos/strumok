@@ -4,6 +4,8 @@
 
     <BalanceStrip @open-history="goToHistory" />
 
+    <ShortfallNotice />
+
     <BankCoverageNotice />
 
     <div class="dashboard__top">
@@ -89,6 +91,7 @@
   import EmptyUsageCard from "@/features/dashboard/components/EmptyUsageCard.vue";
   import FirstRunGuideCard from "@/features/dashboard/components/FirstRunGuideCard.vue";
   import SeasonCard from "@/features/dashboard/components/SeasonCard.vue";
+  import ShortfallNotice from "@/features/dashboard/components/ShortfallNotice.vue";
   import StatTilesCard from "@/features/dashboard/components/StatTilesCard.vue";
   import SubmissionCard from "@/features/dashboard/components/SubmissionCard.vue";
   import UsageChartCard from "@/features/dashboard/components/UsageChartCard.vue";

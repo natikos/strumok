@@ -11,6 +11,7 @@ from decimal import Decimal
 from sqlmodel import Session, col, select
 
 from app.core import audit
+from app.core.bank_queue import queued_select
 from app.core.domain.billing import KYIV_TZ
 from app.core.ownership import owner_at
 from app.core.time import utc_now
@@ -104,15 +105,10 @@ def _link_candidates(session: Session, transaction: BankTransaction) -> list[Pay
 
 
 def list_queue(session: Session) -> list[QueueItem]:
-    live = select(Payment.bank_transaction_id).where(
-        col(Payment.bank_transaction_id).is_not(None),
-        col(Payment.voided_at).is_(None),
-    )
     rows = session.exec(
-        select(BankTransaction)
-        .where(col(BankTransaction.dismissed_at).is_(None))
-        .where(col(BankTransaction.id).not_in(live))
-        .order_by(col(BankTransaction.operation_date), col(BankTransaction.id))
+        queued_select().order_by(
+            col(BankTransaction.operation_date), col(BankTransaction.id)
+        )
     )
     return [QueueItem(row, _link_candidates(session, row)) for row in rows]
 
