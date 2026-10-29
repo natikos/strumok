@@ -16,6 +16,9 @@ export interface HouseholdSwitch {
 
 const households = ref<HouseholdSummary[]>([]);
 const currentId = ref<number | null>(readStoredId());
+// Set when the user holds no plot but once did: pages then show only the
+// gave-up plots' bills and balance, read-only.
+const isPastOnly = ref(false);
 
 function readStoredId(): number | null {
   const raw = window.localStorage.getItem(STORAGE_KEY);
@@ -57,6 +60,10 @@ export function useCurrentHousehold() {
     return previousId === null ? null : { removedName: previousName, switchedTo: fallback };
   }
 
+  function setPastOnly(value: boolean): void {
+    isPastOnly.value = value;
+  }
+
   function setCurrent(id: number): void {
     currentId.value = id;
     writeStored(households.value.find((h) => h.id === id) ?? null);
@@ -66,7 +73,9 @@ export function useCurrentHousehold() {
     households: computed(() => households.value),
     current,
     currentId: computed(() => currentId.value),
+    isPastOnly: computed(() => isPastOnly.value),
     setHouseholds,
+    setPastOnly,
     setCurrent,
   };
 }

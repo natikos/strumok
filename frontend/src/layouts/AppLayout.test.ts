@@ -38,6 +38,7 @@ function makeMe(overrides: Partial<UserWithHouseholdsOut> = {}): UserWithHouseho
     first_name: "Olena",
     last_name: "Kovalenko",
     is_admin: false,
+    has_past_households: false,
     is_active: true,
     email_verified: true,
     verification_email_retry_after_seconds: 0,

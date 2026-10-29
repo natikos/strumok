@@ -68,12 +68,8 @@ export async function listMyStatements(): Promise<HouseholdStatementsOut[]> {
 }
 
 /** Where to send money; null until the head has configured it. */
-export async function getPaymentDetails(
-  householdId?: number | null
-): Promise<PaymentDetailsOut | null> {
-  const { data, error, response } = await appApiClient.GET("/billing/payment-details", {
-    params: { query: householdId == null ? {} : { household_id: householdId } },
-  });
+export async function getPaymentDetails(): Promise<PaymentDetailsOut | null> {
+  const { data, error, response } = await appApiClient.GET("/billing/payment-details");
 
   if (error) {
     throw buildApiError(response.status, error);

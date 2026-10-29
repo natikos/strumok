@@ -871,6 +871,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/bank-statements/check-inbox": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Check Inbox */
+        post: operations["check_inbox_admin_bank_statements_check_inbox_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/admin/bank-transactions": {
         parameters: {
             query?: never;
@@ -1569,6 +1586,17 @@ export interface components {
             /** Name */
             name: string;
         };
+        /** InboxCheckOut */
+        InboxCheckOut: {
+            /** Received */
+            received: number;
+            /** Imported */
+            imported: number;
+            /** Rejected */
+            rejected: number;
+            /** Credits New */
+            credits_new: number;
+        };
         /**
          * LanguageCode
          * @enum {string}
@@ -2239,6 +2267,11 @@ export interface components {
             reminder_hour: number;
             /** Households */
             households: components["schemas"]["HouseholdSummary"][];
+            /**
+             * Has Past Households
+             * @default false
+             */
+            has_past_households: boolean;
         };
         /** ValidationError */
         ValidationError: {
@@ -3151,9 +3184,7 @@ export interface operations {
     };
     get_my_payment_details_billing_payment_details_get: {
         parameters: {
-            query?: {
-                household_id?: number | null;
-            };
+            query?: never;
             header?: never;
             path?: never;
             cookie?: never;
@@ -3190,15 +3221,6 @@ export interface operations {
                      *     }
                      */
                     "application/json": components["schemas"]["ErrorOut"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };
@@ -4707,6 +4729,44 @@ export interface operations {
                      *     }
                      */
                     "application/json": components["schemas"]["BankStatementErrorOut"];
+                };
+            };
+        };
+    };
+    check_inbox_admin_bank_statements_check_inbox_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InboxCheckOut"];
+                };
+            };
+            /** @description inboxNotConfigured */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description inboxUnavailable */
+            502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
                 };
             };
         };

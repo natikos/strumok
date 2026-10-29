@@ -5,7 +5,7 @@
     <ErrorState v-else-if="error" :message-key="error" @retry="load" />
 
     <button
-      v-else-if="balance"
+      v-else-if="balance || !hasCurrent"
       type="button"
       class="balance-strip__body"
       :class="`balance-strip__body--${state}`"
@@ -15,7 +15,7 @@
         <CheckCircle v-if="state === 'paid'" aria-hidden="true" />
         {{ text }}
       </span>
-      <span v-if="balance.unpaid_months > 0" class="balance-strip__pill">
+      <span v-if="balance && balance.unpaid_months > 0" class="balance-strip__pill">
         {{ t("balance.unpaidMonths", { count: balance.unpaid_months }) }}
       </span>
       <span v-if="householdName" class="balance-strip__household">{{ householdName }}</span>
@@ -58,10 +58,10 @@
   defineEmits<{ "open-history": [] }>();
 
   const { t } = useI18n();
-  const { current, currentId, households } = useCurrentHousehold();
+  const { current, currentId, households, isPastOnly } = useCurrentHousehold();
   const locale = navigator.language;
 
-  const { pastBalance, load: loadTenures } = useHouseholdTenures();
+  const { past, pastBalance, load: loadTenures } = useHouseholdTenures();
 
   const balance = ref<BalanceOut | null>(null);
   const paymentDetails = ref<PaymentDetailsOut | null>(null);
@@ -74,15 +74,21 @@
   const state = computed<"credit" | "owe" | "paid">(() =>
     amount.value > 0 ? "owe" : amount.value < 0 ? "credit" : "paid"
   );
+  // With no plot left, the gave-up plots are all there is to view and pay.
+  const hasCurrent = computed(() => !isPastOnly.value);
   // Pay only the current plot's own balance (not the gave-up-plots debt shown in
   // the strip total): the head reconciles per household.
-  const ownBalance = computed(() => toDecimal(balance.value?.balance_uah));
+  const ownBalance = computed(() =>
+    hasCurrent.value ? toDecimal(balance.value?.balance_uah) : pastBalance.value
+  );
   const payable = computed(() => ownBalance.value > 0 && paymentDetails.value !== null);
   const payAmount = computed(() => ownBalance.value.toFixed(2));
   const payComment = computed(() =>
     paymentPurpose(
       t("balance.payPurposeLabel"),
-      households.value.map((h) => h.id)
+      hasCurrent.value
+        ? households.value.map((h) => h.id)
+        : past.value.filter((p) => toDecimal(p.balance.balance_uah) > 0).map((p) => p.household_id)
     )
   );
   const householdName = computed(() =>
@@ -105,9 +111,12 @@
     error.value = null;
 
     try {
-      [balance.value] = await Promise.all([getBalance(currentId.value), loadTenures()]);
+      [balance.value] = await Promise.all([
+        hasCurrent.value ? getBalance(currentId.value) : null,
+        loadTenures(),
+      ]);
       // Paying is optional: if the details can't load, just hide the action.
-      paymentDetails.value = await getPaymentDetails(currentId.value).catch(() => null);
+      paymentDetails.value = await getPaymentDetails().catch(() => null);
     } catch {
       // Never fall through to "all paid up" when we simply don't know.
       balance.value = null;

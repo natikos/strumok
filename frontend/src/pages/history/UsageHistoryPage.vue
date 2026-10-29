@@ -353,7 +353,7 @@
 
   const { t } = useI18n();
   const { intlLocale } = useLocale();
-  const { currentId } = useCurrentHousehold();
+  const { currentId, isPastOnly } = useCurrentHousehold();
 
   const { forHousehold, load: loadTenures } = useHouseholdTenures();
 
@@ -568,7 +568,9 @@
   }
 
   onMounted(() => {
-    void loadReadings();
+    if (!isPastOnly.value) {
+      void loadReadings();
+    }
     void loadTenures();
   });
 
