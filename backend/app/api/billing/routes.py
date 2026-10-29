@@ -1,11 +1,13 @@
 from fastapi import APIRouter, Depends
 from sqlmodel import Session, col, select
 
+from app.api.billing.bank_coverage import get_coverage, is_awaiting_statement
 from app.api.billing.payment_details import get_payment_details
 from app.api.billing.payments import get_balance
 from app.api.billing.schemas import (
     AdjustmentOut,
     BalanceOut,
+    BankCoverageOut,
     CurrentPeriodOut,
     HouseholdStatementsOut,
     PaymentDetailsOut,
@@ -104,6 +106,19 @@ def get_my_payment_details(
 ) -> PaymentDetailsOut | None:
     row = get_payment_details(session)
     return PaymentDetailsOut.model_validate(row) if row else None
+
+
+@router.get("/bank-coverage", response_model=BankCoverageOut)
+def get_bank_coverage(
+    current_user: User = Depends(get_current_user),
+    session: Session = Depends(get_session),
+) -> BankCoverageOut:
+    covered, uploaded = get_coverage(session)
+    return BankCoverageOut(
+        covered_through=covered,
+        awaiting_statement=is_awaiting_statement(covered),
+        last_imported_at=uploaded if current_user.is_admin else None,
+    )
 
 
 me_router = APIRouter(prefix="/me", tags=["billing"])
