@@ -167,25 +167,42 @@ def _opening_amount(
 def void_payment(
     *, session: Session, payment_id: int, reason: str, actor_id: int
 ) -> Payment:
-    payment = session.get(Payment, payment_id)
+    payment = session.exec(
+        select(Payment).where(Payment.id == payment_id).with_for_update()
+    ).first()
     if payment is None:
         raise PaymentNotFoundError
     if payment.voided_at is not None:
         raise PaymentAlreadyVoidedError
-    payment.voided_at = utc_now()
-    payment.voided_by_user_id = actor_id
-    payment.void_reason = reason
-    session.add(payment)
-    audit.record(
-        session,
-        actor_user_id=actor_id,
-        action="paymentVoided",
-        entity_type="payment",
-        entity_id=payment.id,
-        household_id=payment.household_id,
-        before={"amount_uah": payment.amount_uah, "paid_on": payment.paid_on},
-        reason=reason,
-    )
+    # A bank credit confirmed across several households stands or falls
+    # together, so voiding one part voids its siblings and the credit returns
+    # to the review queue.
+    targets = [payment]
+    if payment.bank_transaction_id is not None:
+        targets += list(
+            session.exec(
+                select(Payment)
+                .where(Payment.bank_transaction_id == payment.bank_transaction_id)
+                .where(Payment.id != payment.id)
+                .where(col(Payment.voided_at).is_(None))
+                .with_for_update()
+            )
+        )
+    for target in targets:
+        target.voided_at = utc_now()
+        target.voided_by_user_id = actor_id
+        target.void_reason = reason
+        session.add(target)
+        audit.record(
+            session,
+            actor_user_id=actor_id,
+            action="paymentVoided",
+            entity_type="payment",
+            entity_id=target.id,
+            household_id=target.household_id,
+            before={"amount_uah": target.amount_uah, "paid_on": target.paid_on},
+            reason=reason,
+        )
     session.commit()
     session.refresh(payment)
     return payment

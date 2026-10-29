@@ -837,6 +837,74 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/bank-transactions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Queue */
+        get: operations["list_queue_admin_bank_transactions_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/bank-transactions/{transaction_id}/confirm": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Confirm Transaction */
+        post: operations["confirm_transaction_admin_bank_transactions__transaction_id__confirm_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/bank-transactions/{transaction_id}/link": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Link Transaction */
+        post: operations["link_transaction_admin_bank_transactions__transaction_id__link_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/bank-transactions/{transaction_id}/dismiss": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Dismiss Transaction */
+        post: operations["dismiss_transaction_admin_bank_transactions__transaction_id__dismiss_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/electricity-rates": {
         parameters: {
             query?: never;
@@ -1230,6 +1298,28 @@ export interface components {
             /** Column */
             column?: string | null;
         };
+        /** BankTransactionOut */
+        BankTransactionOut: {
+            /** Id */
+            id: number;
+            /**
+             * Operation Date
+             * Format: date
+             */
+            operation_date: string;
+            /** Amount Uah */
+            amount_uah: string;
+            /** Payer Name */
+            payer_name: string;
+            /** Purpose */
+            purpose: string;
+            /** Suggested Household Id */
+            suggested_household_id: number | null;
+            /** Suggestion Source */
+            suggestion_source: string | null;
+            /** Link Candidates */
+            link_candidates: components["schemas"]["LinkCandidateOut"][];
+        };
         /** BillIn */
         BillIn: {
             /** Day Kwh */
@@ -1268,6 +1358,20 @@ export interface components {
             current_password: string;
             /** New Password */
             new_password: string;
+        };
+        /** ConfirmIn */
+        ConfirmIn: {
+            /** Lines */
+            lines: components["schemas"]["SplitLineIn"][];
+        };
+        /** ConfirmedPaymentOut */
+        ConfirmedPaymentOut: {
+            /** Payment Id */
+            payment_id: number;
+            /** Household Id */
+            household_id: number;
+            /** Amount Uah */
+            amount_uah: string;
         };
         /** CorrectionsIn */
         CorrectionsIn: {
@@ -1420,6 +1524,23 @@ export interface components {
          * @enum {string}
          */
         LanguageCode: "en" | "ua";
+        /** LinkCandidateOut */
+        LinkCandidateOut: {
+            /** Payment Id */
+            payment_id: number;
+            /** Household Id */
+            household_id: number;
+            /**
+             * Paid On
+             * Format: date
+             */
+            paid_on: string;
+        };
+        /** LinkIn */
+        LinkIn: {
+            /** Payment Id */
+            payment_id: number;
+        };
         /** LoginIn */
         LoginIn: {
             /**
@@ -1889,6 +2010,13 @@ export interface components {
             posted_in_period: string;
             /** Is Zero Sum */
             is_zero_sum: boolean;
+        };
+        /** SplitLineIn */
+        SplitLineIn: {
+            /** Household Id */
+            household_id: number;
+            /** Amount Uah */
+            amount_uah: number | string;
         };
         /** StatementImportOut */
         StatementImportOut: {
@@ -4395,6 +4523,177 @@ export interface operations {
                      *     }
                      */
                     "application/json": components["schemas"]["BankStatementErrorOut"];
+                };
+            };
+        };
+    };
+    list_queue_admin_bank_transactions_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BankTransactionOut"][];
+                };
+            };
+        };
+    };
+    confirm_transaction_admin_bank_transactions__transaction_id__confirm_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                transaction_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ConfirmIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConfirmedPaymentOut"][];
+                };
+            };
+            /** @description bankTransactionNotFound, householdNotFound */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description bankTransactionResolved */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description splitInvalid, beforeOpeningBalance */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    link_transaction_admin_bank_transactions__transaction_id__link_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                transaction_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LinkIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description bankTransactionNotFound, householdNotFound */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description bankTransactionResolved */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description manualPaymentNotLinkable */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    dismiss_transaction_admin_bank_transactions__transaction_id__dismiss_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                transaction_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description bankTransactionNotFound, householdNotFound */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description bankTransactionResolved */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };

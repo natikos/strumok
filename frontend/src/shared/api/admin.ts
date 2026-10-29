@@ -387,3 +387,50 @@ export async function uploadBankStatement(file: File): Promise<StatementImportOu
 
   return data;
 }
+
+export type BankTransactionOut = components["schemas"]["BankTransactionOut"];
+export type ConfirmedPaymentOut = components["schemas"]["ConfirmedPaymentOut"];
+
+export async function listBankQueue(): Promise<BankTransactionOut[]> {
+  const { data } = await appApiClient.GET("/admin/bank-transactions");
+
+  return data ?? [];
+}
+
+export async function confirmBankTransaction(
+  id: number,
+  lines: { household_id: number; amount_uah: string }[]
+): Promise<ConfirmedPaymentOut[]> {
+  const { data, error, response } = await appApiClient.POST(
+    "/admin/bank-transactions/{transaction_id}/confirm",
+    { params: { path: { transaction_id: id } }, body: { lines } }
+  );
+
+  if (error) {
+    throw buildApiError(response.status, error);
+  }
+
+  return data;
+}
+
+export async function linkBankTransaction(id: number, paymentId: number): Promise<void> {
+  const { error, response } = await appApiClient.POST(
+    "/admin/bank-transactions/{transaction_id}/link",
+    { params: { path: { transaction_id: id } }, body: { payment_id: paymentId } }
+  );
+
+  if (error) {
+    throw buildApiError(response.status, error);
+  }
+}
+
+export async function dismissBankTransaction(id: number): Promise<void> {
+  const { error, response } = await appApiClient.POST(
+    "/admin/bank-transactions/{transaction_id}/dismiss",
+    { params: { path: { transaction_id: id } } }
+  );
+
+  if (error) {
+    throw buildApiError(response.status, error);
+  }
+}
