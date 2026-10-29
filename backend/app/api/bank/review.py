@@ -11,6 +11,7 @@ from decimal import Decimal
 from sqlmodel import Session, col, select
 
 from app.core import audit
+from app.core.bank_queue import queued_select
 from app.core.domain.billing import KYIV_TZ
 from app.core.ownership import owner_at
 from app.core.time import utc_now
@@ -103,35 +104,13 @@ def _link_candidates(session: Session, transaction: BankTransaction) -> list[Pay
     )
 
 
-def _queued_select():
-    live = select(Payment.bank_transaction_id).where(
-        col(Payment.bank_transaction_id).is_not(None),
-        col(Payment.voided_at).is_(None),
-    )
-    return (
-        select(BankTransaction)
-        .where(col(BankTransaction.dismissed_at).is_(None))
-        .where(col(BankTransaction.id).not_in(live))
-    )
-
-
 def list_queue(session: Session) -> list[QueueItem]:
     rows = session.exec(
-        _queued_select().order_by(
+        queued_select().order_by(
             col(BankTransaction.operation_date), col(BankTransaction.id)
         )
     )
     return [QueueItem(row, _link_candidates(session, row)) for row in rows]
-
-
-def has_queued_through(session: Session, day: date) -> bool:
-    """True while an unresolved credit dated on or before `day` is queued."""
-    return (
-        session.exec(
-            _queued_select().where(BankTransaction.operation_date <= day).limit(1)
-        ).first()
-        is not None
-    )
 
 
 def _end_of_day(day: date) -> datetime:

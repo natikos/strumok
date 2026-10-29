@@ -14,14 +14,15 @@ from unittest.mock import patch
 import pytest
 from sqlmodel import Session, select
 
-from app.api.bank.review import has_queued_through
-from app.api.billing.shortfall import ShortfallWindow, latest_window
+from app.core.bank_queue import has_queued_through
+from app.api.billing.shortfall import ShortfallWindow, latest_window, settled_window
 from app.api.push.billing_notifications import notify_shortfall
 from app.api.push.service import SendOutcome
 from app.db.models import (
     BankStatementFile,
     BankTransaction,
     BillingPeriod,
+    HouseholdCharge,
     LanguageCode,
     NotificationLog,
     OpeningBalance,
@@ -522,3 +523,234 @@ class TestTriggers:
             )
         assert res.status_code == 200, res.text
         hook.assert_called_once()
+
+
+def _charge(
+    session: Session, period: str, household_id: int, owner_id: int, amount: str
+) -> None:
+    session.add(
+        HouseholdCharge(
+            period=period,
+            household_id=household_id,
+            owner_user_id=owner_id,
+            day_usage_kwh=D("0"),
+            night_usage_kwh=D("0"),
+            tariff_uah=D(amount),
+            total_uah=D(amount),
+        )
+    )
+    session.flush()
+
+
+def _paid(session: Session, household_id: int, owner_id: int, amount: str) -> None:
+    session.add(
+        Payment(
+            household_id=household_id,
+            owner_user_id=owner_id,
+            amount_uah=D(amount),
+            paid_on=date(2025, 4, 1),
+            method="transfer",
+        )
+    )
+    session.flush()
+
+
+def _two_closed_periods(session: Session) -> None:
+    """P1 2025-02 closed in March (due 03-20); P2 2025-03 closed in April (due 04-20)."""
+    _closed(session, "2025-02", datetime(2025, 3, 10, 9, 0))
+    _closed(session, "2025-03", datetime(2025, 4, 10, 9, 0))
+
+
+class TestSettledWindowWithTwoClosedPeriods:
+    def test_older_period_stays_active_while_newer_due_date_is_uncovered(
+        self, client, session: Session
+    ) -> None:
+        _two_closed_periods(session)
+        _file(session, date(2025, 4, 1))
+        user = make_user(session)
+        _owes(session, make_household(session, user_id=user.id).id, user.id, "50.00")
+        authenticate(client, user)
+
+        assert settled_window(session) == ShortfallWindow("2025-02", date(2025, 3, 20))
+        body = client.get("/billing/shortfall").json()
+        assert body["active"] is True
+        assert body["due_date"] == "2025-03-20"
+
+    def test_window_moves_to_newer_period_once_its_due_date_is_covered(
+        self, session: Session
+    ) -> None:
+        _two_closed_periods(session)
+        _file(session, date(2025, 4, 20))
+        assert settled_window(session) == ShortfallWindow("2025-03", DUE)
+
+    def test_nothing_while_no_due_date_is_covered(self, session: Session) -> None:
+        _two_closed_periods(session)
+        _file(session, date(2025, 3, 19))
+        assert settled_window(session) is None
+
+    def test_queued_credit_before_older_due_date_blocks_it(
+        self, session: Session
+    ) -> None:
+        _two_closed_periods(session)
+        _file(session, date(2025, 4, 1))
+        _credit(session, date(2025, 3, 5))
+        assert settled_window(session) is None
+
+
+class TestOverdueOnlyAmount:
+    def _setup(self, session: Session):
+        _two_closed_periods(session)
+        _file(session, date(2025, 3, 25))  # covers P1's due date only
+        user = _subscribed_user(session)
+        h = make_household(session, user_id=user.id)
+        return user, h
+
+    def test_only_overdue_period_is_reported_when_later_one_is_not_yet_due(
+        self, client, session: Session, send_one
+    ) -> None:
+        user, h = self._setup(session)
+        _charge(session, "2025-02", h.id, user.id, "100.10")
+        _charge(session, "2025-03", h.id, user.id, "40.20")
+        authenticate(client, user)
+
+        assert notify_shortfall(session=session) == 1
+        assert "100.10" in _body(send_one.call_args)
+        assert "140.30" not in _body(send_one.call_args)
+        body = client.get("/billing/shortfall").json()
+        assert D(str(body["owed_uah"])) == D("100.10")
+
+    def test_partial_payment_settles_oldest_period_first(
+        self, client, session: Session
+    ) -> None:
+        user, h = self._setup(session)
+        _charge(session, "2025-02", h.id, user.id, "100.10")
+        _charge(session, "2025-03", h.id, user.id, "40.20")
+        _paid(session, h.id, user.id, "30.05")
+        authenticate(client, user)
+        body = client.get("/billing/shortfall").json()
+        assert D(str(body["owed_uah"])) == D("70.05")
+
+    def test_payment_beyond_overdue_part_leaves_nothing_overdue(
+        self, client, session: Session, send_one
+    ) -> None:
+        user, h = self._setup(session)
+        _charge(session, "2025-02", h.id, user.id, "100.10")
+        _charge(session, "2025-03", h.id, user.id, "40.20")
+        _paid(session, h.id, user.id, "120.00")  # spills 19.90 into P2
+        authenticate(client, user)
+        assert client.get("/billing/shortfall").json()["active"] is False
+        assert notify_shortfall(session=session) == 0
+        send_one.assert_not_called()
+
+    def test_household_owing_only_later_period_gets_nothing(
+        self, client, session: Session, send_one
+    ) -> None:
+        user, h = self._setup(session)
+        _charge(session, "2025-03", h.id, user.id, "40.20")
+        authenticate(client, user)
+        assert client.get("/billing/shortfall").json()["active"] is False
+        assert notify_shortfall(session=session) == 0
+        send_one.assert_not_called()
+
+    def test_opening_balance_counts_as_overdue_alongside_later_debt(
+        self, client, session: Session
+    ) -> None:
+        user, h = self._setup(session)
+        _owes(session, h.id, user.id, "10.00")
+        _charge(session, "2025-03", h.id, user.id, "40.20")
+        authenticate(client, user)
+        body = client.get("/billing/shortfall").json()
+        assert D(str(body["owed_uah"])) == D("10.00")
+
+
+class TestQueueClearingTriggersNotification:
+    def test_import_with_queued_credits_is_silent_until_last_is_dismissed(
+        self, client, session: Session, send_one
+    ) -> None:
+        from tests.test_bank_import import _admin, _csv, _row, _upload
+
+        _admin(client, session)
+        _open_window(session)
+        user = _subscribed_user(session)
+        _owes(session, make_household(session, user_id=user.id).id, user.id, "42.00")
+
+        res = _upload(client, _csv(_row("1.", "05.04.2025"), _row("2.", "20.04.2025")))
+        assert res.status_code == 200, res.text
+        send_one.assert_not_called()
+        first, second = session.exec(
+            select(BankTransaction).order_by(BankTransaction.id)  # type: ignore[arg-type]
+        ).all()
+
+        assert (
+            client.post(f"/admin/bank-transactions/{first.id}/dismiss").status_code
+            == 204
+        )
+        send_one.assert_not_called()
+
+        assert (
+            client.post(f"/admin/bank-transactions/{second.id}/dismiss").status_code
+            == 204
+        )
+        assert send_one.call_count == 1
+        assert "42.00" in _body(send_one.call_args)
+
+        # Further review actions never notify the same owner twice.
+        _credit(session, date(2025, 4, 25), "late")
+        late = session.exec(
+            select(BankTransaction).where(BankTransaction.document_number == "late")
+        ).one()
+        client.post(f"/admin/bank-transactions/{late.id}/dismiss")
+        assert send_one.call_count == 1
+
+    def test_confirm_route_triggers_hook(self, client, session: Session) -> None:
+        from tests.test_bank_review import _admin, _confirm, _tx
+
+        _admin(client, session)
+        h = make_household(session)
+        tx = _tx(session, day=date(2025, 5, 15))
+        with patch("app.api.bank.routes.notify_shortfall") as hook:
+            assert _confirm(client, tx, (h.id, "500.00")).status_code == 200
+        hook.assert_called_once()
+
+    def test_link_route_triggers_hook(self, client, session: Session) -> None:
+        from tests.test_bank_review import BASE, _admin, _tx
+
+        admin = _admin(client, session)
+        h = make_household(session)
+        tx = _tx(session, day=date(2025, 5, 15))
+        pay = Payment(
+            household_id=h.id,
+            amount_uah=D("500.00"),
+            paid_on=date(2025, 5, 12),
+            method="transfer",
+            recorded_by_user_id=admin.id,
+        )
+        session.add(pay)
+        session.flush()
+        with patch("app.api.bank.routes.notify_shortfall") as hook:
+            res = client.post(f"{BASE}/{tx.id}/link", json={"payment_id": pay.id})
+        assert res.status_code == 204
+        hook.assert_called_once()
+
+    def test_dismiss_route_triggers_hook_and_failure_does_not_fail_it(
+        self, client, session: Session
+    ) -> None:
+        from tests.test_bank_review import BASE, _admin, _tx
+
+        _admin(client, session)
+        tx = _tx(session)
+        with patch(
+            "app.api.bank.routes.notify_shortfall", side_effect=RuntimeError
+        ) as hook:
+            assert client.post(f"{BASE}/{tx.id}/dismiss").status_code == 204
+        hook.assert_called_once()
+
+    def test_rejected_review_action_does_not_trigger_hook(
+        self, client, session: Session
+    ) -> None:
+        from tests.test_bank_review import BASE, _admin
+
+        _admin(client, session)
+        with patch("app.api.bank.routes.notify_shortfall") as hook:
+            assert client.post(f"{BASE}/999999/dismiss").status_code == 404
+        hook.assert_not_called()

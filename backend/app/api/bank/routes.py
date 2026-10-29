@@ -112,10 +112,7 @@ def upload_statement(
             notify_bank_queue(session=session, file_id=result.file_id)
         except Exception:
             logger.exception("Bank queue notification failed")
-    try:
-        notify_shortfall(session=session)
-    except Exception:
-        logger.exception("Shortfall notification failed")
+    _notify_shortfall_safely(session)
     return StatementImportOut(
         already_imported=result.already_imported,
         credits_new=result.credits_new,
@@ -123,6 +120,15 @@ def upload_statement(
         debits_skipped=result.debits_skipped,
         covered_through=result.covered_through,
     )
+
+
+def _notify_shortfall_safely(session: Session) -> None:
+    """Runs after the change has committed: clearing the last queued credit
+    is what can finally open the shortfall window."""
+    try:
+        notify_shortfall(session=session)
+    except Exception:
+        logger.exception("Shortfall notification failed")
 
 
 review_router = APIRouter(
@@ -212,6 +218,7 @@ def confirm_transaction(
         raise HTTPException(422, "splitInvalid") from exc
     except review.BeforeOpeningBalanceError as exc:
         raise HTTPException(422, "beforeOpeningBalance") from exc
+    _notify_shortfall_safely(session)
     return [
         ConfirmedPaymentOut(
             payment_id=p.id, household_id=p.household_id, amount_uah=p.amount_uah
@@ -247,6 +254,7 @@ def link_transaction(
         raise HTTPException(409, "bankTransactionResolved") from exc
     except review.ManualPaymentNotLinkableError as exc:
         raise HTTPException(422, "manualPaymentNotLinkable") from exc
+    _notify_shortfall_safely(session)
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
@@ -266,4 +274,5 @@ def dismiss_transaction(
         raise HTTPException(404, "bankTransactionNotFound") from exc
     except review.BankTransactionResolvedError as exc:
         raise HTTPException(409, "bankTransactionResolved") from exc
+    _notify_shortfall_safely(session)
     return Response(status_code=status.HTTP_204_NO_CONTENT)
