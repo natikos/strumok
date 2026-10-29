@@ -17,9 +17,20 @@ cd frontend
 bun run test          # bun run test:watch during development
 ```
 
-Both run in CI (`.github/workflows/ci.yml`). The backend job gets a `postgres:17.6`
-service container; the frontend job pins `TZ=UTC` so date-sensitive tests don't
-depend on the runner's timezone.
+**End-to-end** (Playwright, Chromium at 360px) — needs the same local Postgres:
+
+```bash
+cd frontend
+bunx playwright install chromium   # once
+bun run e2e                        # builds, then runs the suite
+bun run e2e:only                   # skip the build when backend/dist is current
+```
+
+All three run in CI (`.github/workflows/ci.yml`). The backend and e2e jobs get a
+`postgres:17.6` service container; the frontend job pins `TZ=UTC` so date-sensitive
+tests don't depend on the runner's timezone. The deploy preflight requires the
+whole workflow to pass, so a red e2e run blocks a release. None of them run in the
+pre-commit hooks.
 
 ### Postgres version
 
@@ -39,7 +50,8 @@ docker compose down -v && docker compose up -d
 
 ## Strategy
 
-Integration-first on the backend, unit-only on the frontend, no e2e for now.
+Integration-first on the backend, unit tests for frontend logic, and a small
+Playwright suite for the journeys a resident or the head walks through end to end.
 
 The backend services are thin wrappers around SQL — `get_owned_household_id` is one
 `select` with two `where`s, and `PeriodAlreadySubmittedError` exists only because
@@ -139,6 +151,71 @@ Mock the network at `fetch`, not at `openapi-fetch`, and never hand-edit
 
 Coverage (`bunx vitest run --coverage`) is a local diagnostic; CI does not gate on a
 percentage.
+
+## End-to-end (e2e)
+
+Playwright drives Chromium against the real stack: the frontend built into
+`backend/dist`, served by uvicorn on `127.0.0.1:8787`, with `ENVIRONMENT=e2e` and a
+throwaway `strumok_e2e` database. Same origin, real cookie auth, real CSRF.
+
+**When to write one.** Only for what the other suites structurally can't see: a
+flow across several screens, frontend and backend together, network conditions
+(offline, an expired session), the service worker, or the 360px layout. Billing
+rules, validation and scoping belong in pytest; component logic in Vitest. Keep
+the suite to the journeys that matter — each one costs CI time and upkeep.
+
+**Layout.** Specs are `frontend/e2e/*.spec.ts` (outside `src/`, so Vitest never
+picks them up), type-checked by `bunx tsc -p e2e --noEmit`. `frontend/e2e/fixtures.ts`
+extends Playwright's `test` with the helpers below; seed helpers live in
+`frontend/e2e/support/`. `frontend/playwright.config.ts` holds the server command
+and its environment.
+
+**The server.** Playwright's `webServer` runs `backend/scripts/e2e_prepare_db.py`
+(drop, recreate, `alembic upgrade head` — migrations, not `create_all`, so a missing
+migration fails the suite) and then uvicorn. Every setting is passed explicitly in
+the config, so `backend/.env` can never fill a gap; override the database with
+`E2E_DATABASE_URL`. It never reuses a running server.
+
+**`ENVIRONMENT=e2e`.** The backend refuses to start in this mode unless the database
+is on localhost/127.0.0.1 and its name ends in `_e2e`, and IMAP is unset — so it can
+never run against production. In this mode only:
+
+- the test-only router `/__e2e` is mounted (absent from `/openapi.json`):
+  `POST /reset`, `PUT|DELETE /clock`, `POST /users`, `GET /outbox`;
+- `send_email` appends to an in-memory outbox instead of calling Brevo;
+- the reminder/inbox scheduler doesn't start (its jobs would fire mid-test);
+- a schema behind head fails startup, as in production.
+
+**Isolation.** One database per run; before every test the fixture calls
+`POST /__e2e/reset`, which truncates every table with `RESTART IDENTITY` (so ids and
+`STR-<id>` references are predictable) and clears the outbox and clock. One worker:
+the clock, outbox and database are server-wide.
+
+**Time.** Billing follows Kyiv time on both sides, so a test that cares about the
+date calls `setNow(iso)` before its first `page.goto`. It sets the backend clock
+(`PUT /__e2e/clock`, an offset in `app.core.time` that `utc_now` and `kyiv_now` read)
+and the browser clock (`page.clock.install`). Both keep running at real speed —
+never set only one side, and never `setFixedTime`. JWT expiry is checked against
+the same app clock, so moving it forward expires a session. Pin noon Kyiv on an
+absolute date, away from midnight and the late-March and late-October DST changes.
+
+**Seeding.** `POST /__e2e/users` creates an active, verified user (the only way to
+get the first admin, since sign-up is closed). Everything else — households, rates,
+invites, readings, ownership — goes through the real admin and resident API with
+`X-Requested-With: XMLHttpRequest`. Invite and reset links are read from the
+outbox. Log in with `page.request.post("/auth/login")` unless the test is about
+logging in. If an API path is impractical, add an `/__e2e` endpoint that calls the
+service layer; never write raw SQL from a spec.
+
+**Rules.** Don't mock the backend with `page.route` (offline simulation is the
+exception). Use role and label selectors with web-first assertions, never
+`waitForTimeout`. Seed users in English and don't assert Ukrainian text unless the
+test is about i18n. Service workers are blocked by default; a spec that needs one
+opts in with `test.use({ serviceWorkers: "allow" })`. A known, tracked defect is
+pinned with `test.fail` (Playwright) or `pytest.mark.xfail(strict=True)` and a
+comment naming the issue; the mark comes off in the fix's PR. Never run `bun run api:types`
+against the e2e server. On a CI failure, download the `playwright-report` artifact
+and open the trace.
 
 ## Not yet covered
 

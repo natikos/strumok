@@ -98,7 +98,7 @@ instance was asleep. Gmail needs 2-step verification to issue the app password.
 | `AUTH_ALGORITHM`         | JWT algorithm (default: `HS256`)                                                  |
 | `AUTH_ACCESS_TOKEN_EXPIRATION` | Access token lifetime in minutes (default: `60`); refreshed via `/auth/refresh` |
 | `CORS_ORIGINS`           | Comma-separated list of allowed origins                                           |
-| `ENVIRONMENT`            | **Required.** `development` or `production` — no default, startup fails otherwise |
+| `ENVIRONMENT`            | **Required.** `development` or `production` — no default, startup fails otherwise. `e2e` exists only for the Playwright suite (shifted clock, test-only routes) and refuses any non-local database; never set it here |
 | `BREVO_API_KEY`          | Brevo transactional email API key                                                 |
 | `BREVO_SENDER_EMAIL`     | Verified Brevo sender address                                                     |
 | `BREVO_APP_BASE_URL`     | Public app origin used to build verification links                                |

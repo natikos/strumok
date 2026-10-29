@@ -1,5 +1,27 @@
 # Operations
 
+## First admin
+
+Sign-up is closed (`POST /auth/register` always answers `registrationClosed`) and
+only an admin can invite users, so the very first admin is made by hand in SQL.
+After that, an admin promotes others from the admin user screen
+(`PATCH /admin/users/{id}` with `is_admin`), which is audited; at least one active
+admin must remain (`lastAdminRequired`).
+
+1. Take a backup first (`pg_dump "$DATABASE_URL" -Fc -f pre-admin.dump`).
+2. The user must already exist: an account created by an earlier invite, or one
+   inserted by hand with a bcrypt `password_hash`.
+3. Promote it, checking that exactly one row changed:
+
+   ```sql
+   UPDATE users SET is_admin = true, email_verified = true
+   WHERE email = 'head@example.com';
+   ```
+
+This bypasses the audit log, so note who ran it and when. The e2e suite creates
+its admin through the test-only `POST /__e2e/users` instead, which exists only under
+`ENVIRONMENT=e2e` and never in production.
+
 ## Health check
 
 `GET /health` runs `SELECT 1` against Postgres (connect timeout 3 s).
