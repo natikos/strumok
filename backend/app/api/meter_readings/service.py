@@ -128,7 +128,8 @@ def _review_reason(
     night_meter_value: Decimal,
 ) -> str | None:
     """Looks at the last four real readings: the newest is the comparison
-    point, the rest give up to three past usages. A recorded meter
+    point, the rest give up to three past usages. A first reading against
+    a 0/0 baseline is flagged as `zeroBaseline`. A recorded meter
     replacement explains a lower or jumping value, so nothing is flagged."""
     if get_meter_segment(session=session, household_id=household_id, period=period):
         return None
@@ -144,6 +145,17 @@ def _review_reason(
     )
     if not history:
         return None
+    first = history[0]
+    if (
+        len(history) == 1
+        and first.source == "baseline"
+        and first.day_meter_value == 0
+        and first.night_meter_value == 0
+    ):
+        # A 0/0 baseline is what a household gets when created without
+        # starting values; on an existing meter the first reading would bill
+        # its whole lifetime, so the head checks it before close.
+        return "zeroBaseline"
 
     usages = []
     for newer, older in zip(history, history[1:]):

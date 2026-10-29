@@ -137,6 +137,42 @@ class TestSubmissionFlags:
         ).one()
         assert (reading.needs_review, reading.review_reason) == (True, "spike")
 
+    def _household_with_baseline(self, session: Session, day: str, night: str):
+        user = make_user(session)
+        household = make_household(session, user_id=user.id)
+        make_electricity_rate(session)
+        make_meter_reading(
+            session,
+            household_id=household.id,
+            period=previous_period(current_billing_period()),
+            day_meter_value=day,
+            night_meter_value=night,
+            source="baseline",
+        )
+        return user
+
+    def test_a_first_reading_against_a_zero_baseline_is_flagged(
+        self, client, session: Session
+    ) -> None:
+        authenticate(client, self._household_with_baseline(session, "0", "0"))
+
+        assert self._submit(client, 12345).status_code == 201
+        reading = session.exec(
+            select(MeterReading).where(MeterReading.period == current_billing_period())
+        ).one()
+        assert (reading.needs_review, reading.review_reason) == (True, "zeroBaseline")
+
+    def test_a_first_reading_against_a_real_baseline_is_not_flagged(
+        self, client, session: Session
+    ) -> None:
+        authenticate(client, self._household_with_baseline(session, "1000", "0"))
+
+        assert self._submit(client, 1012).status_code == 201
+        reading = session.exec(
+            select(MeterReading).where(MeterReading.period == current_billing_period())
+        ).one()
+        assert reading.needs_review is False
+
     def test_a_normal_reading_is_not_flagged(self, client, session: Session) -> None:
         user, household, total = _household_with_history(session, [10, 10, 10])
         authenticate(client, user)

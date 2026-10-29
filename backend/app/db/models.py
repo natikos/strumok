@@ -118,7 +118,7 @@ class MeterReading(SQLModel, table=True):
     __table_args__ = (
         UniqueConstraint("household_id", "period", name="uq_household_period"),
         CheckConstraint(
-            "review_reason IN ('decrease', 'spike')",
+            "review_reason IN ('decrease', 'spike', 'zeroBaseline')",
             name="ck_meter_readings_review_reason",
         ),
     )
@@ -141,12 +141,15 @@ class MeterReading(SQLModel, table=True):
     source: str = Field(
         default="resident", sa_column_kwargs={"server_default": "resident"}
     )
-    # Set when the reading looks off (a decrease or a spike). It is accepted
+    # Set when the reading looks off (a decrease, a spike, or a first reading
+    # against a 0/0 baseline). It is accepted
     # either way; the head clears the flag after looking.
     needs_review: bool = Field(
         default=False, sa_column_kwargs={"server_default": "false"}
     )
-    review_reason: Optional[str] = Field(default=None)  # 'decrease' | 'spike'
+    review_reason: Optional[str] = Field(
+        default=None
+    )  # 'decrease' | 'spike' | 'zeroBaseline'
     # Set when the head entered or changed the values; shown to the resident so
     # a correction is never a silent overwrite.
     corrected_at: Optional[datetime] = Field(default=None)
