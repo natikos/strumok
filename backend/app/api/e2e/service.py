@@ -11,7 +11,7 @@ from app.api.auth.service import pwd_context
 from app.api.push.service import e2e_push_outbox
 from app.core import email
 from app.core.time import now_utc_aware, set_clock_offset
-from app.db.models import LanguageCode, User
+from app.db.models import APPEND_ONLY_TABLES, LanguageCode, User
 
 
 def set_clock(now: datetime) -> datetime:
@@ -26,11 +26,16 @@ def reset_clock() -> None:
 
 
 def reset(session: Session) -> None:
-    """Empties every table (TRUNCATE skips the row-level append-only
-    triggers), restarts ids so `STR-<id>` references are predictable, and
-    clears the outbox and clock."""
+    """Empties every table, restarts ids so `STR-<id>` references are
+    predictable, and clears the outbox and clock. The append-only tables'
+    no-TRUNCATE triggers are lifted for this transaction only (DDL is
+    transactional, so a failure leaves them in force)."""
     tables = ", ".join(table.name for table in SQLModel.metadata.sorted_tables)
+    for table in APPEND_ONLY_TABLES:
+        session.exec(text(f"ALTER TABLE {table} DISABLE TRIGGER {table}_no_truncate"))  # type: ignore[call-overload]
     session.exec(text(f"TRUNCATE {tables} RESTART IDENTITY CASCADE"))  # type: ignore[call-overload]
+    for table in APPEND_ONLY_TABLES:
+        session.exec(text(f"ALTER TABLE {table} ENABLE TRIGGER {table}_no_truncate"))  # type: ignore[call-overload]
     session.commit()
     email.e2e_outbox.clear()
     e2e_push_outbox.clear()

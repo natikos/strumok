@@ -68,9 +68,12 @@ def _cleanup(
     rate_ids: list[int],
     periods: list[str] | None = None,
 ) -> None:
-    # household_charges rejects DELETE by trigger; TRUNCATE doesn't fire it, and
-    # only this test's committed charges exist (every other test rolls back).
+    # household_charges rejects DELETE and TRUNCATE by trigger; only this
+    # test's committed charges exist (every other test rolls back), so lift the
+    # TRUNCATE guard for this transaction.
+    real_session.exec(text("ALTER TABLE household_charges DISABLE TRIGGER household_charges_no_truncate"))  # type: ignore[call-overload]
     real_session.exec(text("TRUNCATE household_charges"))  # type: ignore[call-overload]
+    real_session.exec(text("ALTER TABLE household_charges ENABLE TRIGGER household_charges_no_truncate"))  # type: ignore[call-overload]
     for period in periods or []:
         billing_period = real_session.get(BillingPeriod, period)
         if billing_period is not None:

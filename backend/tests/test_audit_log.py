@@ -6,7 +6,7 @@ from sqlalchemy.exc import DBAPIError
 from sqlmodel import Session, select
 
 from app.core import audit
-from app.db.models import AuditLog
+from app.db.models import APPEND_ONLY_TABLES, AuditLog
 from tests.factories import authenticate, make_household, make_user
 
 
@@ -26,6 +26,12 @@ class TestAppendOnly:
 
         with pytest.raises(DBAPIError, match="append-only"):
             session.execute(text(statement))
+
+    @pytest.mark.parametrize("table", APPEND_ONLY_TABLES)
+    def test_truncate_fails_in_the_database(self, session: Session, table: str) -> None:
+        """Row-level triggers don't fire for TRUNCATE; a statement trigger does."""
+        with pytest.raises(DBAPIError, match="append-only"):
+            session.execute(text(f"TRUNCATE {table}"))
 
 
 class TestAtomicity:

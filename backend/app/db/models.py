@@ -653,3 +653,29 @@ class PaymentDetails(SQLModel, table=True):
         sa_column_kwargs={"server_default": text("CURRENT_TIMESTAMP")},
     )
     updated_by_user_id: Optional[int] = Field(default=None, foreign_key="users.id")
+
+
+# Row-level triggers don't fire for TRUNCATE, so each append-only table also
+# gets a statement-level one reusing its reject function. Kept apart from the
+# *_APPEND_ONLY_SQL constants because migrations 0002/0004/0006/0017 run those
+# verbatim; migration 0019 adds these to existing databases. Registered last so
+# each table's reject function already exists when its after_create fires.
+APPEND_ONLY_TABLES = (
+    "audit_log",
+    "household_charges",
+    "charge_adjustments",
+    "opening_balance_corrections",
+)
+
+
+def no_truncate_sql(table: str) -> str:
+    return (
+        f"CREATE TRIGGER {table}_no_truncate BEFORE TRUNCATE ON {table} "
+        f"FOR EACH STATEMENT EXECUTE FUNCTION {table}_reject_change()"
+    )
+
+
+for _table in APPEND_ONLY_TABLES:
+    event.listen(
+        SQLModel.metadata.tables[_table], "after_create", DDL(no_truncate_sql(_table))
+    )
