@@ -15,11 +15,18 @@ const REFRESH_ENDPOINT_PATH = "/auth/refresh";
 type RefreshOutcome = "refreshed" | "rejected" | "unreachable";
 
 let refreshPromise: Promise<RefreshOutcome> | null = null;
-let sessionExpiredHandler: (() => void) | null = null;
+// Returns true when it ended a signed-in session.
+let sessionExpiredHandler: (() => boolean) | null = null;
+
+// Bumped each time a signed-in session ends. A 401 on a request sent before
+// that is muted, since the redirect to login already tells the resident; one
+// sent after (a wrong password on the login page) still toasts.
+let sessionEpoch = 0;
+const requestEpochs = new Map<string, number>();
 
 // Registered by main.ts, which owns the router; the client can't import it
 // without a cycle.
-export function registerSessionExpiredHandler(handler: () => void): void {
+export function registerSessionExpiredHandler(handler: () => boolean): void {
   sessionExpiredHandler = handler;
 }
 
@@ -74,10 +81,16 @@ async function refreshAccessToken(): Promise<RefreshOutcome> {
 }
 
 appApiClient.use({
-  onRequest({ request }) {
+  onRequest({ id, request }) {
+    requestEpochs.set(id, sessionEpoch);
     return new Request(request, { credentials: "include" });
   },
-  async onResponse({ request, response }) {
+  onError({ id }) {
+    requestEpochs.delete(id);
+  },
+  async onResponse({ id, request, response }) {
+    const requestEpoch = requestEpochs.get(id) ?? sessionEpoch;
+    requestEpochs.delete(id);
     let effectiveResponse = response;
     const requestPath = new URL(request.url).pathname;
     const isRefreshRequest = requestPath.endsWith(REFRESH_ENDPOINT_PATH);
@@ -87,8 +100,8 @@ appApiClient.use({
 
       if (outcome === "refreshed") {
         effectiveResponse = await fetch(new Request(request, { credentials: "include" }));
-      } else if (outcome === "rejected") {
-        sessionExpiredHandler?.();
+      } else if (outcome === "rejected" && sessionExpiredHandler?.()) {
+        sessionEpoch += 1;
       }
     }
 
@@ -104,7 +117,9 @@ appApiClient.use({
       body = undefined;
     }
 
-    showApiErrorToast(effectiveResponse.status, body);
+    if (effectiveResponse.status !== 401 || requestEpoch === sessionEpoch) {
+      showApiErrorToast(effectiveResponse.status, body);
+    }
 
     return effectiveResponse;
   },
