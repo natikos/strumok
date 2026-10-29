@@ -41,6 +41,8 @@ import (`backend/scripts/import_meter_history.py`) writes the reading plus a clo
 a charge with the sheet's exact amount, never recomputed from rates, and refuses the current
 period.
 
+An admin uploads the accountant's bank statement at `POST /admin/bank-statements` (multipart `.csv`, 1 MB, 5,000 rows, parsed in memory and never stored): credits are inserted idempotently (re-uploading the same sha256 or overlapping files adds nothing), debits are skipped, and the response reports new/duplicate/skipped counts and `covered_through`. Each import is audited with counts only, and admins are notified when rows join the review queue.
+
 Deadline push reminders go out on days 1 and 5 at each user's chosen Kyiv hour
 (`User.reminder_hour`, default 9, set via `PATCH /auth/preferences`).
 Users with no push subscription get the reminder by email (Brevo) instead.

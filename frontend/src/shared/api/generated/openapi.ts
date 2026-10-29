@@ -820,6 +820,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/bank-statements": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Upload Statement */
+        post: operations["upload_statement_admin_bank_statements_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/electricity-rates": {
         parameters: {
             query?: never;
@@ -1204,6 +1221,15 @@ export interface components {
             /** Total Outstanding Uah */
             total_outstanding_uah: string;
         };
+        /** BankStatementErrorOut */
+        BankStatementErrorOut: {
+            /** Detail */
+            detail: string;
+            /** Row */
+            row?: number | null;
+            /** Column */
+            column?: string | null;
+        };
         /** BillIn */
         BillIn: {
             /** Day Kwh */
@@ -1217,6 +1243,14 @@ export interface components {
              * @constant
              */
             confirm: true;
+        };
+        /** Body_upload_statement_admin_bank_statements_post */
+        Body_upload_statement_admin_bank_statements_post: {
+            /**
+             * File
+             * Format: binary
+             */
+            file: string;
         };
         /** ChangeEmailIn */
         ChangeEmailIn: {
@@ -1855,6 +1889,22 @@ export interface components {
             posted_in_period: string;
             /** Is Zero Sum */
             is_zero_sum: boolean;
+        };
+        /** StatementImportOut */
+        StatementImportOut: {
+            /** Already Imported */
+            already_imported: boolean;
+            /** Credits New */
+            credits_new: number;
+            /** Credits Duplicate */
+            credits_duplicate: number;
+            /** Debits Skipped */
+            debits_skipped: number;
+            /**
+             * Covered Through
+             * Format: date
+             */
+            covered_through: string;
         };
         /**
          * StatementLineOut
@@ -4291,6 +4341,60 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    upload_statement_admin_bank_statements_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["Body_upload_statement_admin_bank_statements_post"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StatementImportOut"];
+                };
+            };
+            /** @description File is larger than 1 MB */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "detail": "bankStatementTooLarge"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Not a .csv, no payment details set, or the statement cannot be imported (row and column name the offending cell, never its value). Codes: bankStatementNotCsv, paymentDetailsMissing, bankStatementInvalid, bankStatementTooManyRows, bankStatementWrongAccount */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "detail": "bankStatementInvalid",
+                     *       "row": 2,
+                     *       "column": "Сума"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["BankStatementErrorOut"];
                 };
             };
         };

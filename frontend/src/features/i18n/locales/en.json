@@ -501,7 +501,13 @@
     "meterChangeAlreadyRecorded": "A meter replacement is already recorded for this period",
     "handoverReadingRequired": "Enter the meter values at the handover",
     "householdHasOutstandingBalance": "The previous owner has an unpaid balance",
-    "invalidIban": "This IBAN isn't valid. Check it and try again"
+    "invalidIban": "This IBAN isn't valid. Check it and try again",
+    "bankStatementTooLarge": "The statement is larger than 1 MB",
+    "bankStatementInvalid": "The statement can't be imported. Check the file and try again",
+    "bankStatementNotCsv": "Upload the statement as a .csv file",
+    "bankStatementTooManyRows": "The statement has more than 5,000 rows",
+    "bankStatementWrongAccount": "The statement is for a different account",
+    "paymentDetailsMissing": "Set the co-op's payment details first"
   },
   "household": {
     "switchAria": "Switch household",

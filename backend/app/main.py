@@ -11,6 +11,7 @@ from fastapi.staticfiles import StaticFiles
 from app.api import (
     admin_router,
     auth_router,
+    bank_router,
     billing_router,
     electricity_rates_router,
     meter_readings_router,
@@ -19,6 +20,7 @@ from app.api import (
 from app.api.billing.routes import me_router as me_billing_router
 from app.api.push.scheduler import start_reminder_scheduler
 from app.core.config import settings
+from app.core.body_limit import UploadSizeMiddleware
 from app.core.csrf import CsrfMiddleware
 from app.db.engine import init_db, is_db_reachable
 
@@ -37,6 +39,7 @@ async def lifespan(_: FastAPI):
 
 app = FastAPI(title=settings.app_name, lifespan=lifespan)
 app.add_middleware(CsrfMiddleware)
+app.add_middleware(UploadSizeMiddleware)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.cors_origins,
@@ -49,6 +52,7 @@ app.include_router(meter_readings_router)
 app.include_router(billing_router)
 app.include_router(me_billing_router)
 app.include_router(admin_router)
+app.include_router(bank_router)
 app.include_router(electricity_rates_router)
 app.include_router(push_router)
 

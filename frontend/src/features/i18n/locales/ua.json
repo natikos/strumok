@@ -501,7 +501,13 @@
     "meterChangeAlreadyRecorded": "Заміну лічильника за цей період уже записано",
     "handoverReadingRequired": "Введіть показники лічильників при передачі",
     "householdHasOutstandingBalance": "У попереднього власника є неоплачений борг",
-    "invalidIban": "Цей IBAN недійсний. Перевірте його й спробуйте ще раз"
+    "invalidIban": "Цей IBAN недійсний. Перевірте його й спробуйте ще раз",
+    "bankStatementTooLarge": "Виписка більша за 1 МБ",
+    "bankStatementInvalid": "Виписку неможливо імпортувати. Перевірте файл і спробуйте ще раз",
+    "bankStatementNotCsv": "Завантажте виписку у форматі .csv",
+    "bankStatementTooManyRows": "У виписці понад 5 000 рядків",
+    "bankStatementWrongAccount": "Виписка стосується іншого рахунку",
+    "paymentDetailsMissing": "Спершу вкажіть платіжні реквізити кооперативу"
   },
   "household": {
     "switchAria": "Обрати домогосподарство",
