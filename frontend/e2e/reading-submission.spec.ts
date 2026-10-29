@@ -59,27 +59,34 @@ test("a resident's submitted reading is shown as submitted and survives a reload
 });
 
 // The owner took over this month (the head created the plot, freed it, and
-// assigned the resident) and must still see the reading they submitted.
-test(
-  "a reading for the open period survives a reload when the owner was assigned this month",
-  async ({ page, seedUser, apiAs, loginAs, setNow }) => {
-    await setNow(NOW);
-    const adminUser = await seedUser({ isAdmin: true });
-    const resident = await seedUser({ firstName: "Olena", lastName: "Koval" });
-    const admin = await apiAs(adminUser);
-    await seedRate(admin);
-    const household = await createHousehold(admin, {
-      name: "Plot 7",
-      ownerId: adminUser.id,
-      ...BASELINE,
-    });
-    await unassignHousehold(admin, household.id);
-    await assignOwner(admin, household.id, resident.id);
+// handed it to the resident during days 1-5) and must still see the handover
+// reading that stands in for the open period.
+test("a reading for the open period survives a reload when the owner was assigned this month", async ({
+  page,
+  seedUser,
+  apiAs,
+  loginAs,
+  setNow,
+}) => {
+  await setNow(NOW);
+  const adminUser = await seedUser({ isAdmin: true });
+  const resident = await seedUser({ firstName: "Olena", lastName: "Koval" });
+  const admin = await apiAs(adminUser);
+  await seedRate(admin);
+  const household = await createHousehold(admin, {
+    name: "Plot 7",
+    ownerId: adminUser.id,
+    ...BASELINE,
+  });
+  await unassignHousehold(admin, household.id);
+  await assignOwner(admin, household.id, {
+    handover: { day: "1234", night: "567" },
+    userId: resident.id,
+  });
 
-    await loginAs(resident);
-    await submitJuneReading(page);
-    await page.reload();
+  await loginAs(resident);
+  await page.goto("/");
+  await page.reload();
 
-    await expect(page.getByText("Reading submitted")).toBeVisible({ timeout: 5000 });
-  }
-);
+  await expect(page.getByText("Reading submitted")).toBeVisible({ timeout: 5000 });
+});
