@@ -30,6 +30,8 @@ from app.api.admin.schemas import (
     PaymentOut,
     PaymentVoidIn,
     PeriodCloseIn,
+    PeriodCloseOut,
+    UnownedEstimatedHouseholdOut,
     ReadingReviewIn,
     AdminReadingCreateIn,
     MeterChangeIn,
@@ -607,7 +609,7 @@ def get_admin_periods(
 
 @router.post(
     "/periods/{period}/close",
-    response_model=PeriodOverviewOut,
+    response_model=PeriodCloseOut,
     responses=CLOSE_PERIOD_RESPONSES,
 )
 def close_admin_period(
@@ -615,9 +617,9 @@ def close_admin_period(
     period: str = Path(pattern=r"^\d{4}-(0[1-9]|1[0-2])$"),
     session: Session = Depends(get_session),
     admin: User = CurrentAdmin,
-) -> PeriodOverviewOut:
+) -> PeriodCloseOut:
     try:
-        close_period(
+        charges = close_period(
             session=session,
             period=period,
             actor_id=admin.id,
@@ -652,10 +654,31 @@ def close_admin_period(
     _notify_safely(notify_bill_ready, session=session, period=period)
     _notify_safely(notify_shortfall, session=session)
 
-    return next(
-        PeriodOverviewOut.model_validate(overview, from_attributes=True)
+    unowned_ids = [
+        c.household_id for c in charges if c.is_estimated and c.owner_user_id is None
+    ]
+    unowned = (
+        session.exec(
+            select(Household)
+            .where(col(Household.id).in_(unowned_ids))
+            .order_by(col(Household.name))
+        ).all()
+        if unowned_ids
+        else []
+    )
+    overview = next(
+        overview
         for overview in list_period_overviews(session=session)
         if overview.period == period
+    )
+    return PeriodCloseOut(
+        **PeriodOverviewOut.model_validate(
+            overview, from_attributes=True
+        ).model_dump(),
+        unowned_estimated=[
+            UnownedEstimatedHouseholdOut(household_id=h.id, name=h.name)
+            for h in unowned
+        ],
     )
 
 
