@@ -6,9 +6,14 @@ from decimal import Decimal
 
 from sqlmodel import Session, col, select
 
-from app.core.domain.billing import KYIV_TZ, next_period
+from app.core.domain.billing import (
+    KYIV_TZ,
+    current_billing_period,
+    next_period,
+    period_window_closed,
+)
 from app.core.time import utc_now
-from app.db.models import Household, HouseholdOwnership
+from app.db.models import BillingPeriod, Household, HouseholdOwnership
 
 
 def set_owner(
@@ -106,11 +111,26 @@ def tenure_start(session: Session, household_id: int) -> datetime | None:
 
 
 def tenure_start_period(session: Session, household_id: int) -> str | None:
-    """`tenure_start` as the first period (Kyiv month) the current owner can see."""
+    """`tenure_start` as the first period the current owner can see: the one
+    residents were reporting when they took over, if its window (days 1-5) was
+    still open (they submit it, or see the handover reading that stands in for
+    it), otherwise the month they took over."""
     start = tenure_start(session, household_id)
     if start is None:
         return None
-    return start.replace(tzinfo=timezone.utc).astimezone(KYIV_TZ).strftime("%Y-%m")
+    started = start.replace(tzinfo=timezone.utc)
+    reporting = current_billing_period(started)
+    if period_window_closed(reporting, started):
+        return next_period(reporting)
+    period = session.get(BillingPeriod, reporting)
+    # Backfilled periods were closed with no timestamp, before any handover.
+    if (
+        period is not None
+        and period.status == "closed"
+        and (period.closed_at is None or period.closed_at <= start)
+    ):
+        return next_period(reporting)
+    return reporting
 
 
 def changed_hands(session: Session, household_id: int) -> bool:

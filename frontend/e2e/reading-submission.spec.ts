@@ -58,11 +58,9 @@ test("a resident's submitted reading is shown as submitted and survives a reload
   expect(list.find((r) => r.period === "2026-06")?.day_meter_value).toBe("1234.00");
 });
 
-// DEFECT #271: an owner who took over the plot this month (here: the head created it,
-// freed it, and assigned the resident) submits June's reading, but the list
-// endpoint hides it because the tenure starts in July, so after a reload the
-// dashboard asks for the reading again. Remove `test.fail` once fixed.
-test.fail(
+// The owner took over this month (the head created the plot, freed it, and
+// assigned the resident) and must still see the reading they submitted.
+test(
   "a reading for the open period survives a reload when the owner was assigned this month",
   async ({ page, seedUser, apiAs, loginAs, setNow }) => {
     await setNow(NOW);

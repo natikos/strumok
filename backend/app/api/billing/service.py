@@ -173,12 +173,18 @@ def provisional_line(*, session: Session, household_id: int) -> StatementLineOut
         return None
 
     household = session.get(Household, household_id)
+    if household is None:
+        return None
+    # A plot handed over before the period was closed is billed to whoever
+    # held it when the period ended, not the current owner.
+    if owner_at(session, household, period_end(period)) != household.user_id:
+        return None
     day, night = derive_reading_usage(session=session, reading=reading)
     (line,) = compute_period_statement(
         [
             ChargeInput(
                 household_id=household_id,
-                owner_user_id=household.user_id if household else None,
+                owner_user_id=household.user_id,
                 reading_id=reading.id,
                 day_usage_kwh=day,
                 night_usage_kwh=night,
