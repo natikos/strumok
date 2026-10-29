@@ -109,3 +109,13 @@ def test_handover_after_the_window_leaves_the_open_period_to_the_old_owner(
     authenticate(client, new_owner)
     listed = client.get(f"/meter-readings?household_id={household_id}").json()
     assert "2026-06" not in [row["period"] for row in listed]
+
+
+def test_new_owner_gets_no_provisional_line_for_the_outgoing_owners_period(
+    client: TestClient, session: Session
+) -> None:
+    household_id, new_owner = _transfer_on_day(client, session, 2)
+
+    authenticate(client, new_owner)
+    statements = client.get(f"/billing/statements?household_id={household_id}")
+    assert "2026-06" not in [row["period"] for row in statements.json()]
