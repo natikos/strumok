@@ -24,6 +24,8 @@ from app.api.admin.schemas import (
     ReconciliationOut,
     BalancesOut,
     HouseholdBalanceOut,
+    OpeningBalanceCorrectionIn,
+    OpeningBalanceCorrectionOut,
     OpeningBalanceIn,
     OpeningBalanceOut,
     PaymentIn,
@@ -87,12 +89,15 @@ from app.api.billing.schemas import PaymentDetailsIn, PaymentDetailsOut
 from app.api.billing.payments import (
     HouseholdMissingError,
     OpeningBalanceAlreadySetError,
+    OpeningBalanceMissingError,
     PaymentAlreadyVoidedError,
     PaymentNotFoundError,
     list_balances,
     get_opening_balance,
     list_payments,
     set_opening_balance,
+    correct_opening_balance,
+    list_opening_balance_corrections,
     record_payment,
     void_payment,
 )
@@ -123,7 +128,7 @@ from app.api.push.billing_notifications import (
     notify_shortfall,
 )
 from app.db import get_session
-from app.db.models import Household, User
+from app.db.models import Household, OpeningBalance, User
 
 
 def _owner_deltas(session: Session, result) -> dict[int, Decimal]:
@@ -672,9 +677,7 @@ def close_admin_period(
         if overview.period == period
     )
     return PeriodCloseOut(
-        **PeriodOverviewOut.model_validate(
-            overview, from_attributes=True
-        ).model_dump(),
+        **PeriodOverviewOut.model_validate(overview, from_attributes=True).model_dump(),
         unowned_estimated=[
             UnownedEstimatedHouseholdOut(household_id=h.id, name=h.name)
             for h in unowned
@@ -1206,7 +1209,62 @@ def read_household_opening_balance(
     household_id: int, session: Session = Depends(get_session)
 ) -> OpeningBalanceOut | None:
     opening = get_opening_balance(session=session, household_id=household_id)
-    return OpeningBalanceOut.model_validate(opening) if opening else None
+    if opening is None:
+        return None
+    return _opening_balance_out(session=session, opening=opening)
+
+
+def _opening_balance_out(
+    *, session: Session, opening: OpeningBalance
+) -> OpeningBalanceOut:
+    corrections = list_opening_balance_corrections(
+        session=session, household_id=opening.household_id
+    )
+    out = OpeningBalanceOut.model_validate(opening)
+    out.corrections = [
+        OpeningBalanceCorrectionOut.model_validate(c) for c in corrections
+    ]
+    out.effective_amount_uah = opening.amount_uah + sum(
+        (c.amount_uah for c in corrections), Decimal("0.00")
+    )
+    return out
+
+
+@router.post(
+    "/households/{household_id}/opening-balance/corrections",
+    response_model=OpeningBalanceOut,
+    responses={
+        status.HTTP_404_NOT_FOUND: {
+            "description": "The household has no opening balance to correct",
+            "model": ErrorOut,
+            "content": {
+                "application/json": {"example": {"detail": "openingBalanceNotFound"}}
+            },
+        },
+    },
+    status_code=status.HTTP_201_CREATED,
+)
+def create_opening_balance_correction(
+    household_id: int,
+    payload: OpeningBalanceCorrectionIn,
+    session: Session = Depends(get_session),
+    admin: User = CurrentAdmin,
+) -> OpeningBalanceOut:
+    try:
+        correct_opening_balance(
+            session=session,
+            household_id=household_id,
+            amount_uah=payload.amount_uah,
+            reason=payload.reason.strip(),
+            actor_id=admin.id,
+        )
+    except OpeningBalanceMissingError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="openingBalanceNotFound"
+        ) from exc
+    opening = get_opening_balance(session=session, household_id=household_id)
+    assert opening is not None
+    return _opening_balance_out(session=session, opening=opening)
 
 
 @router.get("/balances", response_model=BalancesOut)

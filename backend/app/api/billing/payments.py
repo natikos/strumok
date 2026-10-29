@@ -15,6 +15,7 @@ from app.db.models import (
     Household,
     HouseholdCharge,
     OpeningBalance,
+    OpeningBalanceCorrection,
     Payment,
     User,
 )
@@ -35,6 +36,10 @@ class HouseholdMissingError(Exception):
 
 
 class OpeningBalanceAlreadySetError(Exception):
+    pass
+
+
+class OpeningBalanceMissingError(Exception):
     pass
 
 
@@ -153,15 +158,72 @@ def get_opening_balance(
     ).first()
 
 
+def correct_opening_balance(
+    *,
+    session: Session,
+    household_id: int,
+    amount_uah: Decimal,
+    reason: str,
+    actor_id: int,
+) -> OpeningBalanceCorrection:
+    """Adds a signed amount to the household's opening balance. The original
+    figure stays as recorded; the correction goes to the same owner, since it
+    fixes what that owner carried over."""
+    opening = session.exec(
+        select(OpeningBalance)
+        .where(OpeningBalance.household_id == household_id)
+        .with_for_update()
+    ).first()
+    if opening is None:
+        raise OpeningBalanceMissingError
+    correction = OpeningBalanceCorrection(
+        household_id=household_id,
+        owner_user_id=opening.owner_user_id,
+        amount_uah=amount_uah,
+        reason=reason,
+        created_by_user_id=actor_id,
+    )
+    session.add(correction)
+    session.flush()
+    audit.record(
+        session,
+        actor_user_id=actor_id,
+        action="openingBalanceCorrected",
+        entity_type="opening_balance_correction",
+        entity_id=correction.id,
+        household_id=household_id,
+        after={"amount_uah": amount_uah},
+        reason=reason,
+    )
+    session.commit()
+    session.refresh(correction)
+    return correction
+
+
+def list_opening_balance_corrections(
+    *, session: Session, household_id: int
+) -> list[OpeningBalanceCorrection]:
+    return list(
+        session.exec(
+            select(OpeningBalanceCorrection)
+            .where(OpeningBalanceCorrection.household_id == household_id)
+            .order_by(col(OpeningBalanceCorrection.id))
+        )
+    )
+
+
 def _opening_amount(
     *, session: Session, household_id: int, owner_user_id: int | None = None
 ) -> Decimal:
-    query = select(func.coalesce(func.sum(OpeningBalance.amount_uah), 0)).where(
-        OpeningBalance.household_id == household_id
-    )
-    if owner_user_id is not None:
-        query = query.where(OpeningBalance.owner_user_id == owner_user_id)
-    return Decimal(session.exec(query).one() or ZERO)
+    total = ZERO
+    for model in (OpeningBalance, OpeningBalanceCorrection):
+        query = select(func.coalesce(func.sum(model.amount_uah), 0)).where(
+            model.household_id == household_id
+        )
+        if owner_user_id is not None:
+            query = query.where(model.owner_user_id == owner_user_id)
+        total += Decimal(session.exec(query).one() or ZERO)
+    return total
 
 
 def void_payment(

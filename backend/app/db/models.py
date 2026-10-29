@@ -571,7 +571,7 @@ class BankTransaction(SQLModel, table=True):
 class OpeningBalance(SQLModel, table=True):
     """What a household already owed (positive) or was owed (negative) when the
     app took over from the spreadsheets. One row per household, never edited:
-    a wrong figure is fixed with an adjustment or payment, like any other."""
+    a wrong figure is fixed with an `OpeningBalanceCorrection`."""
 
     __tablename__ = "opening_balances"  # type: ignore
     __table_args__ = (
@@ -589,6 +589,49 @@ class OpeningBalance(SQLModel, table=True):
         default_factory=utc_now,
         sa_column_kwargs={"server_default": text("CURRENT_TIMESTAMP")},
     )
+
+
+class OpeningBalanceCorrection(SQLModel, table=True):
+    """A signed amount added to a household's opening balance, with the reason
+    it was wrong. Append-only (a trigger enforces it): a mistaken correction is
+    undone by another one. Billed to the opening balance's owner."""
+
+    __tablename__ = "opening_balance_corrections"  # type: ignore
+    __table_args__ = (
+        CheckConstraint(
+            "amount_uah <> 0", name="ck_opening_balance_corrections_nonzero"
+        ),
+    )
+
+    id: int = Field(default=None, primary_key=True)
+    household_id: int = Field(foreign_key="households.id", index=True)
+    owner_user_id: Optional[int] = Field(default=None, foreign_key="users.id")
+    amount_uah: Decimal = Field(decimal_places=2, max_digits=12)
+    reason: str
+    created_by_user_id: Optional[int] = Field(default=None, foreign_key="users.id")
+    created_at: datetime = Field(
+        default_factory=utc_now,
+        sa_column_kwargs={"server_default": text("CURRENT_TIMESTAMP")},
+    )
+
+
+OPENING_BALANCE_CORRECTIONS_APPEND_ONLY_SQL = """
+CREATE FUNCTION opening_balance_corrections_reject_change() RETURNS trigger AS $$
+BEGIN
+    RAISE EXCEPTION 'opening_balance_corrections is append-only';
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER opening_balance_corrections_append_only
+BEFORE UPDATE OR DELETE ON opening_balance_corrections
+FOR EACH ROW EXECUTE FUNCTION opening_balance_corrections_reject_change();
+"""
+
+event.listen(
+    OpeningBalanceCorrection.__table__,  # type: ignore[attr-defined]
+    "after_create",
+    DDL(OPENING_BALANCE_CORRECTIONS_APPEND_ONLY_SQL),
+)
 
 
 class PaymentDetails(SQLModel, table=True):
