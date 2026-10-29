@@ -3,7 +3,7 @@ latest app-closed period, and who still owes once it has. Spreadsheet-backfilled
 periods are closed without a `closed_by_user_id`, so they never open a window."""
 
 from dataclasses import dataclass
-from datetime import date
+from datetime import UTC, date
 from decimal import Decimal
 
 from sqlmodel import Session, col, select
@@ -47,7 +47,9 @@ def latest_window(session: Session) -> ShortfallWindow | None:
     first_of_next = date(year + (month == 12), month % 12 + 1, 1)
     earliest = first_of_next
     if row.closed_at is not None:
-        earliest = max(earliest, row.closed_at.astimezone(KYIV_TZ).date())
+        earliest = max(
+            earliest, row.closed_at.replace(tzinfo=UTC).astimezone(KYIV_TZ).date()
+        )
     return ShortfallWindow(period=row.period, due_date=_next_due(earliest))
 
 
