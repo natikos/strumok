@@ -7,6 +7,7 @@ export type BalanceOut = components["schemas"]["BalanceOut"];
 export type AdjustmentOut = components["schemas"]["AdjustmentOut"];
 export type HouseholdStatementsOut = components["schemas"]["HouseholdStatementsOut"];
 export type PaymentDetailsOut = components["schemas"]["PaymentDetailsOut"];
+export type ShortfallOut = components["schemas"]["ShortfallOut"];
 export type BankCoverageOut = components["schemas"]["BankCoverageOut"];
 export type CurrentPeriodOut = components["schemas"]["CurrentPeriodOut"];
 
@@ -86,6 +87,18 @@ export async function getBankCoverage(): Promise<BankCoverageOut> {
 
   if (!data) {
     throw new Error("Bank coverage response was empty");
+  }
+
+  return data;
+}
+
+export async function getShortfall(householdId?: number | null): Promise<ShortfallOut> {
+  const { data, error, response } = await appApiClient.GET("/billing/shortfall", {
+    params: { query: householdId == null ? {} : { household_id: householdId } },
+  });
+
+  if (error) {
+    throw buildApiError(response.status, error);
   }
 
   return data;

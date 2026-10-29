@@ -352,6 +352,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/billing/shortfall": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get My Shortfall */
+        get: operations["get_my_shortfall_billing_shortfall_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/me/statements": {
         parameters: {
             query?: never;
@@ -2044,6 +2061,22 @@ export interface components {
             /** Is Zero Sum */
             is_zero_sum: boolean;
         };
+        /**
+         * ShortfallOut
+         * @description `active` once the statement has covered the due date, nothing dated
+         *     before it is awaiting review, and the household still owes.
+         */
+        ShortfallOut: {
+            /** Active */
+            active: boolean;
+            /** Due Date */
+            due_date?: string | null;
+            /**
+             * Owed Uah
+             * @default 0.00
+             */
+            owed_uah: string;
+        };
         /** SplitLineIn */
         SplitLineIn: {
             /** Household Id */
@@ -3149,6 +3182,60 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["BankCoverageOut"];
+                };
+            };
+        };
+    };
+    get_my_shortfall_billing_shortfall_get: {
+        parameters: {
+            query?: {
+                household_id?: number | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ShortfallOut"];
+                };
+            };
+            /** @description User does not own this household, or it is inactive */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description User is not a member of any household */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "detail": "noHouseholdMembership"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };

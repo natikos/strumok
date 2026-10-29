@@ -377,6 +377,9 @@
     "setExpired": "This invite link has expired or was already used. Ask the head for a new one.",
     "setDone": "Welcome! Your password is set."
   },
+  "shortfall": {
+    "notice": "The statement now covers the {date} due date and {amount} is still unpaid."
+  },
   "bankCoverage": {
     "includedUpTo": "Payments included up to {date}",
     "awaiting": "Awaiting bank statement: recent payments may not be reflected yet",

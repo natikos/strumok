@@ -72,6 +72,7 @@ declare module 'vue' {
     Select: typeof import('primevue/select')['default']
     SetPasswordPage: typeof import('./src/pages/auth/SetPasswordPage.vue')['default']
     SettingsPage: typeof import('./src/pages/settings/SettingsPage.vue')['default']
+    ShortfallNotice: typeof import('./src/features/dashboard/components/ShortfallNotice.vue')['default']
     Skeleton: typeof import('primevue/skeleton')['default']
     StatTilesCard: typeof import('./src/features/dashboard/components/StatTilesCard.vue')['default']
     SubmissionCard: typeof import('./src/features/dashboard/components/SubmissionCard.vue')['default']
