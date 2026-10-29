@@ -336,6 +336,19 @@
       "save": "Save",
       "saved": "Saved",
       "empty": "Not set yet"
+    },
+    "openingBalance": {
+      "title": "Opening balance",
+      "none": "No opening balance set.",
+      "original": "Set {amount} as of {date}",
+      "effective": "Counted now: {amount}",
+      "asOf": "As of",
+      "set": "Set opening balance",
+      "amount": "Amount (positive: owes, negative: credit)",
+      "correctionAmount": "Correction (added to the opening balance)",
+      "reason": "Reason",
+      "correct": "Add correction",
+      "correctionLine": "{amount} · {reason}"
     }
   },
   "auth": {
@@ -551,7 +564,8 @@
     "beforeOpeningBalance": "This credit is dated before the household's opening balance",
     "manualPaymentNotLinkable": "That payment can't be linked to this credit",
     "bankStatementWrongAccount": "The statement is for a different account",
-    "paymentDetailsMissing": "Set the co-op's payment details first"
+    "paymentDetailsMissing": "Set the co-op's payment details first",
+    "openingBalanceNotFound": "This household has no opening balance to correct"
   },
   "household": {
     "switchAria": "Switch household",
