@@ -79,6 +79,8 @@
               </div>
             </form>
 
+            <OpeningBalanceEditor :household-id="row.household_id" @changed="load" />
+
             <h3 class="balances__subtitle">{{ t("admin.balances.payments") }}</h3>
             <p v-if="payments.length === 0" class="balances__muted">
               {{ t("admin.balances.noPayments") }}

@@ -3,8 +3,10 @@
 from decimal import Decimal
 
 import pytest
+from sqlalchemy import text
 from sqlmodel import Session, select
 
+from app.api.billing.payments import get_balance
 from app.db.models import AuditLog
 from scripts.import_opening_balances import parse_balances
 from tests.factories import authenticate, make_household, make_user
@@ -84,6 +86,110 @@ class TestOpeningBalanceApi:
         authenticate(client, owner)
 
         assert _set(client, household.id, "1.00").status_code in (401, 403)
+
+
+def _correct(client, household_id: int, amount: str, reason: str = "sign flipped"):
+    return client.post(
+        f"/admin/households/{household_id}/opening-balance/corrections",
+        json={"amount_uah": amount, "reason": reason},
+    )
+
+
+class TestOpeningBalanceCorrection:
+    def test_signed_correction_changes_balance_and_keeps_original(
+        self, client, session: Session
+    ) -> None:
+        owner = make_user(session)
+        household = make_household(session, user_id=owner.id)
+        admin = make_user(session, is_admin=True)
+        authenticate(client, admin)
+        _set(client, household.id, "-300.00")
+
+        response = _correct(client, household.id, "600.00")
+
+        assert response.status_code == 201
+        body = response.json()
+        assert D(body["amount_uah"]) == D("-300.00")
+        assert D(body["effective_amount_uah"]) == D("300.00")
+        assert [c["reason"] for c in body["corrections"]] == ["sign flipped"]
+        authenticate(client, owner)
+        assert D(client.get("/billing/balance").json()["balance_uah"]) == D("300.00")
+        audit = session.exec(
+            select(AuditLog).where(AuditLog.action == "openingBalanceCorrected")
+        ).one()
+        assert audit.reason == "sign flipped"
+        assert audit.actor_user_id == admin.id
+
+    def test_correction_stays_with_the_original_owner(
+        self, client, session: Session
+    ) -> None:
+        old_owner = make_user(session)
+        new_owner = make_user(session)
+        household = make_household(session, user_id=old_owner.id)
+        authenticate(client, make_user(session, is_admin=True))
+        _set(client, household.id, "100.00")
+        household.user_id = new_owner.id
+        session.add(household)
+        session.commit()
+
+        _correct(client, household.id, "50.00")
+
+        assert get_balance(
+            session=session, household_id=household.id, owner_user_id=old_owner.id
+        ).balance_uah == D("150.00")
+        assert get_balance(
+            session=session, household_id=household.id, owner_user_id=new_owner.id
+        ).balance_uah == D("0.00")
+
+    @pytest.mark.parametrize(
+        "payload",
+        [
+            {"amount_uah": "0", "reason": "x"},
+            {"amount_uah": "10.00", "reason": "   "},
+            {"amount_uah": "10.00"},
+        ],
+    )
+    def test_rejects_zero_amount_or_missing_reason(
+        self, client, session: Session, payload
+    ) -> None:
+        household = make_household(session)
+        authenticate(client, make_user(session, is_admin=True))
+        _set(client, household.id, "100.00")
+
+        response = client.post(
+            f"/admin/households/{household.id}/opening-balance/corrections",
+            json=payload,
+        )
+
+        assert response.status_code == 422
+
+    def test_without_opening_balance_is_404(self, client, session: Session) -> None:
+        household = make_household(session)
+        authenticate(client, make_user(session, is_admin=True))
+
+        response = _correct(client, household.id, "10.00")
+
+        assert response.status_code == 404
+        assert response.json()["detail"] == "openingBalanceNotFound"
+
+    def test_residents_cannot_correct(self, client, session: Session) -> None:
+        owner = make_user(session)
+        household = make_household(session, user_id=owner.id)
+        authenticate(client, make_user(session, is_admin=True))
+        _set(client, household.id, "100.00")
+        authenticate(client, owner)
+
+        assert _correct(client, household.id, "-100.00").status_code == 403
+
+    def test_corrections_are_append_only(self, client, session: Session) -> None:
+        household = make_household(session)
+        authenticate(client, make_user(session, is_admin=True))
+        _set(client, household.id, "100.00")
+        _correct(client, household.id, "10.00")
+
+        with pytest.raises(Exception, match="append-only"):
+            session.exec(text("UPDATE opening_balance_corrections SET amount_uah = 1"))
+        session.rollback()
 
 
 class TestParseBalances:

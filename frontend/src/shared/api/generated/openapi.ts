@@ -769,6 +769,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/households/{household_id}/opening-balance/corrections": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Create Opening Balance Correction */
+        post: operations["create_opening_balance_correction_admin_households__household_id__opening_balance_corrections_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/admin/balances": {
         parameters: {
             query?: never;
@@ -1738,6 +1755,24 @@ export interface components {
              */
             meter_replaced: boolean;
         };
+        /** OpeningBalanceCorrectionIn */
+        OpeningBalanceCorrectionIn: {
+            /** Amount Uah */
+            amount_uah: number | string;
+            /** Reason */
+            reason: string;
+        };
+        /** OpeningBalanceCorrectionOut */
+        OpeningBalanceCorrectionOut: {
+            /** Id */
+            id: number;
+            /** Amount Uah */
+            amount_uah: string;
+            /** Reason */
+            reason: string;
+            /** Created At */
+            created_at: string;
+        };
         /** OpeningBalanceIn */
         OpeningBalanceIn: {
             /** Amount Uah */
@@ -1765,6 +1800,13 @@ export interface components {
             note: string | null;
             /** Created At */
             created_at: string;
+            /**
+             * Corrections
+             * @default []
+             */
+            corrections: components["schemas"]["OpeningBalanceCorrectionOut"][];
+            /** Effective Amount Uah */
+            effective_amount_uah?: string | null;
         };
         /** PasswordResetConfirmIn */
         PasswordResetConfirmIn: {
@@ -4499,6 +4541,55 @@ export interface operations {
                     /**
                      * @example {
                      *       "detail": "openingBalanceAlreadySet"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_opening_balance_correction_admin_households__household_id__opening_balance_corrections_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                household_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["OpeningBalanceCorrectionIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpeningBalanceOut"];
+                };
+            };
+            /** @description The household has no opening balance to correct */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "detail": "openingBalanceNotFound"
                      *     }
                      */
                     "application/json": components["schemas"]["ErrorOut"];

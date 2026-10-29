@@ -9,9 +9,12 @@ import { appPlugins } from "@/shared/testing/mount";
 import type { Component } from "vue";
 
 const api = vi.hoisted(() => ({
+  correctOpeningBalance: vi.fn(),
+  getOpeningBalance: vi.fn(),
   listAdminBalances: vi.fn(),
   listHouseholdPayments: vi.fn(),
   recordHouseholdPayment: vi.fn(),
+  setOpeningBalance: vi.fn(),
   voidHouseholdPayment: vi.fn(),
 }));
 const { confirmRequire } = vi.hoisted(() => ({ confirmRequire: vi.fn() }));
@@ -88,6 +91,7 @@ describe("BalancesPanel", () => {
     Object.values(api).forEach((fn) => fn.mockReset());
     api.listAdminBalances.mockResolvedValue(balances);
     api.listHouseholdPayments.mockResolvedValue([payment]);
+    api.getOpeningBalance.mockResolvedValue(null);
   });
 
   it("shows the total outstanding and who owes what, with credits labelled", async () => {

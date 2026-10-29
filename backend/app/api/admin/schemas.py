@@ -426,6 +426,31 @@ class OpeningBalanceIn(BaseModel):
     note: str | None = Field(default=None, max_length=500)
 
 
+class OpeningBalanceCorrectionIn(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    # Added to the opening balance: positive raises what the household owes.
+    amount_uah: Decimal = Field(max_digits=12, decimal_places=2)
+    reason: str = Field(min_length=1, max_length=500)
+
+    @model_validator(mode="after")
+    def _valid(self) -> "OpeningBalanceCorrectionIn":
+        if self.amount_uah == 0:
+            raise ValueError("A correction must not be zero")
+        if not self.reason.strip():
+            raise ValueError("A reason is required")
+        return self
+
+
+class OpeningBalanceCorrectionOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    amount_uah: Decimal
+    reason: str
+    created_at: UtcDatetime
+
+
 class OpeningBalanceOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
@@ -434,6 +459,9 @@ class OpeningBalanceOut(BaseModel):
     as_of: date
     note: str | None
     created_at: UtcDatetime
+    corrections: list[OpeningBalanceCorrectionOut] = []
+    # The opening balance plus every correction: what the balance counts.
+    effective_amount_uah: Decimal | None = None
 
 
 class HouseholdBalanceOut(BaseModel):

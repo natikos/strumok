@@ -14,6 +14,7 @@ export type ReconciliationOut = components["schemas"]["ReconciliationOut"];
 export type RestatementOut = components["schemas"]["RestatementOut"];
 export type BalancesOut = components["schemas"]["BalancesOut"];
 export type PaymentOut = components["schemas"]["PaymentOut"];
+export type OpeningBalanceOut = components["schemas"]["OpeningBalanceOut"];
 export type AuditLogPageOut = components["schemas"]["AuditLogPageOut"];
 export type AuditLogEntryOut = components["schemas"]["AuditLogEntryOut"];
 export type PaymentDetailsOut = components["schemas"]["PaymentDetailsOut"];
@@ -344,6 +345,51 @@ export async function voidHouseholdPayment(paymentId: number, reason: string): P
     body: { reason },
     params: { path: { payment_id: paymentId } },
   });
+
+  if (error) {
+    throw buildApiError(response.status, error);
+  }
+
+  return data;
+}
+
+export async function getOpeningBalance(householdId: number): Promise<OpeningBalanceOut | null> {
+  const { data, error, response } = await appApiClient.GET(
+    "/admin/households/{household_id}/opening-balance",
+    { params: { path: { household_id: householdId } } }
+  );
+
+  if (error) {
+    throw buildApiError(response.status, error);
+  }
+
+  return data ?? null;
+}
+
+export async function setOpeningBalance(
+  householdId: number,
+  payload: { amount_uah: string; as_of: string; note?: string }
+): Promise<OpeningBalanceOut> {
+  const { data, error, response } = await appApiClient.POST(
+    "/admin/households/{household_id}/opening-balance",
+    { body: payload, params: { path: { household_id: householdId } } }
+  );
+
+  if (error) {
+    throw buildApiError(response.status, error);
+  }
+
+  return data;
+}
+
+export async function correctOpeningBalance(
+  householdId: number,
+  payload: { amount_uah: string; reason: string }
+): Promise<OpeningBalanceOut> {
+  const { data, error, response } = await appApiClient.POST(
+    "/admin/households/{household_id}/opening-balance/corrections",
+    { body: payload, params: { path: { household_id: householdId } } }
+  );
 
   if (error) {
     throw buildApiError(response.status, error);
