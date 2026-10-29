@@ -1,5 +1,9 @@
 <template>
-  <NoHouseholdScreen v-if="hasNoHousehold" @unblocked="handleUnblocked" />
+  <div v-if="isUnreachable" class="app-offline">
+    <ErrorState message-key="errors.sessionUnreachable" @retry="loadMe" />
+  </div>
+
+  <NoHouseholdScreen v-else-if="hasNoHousehold" @unblocked="handleUnblocked" />
 
   <div v-else-if="me" class="app-layout">
     <aside class="app-sidebar">
@@ -132,6 +136,8 @@
   import { useLocale } from "@features/i18n/composables/useLocale";
   import { useTheme } from "@features/theme/composables/useTheme";
   import { getMe, logoutUser } from "@shared/api/auth";
+  import { setAuthSessionState } from "@shared/api/auth-session";
+  import { ApiError } from "@shared/api/client";
   import type { components } from "@shared/api/generated/openapi";
   import { ROUTES } from "@shared/routing/routes";
 
@@ -149,6 +155,7 @@
   const me = ref<UserOut | null>(null);
   const isLoggingOut = ref(false);
   const hasNoHousehold = ref(false);
+  const isUnreachable = ref(false);
 
   const mainItems = computed(() => [
     { icon: Home, label: t("nav.home"), route: ROUTES.root },
@@ -186,8 +193,23 @@
     },
   ]);
 
-  onMounted(async () => {
-    me.value = await getMe();
+  onMounted(loadMe);
+
+  async function loadMe(): Promise<void> {
+    try {
+      me.value = await getMe();
+    } catch (error) {
+      if (error instanceof ApiError && error.status < 500) {
+        setAuthSessionState(false, false);
+        await router.replace(ROUTES.auth);
+        return;
+      }
+
+      isUnreachable.value = true;
+      return;
+    }
+
+    isUnreachable.value = false;
     setLocale(me.value.language);
     setTheme(me.value.theme);
 
@@ -202,7 +224,7 @@
     setPastOnly(false);
 
     notifyIfSwitched(setHouseholds(me.value.households));
-  });
+  }
 
   function notifyIfSwitched(change: HouseholdSwitch | null): void {
     if (!change?.removedName || !change.switchedTo) {
@@ -259,6 +281,12 @@
 </script>
 
 <style scoped lang="scss">
+  .app-offline {
+    background: var(--s-shell-background);
+    min-height: 100dvh;
+    padding: var(--s-app-space-4);
+  }
+
   .app-layout {
     background: var(--s-shell-background);
     color: var(--s-content-color);

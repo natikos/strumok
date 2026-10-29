@@ -3,6 +3,7 @@ import { Button, Card } from "primevue";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { useCurrentHousehold } from "@/features/households/useCurrentHousehold";
+import ErrorState from "@/shared/components/ErrorState.vue";
 import { appPlugins } from "@/shared/testing/mount";
 import Typography from "@/shared/Typography.vue";
 import type { UserWithHouseholdsOut } from "@shared/api/auth";
@@ -57,6 +58,7 @@ async function mountLayout() {
       components: {
         Button,
         Card,
+        ErrorState,
         Typography,
       },
       stubs: {
@@ -169,5 +171,29 @@ describe("AppLayout household-membership gate", () => {
     await flushPromises();
 
     expect(useCurrentHousehold().isPastOnly.value).toBe(false);
+  });
+});
+
+describe("AppLayout unreachable session", () => {
+  beforeEach(() => {
+    getMe.mockReset();
+    useCurrentHousehold().setHouseholds([]);
+    useCurrentHousehold().setPastOnly(false);
+  });
+
+  it("shows a retry screen when /auth/me fails on the network, then loads on retry", async () => {
+    getMe.mockRejectedValueOnce(new TypeError("Failed to fetch"));
+    getMe.mockResolvedValueOnce(makeMe({ households: [{ id: 7, name: "Plot 7" }] }));
+
+    const wrapper = await mountLayout();
+
+    expect(wrapper.find(".app-offline").exists()).toBe(true);
+    expect(wrapper.find(".app-layout").exists()).toBe(false);
+
+    await wrapper.find(".error-state__retry").trigger("click");
+    await flushPromises();
+
+    expect(wrapper.find(".app-offline").exists()).toBe(false);
+    expect(wrapper.find(".app-layout").exists()).toBe(true);
   });
 });
