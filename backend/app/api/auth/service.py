@@ -6,12 +6,12 @@ from jose import JWTError, jwt
 from jose.exceptions import ExpiredSignatureError
 from passlib.context import CryptContext
 from sqlalchemy.exc import IntegrityError
-from sqlmodel import Session, asc, select
+from sqlmodel import Session, asc, col, select
 
 from app.core.config import settings
 from app.core.email import EmailSendError, send_email
 from app.core.time import now_utc_aware, utc_now
-from app.db.models import Household, User
+from app.db.models import Household, HouseholdOwnership, User
 
 logger = logging.getLogger(__name__)
 
@@ -29,6 +29,20 @@ def list_user_households(*, session: Session, user: User) -> list[Any]:
             .where(Household.is_active == True)  # noqa: E712
             .order_by(asc(Household.created_at))
         ).all()
+    )
+
+
+def has_past_households(*, session: Session, user: User) -> bool:
+    """Whether the user held a plot that is no longer theirs: they keep
+    read-only access to what they were billed and still owe on it."""
+    return (
+        session.exec(
+            select(HouseholdOwnership.id)
+            .join(Household, col(Household.id) == HouseholdOwnership.household_id)
+            .where(HouseholdOwnership.user_id == user.id)
+            .where(col(Household.user_id).is_distinct_from(user.id))
+        ).first()
+        is not None
     )
 
 

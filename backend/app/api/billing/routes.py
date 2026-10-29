@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException, status
 from sqlmodel import Session, col, select
 
 from app.api.billing.bank_coverage import get_coverage, is_awaiting_statement
@@ -103,9 +103,24 @@ def get_my_balance(
     responses=NO_HOUSEHOLD_RESPONSES,
 )
 def get_my_payment_details(
-    _household_id: int = Depends(require_household_id),
+    current_user: User = Depends(get_current_user),
     session: Session = Depends(get_session),
 ) -> PaymentDetailsOut | None:
+    # Former owners still pay off debt on plots they gave up, so any tenure
+    # past or present qualifies, not only a current household.
+    if (
+        not session.exec(
+            select(HouseholdOwnership.id).where(
+                HouseholdOwnership.user_id == current_user.id
+            )
+        ).first()
+        and not session.exec(
+            select(Household.id).where(Household.user_id == current_user.id)
+        ).first()
+    ):
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="noHouseholdMembership"
+        )
     row = get_payment_details(session)
     return PaymentDetailsOut.model_validate(row) if row else None
 
