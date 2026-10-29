@@ -191,6 +191,7 @@
           <TabPanel value="bank">
             <section class="admin-section admin-section--wide">
               <h2 class="admin-section__title">{{ $t("admin.bank.title") }}</h2>
+              <BankCoverageNotice v-if="activeTab === 'bank'" />
               <BankQueuePanel v-if="activeTab === 'bank'" />
             </section>
           </TabPanel>
@@ -211,6 +212,7 @@
   import { ExclamationTriangle } from "@primeicons/vue";
   import { computed, onMounted, ref } from "vue";
 
+  import BankCoverageNotice from "@/features/dashboard/components/BankCoverageNotice.vue";
   import AdminHouseholdAssignment from "@features/admin/AdminHouseholdAssignment.vue";
   import AuditLogPanel from "@features/admin/AuditLogPanel.vue";
   import BalancesPanel from "@features/admin/BalancesPanel.vue";

@@ -7,6 +7,7 @@ export type BalanceOut = components["schemas"]["BalanceOut"];
 export type AdjustmentOut = components["schemas"]["AdjustmentOut"];
 export type HouseholdStatementsOut = components["schemas"]["HouseholdStatementsOut"];
 export type PaymentDetailsOut = components["schemas"]["PaymentDetailsOut"];
+export type BankCoverageOut = components["schemas"]["BankCoverageOut"];
 export type CurrentPeriodOut = components["schemas"]["CurrentPeriodOut"];
 
 export async function getCurrentPeriod(): Promise<CurrentPeriodOut> {
@@ -78,4 +79,14 @@ export async function getPaymentDetails(
   }
 
   return data ?? null;
+}
+
+export async function getBankCoverage(): Promise<BankCoverageOut> {
+  const { data } = await appApiClient.GET("/billing/bank-coverage");
+
+  if (!data) {
+    throw new Error("Bank coverage response was empty");
+  }
+
+  return data;
 }

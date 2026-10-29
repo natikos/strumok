@@ -1,3 +1,4 @@
+from datetime import date
 from decimal import Decimal
 from typing import Literal
 
@@ -85,6 +86,16 @@ class PaymentDetailsOut(BaseModel):
 
     iban: str = Field(examples=["UA213223130000026007233566001"])
     recipient_name: str
+
+
+class BankCoverageOut(BaseModel):
+    """How far imported bank statements reach. `awaiting_statement` is true
+    when none was imported or the newest is stale; `last_imported_at` is only
+    filled for admins."""
+
+    covered_through: date | None
+    awaiting_statement: bool
+    last_imported_at: UtcDatetime | None = None
 
 
 class PaymentDetailsIn(BaseModel):

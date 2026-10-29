@@ -4,6 +4,8 @@
 
     <BalanceStrip @open-history="goToHistory" />
 
+    <BankCoverageNotice />
+
     <div class="dashboard__top">
       <SubmissionCard
         class="dashboard__submission"
@@ -81,6 +83,7 @@
   import { useRouter } from "vue-router";
 
   import BalanceStrip from "@/features/dashboard/components/BalanceStrip.vue";
+  import BankCoverageNotice from "@/features/dashboard/components/BankCoverageNotice.vue";
   import BillSummaryCard from "@/features/dashboard/components/BillSummaryCard.vue";
   import DayNightSplitCard from "@/features/dashboard/components/DayNightSplitCard.vue";
   import EmptyUsageCard from "@/features/dashboard/components/EmptyUsageCard.vue";

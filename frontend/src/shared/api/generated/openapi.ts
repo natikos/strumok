@@ -335,6 +335,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/billing/bank-coverage": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Bank Coverage */
+        get: operations["get_bank_coverage_billing_bank_coverage_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/me/statements": {
         parameters: {
             query?: never;
@@ -1288,6 +1305,20 @@ export interface components {
             households: components["schemas"]["HouseholdBalanceOut"][];
             /** Total Outstanding Uah */
             total_outstanding_uah: string;
+        };
+        /**
+         * BankCoverageOut
+         * @description How far imported bank statements reach. `awaiting_statement` is true
+         *     when none was imported or the newest is stale; `last_imported_at` is only
+         *     filled for admins.
+         */
+        BankCoverageOut: {
+            /** Covered Through */
+            covered_through: string | null;
+            /** Awaiting Statement */
+            awaiting_statement: boolean;
+            /** Last Imported At */
+            last_imported_at?: string | null;
         };
         /** BankStatementErrorOut */
         BankStatementErrorOut: {
@@ -3098,6 +3129,26 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_bank_coverage_billing_bank_coverage_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BankCoverageOut"];
                 };
             };
         };

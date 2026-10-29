@@ -377,6 +377,11 @@
     "setExpired": "This invite link has expired or was already used. Ask the head for a new one.",
     "setDone": "Welcome! Your password is set."
   },
+  "bankCoverage": {
+    "includedUpTo": "Payments included up to {date}",
+    "awaiting": "Awaiting bank statement: recent payments may not be reflected yet",
+    "lastImported": "Last imported {date}"
+  },
   "balance": {
     "owe": "You owe {amount}",
     "unpaidMonths": "{count} unpaid month(s)",
