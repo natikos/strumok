@@ -2,6 +2,7 @@ import logging
 from typing import Any
 
 from fastapi import APIRouter, Cookie, Depends, HTTPException, Request, Response, status
+from fastapi.responses import JSONResponse
 from sqlmodel import Session
 
 from app.api.auth.schemas import (
@@ -162,6 +163,14 @@ def set_auth_cookie(response: Response, *, token: str) -> None:
     )
 
 
+def clear_auth_cookie(response: Response) -> None:
+    response.delete_cookie(
+        key=settings.auth.auth_cookie_name,
+        samesite="lax",
+        secure=settings.auth_cookie_secure,
+    )
+
+
 @router.post(
     "/register",
     status_code=status.HTTP_403_FORBIDDEN,
@@ -234,12 +243,16 @@ def refresh(
 
     try:
         new_token = refresh_access_token(session=session, token=access_token)
-    except InvalidOrExpiredTokenError as exc:
-        raise HTTPException(
+    except InvalidOrExpiredTokenError:
+        # HTTPException would drop cookies set on `response`, so build the
+        # 401 directly to clear the dead cookie in the same reply.
+        rejected = JSONResponse(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="invalidOrExpiredToken",
+            content={"detail": "invalidOrExpiredToken"},
             headers=AUTH_CHALLENGE_HEADERS,
-        ) from exc
+        )
+        clear_auth_cookie(rejected)
+        return rejected
 
     set_auth_cookie(response, token=new_token)
     response.status_code = status.HTTP_204_NO_CONTENT
@@ -265,11 +278,7 @@ def logout(
             if user is not None and token_version == user.token_version:
                 bump_token_version(session=session, user=user)
 
-    response.delete_cookie(
-        key=settings.auth.auth_cookie_name,
-        samesite="lax",
-        secure=settings.auth_cookie_secure,
-    )
+    clear_auth_cookie(response)
     response.status_code = status.HTTP_204_NO_CONTENT
     return response
 

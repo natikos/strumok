@@ -1028,3 +1028,15 @@ class TestMeHasPastHouseholds:
         body = self._me(client, session, a)
         assert [h["id"] for h in body["households"]] == [kept.id]
         assert body["has_past_households"] is True
+
+
+def test_rejected_refresh_clears_the_auth_cookie(client: TestClient) -> None:
+    client.cookies.set(settings.auth.auth_cookie_name, "not-a-jwt")
+
+    response = client.post("/auth/refresh")
+
+    assert response.status_code == 401
+    assert response.json() == {"detail": "invalidOrExpiredToken"}
+    set_cookie = response.headers["set-cookie"]
+    assert set_cookie.startswith(f"{settings.auth.auth_cookie_name}=")
+    assert "Max-Age=0" in set_cookie
