@@ -19,6 +19,7 @@ ALEMBIC_INI = Path(__file__).resolve().parent.parent.parent / "alembic.ini"
 engine = create_engine(
     settings.db.url,
     echo=False,
+    hide_parameters=True,
     poolclass=NullPool,
     connect_args={"client_encoding": "utf8", "prepare_threshold": None},  # noqa: E501
 )

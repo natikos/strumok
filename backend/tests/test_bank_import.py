@@ -1,9 +1,16 @@
 """Bank statement upload (issue #252). Fixtures are synthetic."""
 
-from sqlmodel import Session, func, select
+from sqlmodel import Session, delete, func, select
 
 from app.api.bank.service import MAX_BYTES
-from app.db.models import AuditLog, BankStatementFile, BankTransaction
+from app.api.push.billing_notifications import notify_bank_queue
+from app.core.domain.bank_statement import MAX_ROWS
+from app.db.models import (
+    AuditLog,
+    BankStatementFile,
+    BankTransaction,
+    PaymentDetails,
+)
 from tests.factories import authenticate, make_user
 
 OWN = "UA000000000000000000000000001"
@@ -30,6 +37,8 @@ def _upload(client, data: bytes, name: str = "statement.csv"):
 
 def _admin(client, session: Session):
     admin = make_user(session, is_admin=True)
+    session.add(PaymentDetails(id=1, iban=OWN, recipient_name="Co-op"))
+    session.flush()
     authenticate(client, admin)
     return admin
 
@@ -115,3 +124,52 @@ def test_audit_has_no_pii_and_admins_notified(
     assert len(calls) == 1
     _upload(client, _csv(_row("1.")), "again.csv")
     assert len(calls) == 1
+
+
+def test_oversize_declared_length_rejected_before_auth(client) -> None:
+    res = client.post(
+        "/admin/bank-statements",
+        files={"file": ("s.csv", b"x" * (MAX_BYTES + 20_000), "text/csv")},
+    )
+    assert res.status_code == 413
+
+
+def test_missing_payment_details_refused(client, session: Session) -> None:
+    _admin(client, session)
+    session.exec(delete(PaymentDetails))
+    res = _upload(client, _csv(_row()))
+    assert res.json()["detail"] == "paymentDetailsMissing"
+
+
+def test_wrong_account_and_huge_amount_write_nothing_and_log_nothing(
+    client, session: Session, caplog
+) -> None:
+    _admin(client, session)
+    other = _csv(_row().replace(OWN, "UA999"))
+    assert _upload(client, other).json()["detail"] == "bankStatementWrongAccount"
+    huge = _upload(client, _csv(_row(amount="99999999999.00")))
+    assert huge.status_code == 422
+    assert "Payer" not in caplog.text and "UA111" not in caplog.text
+    assert _tx_count(session) == 0
+    assert session.exec(select(func.count()).select_from(BankStatementFile)).one() == 0
+
+
+def test_too_many_rows_is_refused(client, session: Session) -> None:
+    _admin(client, session)
+    rows = [_row(f"{i}.") for i in range(MAX_ROWS + 1)]
+    res = _upload(client, _csv(*rows))
+    assert res.status_code in (413, 422)
+    assert _tx_count(session) == 0
+
+
+def test_bank_queue_notifies_only_active_admins(session: Session, monkeypatch) -> None:
+    sent: list[str] = []
+    monkeypatch.setattr(
+        "app.api.push.billing_notifications._email_fallback",
+        lambda user, content: sent.append(user.email) or True,
+    )
+    active = make_user(session, is_admin=True)
+    make_user(session, is_admin=True, is_active=False)
+    make_user(session)
+    assert notify_bank_queue(session=session, file_id=1) == 1
+    assert sent == [active.email]

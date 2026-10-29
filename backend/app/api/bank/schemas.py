@@ -9,3 +9,9 @@ class StatementImportOut(BaseModel):
     credits_duplicate: int
     debits_skipped: int
     covered_through: date
+
+
+class BankStatementErrorOut(BaseModel):
+    detail: str
+    row: int | None = None
+    column: str | None = None

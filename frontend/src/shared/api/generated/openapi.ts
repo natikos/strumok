@@ -1221,6 +1221,15 @@ export interface components {
             /** Total Outstanding Uah */
             total_outstanding_uah: string;
         };
+        /** BankStatementErrorOut */
+        BankStatementErrorOut: {
+            /** Detail */
+            detail: string;
+            /** Row */
+            row?: number | null;
+            /** Column */
+            column?: string | null;
+        };
         /** BillIn */
         BillIn: {
             /** Day Kwh */
@@ -4372,7 +4381,7 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorOut"];
                 };
             };
-            /** @description Not a .csv, or the statement cannot be imported */
+            /** @description Not a .csv, no payment details set, or the statement cannot be imported (row and column name the offending cell, never its value). Codes: bankStatementNotCsv, paymentDetailsMissing, bankStatementInvalid, bankStatementTooManyRows, bankStatementWrongAccount */
             422: {
                 headers: {
                     [name: string]: unknown;
@@ -4380,10 +4389,12 @@ export interface operations {
                 content: {
                     /**
                      * @example {
-                     *       "detail": "bankStatementInvalid"
+                     *       "detail": "bankStatementInvalid",
+                     *       "row": 2,
+                     *       "column": "Сума"
                      *     }
                      */
-                    "application/json": components["schemas"]["ErrorOut"];
+                    "application/json": components["schemas"]["BankStatementErrorOut"];
                 };
             };
         };

@@ -22,6 +22,10 @@ class StatementNotCsvError(Exception):
     pass
 
 
+class PaymentDetailsMissingError(Exception):
+    pass
+
+
 @dataclass(frozen=True)
 class ImportResult:
     file_id: int
@@ -68,7 +72,9 @@ def import_statement(
         return found
 
     details = get_payment_details(session)
-    parsed = parse_statement(data, details.iban if details else None)
+    if details is None:
+        raise PaymentDetailsMissingError
+    parsed = parse_statement(data, details.iban)
 
     file = BankStatementFile(
         sha256=sha256,
@@ -146,6 +152,7 @@ def import_statement(
 __all__ = [
     "BankStatementError",
     "ImportResult",
+    "PaymentDetailsMissingError",
     "StatementNotCsvError",
     "StatementTooLargeError",
     "import_statement",

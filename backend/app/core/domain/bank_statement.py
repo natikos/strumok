@@ -36,6 +36,7 @@ REQUIRED_COLUMNS = (
 )
 
 MAX_ROWS = 5000
+MAX_AMOUNT = Decimal(10) ** 10
 
 _AMOUNT_RE = re.compile(r"^-?\d+\.\d{2}$")
 _SPACES = (" ", " ", " ")
@@ -89,9 +90,13 @@ def _parse_amount(raw: str, row: int) -> Decimal:
     if not _AMOUNT_RE.match(text):
         raise BankStatementError("bankStatementInvalid", row, COL_AMOUNT)
     try:
-        return Decimal(text)
+        amount = Decimal(text)
     except InvalidOperation:
         raise BankStatementError("bankStatementInvalid", row, COL_AMOUNT) from None
+    # amount_uah is Numeric(12, 2); anything larger would fail at insert.
+    if abs(amount) >= MAX_AMOUNT:
+        raise BankStatementError("bankStatementInvalid", row, COL_AMOUNT)
+    return amount
 
 
 def _parse_date(raw: str, row: int) -> date:
