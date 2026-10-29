@@ -240,8 +240,8 @@ def create_estimates(*, session: Session, period: str) -> list[MeterReading]:
     previous reading plus the estimated usage (last real month's usage, or the
     co-op median when there's no usage history yet), so the next real reading
     is measured against them and the over- or under-estimate is trued up.
-    Households that never submitted anything have nothing to anchor to and are
-    skipped."""
+    Households with no reading at all (none, not even a baseline) have nothing
+    to anchor to and are skipped."""
     have_reading = set(
         session.exec(
             select(MeterReading.household_id).where(MeterReading.period == period)

@@ -4,7 +4,7 @@ from decimal import Decimal
 
 from sqlmodel import Session, select
 
-from app.api.billing.service import derive_reading_usage
+from app.api.billing.service import create_estimates, derive_reading_usage
 from app.core.domain import current_billing_period, previous_period
 from app.db.models import AuditLog, HouseholdCharge, MeterReading, MeterSegment
 from tests.factories import (
@@ -320,6 +320,21 @@ class TestBaseline:
             D(120),
         )
 
+    def test_a_new_household_without_starting_values_starts_at_zero(
+        self, client, session: Session
+    ) -> None:
+        _admin(client, session)
+        owner = make_user(session)
+
+        response = client.post(
+            "/admin/households", json={"name": "Plot 9", "user_id": owner.id}
+        )
+
+        assert response.status_code == 201, response.text
+        baseline = session.exec(select(MeterReading)).one()
+        assert (baseline.source, baseline.period) == ("baseline", PREVIOUS)
+        assert (baseline.day_meter_value, baseline.night_meter_value) == (D(0), D(0))
+
     def test_starting_values_come_as_a_pair(self, client, session: Session) -> None:
         _admin(client, session)
         owner = make_user(session)
@@ -334,3 +349,81 @@ class TestBaseline:
         )
 
         assert response.status_code == 422
+
+
+class TestDefaultZeroBaseline:
+    def _create(self, client, session: Session, **extra):
+        _admin(client, session)
+        make_electricity_rate(session, day_rate_uah="2", night_rate_uah="1")
+        owner = make_user(session)
+        response = client.post(
+            "/admin/households",
+            json={"name": "Plot 9", "user_id": owner.id, **extra},
+        )
+        assert response.status_code == 201, response.text
+        return owner, response.json()["id"]
+
+    def _submit(self, client, owner, household_id: int, day: str, night: str):
+        authenticate(client, owner)
+        response = client.post(
+            "/meter-readings",
+            json={
+                "household_id": household_id,
+                "period": CURRENT,
+                "day_meter_value": day,
+                "night_meter_value": night,
+            },
+        )
+        assert response.status_code == 201, response.text
+        return response
+
+    def test_the_default_zero_baseline_is_audited(
+        self, client, session: Session
+    ) -> None:
+        self._create(client, session)
+
+        entry = session.exec(
+            select(AuditLog).where(AuditLog.action == "baselineSet")
+        ).one()
+        assert entry is not None
+
+    def test_the_first_resident_reading_without_starting_values_is_all_usage(
+        self, client, session: Session
+    ) -> None:
+        owner, household_id = self._create(client, session)
+
+        response = self._submit(client, owner, household_id, "312.45", "87.10")
+
+        reading = session.get(MeterReading, response.json()["id"])
+        assert derive_reading_usage(session=session, reading=reading) == (
+            D("312.45"),
+            D("87.10"),
+        )
+
+    def test_explicit_starting_values_are_not_billed_as_usage(
+        self, client, session: Session
+    ) -> None:
+        owner, household_id = self._create(
+            client,
+            session,
+            starting_day_meter_value="250.50",
+            starting_night_meter_value="120",
+        )
+
+        response = self._submit(client, owner, household_id, "312.45", "187.10")
+
+        reading = session.get(MeterReading, response.json()["id"])
+        assert derive_reading_usage(session=session, reading=reading) == (
+            D("61.95"),
+            D("67.10"),
+        )
+
+    def test_a_never_submitted_household_with_the_default_baseline_is_estimated(
+        self, client, session: Session
+    ) -> None:
+        _, household_id = self._create(client, session)
+
+        created = create_estimates(session=session, period=CURRENT)
+
+        estimate = next(r for r in created if r.household_id == household_id)
+        assert (estimate.period, estimate.source) == (CURRENT, "estimate")
