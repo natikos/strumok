@@ -1,12 +1,29 @@
 import logging
 from typing import Any
 
-from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
+from fastapi import (
+    APIRouter,
+    Depends,
+    File,
+    HTTPException,
+    Response,
+    UploadFile,
+    status,
+)
 from fastapi.responses import JSONResponse
 from sqlmodel import Session
 
 from app.api.auth.schemas import ErrorOut
-from app.api.bank.schemas import BankStatementErrorOut, StatementImportOut
+from app.api.bank import review
+from app.api.bank.schemas import (
+    BankStatementErrorOut,
+    BankTransactionOut,
+    ConfirmedPaymentOut,
+    ConfirmIn,
+    LinkCandidateOut,
+    LinkIn,
+    StatementImportOut,
+)
 from app.api.bank.service import (
     MAX_BYTES,
     BankStatementError,
@@ -100,3 +117,141 @@ def upload_statement(
         debits_skipped=result.debits_skipped,
         covered_through=result.covered_through,
     )
+
+
+review_router = APIRouter(
+    prefix="/admin/bank-transactions",
+    tags=["bank"],
+    dependencies=[Depends(require_admin)],
+)
+
+
+def _error(code: int, *details: str) -> dict[str, Any]:
+    return {
+        "description": ", ".join(details),
+        "model": ErrorOut,
+        "content": {
+            "application/json": {
+                "examples": {d: {"value": {"detail": d}} for d in details}
+            }
+        },
+    }
+
+
+_RESOLVE_RESPONSES: dict[int | str, dict[str, Any]] = {
+    404: _error(404, "bankTransactionNotFound", "householdNotFound"),
+    409: _error(409, "bankTransactionResolved"),
+}
+
+
+@review_router.get("", response_model=list[BankTransactionOut])
+def list_queue(session: Session = Depends(get_session)) -> list[BankTransactionOut]:
+    return [
+        BankTransactionOut(
+            id=item.transaction.id,
+            operation_date=item.transaction.operation_date,
+            amount_uah=item.transaction.amount_uah,
+            payer_name=item.transaction.payer_name,
+            purpose=item.transaction.purpose,
+            suggested_household_id=item.transaction.suggested_household_id,
+            suggestion_source=item.transaction.suggestion_source,
+            link_candidates=[
+                LinkCandidateOut(
+                    payment_id=p.id, household_id=p.household_id, paid_on=p.paid_on
+                )
+                for p in item.link_candidates
+            ],
+        )
+        for item in review.list_queue(session)
+    ]
+
+
+@review_router.post(
+    "/{transaction_id}/confirm",
+    response_model=list[ConfirmedPaymentOut],
+    responses={
+        **_RESOLVE_RESPONSES,
+        422: _error(422, "splitInvalid", "beforeOpeningBalance"),
+    },
+)
+def confirm_transaction(
+    transaction_id: int,
+    payload: ConfirmIn,
+    session: Session = Depends(get_session),
+    admin: User = CurrentAdmin,
+) -> list[ConfirmedPaymentOut]:
+    try:
+        payments = review.confirm(
+            session,
+            transaction_id=transaction_id,
+            lines=[
+                review.SplitLine(line.household_id, line.amount_uah)
+                for line in payload.lines
+            ],
+            actor_id=admin.id,
+        )
+    except review.BankTransactionNotFoundError as exc:
+        raise HTTPException(404, "bankTransactionNotFound") from exc
+    except review.HouseholdNotFoundError as exc:
+        raise HTTPException(404, "householdNotFound") from exc
+    except review.BankTransactionResolvedError as exc:
+        raise HTTPException(409, "bankTransactionResolved") from exc
+    except review.SplitInvalidError as exc:
+        raise HTTPException(422, "splitInvalid") from exc
+    except review.BeforeOpeningBalanceError as exc:
+        raise HTTPException(422, "beforeOpeningBalance") from exc
+    return [
+        ConfirmedPaymentOut(
+            payment_id=p.id, household_id=p.household_id, amount_uah=p.amount_uah
+        )
+        for p in payments
+    ]
+
+
+@review_router.post(
+    "/{transaction_id}/link",
+    status_code=status.HTTP_204_NO_CONTENT,
+    responses={
+        **_RESOLVE_RESPONSES,
+        422: _error(422, "manualPaymentNotLinkable"),
+    },
+)
+def link_transaction(
+    transaction_id: int,
+    payload: LinkIn,
+    session: Session = Depends(get_session),
+    admin: User = CurrentAdmin,
+) -> Response:
+    try:
+        review.link(
+            session,
+            transaction_id=transaction_id,
+            payment_id=payload.payment_id,
+            actor_id=admin.id,
+        )
+    except review.BankTransactionNotFoundError as exc:
+        raise HTTPException(404, "bankTransactionNotFound") from exc
+    except review.BankTransactionResolvedError as exc:
+        raise HTTPException(409, "bankTransactionResolved") from exc
+    except review.ManualPaymentNotLinkableError as exc:
+        raise HTTPException(422, "manualPaymentNotLinkable") from exc
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
+@review_router.post(
+    "/{transaction_id}/dismiss",
+    status_code=status.HTTP_204_NO_CONTENT,
+    responses=_RESOLVE_RESPONSES,
+)
+def dismiss_transaction(
+    transaction_id: int,
+    session: Session = Depends(get_session),
+    admin: User = CurrentAdmin,
+) -> Response:
+    try:
+        review.dismiss(session, transaction_id=transaction_id, actor_id=admin.id)
+    except review.BankTransactionNotFoundError as exc:
+        raise HTTPException(404, "bankTransactionNotFound") from exc
+    except review.BankTransactionResolvedError as exc:
+        raise HTTPException(409, "bankTransactionResolved") from exc
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
