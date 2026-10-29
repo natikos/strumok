@@ -10,7 +10,18 @@ export const API_BASE_URL =
   import.meta.env.VITE_API_BASE_URL ?? (import.meta.env.DEV ? "http://localhost:8000" : "");
 const REFRESH_ENDPOINT_PATH = "/auth/refresh";
 
-let refreshPromise: Promise<boolean> | null = null;
+// "rejected" is the server refusing the session (expired, revoked);
+// "unreachable" is a network failure, which must not log the resident out.
+type RefreshOutcome = "refreshed" | "rejected" | "unreachable";
+
+let refreshPromise: Promise<RefreshOutcome> | null = null;
+let sessionExpiredHandler: (() => void) | null = null;
+
+// Registered by main.ts, which owns the router; the client can't import it
+// without a cycle.
+export function registerSessionExpiredHandler(handler: () => void): void {
+  sessionExpiredHandler = handler;
+}
 
 export class ApiError extends Error {
   public readonly status: number;
@@ -42,12 +53,18 @@ export const authApiClient = createClient<paths>({
   fetch: (request) => fetch(request, { credentials: "include" }),
 });
 
-async function refreshAccessToken(): Promise<boolean> {
+async function refreshAccessToken(): Promise<RefreshOutcome> {
   if (!refreshPromise) {
     refreshPromise = authApiClient
       .POST(REFRESH_ENDPOINT_PATH)
-      .then(({ response }) => response.ok)
-      .catch(() => false)
+      .then(({ response }): RefreshOutcome => {
+        if (response.ok) {
+          return "refreshed";
+        }
+
+        return response.status < 500 ? "rejected" : "unreachable";
+      })
+      .catch((): RefreshOutcome => "unreachable")
       .finally(() => {
         refreshPromise = null;
       });
@@ -66,10 +83,12 @@ appApiClient.use({
     const isRefreshRequest = requestPath.endsWith(REFRESH_ENDPOINT_PATH);
 
     if (effectiveResponse.status === 401 && !isRefreshRequest) {
-      const isRefreshed = await refreshAccessToken();
+      const outcome = await refreshAccessToken();
 
-      if (isRefreshed) {
+      if (outcome === "refreshed") {
         effectiveResponse = await fetch(new Request(request, { credentials: "include" }));
+      } else if (outcome === "rejected") {
+        sessionExpiredHandler?.();
       }
     }
 
