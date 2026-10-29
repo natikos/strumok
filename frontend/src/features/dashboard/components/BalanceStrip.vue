@@ -78,8 +78,13 @@
   const hasCurrent = computed(() => !isPastOnly.value);
   // Pay only the current plot's own balance (not the gave-up-plots debt shown in
   // the strip total): the head reconciles per household.
+  // A credit on one gave-up plot can't settle another's debt (the head
+  // reconciles per household), so only the plots that owe are paid.
+  const owingPast = computed(() => past.value.filter((p) => toDecimal(p.balance.balance_uah) > 0));
   const ownBalance = computed(() =>
-    hasCurrent.value ? toDecimal(balance.value?.balance_uah) : pastBalance.value
+    hasCurrent.value
+      ? toDecimal(balance.value?.balance_uah)
+      : owingPast.value.reduce((sum, p) => sum + toDecimal(p.balance.balance_uah), 0)
   );
   const payable = computed(() => ownBalance.value > 0 && paymentDetails.value !== null);
   const payAmount = computed(() => ownBalance.value.toFixed(2));
@@ -88,7 +93,7 @@
       t("balance.payPurposeLabel"),
       hasCurrent.value
         ? households.value.map((h) => h.id)
-        : past.value.filter((p) => toDecimal(p.balance.balance_uah) > 0).map((p) => p.household_id)
+        : owingPast.value.map((p) => p.household_id)
     )
   );
   const householdName = computed(() =>
