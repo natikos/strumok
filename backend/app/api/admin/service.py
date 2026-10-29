@@ -21,7 +21,11 @@ from app.core import audit
 from app.core.ownership import set_owner
 from app.api.billing.payments import get_balance
 from app.api.billing.service import derive_reading_usage
-from app.core.domain import current_billing_period, previous_period
+from app.core.domain import (
+    current_billing_period,
+    period_window_closed,
+    previous_period,
+)
 from app.core.time import utc_now
 from app.db.models import (
     AuditLog,
@@ -431,9 +435,64 @@ def assign_household_owner(
         },
     )
     set_owner(session, household, user_id, handover=handover)
+    if handover is not None:
+        _record_handover_reading(
+            session=session,
+            household_id=household.id,
+            values=handover,
+            actor_id=actor_id,
+        )
     session.commit()
     session.refresh(household)
     return household, owner
+
+
+def _record_handover_reading(
+    *,
+    session: Session,
+    household_id: int,
+    values: tuple[Decimal, Decimal],
+    actor_id: int,
+) -> None:
+    """A handover while residents still report the open period (days 1-5)
+    stands in for that period's reading, so it's billed on real values to the
+    outgoing owner instead of estimated and penalised."""
+    period = current_billing_period()
+    if period_window_closed(period):
+        # Later in the month the meter already counts the new month's usage.
+        return
+    billing_period = session.get(BillingPeriod, period)
+    if billing_period is not None and billing_period.status == "closed":
+        return
+    if session.exec(
+        select(MeterReading.id)
+        .where(MeterReading.household_id == household_id)
+        .where(MeterReading.period == period)
+    ).first():
+        return
+    reading = MeterReading(
+        household_id=household_id,
+        submitted_by_user_id=actor_id,
+        period=period,
+        day_meter_value=values[0],
+        night_meter_value=values[1],
+        source="admin",
+        corrected_at=utc_now(),
+        correction_reason="Handover meter reading",
+    )
+    session.add(reading)
+    session.flush()
+    audit.record(
+        session,
+        actor_user_id=actor_id,
+        action="readingSubmittedOnBehalf",
+        entity_type="meter_reading",
+        entity_id=reading.id,
+        household_id=household_id,
+        period=period,
+        after={"day": values[0], "night": values[1]},
+        reason="Handover meter reading",
+    )
 
 
 AUDIT_PAGE_SIZE = 50
