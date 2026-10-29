@@ -391,3 +391,70 @@ class TestOwnershipStaysInSync:
             .order_by(HouseholdOwnership.id)
         ).all()
         assert users == [old.id, new.id]
+
+
+class TestUnassignThenAssign:
+    def _unassign(self, client, household_id: int):
+        response = client.patch(
+            f"/admin/households/{household_id}/owner",
+            json={"user_id": None, "confirm_reassignment": True},
+        )
+        assert response.status_code == 200, response.text
+
+    def test_a_new_owner_after_unassigning_needs_a_handover_reading(
+        self, client, session: Session
+    ) -> None:
+        _admin(client, session)
+        old, new = make_user(session), make_user(session)
+        household = make_household(session, user_id=old.id)
+        self._unassign(client, household.id)
+
+        response = client.patch(
+            f"/admin/households/{household.id}/owner", json={"user_id": new.id}
+        )
+
+        assert response.status_code == 409
+        assert response.json()["detail"] == "handoverReadingRequired"
+        session.refresh(household)
+        assert household.user_id is None
+
+    def test_the_outgoing_owners_debt_needs_acknowledgement(
+        self, client, session: Session
+    ) -> None:
+        _admin(client, session)
+        old, new = make_user(session), make_user(session)
+        household = make_household(session, user_id=old.id)
+        _charge(session, household.id, old.id, "2024-01", "300.00")
+        self._unassign(client, household.id)
+
+        refused = _transfer(client, household.id, new.id)
+        assert refused.status_code == 409
+        assert refused.json()["detail"] == "householdHasOutstandingBalance"
+
+        accepted = _transfer(client, household.id, new.id, acknowledge_balance=True)
+        assert accepted.status_code == 200, accepted.text
+        rows = session.exec(
+            select(HouseholdOwnership)
+            .where(HouseholdOwnership.household_id == household.id)
+            .order_by(HouseholdOwnership.valid_from)
+        ).all()
+        assert [row.user_id for row in rows] == [old.id, new.id]
+        assert rows[0].handover_day_meter_value == D("500")
+        audit = session.exec(
+            select(AuditLog).where(AuditLog.action == "householdTransferred")
+        ).one()
+        assert audit.before == {"user_id": None, "outgoing_user_id": old.id}
+
+    def test_returning_the_plot_to_its_last_owner_needs_no_handover(
+        self, client, session: Session
+    ) -> None:
+        _admin(client, session)
+        old = make_user(session)
+        household = make_household(session, user_id=old.id)
+        self._unassign(client, household.id)
+
+        response = client.patch(
+            f"/admin/households/{household.id}/owner", json={"user_id": old.id}
+        )
+
+        assert response.status_code == 200, response.text

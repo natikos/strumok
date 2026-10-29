@@ -52,6 +52,18 @@ def set_owner(
         # The partial unique index allows one open row per household, so the
         # close must reach the database before the next row opens.
         session.flush()
+    elif handover is not None:
+        # Already unowned: the handover closes out whoever held it last.
+        last_row = session.exec(
+            select(HouseholdOwnership)
+            .where(HouseholdOwnership.household_id == household.id)
+            .order_by(col(HouseholdOwnership.valid_from).desc())
+        ).first()
+        if last_row is not None:
+            last_row.handover_day_meter_value, last_row.handover_night_meter_value = (
+                handover
+            )
+            session.add(last_row)
     if user_id is not None:
         session.add(
             HouseholdOwnership(
@@ -61,6 +73,15 @@ def set_owner(
     household.user_id = user_id
     session.add(household)
     session.flush()
+
+
+def last_owner_id(session: Session, household_id: int) -> int | None:
+    """Whoever held the plot most recently, open tenure or not."""
+    return session.exec(
+        select(HouseholdOwnership.user_id)
+        .where(HouseholdOwnership.household_id == household_id)
+        .order_by(col(HouseholdOwnership.valid_from).desc())
+    ).first()
 
 
 def period_end(period: str) -> datetime:

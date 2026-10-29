@@ -41,17 +41,17 @@ def test_reading_for_the_open_period_is_listed_for_an_owner_assigned_this_month(
     assert (
         client.patch(
             f"/admin/households/{household_id}/owner",
-            json={"user_id": resident.id, "confirm_reassignment": True},
+            json={
+                "user_id": resident.id,
+                "confirm_reassignment": True,
+                "handover_day_meter_value": "1234",
+                "handover_night_meter_value": "567",
+            },
         ).status_code
         == 200
     )
 
     authenticate(client, resident)
-    submitted = client.post(
-        f"/meter-readings?household_id={household_id}",
-        json={"period": "2026-06", "day_meter_value": 1234, "night_meter_value": 567},
-    )
-    assert submitted.status_code == 201
 
     listed = client.get(f"/meter-readings?household_id={household_id}").json()
     assert "2026-06" in [row["period"] for row in listed]

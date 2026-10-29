@@ -63,10 +63,17 @@ export async function unassignHousehold(
 export async function assignOwner(
   admin: APIRequestContext,
   householdId: number,
-  userId: number
+  { userId, handover }: { userId: number; handover?: { day: string; night: string } }
 ): Promise<void> {
   const response = await admin.patch(`/admin/households/${householdId}/owner`, {
-    data: { user_id: userId, confirm_reassignment: true },
+    data: {
+      user_id: userId,
+      confirm_reassignment: true,
+      ...(handover && {
+        handover_day_meter_value: handover.day,
+        handover_night_meter_value: handover.night,
+      }),
+    },
   });
   expect(response.status(), await response.text()).toBe(200);
 }

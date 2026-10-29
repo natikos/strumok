@@ -300,6 +300,7 @@
     "handoverRequired": "Enter both meter values at the handover",
     "balanceConfirmTitle": "Previous owner has an unpaid balance",
     "balanceConfirmBody": "{owner} still owes money for this household. The balance stays with them and is not passed on to the new owner. Transfer anyway?",
+    "balanceConfirmBodyPrevious": "The previous owner still owes money for this household. The balance stays with them and is not passed on to the new owner. Transfer anyway?",
     "balanceConfirmAccept": "Transfer anyway",
     "bank": {
       "title": "Bank credits",
