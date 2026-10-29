@@ -78,16 +78,22 @@ class UserOut(BaseModel):
 
 class UserWithHouseholdsOut(UserOut):
     households: list[HouseholdSummary]
+    has_past_households: bool = False
 
     @classmethod
     def from_user_with_households(
-        cls, user: User, *, households: Sequence[Any]
+        cls,
+        user: User,
+        *,
+        households: Sequence[Any],
+        has_past_households: bool = False,
     ) -> "UserWithHouseholdsOut":
         base = UserOut.from_user(user)
         return cls.model_validate(
             {
                 **base.model_dump(),
                 "households": [HouseholdSummary.model_validate(h) for h in households],
+                "has_past_households": has_past_households,
             }
         )
 

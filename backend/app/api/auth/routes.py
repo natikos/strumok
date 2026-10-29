@@ -30,6 +30,7 @@ from app.api.auth.service import (
     confirm_password_reset,
     create_access_token,
     get_user_id_and_version_for_logout,
+    has_past_households,
     list_user_households,
     refresh_access_token,
     request_email_change,
@@ -280,7 +281,9 @@ def me(
 ) -> UserWithHouseholdsOut:
     households = list_user_households(session=session, user=current_user)
     return UserWithHouseholdsOut.from_user_with_households(
-        current_user, households=households
+        current_user,
+        households=households,
+        has_past_households=has_past_households(session=session, user=current_user),
     )
 
 

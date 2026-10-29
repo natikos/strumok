@@ -37,6 +37,7 @@ function makeMe(overrides: Partial<UserWithHouseholdsOut> = {}): UserWithHouseho
     first_name: "Olena",
     last_name: "Kovalenko",
     is_admin: false,
+    has_past_households: false,
     is_active: true,
     email_verified: true,
     verification_email_retry_after_seconds: 0,
@@ -88,6 +89,17 @@ describe("NoHouseholdScreen", () => {
 
     expect(wrapper.emitted("unblocked")).toEqual([[updatedMe]]);
     expect(wrapper.find(".no-household-card__notice").exists()).toBe(false);
+  });
+
+  it("emits unblocked for a former owner who has no plot but has past households", async () => {
+    const updatedMe = makeMe({ households: [], has_past_households: true });
+    getMe.mockResolvedValue(updatedMe);
+
+    const wrapper = mountScreen();
+    await findButton(wrapper, "Check again")?.trigger("click");
+    await flushPromises();
+
+    expect(wrapper.emitted("unblocked")).toEqual([[updatedMe]]);
   });
 
   it("shows the still-not-assigned notice and does not emit when the resident remains unassigned", async () => {

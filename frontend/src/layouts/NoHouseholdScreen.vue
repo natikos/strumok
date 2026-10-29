@@ -72,7 +72,7 @@
     try {
       const me = await getMe();
 
-      if (me.households.length > 0) {
+      if (me.households.length > 0 || me.has_past_households) {
         emit("unblocked", me);
         return;
       }

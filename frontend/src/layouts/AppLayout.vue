@@ -141,7 +141,7 @@
   const route = useRoute();
   const { setLocale } = useLocale();
   const { setTheme } = useTheme();
-  const { households, currentId, setHouseholds, setCurrent } = useCurrentHousehold();
+  const { households, currentId, setHouseholds, setPastOnly, setCurrent } = useCurrentHousehold();
 
   const { t } = useI18n();
   const toast = useToast();
@@ -193,9 +193,13 @@
 
     if (me.value.households.length === 0) {
       setHouseholds([]);
-      hasNoHousehold.value = true;
+      // A former owner keeps read-only access to their past plots' bills and debt.
+      setPastOnly(me.value.has_past_households);
+      hasNoHousehold.value = !me.value.has_past_households;
       return;
     }
+
+    setPastOnly(false);
 
     notifyIfSwitched(setHouseholds(me.value.households));
   });
@@ -218,6 +222,7 @@
   function handleUnblocked(updatedMe: UserOut): void {
     me.value = updatedMe;
     setHouseholds(updatedMe.households);
+    setPastOnly(updatedMe.households.length === 0);
     hasNoHousehold.value = false;
   }
 

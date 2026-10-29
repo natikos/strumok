@@ -4,76 +4,81 @@
 
     <BalanceStrip @open-history="goToHistory" />
 
-    <ShortfallNotice />
-
-    <BankCoverageNotice />
-
-    <div class="dashboard__top">
-      <SubmissionCard
-        class="dashboard__submission"
-        :status="deadlineStatus"
-        :days-left="daysLeft"
-        :billing-month-index="billingMonthIndex"
-        :errors="errors"
-        :day-meter-value="dayMeterValue"
-        :night-meter-value="nightMeterValue"
-        :is-submitting="isSubmitting"
-        :is-loading="isLoading"
-        :is-first-period="isFirstPeriod"
-        :submitted-at="currentSlot?.reading?.submitted_at"
-        :submitted-day-value="currentSlot?.reading?.day_meter_value"
-        :submitted-night-value="currentSlot?.reading?.night_meter_value"
-        :last-period="lastSubmittedPeriod"
-        :previous-day-meter-value="previousMeterValues.day"
-        :previous-night-meter-value="previousMeterValues.night"
-        :closed-note="closedNote"
-        :warning="plausibilityWarning"
-        :warning-acknowledged="warningAcknowledged"
-        :is-offline="isOffline"
-        @update:day-meter-value="dayMeterValue = $event"
-        @update:night-meter-value="nightMeterValue = $event"
-        @submit="submitReading"
-      />
-
-      <StatTilesCard
-        class="dashboard__stat-tiles"
-        :last-period="lastSubmittedPeriod"
-        :mom-change="momChange"
-        :days-into-period="daysIntoPeriod"
-        :season-comparison="seasonComparison"
-        :missed-periods="missedPeriods"
-        :is-loading="isLoading"
-      />
-    </div>
-
-    <FirstRunGuideCard v-if="showFirstRunGuide" />
-
-    <BillSummaryCard />
-
-    <!-- With no readings at all there is nothing to chart, split or compare, so
-         one dashed card stands in for the whole analytics block. -->
-    <EmptyUsageCard v-if="showEmptyUsage" />
+    <!-- A former owner with no plot left sees only what they were billed. -->
+    <PastHouseholds v-if="isPastOnly" />
 
     <template v-else>
-      <UsageChartCard :series="trendSeries" :is-loading="isLoading" />
+      <ShortfallNotice />
 
-      <div class="dashboard__insights">
-        <YearOverYearCard
-          :comparison="yearOverYear"
-          :empty-month="yoyEmptyMonth"
-          :empty-year="yoyEmptyYear"
+      <BankCoverageNotice />
+
+      <div class="dashboard__top">
+        <SubmissionCard
+          class="dashboard__submission"
+          :status="deadlineStatus"
+          :days-left="daysLeft"
+          :billing-month-index="billingMonthIndex"
+          :errors="errors"
+          :day-meter-value="dayMeterValue"
+          :night-meter-value="nightMeterValue"
+          :is-submitting="isSubmitting"
           :is-loading="isLoading"
+          :is-first-period="isFirstPeriod"
+          :submitted-at="currentSlot?.reading?.submitted_at"
+          :submitted-day-value="currentSlot?.reading?.day_meter_value"
+          :submitted-night-value="currentSlot?.reading?.night_meter_value"
+          :last-period="lastSubmittedPeriod"
+          :previous-day-meter-value="previousMeterValues.day"
+          :previous-night-meter-value="previousMeterValues.night"
+          :closed-note="closedNote"
+          :warning="plausibilityWarning"
+          :warning-acknowledged="warningAcknowledged"
+          :is-offline="isOffline"
+          @update:day-meter-value="dayMeterValue = $event"
+          @update:night-meter-value="nightMeterValue = $event"
+          @submit="submitReading"
         />
 
-        <DayNightSplitCard
-          :split="dayNightSplit"
-          :show-night-note="true"
+        <StatTilesCard
+          class="dashboard__stat-tiles"
+          :last-period="lastSubmittedPeriod"
+          :mom-change="momChange"
+          :days-into-period="daysIntoPeriod"
+          :season-comparison="seasonComparison"
+          :missed-periods="missedPeriods"
           :is-loading="isLoading"
-          @view-history="goToHistory"
         />
-
-        <SeasonCard class="dashboard__desktop-only" :seasons="seasonAverages" />
       </div>
+
+      <FirstRunGuideCard v-if="showFirstRunGuide" />
+
+      <BillSummaryCard />
+
+      <!-- With no readings at all there is nothing to chart, split or compare, so
+         one dashed card stands in for the whole analytics block. -->
+      <EmptyUsageCard v-if="showEmptyUsage" />
+
+      <template v-else>
+        <UsageChartCard :series="trendSeries" :is-loading="isLoading" />
+
+        <div class="dashboard__insights">
+          <YearOverYearCard
+            :comparison="yearOverYear"
+            :empty-month="yoyEmptyMonth"
+            :empty-year="yoyEmptyYear"
+            :is-loading="isLoading"
+          />
+
+          <DayNightSplitCard
+            :split="dayNightSplit"
+            :show-night-note="true"
+            :is-loading="isLoading"
+            @view-history="goToHistory"
+          />
+
+          <SeasonCard class="dashboard__desktop-only" :seasons="seasonAverages" />
+        </div>
+      </template>
     </template>
   </div>
 </template>
@@ -99,13 +104,14 @@
   import { useCurrentPeriodState } from "@/features/dashboard/composables/useCurrentPeriodState";
   import { useMeterReadings } from "@/features/dashboard/composables/useMeterReadings.ts";
   import PastHouseholdNotice from "@/features/households/components/PastHouseholdNotice.vue";
+  import PastHouseholds from "@/features/households/components/PastHouseholds.vue";
   import { useCurrentHousehold } from "@/features/households/useCurrentHousehold";
   import { useLocale } from "@/features/i18n/composables/useLocale";
   import { ROUTES } from "@shared/routing/routes";
   import { periodToDate } from "@shared/utils/billing-period";
   import { formatKwh, formatUah } from "@shared/utils/format";
 
-  const { currentId } = useCurrentHousehold();
+  const { currentId, isPastOnly } = useCurrentHousehold();
   const { intlLocale } = useLocale();
   const router = useRouter();
   const { t } = useI18n();
@@ -198,6 +204,10 @@
   }
 
   onMounted(async () => {
+    if (isPastOnly.value) {
+      return;
+    }
+
     await loadHistory();
     await periodState.load();
   });
