@@ -35,7 +35,7 @@ from app.api.bank.service import (
     import_statement,
 )
 from app.api.deps import require_admin
-from app.api.push.billing_notifications import notify_bank_queue
+from app.api.push.billing_notifications import notify_bank_queue, notify_shortfall
 from app.db import get_session
 from app.db.models import User
 
@@ -112,6 +112,10 @@ def upload_statement(
             notify_bank_queue(session=session, file_id=result.file_id)
         except Exception:
             logger.exception("Bank queue notification failed")
+    try:
+        notify_shortfall(session=session)
+    except Exception:
+        logger.exception("Shortfall notification failed")
     return StatementImportOut(
         already_imported=result.already_imported,
         credits_new=result.credits_new,

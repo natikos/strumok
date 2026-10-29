@@ -12,6 +12,7 @@ from decimal import Decimal
 from sqlalchemy.dialects.postgresql import insert
 from sqlmodel import Session, col, delete, select
 
+from app.api.billing.shortfall import household_shortfall, settled_window
 from app.api.push.service import SendOutcome, send_one
 from app.core.email import EmailSendError, send_email
 from app.core.time import utc_now
@@ -270,3 +271,82 @@ def notify_bank_queue(*, session: Session, file_id: int) -> int:
         variant="bankQueue",
         content_for={a.id: bank_queue_content(a) for a in admins},
     )
+
+
+def shortfall_content(user: User, *, period: str, owed: Decimal) -> Content:
+    if _lang(user) == LanguageCode.EN:
+        return {
+            "title": "Payment due",
+            "body": f"Your {period} bill is past due. You still owe {owed:.2f} ₴.",
+        }
+    return {
+        "title": "Час сплатити",
+        "body": f"Термін оплати за {period} минув. Ви ще винні {owed:.2f} ₴.",
+    }
+
+
+def ownerless_shortfall_content(
+    user: User, *, period: str, names: Sequence[str]
+) -> Content:
+    listed = ", ".join(names)
+    if _lang(user) == LanguageCode.EN:
+        return {
+            "title": "Unpaid households without an owner",
+            "body": f"{len(names)} households owe for {period} but have no owner: {listed}",
+        }
+    return {
+        "title": "Борг ділянок без власника",
+        "body": f"{len(names)} ділянок мають борг за {period}, але не мають власника: {listed}",
+    }
+
+
+def notify_shortfall(*, session: Session) -> int:
+    """Once the statement has covered the due date with the review queue clear,
+    tells each owner who still owes their current balance (overpaid owners get
+    nothing) and the admins which indebted households have no owner. Safe to
+    call after every import and close: `notification_log` makes it once."""
+    window = settled_window(session)
+    if window is None:
+        return 0
+    owed_by_user: dict[int, Decimal] = {}
+    ownerless: list[str] = []
+    for household in session.exec(
+        select(Household).where(Household.is_active).order_by(Household.name)
+    ):
+        owed = household_shortfall(session, window, household)
+        if owed <= 0:
+            continue
+        if household.user_id is None:
+            ownerless.append(household.name)
+        else:
+            owed_by_user[household.user_id] = (
+                owed_by_user.get(household.user_id, Decimal("0.00")) + owed
+            )
+    users = {
+        u.id: u
+        for u in session.exec(select(User).where(col(User.id).in_(owed_by_user)))
+    }
+    reached = notify_users(
+        session=session,
+        period=window.period,
+        variant="shortfall",
+        content_for={
+            uid: shortfall_content(users[uid], period=window.period, owed=owed)
+            for uid, owed in owed_by_user.items()
+            if uid in users
+        },
+    )
+    if ownerless:
+        admins = session.exec(select(User).where(User.is_admin, User.is_active)).all()
+        reached += notify_users(
+            session=session,
+            period=window.period,
+            variant="shortfallOwnerless",
+            content_for={
+                a.id: ownerless_shortfall_content(
+                    a, period=window.period, names=ownerless
+                )
+                for a in admins
+            },
+        )
+    return reached

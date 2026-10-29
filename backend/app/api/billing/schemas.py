@@ -98,6 +98,15 @@ class BankCoverageOut(BaseModel):
     last_imported_at: UtcDatetime | None = None
 
 
+class ShortfallOut(BaseModel):
+    """`active` once the statement has covered the due date, nothing dated
+    before it is awaiting review, and the household still owes."""
+
+    active: bool
+    due_date: date | None = None
+    owed_uah: Decimal = Decimal("0.00")
+
+
 class PaymentDetailsIn(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
