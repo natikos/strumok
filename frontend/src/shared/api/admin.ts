@@ -9,6 +9,7 @@ export type AdminUserSummaryOut = components["schemas"]["AdminUserSummaryOut"];
 export type AdminHouseholdOut = components["schemas"]["AdminHouseholdOut"];
 export type AdminDashboardOut = components["schemas"]["AdminDashboardOut"];
 export type PeriodOverviewOut = components["schemas"]["PeriodOverviewOut"];
+export type PeriodCloseOut = components["schemas"]["PeriodCloseOut"];
 export type ReconciliationOut = components["schemas"]["ReconciliationOut"];
 export type RestatementOut = components["schemas"]["RestatementOut"];
 export type BalancesOut = components["schemas"]["BalancesOut"];
@@ -166,7 +167,7 @@ export async function listAdminPeriods(): Promise<PeriodOverviewOut[]> {
 export async function closeAdminPeriod(
   period: string,
   acknowledgeFlags = false
-): Promise<PeriodOverviewOut> {
+): Promise<PeriodCloseOut> {
   const { data, error, response } = await appApiClient.POST("/admin/periods/{period}/close", {
     body: { acknowledge_flags: acknowledgeFlags, confirm: true },
     params: { path: { period } },

@@ -1846,6 +1846,36 @@ export interface components {
              */
             acknowledge_flags: boolean;
         };
+        /** PeriodCloseOut */
+        PeriodCloseOut: {
+            /** Period */
+            period: string;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "open" | "closed";
+            /** Closed At */
+            closed_at: string | null;
+            /** Closed By Name */
+            closed_by_name: string | null;
+            /** Readings Count */
+            readings_count: number;
+            /** Missing Count */
+            missing_count: number;
+            /**
+             * Unreviewed Count
+             * @default 0
+             */
+            unreviewed_count: number;
+            /** Blockers */
+            blockers: string[];
+            /**
+             * Unowned Estimated
+             * @default []
+             */
+            unowned_estimated: components["schemas"]["UnownedEstimatedHouseholdOut"][];
+        };
         /** PeriodOverviewOut */
         PeriodOverviewOut: {
             /** Period */
@@ -2145,6 +2175,13 @@ export interface components {
          * @enum {string}
          */
         ThemeMode: "light" | "dark";
+        /** UnownedEstimatedHouseholdOut */
+        UnownedEstimatedHouseholdOut: {
+            /** Household Id */
+            household_id: number;
+            /** Name */
+            name: string;
+        };
         /** UserOut */
         UserOut: {
             /** Id */
@@ -3802,7 +3839,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["PeriodOverviewOut"];
+                    "application/json": components["schemas"]["PeriodCloseOut"];
                 };
             };
             /** @description The period can't be closed */

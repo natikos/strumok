@@ -11,7 +11,11 @@
       {{ closedLine }}
     </p>
 
-    <template v-else>
+    <p v-if="unownedEstimated.length > 0" class="period-close__note period-close__note--blocked">
+      {{ t("admin.period.unownedEstimated", { names: unownedEstimated.map((h) => h.name).join(", ") }) }}
+    </p>
+
+    <template v-if="overview.status === 'open'">
       <Button
         class="period-close__button"
         severity="danger"
@@ -42,7 +46,12 @@
   import { computed, onMounted, ref, watch } from "vue";
   import { useI18n } from "vue-i18n";
 
-  import { closeAdminPeriod, listAdminPeriods, type PeriodOverviewOut } from "@shared/api/admin";
+  import {
+    closeAdminPeriod,
+    listAdminPeriods,
+    type PeriodCloseOut,
+    type PeriodOverviewOut,
+  } from "@shared/api/admin";
   import { ApiError } from "@shared/api/client";
 
   const props = defineProps<{ period: string }>();
@@ -55,6 +64,7 @@
   const isClosing = ref(false);
 
   const acknowledged = ref(false);
+  const unownedEstimated = ref<PeriodCloseOut["unowned_estimated"]>([]);
 
   // Unreviewed readings are a soft blocker: the head may close anyway.
   const hardBlockers = computed(
@@ -105,7 +115,9 @@
     isClosing.value = true;
 
     try {
-      overview.value = await closeAdminPeriod(props.period, acknowledged.value);
+      const closed = await closeAdminPeriod(props.period, acknowledged.value);
+      overview.value = closed;
+      unownedEstimated.value = closed.unowned_estimated ?? [];
       emit("closed");
     } catch (error: unknown) {
       if (!(error instanceof ApiError)) {
@@ -117,7 +129,10 @@
     }
   }
 
-  watch(() => props.period, load);
+  watch(() => props.period, () => {
+    unownedEstimated.value = [];
+    void load();
+  });
   onMounted(load);
 </script>
 

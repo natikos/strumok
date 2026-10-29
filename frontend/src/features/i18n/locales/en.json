@@ -133,6 +133,7 @@
         "billNotEntered": "Bill not entered for {period}",
         "noReadings": "No readings for {period}"
       },
+      "unownedEstimated": "Estimated with no owner, so the charge landed on nobody: {names}. Assign an owner or settle it manually.",
       "confirmTitle": "Close {period} billing?",
       "confirmBody": "{charged} household(s) will be charged and {missing} have no reading and will be estimated with a 30% late fee. Residents can't submit for {period} afterwards, and corrections become adjustments. Take a database backup first.",
       "confirmAccept": "Close period",
