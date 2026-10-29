@@ -185,4 +185,55 @@ describe("buildApiError", () => {
       buildApiError(429, { detail: "x" }, new Headers({ "Retry-After": "soon" })).retryAfterSeconds
     ).toBeUndefined();
   });
+
+  it("reports an expired session when refresh is rejected", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi
+        .fn<typeof fetch>()
+        .mockResolvedValueOnce(jsonResponse(401, { detail: "invalidOrExpiredToken" }))
+        .mockResolvedValueOnce(jsonResponse(401, { detail: "missingAuthenticationToken" }))
+    );
+
+    const { appApiClient, registerSessionExpiredHandler } = await loadClient();
+    const onExpired = vi.fn();
+    registerSessionExpiredHandler(onExpired);
+    await appApiClient.GET("/auth/me");
+
+    expect(onExpired).toHaveBeenCalledOnce();
+  });
+
+  it("keeps the session when refresh can't reach the server", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi
+        .fn<typeof fetch>()
+        .mockResolvedValueOnce(jsonResponse(401, { detail: "invalidOrExpiredToken" }))
+        .mockRejectedValueOnce(new TypeError("Failed to fetch"))
+    );
+
+    const { appApiClient, registerSessionExpiredHandler } = await loadClient();
+    const onExpired = vi.fn();
+    registerSessionExpiredHandler(onExpired);
+    await appApiClient.GET("/auth/me");
+
+    expect(onExpired).not.toHaveBeenCalled();
+  });
+
+  it("keeps the session when refresh hits a server error", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi
+        .fn<typeof fetch>()
+        .mockResolvedValueOnce(jsonResponse(401, { detail: "invalidOrExpiredToken" }))
+        .mockResolvedValueOnce(jsonResponse(503))
+    );
+
+    const { appApiClient, registerSessionExpiredHandler } = await loadClient();
+    const onExpired = vi.fn();
+    registerSessionExpiredHandler(onExpired);
+    await appApiClient.GET("/auth/me");
+
+    expect(onExpired).not.toHaveBeenCalled();
+  });
 });

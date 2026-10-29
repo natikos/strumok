@@ -6,7 +6,12 @@ import { createApp } from "vue";
 import { createRouter, createWebHistory, type RouteRecordRaw } from "vue-router";
 
 import { i18n } from "@features/i18n";
-import { getAuthSessionState, initAuthSession } from "@shared/api/auth-session";
+import {
+  getAuthSessionState,
+  initAuthSession,
+  setAuthSessionState,
+} from "@shared/api/auth-session";
+import { registerSessionExpiredHandler } from "@shared/api/client";
 import { ROUTES } from "@shared/routing/routes";
 
 import App from "./App.vue";
@@ -68,6 +73,17 @@ export const router = createRouter({
 });
 
 const authReady = initAuthSession();
+
+// A failed login also 401s with a rejected refresh; only a signed-in session
+// is cleared and sent to login.
+registerSessionExpiredHandler(() => {
+  if (!getAuthSessionState().isAuthenticated) {
+    return;
+  }
+
+  setAuthSessionState(false, false);
+  void router.replace(ROUTES.auth);
+});
 
 router.beforeEach(async (to) => {
   await authReady;
