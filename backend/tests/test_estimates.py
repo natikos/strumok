@@ -258,6 +258,46 @@ class TestEstimatesAtClose:
         ] == ["resident"]
 
 
+class TestUnownedEstimatesAreFlagged:
+    def test_close_lists_unowned_households_that_were_estimated(
+        self, client, session: Session
+    ) -> None:
+        regular, sleeper = _setup(client, session)
+        orphan = make_household(session, name="Orphan", user_id=None)
+        for period, value in (("2024-01", "0"), ("2024-02", "40")):
+            make_meter_reading(
+                session,
+                household_id=orphan.id,
+                period=period,
+                day_meter_value=value,
+            )
+        # March: only `regular` submits; sleeper (owned) and orphan are estimated.
+        make_meter_reading(
+            session, household_id=regular.id, period="2024-03", day_meter_value="150"
+        )
+        _bill(client, "2024-03", "200.00")
+
+        response = _close(client, "2024-03")
+
+        assert response.status_code == 200
+        assert response.json()["unowned_estimated"] == [
+            {"household_id": orphan.id, "name": "Orphan"}
+        ]
+
+    def test_close_lists_nothing_when_every_estimated_household_has_an_owner(
+        self, client, session: Session
+    ) -> None:
+        regular, _ = _setup(client, session)
+        make_meter_reading(
+            session, household_id=regular.id, period="2024-03", day_meter_value="150"
+        )
+        _bill(client, "2024-03", "200.00")
+
+        response = _close(client, "2024-03")
+
+        assert response.json()["unowned_estimated"] == []
+
+
 class TestCurrentPeriodAndAdminStatus:
     def test_residents_can_see_whether_the_current_period_is_closed(
         self, client, session: Session

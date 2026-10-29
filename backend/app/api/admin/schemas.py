@@ -190,6 +190,15 @@ class PeriodOverviewOut(BaseModel):
     blockers: list[str]
 
 
+class UnownedEstimatedHouseholdOut(BaseModel):
+    household_id: int
+    name: str
+
+
+class PeriodCloseOut(PeriodOverviewOut):
+    unowned_estimated: list[UnownedEstimatedHouseholdOut] = []
+
+
 class PeriodCloseIn(BaseModel):
     model_config = ConfigDict(extra="forbid")
 

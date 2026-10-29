@@ -121,4 +121,21 @@ describe("PeriodCloseCard", () => {
 
     expect(closeAdminPeriod).toHaveBeenCalledWith("2026-09", true);
   });
+
+  it("warns about unowned households that were estimated when the period closes", async () => {
+    closeAdminPeriod.mockResolvedValue({
+      ...open,
+      closed_at: "2026-10-06T09:00:00Z",
+      closed_by_name: "Head",
+      status: "closed",
+      unowned_estimated: [{ household_id: 7, name: "Orphan" }],
+    });
+    const wrapper = mountCard();
+    await flushPromises();
+    await wrapper.find("button").trigger("click");
+    (confirmRequire.mock.calls[0]![0] as { accept: () => void }).accept();
+    await flushPromises();
+
+    expect(wrapper.text()).toContain("Orphan");
+  });
 });
