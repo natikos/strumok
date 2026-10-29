@@ -45,10 +45,7 @@ test("an invited resident sets a password from the emailed link and lands on the
   expect(body.households.map((h) => h.id)).toEqual([household.id]);
 });
 
-// DEFECT #288: FormFieldControl puts the `id` on PrimeVue Password's wrapper <div>, so
-// <label for> points at a div and the input has no label, only a placeholder.
-// Remove `test.fail` once the label resolves to the input.
-test.fail("the set-password fields can be found by their visible labels", async ({ page }) => {
+test("the set-password fields can be found by their visible labels", async ({ page }) => {
   await page.goto("/set-password?token=not-a-real-token");
   await expect(page.getByLabel("Password", { exact: true })).toBeVisible({ timeout: 3000 });
   await expect(page.getByLabel("Confirm password")).toBeVisible({ timeout: 3000 });

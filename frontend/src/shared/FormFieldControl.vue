@@ -6,7 +6,7 @@
 
     <Password
       v-if="type === 'password'"
-      :id="id"
+      :input-id="id"
       :input-props="inputProps"
       class="form-field-control__control"
       :name="name"
