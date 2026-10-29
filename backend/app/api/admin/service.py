@@ -324,33 +324,38 @@ def create_household_for_user(
         household_id=household.id,
         after={"name": name, "user_id": user_id},
     )
-    if starting_day is not None and starting_night is not None:
-        # The first period residents submit is the current one; the baseline
-        # sits just before it so that month is measured against it.
-        period = previous_period(current_billing_period())
-        baseline = MeterReading(
-            household_id=household.id,
-            submitted_by_user_id=actor_id,
-            period=period,
-            day_meter_value=starting_day,
-            night_meter_value=starting_night,
-            source="baseline",
-            corrected_at=utc_now(),
-            correction_reason="Starting meter reading",
-        )
-        session.add(baseline)
-        session.flush()
-        audit.record(
-            session,
-            actor_user_id=actor_id,
-            action="baselineSet",
-            entity_type="meter_reading",
-            entity_id=baseline.id,
-            household_id=household.id,
-            period=period,
-            after={"day": starting_day, "night": starting_night},
-            reason="Starting meter reading",
-        )
+    if starting_day is None or starting_night is None:
+        # No starting values means a brand-new meter, which starts at 0, so
+        # the first resident reading is billed in full and the plot can be
+        # estimated before it ever submits.
+        starting_day = Decimal(0)
+        starting_night = Decimal(0)
+    # The first period residents submit is the current one; the baseline
+    # sits just before it so that month is measured against it.
+    period = previous_period(current_billing_period())
+    baseline = MeterReading(
+        household_id=household.id,
+        submitted_by_user_id=actor_id,
+        period=period,
+        day_meter_value=starting_day,
+        night_meter_value=starting_night,
+        source="baseline",
+        corrected_at=utc_now(),
+        correction_reason="Starting meter reading",
+    )
+    session.add(baseline)
+    session.flush()
+    audit.record(
+        session,
+        actor_user_id=actor_id,
+        action="baselineSet",
+        entity_type="meter_reading",
+        entity_id=baseline.id,
+        household_id=household.id,
+        period=period,
+        after={"day": starting_day, "night": starting_night},
+        reason="Starting meter reading",
+    )
     session.commit()
     session.refresh(household)
     return household, owner

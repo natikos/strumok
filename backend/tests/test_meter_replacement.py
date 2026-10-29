@@ -320,6 +320,21 @@ class TestBaseline:
             D(120),
         )
 
+    def test_a_new_household_without_starting_values_starts_at_zero(
+        self, client, session: Session
+    ) -> None:
+        _admin(client, session)
+        owner = make_user(session)
+
+        response = client.post(
+            "/admin/households", json={"name": "Plot 9", "user_id": owner.id}
+        )
+
+        assert response.status_code == 201, response.text
+        baseline = session.exec(select(MeterReading)).one()
+        assert (baseline.source, baseline.period) == ("baseline", PREVIOUS)
+        assert (baseline.day_meter_value, baseline.night_meter_value) == (D(0), D(0))
+
     def test_starting_values_come_as_a_pair(self, client, session: Session) -> None:
         _admin(client, session)
         owner = make_user(session)
