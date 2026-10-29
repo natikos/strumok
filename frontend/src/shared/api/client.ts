@@ -4,7 +4,10 @@ import type { paths } from "./generated/openapi.ts";
 
 import { showApiErrorToast } from "./error-toast";
 
-export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8000";
+// A built app is served by FastAPI from the same origin; only `bun run dev`
+// (Vite on :5173) talks to a separate backend.
+export const API_BASE_URL =
+  import.meta.env.VITE_API_BASE_URL ?? (import.meta.env.DEV ? "http://localhost:8000" : "");
 const REFRESH_ENDPOINT_PATH = "/auth/refresh";
 
 let refreshPromise: Promise<boolean> | null = null;

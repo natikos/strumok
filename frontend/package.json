@@ -10,6 +10,8 @@
     "lint": "eslint --fix .",
     "test": "bunx --bun vitest run",
     "test:watch": "vitest",
+    "e2e": "bun run build && playwright test",
+    "e2e:only": "playwright test",
     "format": "prettier --write .",
     "api:types": "bunx openapi-typescript \"${OPENAPI_URL:-http://localhost:8000/openapi.json}\" -o src/shared/api/generated/openapi.ts"
   },
@@ -29,6 +31,7 @@
     "zod": "^4.6.5"
   },
   "devDependencies": {
+    "@playwright/test": "^1.64.1",
     "@primevue/auto-import-resolver": "^4.5.5",
     "@types/node": "^24.12.2",
     "@vitejs/plugin-vue": "^6.0.5",

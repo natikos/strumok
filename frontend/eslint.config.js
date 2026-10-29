@@ -20,7 +20,8 @@ export default defineConfigWithVueTs(
       sourceType: "module",
       globals: globals.browser,
       parserOptions: {
-        projectService: true,
+        // playwright.config.ts sits outside tsconfig.json's include (e2e/ has its own project).
+        projectService: { allowDefaultProject: ["playwright.config.ts"] },
         tsconfigRootDir: import.meta.dirname,
       },
     },

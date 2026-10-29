@@ -12,6 +12,11 @@ frontend/dist/
 frontend/dist-ssr/
 frontend/.env
 
+# Playwright output
+frontend/playwright-report/
+frontend/test-results/
+frontend/blob-report/
+
 # Local database artifacts
 pg_data/
 postgres-data/
