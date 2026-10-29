@@ -54,9 +54,10 @@ class AdminHouseholdCreateIn(BaseModel):
 
     name: str = Field(min_length=1, max_length=255)
     user_id: int
-    # Optional opening meter values. They are stored as an unbilled baseline for
-    # the period before the first one residents submit, so the first month is
-    # measured instead of reading 0.
+    # Optional opening meter values for a plot with an existing meter. They are
+    # stored as an unbilled baseline for the period before the first one
+    # residents submit. Omitted, the meter is brand-new and starts at 0, so the
+    # first reading is billed in full.
     starting_day_meter_value: Decimal | None = Field(
         default=None, ge=Decimal("0"), max_digits=12, decimal_places=2
     )

@@ -275,7 +275,7 @@
     },
     "startingDay": "Starting day meter (optional)",
     "startingNight": "Starting night meter (optional)",
-    "startingHint": "Opening values for a new plot, so its first month is billed from them instead of 0.",
+    "startingHint": "Leave empty for a brand-new meter (starts at 0, first reading is billed in full). Enter the current dial values only for an existing meter.",
     "startingBoth": "Enter both starting values or neither",
     "meterChange": {
       "open": "Meter replaced",
