@@ -134,7 +134,7 @@ class AdminReadingOut(BaseModel):
     previous_day_meter_value: Decimal | None
     previous_night_meter_value: Decimal | None
     needs_review: bool
-    review_reason: Literal["decrease", "spike"] | None
+    review_reason: Literal["decrease", "spike", "zeroBaseline"] | None
 
 
 class ReadingReviewIn(BaseModel):

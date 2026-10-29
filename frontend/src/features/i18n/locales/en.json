@@ -202,7 +202,8 @@
       "night": "Night",
       "reason": {
         "decrease": "Lower than last reading",
-        "spike": "Big jump"
+        "spike": "Big jump",
+        "zeroBaseline": "Measured from 0 — check the starting values"
       },
       "correct": "Correct"
     },
@@ -453,7 +454,7 @@
     "emptyChartBody": "Your usage chart, day/night split and year-over-year comparison appear here as readings come in.",
     "emptyChartTitle": "No usage to chart yet",
     "firstRunStep1": "Read both numbers off your meter between the 1st and the 5th",
-    "firstRunStep2": "Your first submission sets the baseline — usage in kWh appears from next month",
+    "firstRunStep2": "Your first reading is measured against the plot's starting values set by the head",
     "firstRunStep3": "The cooperative splits one shared bill across all logged readings",
     "firstRunTitle": "How Strumok works",
     "lastPeriodEmpty": "Last period",

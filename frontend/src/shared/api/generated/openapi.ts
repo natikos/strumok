@@ -1210,7 +1210,7 @@ export interface components {
             /** Needs Review */
             needs_review: boolean;
             /** Review Reason */
-            review_reason: ("decrease" | "spike") | null;
+            review_reason: ("decrease" | "spike" | "zeroBaseline") | null;
         };
         /** AdminReadingResultOut */
         AdminReadingResultOut: {
