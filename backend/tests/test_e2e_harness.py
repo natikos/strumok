@@ -417,11 +417,12 @@ def test_e2e_routes_are_not_mounted_outside_e2e(client: TestClient) -> None:
         response = getattr(client, method)(path, json={})
         assert response.status_code in (404, 405), path
 
-    # Were the router mounted this would be a JSON list; a dist build may
-    # answer with the SPA shell instead, which is fine.
+    # Were the router mounted this would be a JSON list. Unmounted, it's the
+    # SPA shell when backend/dist exists, or FastAPI's JSON 404 when it doesn't.
     outbox = client.get("/__e2e/outbox")
     assert outbox.status_code in (200, 404)
-    assert not outbox.headers.get("content-type", "").startswith("application/json")
+    is_json = outbox.headers.get("content-type", "").startswith("application/json")
+    assert not (is_json and isinstance(outbox.json(), list))
 
     clock = client.put("/__e2e/clock", json={"now": "2031-01-02T12:00:00+02:00"})
     assert clock.status_code in (404, 405)
