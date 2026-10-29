@@ -119,7 +119,9 @@
     }
 
     return Object.entries(value)
-      .map(([key, item]) => `${key}: ${typeof item === "string" ? item : JSON.stringify(item ?? "—")}`)
+      .map(
+        ([key, item]) => `${key}: ${typeof item === "string" ? item : JSON.stringify(item ?? "—")}`
+      )
       .join(", ");
   }
 

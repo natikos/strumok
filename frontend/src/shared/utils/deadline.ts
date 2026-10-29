@@ -44,9 +44,7 @@ export function getDeadlineMonthIndex(now: Date = kyivNow()): number {
   return getMonth(getSubmitWindow(now).end);
 }
 
-export function getDeadlineStatus(
-  submittedAt: string | null | undefined
-): DeadlineStatus {
+export function getDeadlineStatus(submittedAt: string | null | undefined): DeadlineStatus {
   const window = getSubmitWindow();
 
   if (isOverdue(submittedAt)) {

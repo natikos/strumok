@@ -44,7 +44,9 @@
           :previous-day-value="normalizedForm.previousDayValue"
           :previous-night-value="normalizedForm.previousNightValue"
           :is-submitting="isSubmitting"
-          :submit-label="warning && warningAcknowledged ? t('meterReadings.submitAnyway') : submitLabel"
+          :submit-label="
+            warning && warningAcknowledged ? t('meterReadings.submitAnyway') : submitLabel
+          "
           :warning="warning"
           :is-offline="isOffline"
           @update:day-value="$emit('update:dayMeterValue', $event)"

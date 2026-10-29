@@ -125,7 +125,10 @@
   import { RouterView, useRoute, useRouter } from "vue-router";
 
   import NoHouseholdScreen from "@/layouts/NoHouseholdScreen.vue";
-  import { type HouseholdSwitch, useCurrentHousehold } from "@features/households/useCurrentHousehold";
+  import {
+    type HouseholdSwitch,
+    useCurrentHousehold,
+  } from "@features/households/useCurrentHousehold";
   import { useLocale } from "@features/i18n/composables/useLocale";
   import { useTheme } from "@features/theme/composables/useTheme";
   import { getMe, logoutUser } from "@shared/api/auth";
@@ -203,7 +206,10 @@
     }
 
     toast.add({
-      detail: t("household.switched", { next: change.switchedTo.name, removed: change.removedName }),
+      detail: t("household.switched", {
+        next: change.switchedTo.name,
+        removed: change.removedName,
+      }),
       life: 8000,
       severity: "info",
     });

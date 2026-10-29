@@ -25,12 +25,7 @@
         {{ t(errors.form) }}
       </p>
 
-      <Message
-        v-if="warning"
-        severity="warn"
-        class="submission-form__warning"
-        role="alert"
-      >
+      <Message v-if="warning" severity="warn" class="submission-form__warning" role="alert">
         {{ warningText }}
       </Message>
 

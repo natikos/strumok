@@ -64,7 +64,9 @@
   const isOpen = ref(false);
   const error = ref<string | null>(null);
 
-  const householdName = computed(() => (households.value.length > 1 ? (current.value?.name ?? "") : ""));
+  const householdName = computed(() =>
+    households.value.length > 1 ? (current.value?.name ?? "") : ""
+  );
   const usage = computed(() =>
     latest.value ? formatKwh(latest.value.usageKwh, locale, t("units.kwh")) : ""
   );

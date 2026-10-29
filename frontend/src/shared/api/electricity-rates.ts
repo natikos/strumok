@@ -62,10 +62,13 @@ export async function correctElectricityRate(
   rates: { day_rate_uah: string; night_rate_uah: string },
   options: { dryRun: boolean; reason: string }
 ): Promise<RestatementOut> {
-  const { data, error, response } = await appApiClient.POST("/electricity-rates/{rate_id}/correct", {
-    body: { ...rates, confirm: true, dry_run: options.dryRun, reason: options.reason || null },
-    params: { path: { rate_id: rateId } },
-  });
+  const { data, error, response } = await appApiClient.POST(
+    "/electricity-rates/{rate_id}/correct",
+    {
+      body: { ...rates, confirm: true, dry_run: options.dryRun, reason: options.reason || null },
+      params: { path: { rate_id: rateId } },
+    }
+  );
 
   if (error) {
     throw buildApiError(response.status, error);

@@ -91,70 +91,70 @@
                     </thead>
                     <tbody>
                       <template v-for="household in dashboard.households" :key="household.id">
-                      <tr>
-                        <th scope="row">
-                          {{ household.name }}
-                          <Button
-                            class="admin-edit-toggle"
-                            icon="pi pi-pencil"
-                            severity="secondary"
-                            variant="text"
-                            :aria-expanded="editingId === household.id"
-                            :aria-label="$t('admin.readingEdit.edit', { name: household.name })"
-                            @click="editingId = editingId === household.id ? null : household.id"
-                          />
-                        </th>
-                        <td>{{ ownerLabel(household) }}</td>
-                        <td>
-                          <span
-                            class="admin-status"
-                            :class="`admin-status--${household.submission_status}`"
-                          >
-                            {{ $t(`admin.${household.submission_status}`) }}
-                          </span>
-                          <div v-if="household.reading?.needs_review" class="admin-review">
-                            <span class="admin-status admin-status--review">
-                              <ExclamationTriangle aria-hidden="true" />
-                              {{ $t("admin.review.pill") }}
-                            </span>
-                            <span class="admin-review__diff">
-                              {{ $t(`admin.review.reason.${household.reading.review_reason}`) }} ·
-                              {{ $t("admin.review.day") }}
-                              {{ household.reading.previous_day_meter_value ?? "—" }} →
-                              {{ household.reading.day_meter_value }} ·
-                              {{ $t("admin.review.night") }}
-                              {{ household.reading.previous_night_meter_value ?? "—" }} →
-                              {{ household.reading.night_meter_value }}
-                            </span>
+                        <tr>
+                          <th scope="row">
+                            {{ household.name }}
                             <Button
-                              size="small"
+                              class="admin-edit-toggle"
+                              icon="pi pi-pencil"
                               severity="secondary"
-                              :label="$t('admin.review.looksRight')"
-                              @click="markReviewed(household.reading.id)"
+                              variant="text"
+                              :aria-expanded="editingId === household.id"
+                              :aria-label="$t('admin.readingEdit.edit', { name: household.name })"
+                              @click="editingId = editingId === household.id ? null : household.id"
                             />
-                            <Button
-                              size="small"
-                              severity="secondary"
-                              variant="outlined"
-                              :label="$t('admin.review.correct')"
-                              @click="editingId = household.id"
+                          </th>
+                          <td>{{ ownerLabel(household) }}</td>
+                          <td>
+                            <span
+                              class="admin-status"
+                              :class="`admin-status--${household.submission_status}`"
+                            >
+                              {{ $t(`admin.${household.submission_status}`) }}
+                            </span>
+                            <div v-if="household.reading?.needs_review" class="admin-review">
+                              <span class="admin-status admin-status--review">
+                                <ExclamationTriangle aria-hidden="true" />
+                                {{ $t("admin.review.pill") }}
+                              </span>
+                              <span class="admin-review__diff">
+                                {{ $t(`admin.review.reason.${household.reading.review_reason}`) }} ·
+                                {{ $t("admin.review.day") }}
+                                {{ household.reading.previous_day_meter_value ?? "—" }} →
+                                {{ household.reading.day_meter_value }} ·
+                                {{ $t("admin.review.night") }}
+                                {{ household.reading.previous_night_meter_value ?? "—" }} →
+                                {{ household.reading.night_meter_value }}
+                              </span>
+                              <Button
+                                size="small"
+                                severity="secondary"
+                                :label="$t('admin.review.looksRight')"
+                                @click="markReviewed(household.reading.id)"
+                              />
+                              <Button
+                                size="small"
+                                severity="secondary"
+                                variant="outlined"
+                                :label="$t('admin.review.correct')"
+                                @click="editingId = household.id"
+                              />
+                            </div>
+                          </td>
+                          <td>{{ formatUsage(household.latest_usage_kwh) }}</td>
+                          <td>{{ formatCharge(household.latest_amount_charged_uah) }}</td>
+                        </tr>
+                        <tr v-if="editingId === household.id">
+                          <td colspan="5">
+                            <ReadingEditor
+                              :household="household"
+                              :period="dashboard.current_period"
+                              :reading="household.reading ?? null"
+                              @changed="loadDashboard"
+                              @close="editingId = null"
                             />
-                          </div>
-                        </td>
-                        <td>{{ formatUsage(household.latest_usage_kwh) }}</td>
-                        <td>{{ formatCharge(household.latest_amount_charged_uah) }}</td>
-                      </tr>
-                      <tr v-if="editingId === household.id">
-                        <td colspan="5">
-                          <ReadingEditor
-                            :household="household"
-                            :period="dashboard.current_period"
-                            :reading="household.reading ?? null"
-                            @changed="loadDashboard"
-                            @close="editingId = null"
-                          />
-                        </td>
-                      </tr>
+                          </td>
+                        </tr>
                       </template>
                     </tbody>
                   </table>

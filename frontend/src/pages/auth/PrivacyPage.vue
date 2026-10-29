@@ -26,7 +26,9 @@
   const sections = ["collected", "access", "hosting", "retention", "rights"] as const;
 
   // Reachable signed in or out, so the way back depends on who is reading.
-  const backTo = computed(() => (getAuthSessionState().isAuthenticated ? ROUTES.settings : ROUTES.auth));
+  const backTo = computed(() =>
+    getAuthSessionState().isAuthenticated ? ROUTES.settings : ROUTES.auth
+  );
 </script>
 
 <style scoped lang="scss">

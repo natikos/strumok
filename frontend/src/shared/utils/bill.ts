@@ -9,12 +9,7 @@ export function toKopecks(value: string | number | null | undefined): number {
   return Math.round(Number(value) * 100);
 }
 
-export type BillRowKind =
-  | "correction"
-  | "lateFee"
-  | "lateFeeCredit"
-  | "sharedLosses"
-  | "tariff";
+export type BillRowKind = "correction" | "lateFee" | "lateFeeCredit" | "sharedLosses" | "tariff";
 
 export interface BillRow {
   kind: BillRowKind;

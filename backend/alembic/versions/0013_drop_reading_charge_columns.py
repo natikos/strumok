@@ -7,6 +7,7 @@ reading are gone.
 Revision ID: 0013
 Revises: 0012
 """
+
 from typing import Sequence, Union
 
 import sqlalchemy as sa

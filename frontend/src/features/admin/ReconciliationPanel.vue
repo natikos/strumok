@@ -51,7 +51,9 @@
               fluid
             />
           </div>
-          <p v-if="isClosed" class="reconciliation__note">{{ t("admin.reconciliation.closedNote") }}</p>
+          <p v-if="isClosed" class="reconciliation__note">
+            {{ t("admin.reconciliation.closedNote") }}
+          </p>
           <RestatementPreview
             v-if="isClosed && correcting"
             :request="requestBillCorrection"
@@ -79,7 +81,9 @@
             <span class="reconciliation__tile-value">{{ uah(data.bill_total_uah) }}</span>
           </div>
           <div class="reconciliation__tile">
-            <span class="reconciliation__tile-label">{{ t("admin.reconciliation.tileUsage") }}</span>
+            <span class="reconciliation__tile-label">{{
+              t("admin.reconciliation.tileUsage")
+            }}</span>
             <span class="reconciliation__tile-value">{{ kwh(data.total_usage_kwh) }}</span>
           </div>
           <div class="reconciliation__tile">
@@ -119,7 +123,9 @@
                 <td>{{ data.bill_total_uah === null ? "—" : uah(line.total_uah) }}</td>
               </tr>
               <tr v-if="data.lines.length === 0">
-                <td class="reconciliation__empty" colspan="7">{{ t("admin.reconciliation.empty") }}</td>
+                <td class="reconciliation__empty" colspan="7">
+                  {{ t("admin.reconciliation.empty") }}
+                </td>
               </tr>
             </tbody>
           </table>
@@ -277,11 +283,7 @@
   }
 
   function requestBillCorrection(options: { dryRun: boolean; reason: string }) {
-    return restatePeriod(
-      props.period,
-      { bill_total_uah: String(billTotal.value) },
-      options
-    );
+    return restatePeriod(props.period, { bill_total_uah: String(billTotal.value) }, options);
   }
 
   async function onCorrectionPosted(): Promise<void> {

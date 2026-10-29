@@ -3,6 +3,7 @@
 Revision ID: 0003
 Revises: 0002
 """
+
 from typing import Sequence, Union
 
 import sqlalchemy as sa

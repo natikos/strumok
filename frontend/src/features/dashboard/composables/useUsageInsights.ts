@@ -222,7 +222,9 @@ export function useUsageInsights(slots: Ref<MeterPeriod[]>) {
       labels: recent.map((slot) => slot.monthLabel),
       fullLabels: recent.map((slot) => `${slot.monthLong} ${slot.date.getFullYear()}`),
       day: recent.map((slot) => (slot.reading ? toDecimal(slot.statement?.day_usage_kwh) : null)),
-      night: recent.map((slot) => (slot.reading ? toDecimal(slot.statement?.night_usage_kwh) : null)),
+      night: recent.map((slot) =>
+        slot.reading ? toDecimal(slot.statement?.night_usage_kwh) : null
+      ),
       presentCount: recent.filter((slot) => slot.reading).length,
     };
   });

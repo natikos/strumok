@@ -61,7 +61,11 @@ describe("PeriodCloseCard", () => {
     const options = confirmRequire.mock.calls[0]![0] as { accept: () => void; message: string };
     expect(options.message).toContain("28 household(s) will be charged and 2 have no reading");
 
-    closeAdminPeriod.mockResolvedValue({ ...open, closed_at: "2026-10-08T10:00:00Z", status: "closed" });
+    closeAdminPeriod.mockResolvedValue({
+      ...open,
+      closed_at: "2026-10-08T10:00:00Z",
+      status: "closed",
+    });
     options.accept();
     await flushPromises();
 
@@ -81,7 +85,12 @@ describe("PeriodCloseCard", () => {
 
   it("shows who closed it once closed", async () => {
     listAdminPeriods.mockResolvedValue([
-      { ...open, closed_at: "2026-10-08T10:00:00Z", closed_by_name: "Head Admin", status: "closed" },
+      {
+        ...open,
+        closed_at: "2026-10-08T10:00:00Z",
+        closed_by_name: "Head Admin",
+        status: "closed",
+      },
     ]);
     const wrapper = mountCard();
     await flushPromises();
@@ -94,7 +103,11 @@ describe("PeriodCloseCard", () => {
     listAdminPeriods.mockResolvedValue([
       { ...open, blockers: ["periodHasUnreviewedReadings"], unreviewed_count: 2 },
     ]);
-    closeAdminPeriod.mockResolvedValue({ ...open, closed_at: "2026-10-08T10:00:00Z", status: "closed" });
+    closeAdminPeriod.mockResolvedValue({
+      ...open,
+      closed_at: "2026-10-08T10:00:00Z",
+      status: "closed",
+    });
     const wrapper = mountCard();
     await flushPromises();
 

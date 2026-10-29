@@ -13,7 +13,10 @@
           <div class="balances__summary">
             <span class="balances__name">{{ row.household_name }}</span>
             <span class="balances__owner">{{ row.owner_name ?? "—" }}</span>
-            <span class="balances__amount" :class="{ 'balances__amount--due': toDecimal(row.balance_uah) > 0 }">
+            <span
+              class="balances__amount"
+              :class="{ 'balances__amount--due': toDecimal(row.balance_uah) > 0 }"
+            >
               {{ balanceText(row.balance_uah) }}
             </span>
             <span v-if="row.unpaid_months > 0" class="balances__pill">
@@ -31,38 +34,88 @@
 
           <div v-if="openId === row.household_id" class="balances__detail">
             <form class="balances__form" @submit.prevent="submit(row)">
-              <label :for="`pay-amount-${row.household_id}`">{{ t("admin.balances.amount") }}</label>
-              <InputNumber v-model="amount" :input-id="`pay-amount-${row.household_id}`" :min="0.01" :min-fraction-digits="2" :max-fraction-digits="2" fluid />
+              <label :for="`pay-amount-${row.household_id}`">{{
+                t("admin.balances.amount")
+              }}</label>
+              <InputNumber
+                v-model="amount"
+                :input-id="`pay-amount-${row.household_id}`"
+                :min="0.01"
+                :min-fraction-digits="2"
+                :max-fraction-digits="2"
+                fluid
+              />
               <label :for="`pay-date-${row.household_id}`">{{ t("admin.balances.paidOn") }}</label>
               <InputText :id="`pay-date-${row.household_id}`" v-model="paidOn" type="date" fluid />
               <label>{{ t("admin.balances.method") }}</label>
-              <Select v-model="method" fluid :options="methods" option-label="label" option-value="value" />
-              <InputText v-model="note" fluid :maxlength="500" :placeholder="t('admin.balances.note')" :aria-label="t('admin.balances.note')" />
+              <Select
+                v-model="method"
+                fluid
+                :options="methods"
+                option-label="label"
+                option-value="value"
+              />
+              <InputText
+                v-model="note"
+                fluid
+                :maxlength="500"
+                :placeholder="t('admin.balances.note')"
+                :aria-label="t('admin.balances.note')"
+              />
               <div class="balances__actions">
-                <Button type="submit" :disabled="isSaving || !amount || !paidOn" :loading="isSaving" :label="t('admin.balances.save')" />
-                <Button type="button" severity="secondary" variant="text" :label="t('admin.balances.cancel')" @click="openId = null" />
+                <Button
+                  type="submit"
+                  :disabled="isSaving || !amount || !paidOn"
+                  :loading="isSaving"
+                  :label="t('admin.balances.save')"
+                />
+                <Button
+                  type="button"
+                  severity="secondary"
+                  variant="text"
+                  :label="t('admin.balances.cancel')"
+                  @click="openId = null"
+                />
               </div>
             </form>
 
             <h3 class="balances__subtitle">{{ t("admin.balances.payments") }}</h3>
-            <p v-if="payments.length === 0" class="balances__muted">{{ t("admin.balances.noPayments") }}</p>
+            <p v-if="payments.length === 0" class="balances__muted">
+              {{ t("admin.balances.noPayments") }}
+            </p>
             <ul class="balances__payments">
-              <li v-for="payment in payments" :key="payment.id" class="balances__payment" :class="{ 'balances__payment--voided': payment.voided_at }">
+              <li
+                v-for="payment in payments"
+                :key="payment.id"
+                class="balances__payment"
+                :class="{ 'balances__payment--voided': payment.voided_at }"
+              >
                 <span class="balances__payment-main">
-                  {{ money(payment.amount_uah) }} · {{ payment.paid_on }} · {{ t(`admin.balances.${payment.method}`) }}
+                  {{ money(payment.amount_uah) }} · {{ payment.paid_on }} ·
+                  {{ t(`admin.balances.${payment.method}`) }}
                   <template v-if="payment.note"> · {{ payment.note }}</template>
                 </span>
                 <span v-if="payment.voided_at" class="balances__muted">
                   {{ t("admin.balances.voided", { reason: payment.void_reason ?? "" }) }}
                 </span>
                 <template v-else>
-                  <InputText v-model="voidReasons[payment.id]" fluid :placeholder="t('admin.balances.voidReason')" :aria-label="t('admin.balances.voidReason')" />
+                  <InputText
+                    v-model="voidReasons[payment.id]"
+                    fluid
+                    :placeholder="t('admin.balances.voidReason')"
+                    :aria-label="t('admin.balances.voidReason')"
+                  />
                   <Button
                     size="small"
                     severity="danger"
                     variant="outlined"
                     :disabled="!(voidReasons[payment.id] ?? '').trim()"
-                    :aria-label="t('admin.balances.voidFor', { amount: money(payment.amount_uah), name: row.household_name })"
+                    :aria-label="
+                      t('admin.balances.voidFor', {
+                        amount: money(payment.amount_uah),
+                        name: row.household_name,
+                      })
+                    "
                     :label="t('admin.balances.void')"
                     @click="askToVoid(row, payment)"
                   />

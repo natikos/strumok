@@ -1,10 +1,10 @@
 pre-commit:
   parallel: true
   jobs:
-    - name: backend lint
+    - name: backend lint and format
       root: backend/
       glob: "*.py"
-      run: uv run ruff check --fix {staged_files}
+      run: uv run ruff check --fix {staged_files} && uv run ruff format {staged_files}
       stage_fixed: true
 
     - name: frontend lint

@@ -28,7 +28,18 @@ function mountForm() {
   return mount(AuthForm, {
     global: {
       plugins: appPlugins(),
-      components: { Button, Card, Form, FormField, FormFieldControl, InputText, Message, Password, SelectButton, Typography },
+      components: {
+        Button,
+        Card,
+        Form,
+        FormField,
+        FormFieldControl,
+        InputText,
+        Message,
+        Password,
+        SelectButton,
+        Typography,
+      },
     },
   });
 }

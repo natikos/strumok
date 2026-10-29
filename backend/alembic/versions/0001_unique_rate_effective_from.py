@@ -7,6 +7,7 @@ Fails if production already holds duplicates; resolve them first.
 Revision ID: 0001
 Revises: 0000
 """
+
 from typing import Sequence, Union
 
 from alembic import op

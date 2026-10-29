@@ -9,12 +9,14 @@ import type { Component } from "vue";
 
 import RestatementPreview from "./RestatementPreview.vue";
 
-const { confirmRequire, getPeriodReconciliation, putPeriodBill, restatePeriod } = vi.hoisted(() => ({
-  restatePeriod: vi.fn(),
-  confirmRequire: vi.fn(),
-  getPeriodReconciliation: vi.fn(),
-  putPeriodBill: vi.fn(),
-}));
+const { confirmRequire, getPeriodReconciliation, putPeriodBill, restatePeriod } = vi.hoisted(
+  () => ({
+    restatePeriod: vi.fn(),
+    confirmRequire: vi.fn(),
+    getPeriodReconciliation: vi.fn(),
+    putPeriodBill: vi.fn(),
+  })
+);
 
 vi.mock("primevue/useconfirm", () => ({ useConfirm: () => ({ require: confirmRequire }) }));
 
@@ -115,7 +117,11 @@ describe("ReconciliationPanel", () => {
   });
 
   it("turns a closed period's bill entry into a correction that leads to a preview", async () => {
-    getPeriodReconciliation.mockResolvedValue({ ...base, closed_at: "2026-10-08T10:00:00Z", status: "closed" });
+    getPeriodReconciliation.mockResolvedValue({
+      ...base,
+      closed_at: "2026-10-08T10:00:00Z",
+      status: "closed",
+    });
     restatePeriod.mockResolvedValue({
       affected_periods: ["2026-09"],
       is_zero_sum: false,

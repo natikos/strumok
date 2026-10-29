@@ -91,7 +91,11 @@
       {{ previousOwnerNote }}
     </p>
 
-    <ErrorState v-if="status === 'error'" message-key="errors.requestFailed" @retry="loadReadings" />
+    <ErrorState
+      v-if="status === 'error'"
+      message-key="errors.requestFailed"
+      @retry="loadReadings"
+    />
 
     <template v-else>
       <div v-if="status === 'ready' && !summary" class="usage-history__empty">
@@ -110,153 +114,158 @@
 
       <template v-else>
         <section v-for="group in groups" :key="group.year" class="usage-history__group">
-        <div class="usage-history__group-head">
-          <h2 class="usage-history__group-year">{{ group.year }}</h2>
-          <span class="usage-history__group-summary">
-            <span class="usage-history__group-summary-value">
-              {{ formatKwh(group.totalUsage) }}
-            </span>
-            <span class="usage-history__group-summary-sep" aria-hidden="true">·</span>
-            <span class="usage-history__group-summary-value">
-              {{ formatUah(group.totalCharged) }}
-            </span>
-          </span>
-        </div>
-        <ol class="usage-history__list">
-          <li
-            v-for="entry in group.entries"
-            :id="`usage-history-entry-${entry.period}`"
-            :key="entry.period"
-            class="usage-history__item"
-            :class="{
-              'usage-history__item--not-submitted': !entry.submitted,
-              'usage-history__item--current': entry.period === currentBillingPeriod,
-            }"
-          >
-            <div class="usage-history__item-head">
-              <span class="usage-history__month">{{ entry.monthLabel }}</span>
-              <span v-if="entry.estimated" class="usage-history__estimated-tag">
-                <ExclamationTriangle aria-hidden="true" />
-                {{ $t("statuses.meterReading.estimated") }}
+          <div class="usage-history__group-head">
+            <h2 class="usage-history__group-year">{{ group.year }}</h2>
+            <span class="usage-history__group-summary">
+              <span class="usage-history__group-summary-value">
+                {{ formatKwh(group.totalUsage) }}
               </span>
-              <span
-                v-else-if="!entry.submitted"
-                class="usage-history__not-submitted-tag"
-                :class="{
-                  'usage-history__not-submitted-tag--due': entry.period === currentBillingPeriod,
-                }"
-              >
-                <Clock aria-hidden="true" />
-                {{
-                  entry.period === currentBillingPeriod
-                    ? $t("usageHistory.notSubmitted")
-                    : $t("usageHistory.noData")
-                }}
+              <span class="usage-history__group-summary-sep" aria-hidden="true">·</span>
+              <span class="usage-history__group-summary-value">
+                {{ formatUah(group.totalCharged) }}
               </span>
-            </div>
-
-            <template v-if="entry.submitted && !entry.estimated">
-              <div class="usage-history__metrics">
-                <div
-                  class="usage-history__metric"
-                  :class="{ 'usage-history__metric--negative': entry.dayUsage < 0 }"
+            </span>
+          </div>
+          <ol class="usage-history__list">
+            <li
+              v-for="entry in group.entries"
+              :id="`usage-history-entry-${entry.period}`"
+              :key="entry.period"
+              class="usage-history__item"
+              :class="{
+                'usage-history__item--not-submitted': !entry.submitted,
+                'usage-history__item--current': entry.period === currentBillingPeriod,
+              }"
+            >
+              <div class="usage-history__item-head">
+                <span class="usage-history__month">{{ entry.monthLabel }}</span>
+                <span v-if="entry.estimated" class="usage-history__estimated-tag">
+                  <ExclamationTriangle aria-hidden="true" />
+                  {{ $t("statuses.meterReading.estimated") }}
+                </span>
+                <span
+                  v-else-if="!entry.submitted"
+                  class="usage-history__not-submitted-tag"
+                  :class="{
+                    'usage-history__not-submitted-tag--due': entry.period === currentBillingPeriod,
+                  }"
                 >
-                  <span class="usage-history__metric-label">
-                    <Sun class="metric-icon--day" aria-hidden="true" />
-                    {{ $t("usageHistory.day") }}
-                  </span>
-                  <span class="usage-history__metric-value">
-                    {{ formatKwh(entry.dayUsage) }}
-                  </span>
-                </div>
-                <div
-                  class="usage-history__metric"
-                  :class="{ 'usage-history__metric--negative': entry.nightUsage < 0 }"
-                >
-                  <span class="usage-history__metric-label">
-                    <Moon class="metric-icon--night" aria-hidden="true" />
-                    {{ $t("usageHistory.night") }}
-                  </span>
-                  <span class="usage-history__metric-value">
-                    {{ formatKwh(entry.nightUsage) }}
-                  </span>
-                </div>
-                <div class="usage-history__metric usage-history__metric--total">
-                  <span class="usage-history__metric-label">
-                    {{ $t("usageHistory.total") }}
-                  </span>
-                  <span class="usage-history__metric-value">
-                    {{ formatKwh(entry.totalUsage) }}
-                  </span>
-                </div>
+                  <Clock aria-hidden="true" />
+                  {{
+                    entry.period === currentBillingPeriod
+                      ? $t("usageHistory.notSubmitted")
+                      : $t("usageHistory.noData")
+                  }}
+                </span>
               </div>
 
-              <p v-if="entry.correctionReason" class="usage-history__correction">
-                {{
-                  $t(
-                    entry.corrected ? "usageHistory.correctedByHead" : "usageHistory.enteredByHead",
-                    { date: entry.correctedOn, reason: entry.correctionReason }
-                  )
-                }}
-              </p>
+              <template v-if="entry.submitted && !entry.estimated">
+                <div class="usage-history__metrics">
+                  <div
+                    class="usage-history__metric"
+                    :class="{ 'usage-history__metric--negative': entry.dayUsage < 0 }"
+                  >
+                    <span class="usage-history__metric-label">
+                      <Sun class="metric-icon--day" aria-hidden="true" />
+                      {{ $t("usageHistory.day") }}
+                    </span>
+                    <span class="usage-history__metric-value">
+                      {{ formatKwh(entry.dayUsage) }}
+                    </span>
+                  </div>
+                  <div
+                    class="usage-history__metric"
+                    :class="{ 'usage-history__metric--negative': entry.nightUsage < 0 }"
+                  >
+                    <span class="usage-history__metric-label">
+                      <Moon class="metric-icon--night" aria-hidden="true" />
+                      {{ $t("usageHistory.night") }}
+                    </span>
+                    <span class="usage-history__metric-value">
+                      {{ formatKwh(entry.nightUsage) }}
+                    </span>
+                  </div>
+                  <div class="usage-history__metric usage-history__metric--total">
+                    <span class="usage-history__metric-label">
+                      {{ $t("usageHistory.total") }}
+                    </span>
+                    <span class="usage-history__metric-value">
+                      {{ formatKwh(entry.totalUsage) }}
+                    </span>
+                  </div>
+                </div>
 
-              <p v-if="entry.meterReplaced" class="usage-history__correction">
-                {{ $t("usageHistory.meterReplaced", { month: entry.monthLabel }) }}
-              </p>
+                <p v-if="entry.correctionReason" class="usage-history__correction">
+                  {{
+                    $t(
+                      entry.corrected
+                        ? "usageHistory.correctedByHead"
+                        : "usageHistory.enteredByHead",
+                      { date: entry.correctedOn, reason: entry.correctionReason }
+                    )
+                  }}
+                </p>
 
-              <p v-if="paymentLine(entry.period)" class="usage-history__payment">
-                {{ paymentLine(entry.period) }}
-              </p>
+                <p v-if="entry.meterReplaced" class="usage-history__correction">
+                  {{ $t("usageHistory.meterReplaced", { month: entry.monthLabel }) }}
+                </p>
 
-              <template v-if="bills.get(entry.period)">
-                <Button
-                  class="usage-history__calc-toggle"
-                  severity="secondary"
-                  variant="text"
-                  :aria-expanded="openBreakdown === entry.period"
-                  :label="$t('bill.howCalculated')"
-                  @click="openBreakdown = openBreakdown === entry.period ? null : entry.period"
-                />
-                <BillBreakdown v-if="openBreakdown === entry.period" :bill="bills.get(entry.period)!" />
+                <p v-if="paymentLine(entry.period)" class="usage-history__payment">
+                  {{ paymentLine(entry.period) }}
+                </p>
+
+                <template v-if="bills.get(entry.period)">
+                  <Button
+                    class="usage-history__calc-toggle"
+                    severity="secondary"
+                    variant="text"
+                    :aria-expanded="openBreakdown === entry.period"
+                    :label="$t('bill.howCalculated')"
+                    @click="openBreakdown = openBreakdown === entry.period ? null : entry.period"
+                  />
+                  <BillBreakdown
+                    v-if="openBreakdown === entry.period"
+                    :bill="bills.get(entry.period)!"
+                  />
+                </template>
+
+                <div
+                  class="usage-history__charge"
+                  :class="{ 'usage-history__charge--credit': entry.amountCharged < 0 }"
+                >
+                  <span class="usage-history__charge-label">
+                    {{ $t("usageHistory.charged") }}
+                  </span>
+                  <span class="usage-history__charge-value">
+                    {{ formatUah(entry.amountCharged) }}
+                    <span v-if="entry.amountCharged < 0" class="usage-history__charge-tag">
+                      {{ $t("usageHistory.credit") }}
+                    </span>
+                  </span>
+                </div>
               </template>
 
-              <div
-                class="usage-history__charge"
-                :class="{ 'usage-history__charge--credit': entry.amountCharged < 0 }"
+              <p v-else class="usage-history__not-submitted-note">
+                {{
+                  entry.period === currentBillingPeriod
+                    ? $t("usageHistory.notSubmittedDescription")
+                    : $t("usageHistory.noDataDescription")
+                }}
+              </p>
+
+              <Button
+                v-if="!entry.submitted && entry.period === currentBillingPeriod"
+                as="router-link"
+                :to="ROUTES.root"
+                size="small"
+                class="usage-history__not-submitted-cta"
               >
-                <span class="usage-history__charge-label">
-                  {{ $t("usageHistory.charged") }}
-                </span>
-                <span class="usage-history__charge-value">
-                  {{ formatUah(entry.amountCharged) }}
-                  <span v-if="entry.amountCharged < 0" class="usage-history__charge-tag">
-                    {{ $t("usageHistory.credit") }}
-                  </span>
-                </span>
-              </div>
-            </template>
-
-            <p v-else class="usage-history__not-submitted-note">
-              {{
-                entry.period === currentBillingPeriod
-                  ? $t("usageHistory.notSubmittedDescription")
-                  : $t("usageHistory.noDataDescription")
-              }}
-            </p>
-
-            <Button
-              v-if="!entry.submitted && entry.period === currentBillingPeriod"
-              as="router-link"
-              :to="ROUTES.root"
-              size="small"
-              class="usage-history__not-submitted-cta"
-            >
-              {{ $t("usageHistory.notSubmittedCta") }}
-              <ArrowRight aria-hidden="true" />
-            </Button>
-          </li>
-        </ol>
-      </section>
+                {{ $t("usageHistory.notSubmittedCta") }}
+                <ArrowRight aria-hidden="true" />
+              </Button>
+            </li>
+          </ol>
+        </section>
       </template>
     </template>
 
@@ -284,7 +293,13 @@
   import { useCurrentHousehold } from "@features/households/useCurrentHousehold";
   import { useHouseholdTenures } from "@features/households/useHouseholdTenures";
   import { useLocale } from "@features/i18n/composables/useLocale";
-  import { type BalanceOut, getBalance, listAdjustments, listStatements, type StatementLineOut } from "@shared/api/billing";
+  import {
+    type BalanceOut,
+    getBalance,
+    listAdjustments,
+    listStatements,
+    type StatementLineOut,
+  } from "@shared/api/billing";
   import { listMyMeterReadings, type MeterReadingOut } from "@shared/api/meter-readings";
   import { ROUTES } from "@shared/routing/routes";
   import { type Bill, buildBill } from "@shared/utils/bill";
@@ -396,7 +411,9 @@
         correctionReason: reading.correction_reason ?? "",
         corrected: reading.source !== "admin" && reading.source !== "baseline",
         meterReplaced: reading.meter_replaced ?? false,
-        correctedOn: reading.corrected_at ? format(new Date(reading.corrected_at), "yyyy-MM-dd") : "",
+        correctedOn: reading.corrected_at
+          ? format(new Date(reading.corrected_at), "yyyy-MM-dd")
+          : "",
       };
     });
     return entries.sort((a, b) => (a.period < b.period ? 1 : -1));

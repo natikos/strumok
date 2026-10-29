@@ -88,7 +88,11 @@
   const { setTheme } = useTheme();
 
   const isSubmitting = ref(false);
-  const { formatted: throttleTimer, seconds: throttleSeconds, start: startThrottle } = useCountdown();
+  const {
+    formatted: throttleTimer,
+    seconds: throttleSeconds,
+    start: startThrottle,
+  } = useCountdown();
 
   const baseString = () =>
     z

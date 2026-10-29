@@ -9,7 +9,12 @@
         <div class="set-password-card__content">
           <template v-if="tokenState === 'error'">
             <Message severity="error" role="alert">{{ $t("auth.setExpired") }}</Message>
-            <Button fluid severity="secondary" :label="$t('auth.backToLogin')" @click="goTo(ROUTES.auth)" />
+            <Button
+              fluid
+              severity="secondary"
+              :label="$t('auth.backToLogin')"
+              @click="goTo(ROUTES.auth)"
+            />
           </template>
 
           <Form
@@ -86,7 +91,9 @@
   // Display only: the server re-checks the token when the password is set.
   function readEmail(jwt: string): string {
     try {
-      const payload = JSON.parse(atob((jwt.split(".")[1] ?? "").replace(/-/g, "+").replace(/_/g, "/"))) as {
+      const payload = JSON.parse(
+        atob((jwt.split(".")[1] ?? "").replace(/-/g, "+").replace(/_/g, "/"))
+      ) as {
         email?: unknown;
       };
       return typeof payload.email === "string" ? payload.email : "";

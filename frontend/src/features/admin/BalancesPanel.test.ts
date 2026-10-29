@@ -34,8 +34,20 @@ afterAll(() => {
 
 const balances = {
   households: [
-    { balance_uah: "300.00", household_id: 1, household_name: "Plot 1", owner_name: "Ada Owner", unpaid_months: 2 },
-    { balance_uah: "-20.00", household_id: 2, household_name: "Plot 2", owner_name: null, unpaid_months: 0 },
+    {
+      balance_uah: "300.00",
+      household_id: 1,
+      household_name: "Plot 1",
+      owner_name: "Ada Owner",
+      unpaid_months: 2,
+    },
+    {
+      balance_uah: "-20.00",
+      household_id: 2,
+      household_name: "Plot 2",
+      owner_name: null,
+      unpaid_months: 0,
+    },
   ],
   total_outstanding_uah: "300.00",
 };
@@ -66,7 +78,13 @@ describe("BalancesPanel", () => {
   beforeEach(() => {
     vi.stubGlobal(
       "matchMedia",
-      vi.fn().mockReturnValue({ addEventListener: vi.fn(), matches: false, removeEventListener: vi.fn() })
+      vi
+        .fn()
+        .mockReturnValue({
+          addEventListener: vi.fn(),
+          matches: false,
+          removeEventListener: vi.fn(),
+        })
     );
     confirmRequire.mockReset();
     Object.values(api).forEach((fn) => fn.mockReset());

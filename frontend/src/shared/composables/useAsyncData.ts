@@ -6,10 +6,7 @@ export interface AsyncDataState<T> {
   error: Error | null;
 }
 
-export function useAsyncData<T>(
-  asyncFn: () => Promise<T>,
-  immediate = true
-) {
+export function useAsyncData<T>(asyncFn: () => Promise<T>, immediate = true) {
   const data = ref<T | null>(null);
   const isLoading = ref(immediate);
   const error = ref<Error | null>(null);

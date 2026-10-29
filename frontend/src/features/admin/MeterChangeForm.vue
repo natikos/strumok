@@ -9,11 +9,25 @@
       <div class="meter-change__fields">
         <div class="meter-change__field">
           <label :for="`mc-old-day-${household.id}`">{{ t("admin.readingEdit.day") }}</label>
-          <InputNumber v-model="oldDay" :input-id="`mc-old-day-${household.id}`" :min="0" :min-fraction-digits="2" :max-fraction-digits="2" fluid />
+          <InputNumber
+            v-model="oldDay"
+            :input-id="`mc-old-day-${household.id}`"
+            :min="0"
+            :min-fraction-digits="2"
+            :max-fraction-digits="2"
+            fluid
+          />
         </div>
         <div class="meter-change__field">
           <label :for="`mc-old-night-${household.id}`">{{ t("admin.readingEdit.night") }}</label>
-          <InputNumber v-model="oldNight" :input-id="`mc-old-night-${household.id}`" :min="0" :min-fraction-digits="2" :max-fraction-digits="2" fluid />
+          <InputNumber
+            v-model="oldNight"
+            :input-id="`mc-old-night-${household.id}`"
+            :min="0"
+            :min-fraction-digits="2"
+            :max-fraction-digits="2"
+            fluid
+          />
         </div>
       </div>
     </fieldset>
@@ -23,22 +37,54 @@
       <div class="meter-change__fields">
         <div class="meter-change__field">
           <label :for="`mc-new-day-${household.id}`">{{ t("admin.readingEdit.day") }}</label>
-          <InputNumber v-model="newDay" :input-id="`mc-new-day-${household.id}`" :min="0" :min-fraction-digits="2" :max-fraction-digits="2" fluid />
+          <InputNumber
+            v-model="newDay"
+            :input-id="`mc-new-day-${household.id}`"
+            :min="0"
+            :min-fraction-digits="2"
+            :max-fraction-digits="2"
+            fluid
+          />
         </div>
         <div class="meter-change__field">
           <label :for="`mc-new-night-${household.id}`">{{ t("admin.readingEdit.night") }}</label>
-          <InputNumber v-model="newNight" :input-id="`mc-new-night-${household.id}`" :min="0" :min-fraction-digits="2" :max-fraction-digits="2" fluid />
+          <InputNumber
+            v-model="newNight"
+            :input-id="`mc-new-night-${household.id}`"
+            :min="0"
+            :min-fraction-digits="2"
+            :max-fraction-digits="2"
+            fluid
+          />
         </div>
       </div>
     </fieldset>
 
-    <InputText v-model="reason" fluid :maxlength="500" :placeholder="t('admin.readingEdit.reason')" :aria-label="t('admin.readingEdit.reason')" />
+    <InputText
+      v-model="reason"
+      fluid
+      :maxlength="500"
+      :placeholder="t('admin.readingEdit.reason')"
+      :aria-label="t('admin.readingEdit.reason')"
+    />
     <p v-if="!canSubmit" class="meter-change__hint">{{ t("admin.meterChange.hint") }}</p>
-    <p v-if="error" role="alert" class="meter-change__error">{{ t(`errors.${error}`, t("admin.meterChange.failed")) }}</p>
+    <p v-if="error" role="alert" class="meter-change__error">
+      {{ t(`errors.${error}`, t("admin.meterChange.failed")) }}
+    </p>
 
     <div class="meter-change__actions">
-      <Button :disabled="!canSubmit || isBusy" :loading="isBusy" :label="t('admin.meterChange.submit')" @click="askToRecord" />
-      <Button severity="secondary" variant="text" :label="t('admin.readingEdit.reject')" @click="$emit('cancel')" />
+      <Button
+        :disabled="!canSubmit || isBusy"
+        :loading="isBusy"
+        :label="t('admin.meterChange.submit')"
+        @click="askToRecord"
+      />
+      <Button
+        severity="secondary"
+        variant="text"
+        :label="t('admin.readingEdit.reject')"
+        @click="$emit('cancel')"
+      />
     </div>
   </div>
 </template>

@@ -17,20 +17,46 @@
 
     <template v-else>
       <h3 class="reading-editor__title">
-        {{ reading ? t("admin.readingEdit.correct", { name: household.name }) : t("admin.readingEdit.submitFor", { name: household.name }) }}
+        {{
+          reading
+            ? t("admin.readingEdit.correct", { name: household.name })
+            : t("admin.readingEdit.submitFor", { name: household.name })
+        }}
       </h3>
       <div class="reading-editor__fields">
         <div class="reading-editor__field">
           <label :for="`edit-day-${household.id}`">{{ t("admin.readingEdit.day") }}</label>
-          <InputNumber v-model="day" :input-id="`edit-day-${household.id}`" :min="0" :min-fraction-digits="2" :max-fraction-digits="2" fluid />
+          <InputNumber
+            v-model="day"
+            :input-id="`edit-day-${household.id}`"
+            :min="0"
+            :min-fraction-digits="2"
+            :max-fraction-digits="2"
+            fluid
+          />
         </div>
         <div class="reading-editor__field">
           <label :for="`edit-night-${household.id}`">{{ t("admin.readingEdit.night") }}</label>
-          <InputNumber v-model="night" :input-id="`edit-night-${household.id}`" :min="0" :min-fraction-digits="2" :max-fraction-digits="2" fluid />
+          <InputNumber
+            v-model="night"
+            :input-id="`edit-night-${household.id}`"
+            :min="0"
+            :min-fraction-digits="2"
+            :max-fraction-digits="2"
+            fluid
+          />
         </div>
       </div>
-      <InputText v-model="reason" fluid :maxlength="500" :placeholder="t('admin.readingEdit.reason')" :aria-label="t('admin.readingEdit.reason')" />
-      <p v-if="!reasonFilled" class="reading-editor__hint">{{ t("admin.readingEdit.reasonHint") }}</p>
+      <InputText
+        v-model="reason"
+        fluid
+        :maxlength="500"
+        :placeholder="t('admin.readingEdit.reason')"
+        :aria-label="t('admin.readingEdit.reason')"
+      />
+      <p v-if="!reasonFilled" class="reading-editor__hint">
+        {{ t("admin.readingEdit.reasonHint") }}
+      </p>
       <div class="reading-editor__actions">
         <Button
           :disabled="!canSubmit || isBusy"
@@ -53,7 +79,12 @@
           :label="t('admin.meterChange.open')"
           @click="replacingMeter = true"
         />
-        <Button severity="secondary" variant="text" :label="t('admin.readingEdit.close')" @click="$emit('close')" />
+        <Button
+          severity="secondary"
+          variant="text"
+          :label="t('admin.readingEdit.close')"
+          @click="$emit('close')"
+        />
       </div>
     </template>
   </div>
@@ -85,14 +116,18 @@
   const confirm = useConfirm();
 
   const day = ref<number | null>(props.reading ? toDecimal(props.reading.day_meter_value) : null);
-  const night = ref<number | null>(props.reading ? toDecimal(props.reading.night_meter_value) : null);
+  const night = ref<number | null>(
+    props.reading ? toDecimal(props.reading.night_meter_value) : null
+  );
   const reason = ref("");
   const isBusy = ref(false);
   const restating = ref(false);
   const replacingMeter = ref(false);
 
   const reasonFilled = computed(() => reason.value.trim().length > 0);
-  const canSubmit = computed(() => reasonFilled.value && day.value !== null && night.value !== null);
+  const canSubmit = computed(
+    () => reasonFilled.value && day.value !== null && night.value !== null
+  );
 
   function payload() {
     return {

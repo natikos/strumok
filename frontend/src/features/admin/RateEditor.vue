@@ -18,11 +18,25 @@
         <template v-if="!correcting">
           <div class="rate-editor__field">
             <label :for="`rate-day-${rate.id}`">{{ t("admin.dayRate") }}</label>
-            <InputNumber v-model="day" :input-id="`rate-day-${rate.id}`" :min="0" :min-fraction-digits="2" :max-fraction-digits="4" fluid />
+            <InputNumber
+              v-model="day"
+              :input-id="`rate-day-${rate.id}`"
+              :min="0"
+              :min-fraction-digits="2"
+              :max-fraction-digits="4"
+              fluid
+            />
           </div>
           <div class="rate-editor__field">
             <label :for="`rate-night-${rate.id}`">{{ t("admin.nightRate") }}</label>
-            <InputNumber v-model="night" :input-id="`rate-night-${rate.id}`" :min="0" :min-fraction-digits="2" :max-fraction-digits="4" fluid />
+            <InputNumber
+              v-model="night"
+              :input-id="`rate-night-${rate.id}`"
+              :min="0"
+              :min-fraction-digits="2"
+              :max-fraction-digits="4"
+              fluid
+            />
           </div>
           <Button
             :disabled="!canSave"
@@ -89,7 +103,12 @@
       <ul>
         <li v-for="(change, index) in rate.history" :key="index">
           {{ t(`admin.rateEdit.action${capitalize(change.action)}`) }} ·
-          {{ t("admin.rateEdit.by", { when: formatWhen(change.created_at), who: change.actor_name ?? "—" }) }}
+          {{
+            t("admin.rateEdit.by", {
+              when: formatWhen(change.created_at),
+              who: change.actor_name ?? "—",
+            })
+          }}
           <template v-if="change.before && change.after">
             · {{ change.before["day_rate_uah"] }}/{{ change.before["night_rate_uah"] }} →
             {{ change.after["day_rate_uah"] }}/{{ change.after["night_rate_uah"] }}
@@ -198,8 +217,7 @@
 
   function askDelete(): void {
     confirm.require({
-      accept: () =>
-        void run(() => deleteElectricityRate(props.rate.id, reason.value || undefined)),
+      accept: () => void run(() => deleteElectricityRate(props.rate.id, reason.value || undefined)),
       acceptLabel: t("admin.rateEdit.confirm"),
       header: t("admin.rateEdit.deleteTitle", { period: props.rate.effective_from }),
       message: t("admin.rateEdit.deleteBody"),

@@ -3,6 +3,7 @@
 Revision ID: 0007
 Revises: 0006
 """
+
 from typing import Sequence, Union
 
 import sqlalchemy as sa
@@ -15,8 +16,12 @@ depends_on: Union[str, Sequence[str], None] = None
 
 
 def upgrade() -> None:
-    op.add_column("meter_readings", sa.Column("corrected_at", sa.DateTime(), nullable=True))
-    op.add_column("meter_readings", sa.Column("correction_reason", sa.String(), nullable=True))
+    op.add_column(
+        "meter_readings", sa.Column("corrected_at", sa.DateTime(), nullable=True)
+    )
+    op.add_column(
+        "meter_readings", sa.Column("correction_reason", sa.String(), nullable=True)
+    )
 
 
 def downgrade() -> None:

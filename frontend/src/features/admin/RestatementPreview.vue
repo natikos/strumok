@@ -19,14 +19,22 @@
       </p>
 
       <ul class="restatement__list">
-        <li v-for="line in preview.lines" :key="`${line.period}-${line.household_id}`" class="restatement__card">
+        <li
+          v-for="line in preview.lines"
+          :key="`${line.period}-${line.household_id}`"
+          class="restatement__card"
+        >
           <span class="restatement__name">{{ line.household_name }} · {{ line.period }}</span>
           <span class="restatement__change">
             {{ money(line.before_uah) }} → {{ money(line.after_uah) }}
           </span>
           <span class="restatement__delta">
             {{ signed(line.delta_uah) }}
-            ({{ toDecimal(line.delta_uah) < 0 ? t("admin.restatement.refund") : t("admin.restatement.extra") }})
+            ({{
+              toDecimal(line.delta_uah) < 0
+                ? t("admin.restatement.refund")
+                : t("admin.restatement.extra")
+            }})
           </span>
         </li>
       </ul>
