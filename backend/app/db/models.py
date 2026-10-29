@@ -471,6 +471,76 @@ class Payment(SQLModel, table=True):
     voided_at: Optional[datetime] = Field(default=None)
     voided_by_user_id: Optional[int] = Field(default=None, foreign_key="users.id")
     void_reason: Optional[str] = Field(default=None)
+    bank_transaction_id: Optional[int] = Field(
+        default=None, foreign_key="bank_transactions.id", index=True
+    )
+
+
+class BankStatementFile(SQLModel, table=True):
+    """One imported statement. The file itself is not kept: its credits live in
+    `bank_transactions`, and `covered_through` says how far the books are current."""
+
+    __tablename__ = "bank_statement_files"  # type: ignore
+    __table_args__ = (
+        UniqueConstraint("sha256", name="uq_bank_statement_files_sha256"),
+        CheckConstraint(
+            "covered_through >= last_operation_date",
+            name="ck_bank_statement_files_coverage",
+        ),
+    )
+
+    id: int = Field(default=None, primary_key=True)
+    sha256: str = Field(sa_column=Column(String(64), nullable=False))
+    original_filename: str = Field(sa_column=Column(String(255), nullable=False))
+    encoding: str
+    account_iban: str
+    first_operation_date: date
+    last_operation_date: date
+    covered_through: date
+    rows_total: int
+    credits_new: int
+    credits_duplicate: int
+    debits_skipped: int
+    uploaded_by_user_id: Optional[int] = Field(default=None, foreign_key="users.id")
+    uploaded_at: datetime = Field(
+        default_factory=utc_now,
+        sa_column_kwargs={"server_default": text("CURRENT_TIMESTAMP")},
+    )
+
+
+class BankTransaction(SQLModel, table=True):
+    """An incoming credit from a statement. The raw columns are never edited;
+    whether it is confirmed (a live payment links to it), dismissed or still in
+    the review queue is derived, so voiding a payment needs no extra write."""
+
+    __tablename__ = "bank_transactions"  # type: ignore
+    __table_args__ = (
+        UniqueConstraint(
+            "document_number",
+            "operation_date",
+            "amount_uah",
+            "payer_iban",
+            name="uq_bank_transactions_dedupe",
+        ),
+        CheckConstraint("amount_uah > 0", name="ck_bank_transactions_amount_positive"),
+    )
+
+    id: int = Field(default=None, primary_key=True)
+    document_number: str
+    operation_date: date = Field(index=True)
+    amount_uah: Decimal = Field(decimal_places=2, max_digits=12)
+    # Empty string, not NULL, so the dedupe key treats blanks as equal.
+    payer_iban: str = Field(default="")
+    payer_name: str = Field(default="")
+    purpose: str = Field(default="")
+    first_file_id: int = Field(foreign_key="bank_statement_files.id")
+    suggested_household_id: Optional[int] = Field(
+        default=None, foreign_key="households.id"
+    )
+    suggestion_source: Optional[str] = Field(default=None)
+    dismissed_at: Optional[datetime] = Field(default=None)
+    dismissed_by_user_id: Optional[int] = Field(default=None, foreign_key="users.id")
+    dismiss_reason: Optional[str] = Field(default=None)
 
 
 class OpeningBalance(SQLModel, table=True):
