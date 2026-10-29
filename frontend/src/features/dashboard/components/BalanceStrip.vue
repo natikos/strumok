@@ -53,6 +53,7 @@
     type PaymentDetailsOut,
   } from "@shared/api/billing";
   import { formatUah, toDecimal } from "@shared/utils/format";
+  import { paymentPurpose } from "@shared/utils/paymentPurpose";
 
   defineEmits<{ "open-history": [] }>();
 
@@ -78,7 +79,12 @@
   const ownBalance = computed(() => toDecimal(balance.value?.balance_uah));
   const payable = computed(() => ownBalance.value > 0 && paymentDetails.value !== null);
   const payAmount = computed(() => ownBalance.value.toFixed(2));
-  const payComment = computed(() => current.value?.name ?? "");
+  const payComment = computed(() =>
+    paymentPurpose(
+      t("balance.payPurposeLabel"),
+      households.value.map((h) => h.id)
+    )
+  );
   const householdName = computed(() =>
     households.value.length > 1 ? (current.value?.name ?? "") : ""
   );

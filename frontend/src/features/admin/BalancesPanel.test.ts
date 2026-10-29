@@ -78,13 +78,11 @@ describe("BalancesPanel", () => {
   beforeEach(() => {
     vi.stubGlobal(
       "matchMedia",
-      vi
-        .fn()
-        .mockReturnValue({
-          addEventListener: vi.fn(),
-          matches: false,
-          removeEventListener: vi.fn(),
-        })
+      vi.fn().mockReturnValue({
+        addEventListener: vi.fn(),
+        matches: false,
+        removeEventListener: vi.fn(),
+      })
     );
     confirmRequire.mockReset();
     Object.values(api).forEach((fn) => fn.mockReset());

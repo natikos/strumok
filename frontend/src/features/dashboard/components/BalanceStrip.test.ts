@@ -134,7 +134,7 @@ describe("BalanceStrip", () => {
         amount: "250.50",
         iban: details.iban,
         recipient: "Strumok Co-op",
-        comment: "Plot 1",
+        comment: "Electricity STR-1",
       });
     });
 

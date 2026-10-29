@@ -13,8 +13,14 @@
         </div>
         <p class="bank__payer">{{ t("admin.bank.payer", { name: row.payer_name || "—" }) }}</p>
         <p class="bank__purpose">{{ row.purpose }}</p>
-        <p v-if="row.suggested_household_id" class="bank__suggested">
-          {{ t("admin.bank.suggested") }}: {{ householdName(row.suggested_household_id) }}
+        <p v-if="row.suggestions.length" class="bank__suggested">
+          {{ t("admin.bank.suggested") }}:
+          {{ row.suggestions.map((s) => householdName(s.household_id)).join(", ") }}
+          ({{
+            t(
+              `admin.bank.suggestion${row.suggestions[0]?.source === "name" ? "Name" : "Reference"}`
+            )
+          }})
         </p>
 
         <div v-for="(line, index) in rowLines(row)" :key="index" class="bank__line">
@@ -153,6 +159,15 @@
     );
   }
 
+  // A split suggestion pre-selects every household but leaves amounts for the admin.
+  function prefill(row: BankTransactionOut): Line[] {
+    if (row.suggestions.length > 1) {
+      return row.suggestions.map((s) => ({ householdId: s.household_id, amount: null }));
+    }
+
+    return [{ householdId: row.suggested_household_id, amount: Number(row.amount_uah) }];
+  }
+
   async function load(): Promise<void> {
     isLoading.value = true;
     error.value = null;
@@ -162,9 +177,7 @@
       households.value = all;
       rows.value = queue;
       for (const row of queue) {
-        lines[row.id] ??= [
-          { householdId: row.suggested_household_id, amount: Number(row.amount_uah) },
-        ];
+        lines[row.id] ??= prefill(row);
       }
     } catch {
       error.value = "errors.requestFailed";
@@ -208,7 +221,7 @@
             row.id,
             rowLines(row).map((line) => ({
               household_id: line.householdId as number,
-              amount_uah: ((line.amount ?? 0)).toFixed(2),
+              amount_uah: (line.amount ?? 0).toFixed(2),
             }))
           );
         });
