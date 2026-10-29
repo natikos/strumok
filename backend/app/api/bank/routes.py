@@ -14,7 +14,7 @@ from fastapi.responses import JSONResponse
 from sqlmodel import Session
 
 from app.api.auth.schemas import ErrorOut
-from app.api.bank import review
+from app.api.bank import inbox, review
 from app.api.bank.matching import suggest_households
 from app.api.bank.schemas import (
     BankStatementErrorOut,
@@ -22,6 +22,7 @@ from app.api.bank.schemas import (
     ConfirmedPaymentOut,
     ConfirmIn,
     LinkCandidateOut,
+    InboxCheckOut,
     LinkIn,
     StatementImportOut,
     SuggestionOut,
@@ -48,6 +49,19 @@ router = APIRouter(
 )
 
 CurrentAdmin = Depends(require_admin)
+
+
+def _error(code: int, *details: str) -> dict[str, Any]:
+    return {
+        "description": ", ".join(details),
+        "model": ErrorOut,
+        "content": {
+            "application/json": {
+                "examples": {d: {"value": {"detail": d}} for d in details}
+            }
+        },
+    }
+
 
 _UPLOAD_RESPONSES: dict[int | str, dict[str, Any]] = {
     413: {
@@ -122,6 +136,29 @@ def upload_statement(
     )
 
 
+@router.post(
+    "/check-inbox",
+    response_model=InboxCheckOut,
+    responses={
+        422: _error(422, "inboxNotConfigured"),
+        502: _error(502, "inboxUnavailable"),
+    },
+)
+def check_inbox(session: Session = Depends(get_session)) -> InboxCheckOut:
+    try:
+        result = inbox.check_inbox(session)
+    except inbox.InboxNotConfiguredError as exc:
+        raise HTTPException(422, "inboxNotConfigured") from exc
+    except inbox.InboxUnavailableError as exc:
+        raise HTTPException(502, "inboxUnavailable") from exc
+    return InboxCheckOut(
+        received=result.received,
+        imported=result.imported,
+        rejected=result.rejected,
+        credits_new=result.credits_new,
+    )
+
+
 def _notify_shortfall_safely(session: Session) -> None:
     """Runs after the change has committed: clearing the last queued credit
     is what can finally open the shortfall window."""
@@ -136,18 +173,6 @@ review_router = APIRouter(
     tags=["bank"],
     dependencies=[Depends(require_admin)],
 )
-
-
-def _error(code: int, *details: str) -> dict[str, Any]:
-    return {
-        "description": ", ".join(details),
-        "model": ErrorOut,
-        "content": {
-            "application/json": {
-                "examples": {d: {"value": {"detail": d}} for d in details}
-            }
-        },
-    }
 
 
 _RESOLVE_RESPONSES: dict[int | str, dict[str, Any]] = {

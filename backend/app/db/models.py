@@ -508,6 +508,31 @@ class BankStatementFile(SQLModel, table=True):
     )
 
 
+class BankMailFetch(SQLModel, table=True):
+    """One emailed message looked at by the inbox ingest. Keyed by Message-ID so
+    a rejected message is not examined again. Sender and subject are not kept:
+    only the verdict and a stable reason code."""
+
+    __tablename__ = "bank_mail_fetches"  # type: ignore
+    __table_args__ = (
+        UniqueConstraint("message_id", name="uq_bank_mail_fetches_message_id"),
+        CheckConstraint(
+            "status IN ('received', 'imported', 'rejected')",
+            name="ck_bank_mail_fetches_status",
+        ),
+    )
+
+    id: int = Field(default=None, primary_key=True)
+    message_id: str = Field(sa_column=Column(String(512), nullable=False))
+    status: str
+    reason: Optional[str] = None
+    file_id: Optional[int] = Field(default=None, foreign_key="bank_statement_files.id")
+    fetched_at: datetime = Field(
+        default_factory=utc_now,
+        sa_column_kwargs={"server_default": text("CURRENT_TIMESTAMP")},
+    )
+
+
 class BankTransaction(SQLModel, table=True):
     """An incoming credit from a statement. The raw columns are never edited;
     whether it is confirmed (a live payment links to it), dismissed or still in

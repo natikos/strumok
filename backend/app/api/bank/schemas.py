@@ -64,3 +64,10 @@ class ConfirmedPaymentOut(BaseModel):
     payment_id: int
     household_id: int
     amount_uah: Decimal
+
+
+class InboxCheckOut(BaseModel):
+    received: int
+    imported: int
+    rejected: int
+    credits_new: int
