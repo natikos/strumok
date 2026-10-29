@@ -3,13 +3,14 @@ from datetime import datetime, timedelta, timezone
 from typing import Any
 
 from jose import JWTError, jwt
+from jose.exceptions import ExpiredSignatureError
 from passlib.context import CryptContext
 from sqlalchemy.exc import IntegrityError
 from sqlmodel import Session, asc, select
 
 from app.core.config import settings
 from app.core.email import EmailSendError, send_email
-from app.core.time import utc_now
+from app.core.time import now_utc_aware, utc_now
 from app.db.models import Household, User
 
 logger = logging.getLogger(__name__)
@@ -97,14 +98,31 @@ def authenticate_user(*, session: Session, email: str, password: str) -> User:
     return user
 
 
+def _decode_token(token: str, *, verify_expiration: bool = True) -> dict[str, Any]:
+    """Checks the signature and requires `exp`, then compares `exp` with the
+    app clock rather than letting jose use the real one, so an e2e run with a
+    shifted clock issues tokens that are still valid."""
+    payload = jwt.decode(
+        token,
+        settings.auth.secret_key.get_secret_value(),
+        algorithms=[settings.auth.algorithm],
+        # jose's require_exp would turn its real-clock check back on, so the
+        # claim's presence is checked below instead.
+        options={"verify_exp": False},
+    )
+    # Same rule as jose's own check: whole seconds, expired once exp < now.
+    try:
+        expires_at = int(payload["exp"])
+    except (KeyError, TypeError, ValueError) as exc:
+        raise JWTError("Expiration Time claim (exp) must be an integer.") from exc
+    if verify_expiration and expires_at < int(now_utc_aware().timestamp()):
+        raise ExpiredSignatureError("Signature has expired.")
+    return payload
+
+
 def _decode_access_token(*, token: str, verify_expiration: bool) -> dict[str, Any]:
     try:
-        payload = jwt.decode(
-            token,
-            settings.auth.secret_key.get_secret_value(),
-            algorithms=[settings.auth.algorithm],
-            options={"verify_exp": verify_expiration},
-        )
+        payload = _decode_token(token, verify_expiration=verify_expiration)
 
         if payload.get("type") != "access":
             raise ValueError("Unexpected token type")
@@ -211,11 +229,7 @@ def create_email_verification_token(user: User) -> str:
 
 def verify_email_token(*, session: Session, token: str) -> User:
     try:
-        payload = jwt.decode(
-            token,
-            settings.auth.secret_key.get_secret_value(),
-            algorithms=[settings.auth.algorithm],
-        )
+        payload = _decode_token(token)
 
         if payload.get("type") != VERIFICATION_TOKEN_TYPE:
             raise ValueError("Unexpected token type")
@@ -432,11 +446,7 @@ def request_email_change(
 
 def confirm_email_change(*, session: Session, token: str) -> User:
     try:
-        payload = jwt.decode(
-            token,
-            settings.auth.secret_key.get_secret_value(),
-            algorithms=[settings.auth.algorithm],
-        )
+        payload = _decode_token(token)
         if payload.get("type") != EMAIL_CHANGE_TOKEN_TYPE:
             raise ValueError("Unexpected token type")
         user_id = int(payload["sub"])
@@ -544,11 +554,7 @@ def request_password_reset(*, session: Session, email: str) -> None:
 
 def confirm_password_reset(*, session: Session, token: str, password: str) -> User:
     try:
-        payload = jwt.decode(
-            token,
-            settings.auth.secret_key.get_secret_value(),
-            algorithms=[settings.auth.algorithm],
-        )
+        payload = _decode_token(token)
         if payload.get("type") != PASSWORD_RESET_TOKEN_TYPE:
             raise ValueError("Unexpected token type")
         user_id = int(payload["sub"])
