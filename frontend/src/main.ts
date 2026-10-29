@@ -78,11 +78,12 @@ const authReady = initAuthSession();
 // is cleared and sent to login.
 registerSessionExpiredHandler(() => {
   if (!getAuthSessionState().isAuthenticated) {
-    return;
+    return false;
   }
 
   setAuthSessionState(false, false);
   void router.replace(ROUTES.auth);
+  return true;
 });
 
 router.beforeEach(async (to) => {
