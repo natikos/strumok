@@ -203,6 +203,42 @@ describe("AdminHouseholdAssignment", () => {
     });
   });
 
+  it("asks for the handover meters when an unowned plot had an earlier owner", async () => {
+    const targetUser = makeUser({ id: 3 });
+    const household = makeHousehold({ id: 20 });
+    listAdminUsers.mockResolvedValue([targetUser]);
+    listAdminHouseholds.mockResolvedValue([household]);
+    assignAdminHouseholdOwner
+      .mockRejectedValueOnce(new ApiError("handoverReadingRequired", 409))
+      .mockRejectedValueOnce(new ApiError("householdHasOutstandingBalance", 409))
+      .mockResolvedValueOnce({ ...household, owner: targetUser, user_id: targetUser.id });
+
+    const wrapper = await mountForm();
+    const selects = wrapper.findAllComponents(Select);
+    await selects[0]!.setValue(household.id);
+    await selects[1]!.setValue(targetUser.id);
+    expect(wrapper.findAllComponents(InputNumber)).toHaveLength(0);
+
+    await wrapper.find(".admin-assignment__submit").trigger("click");
+    await flushPromises();
+    expect(wrapper.text()).toContain("Enter both meter values at the handover");
+
+    fillHandover(wrapper);
+    await wrapper.find(".admin-assignment__submit").trigger("click");
+    await flushPromises();
+    expect(confirmRequire.mock.calls[0]![0].message).toContain("The previous owner still owes");
+    confirmRequire.mock.calls[0]![0].accept();
+    await flushPromises();
+
+    expect(assignAdminHouseholdOwner).toHaveBeenLastCalledWith(20, {
+      acknowledge_balance: true,
+      confirm_reassignment: true,
+      handover_day_meter_value: "500",
+      handover_night_meter_value: "200",
+      user_id: 3,
+    });
+  });
+
   it("sends the starting meter values when creating a new household", async () => {
     const owner = makeUser({ email: "new@example.com", id: 5 });
     listAdminUsers.mockResolvedValue([owner]);

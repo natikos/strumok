@@ -133,7 +133,7 @@
       </span>
     </div>
 
-    <div v-if="isReassignment" class="admin-assignment__starting">
+    <div v-if="needsHandover" class="admin-assignment__starting">
       <p class="admin-assignment__hint">{{ $t("admin.handoverHint") }}</p>
       <div class="admin-assignment__field">
         <label class="admin-assignment__label" for="admin-handover-day">
@@ -352,6 +352,7 @@
     startingNight.value = null;
     handoverDay.value = null;
     handoverNight.value = null;
+    handoverDemanded.value = false;
     errors.value = {};
   }
 
@@ -381,7 +382,7 @@
       next.starting = "admin.startingBoth";
     }
 
-    if (isReassignment.value && (handoverDay.value === null || handoverNight.value === null)) {
+    if (needsHandover.value && (handoverDay.value === null || handoverNight.value === null)) {
       next.handover = "admin.handoverRequired";
     }
 
@@ -407,7 +408,7 @@
           acknowledge_balance: acknowledgeBalance,
           confirm_reassignment: confirmReassignment,
           user_id: selectedUserId.value,
-          ...(isReassignment.value && handoverDay.value !== null && handoverNight.value !== null
+          ...(needsHandover.value && handoverDay.value !== null && handoverNight.value !== null
             ? {
                 handover_day_meter_value: String(handoverDay.value),
                 handover_night_meter_value: String(handoverNight.value),
@@ -452,6 +453,12 @@
       if (error.message === "householdHasOutstandingBalance") {
         confirmBalanceDialog();
       }
+
+      // An unowned plot someone held before still needs the handover meters.
+      if (error.message === "handoverReadingRequired") {
+        handoverDemanded.value = true;
+        errors.value = { ...errors.value, handover: "admin.handoverRequired" };
+      }
     } finally {
       isLoading.value = false;
     }
@@ -462,7 +469,9 @@
       accept: () => void performAssignment(true, true),
       acceptLabel: t("admin.balanceConfirmAccept"),
       header: t("admin.balanceConfirmTitle"),
-      message: t("admin.balanceConfirmBody", { owner: selectedHouseholdOwnerLabel.value ?? "" }),
+      message: selectedHouseholdOwnerLabel.value
+        ? t("admin.balanceConfirmBody", { owner: selectedHouseholdOwnerLabel.value })
+        : t("admin.balanceConfirmBodyPrevious"),
       rejectLabel: t("admin.reassignConfirmReject"),
     });
   }
@@ -487,6 +496,14 @@
       currentOwnerId !== selectedUserId.value
     );
   });
+
+  // Set when the backend reports the unowned plot had an earlier owner.
+  const handoverDemanded = ref(false);
+  watch([selectedHouseholdId, selectedUserId], () => {
+    handoverDemanded.value = false;
+  });
+
+  const needsHandover = computed(() => isReassignment.value || handoverDemanded.value);
 
   async function handleSubmit(): Promise<void> {
     if (!validate()) {
