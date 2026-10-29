@@ -1262,6 +1262,8 @@ def create_opening_balance_correction(
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="openingBalanceNotFound"
         ) from exc
+    # A correction can push an owner's carried-over debt past due.
+    _notify_safely(notify_shortfall, session=session)
     opening = get_opening_balance(session=session, household_id=household_id)
     assert opening is not None
     return _opening_balance_out(session=session, opening=opening)
