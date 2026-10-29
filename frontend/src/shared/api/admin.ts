@@ -368,3 +368,22 @@ export async function putAdminPaymentDetails(
 
   return data;
 }
+
+export type StatementImportOut = components["schemas"]["StatementImportOut"];
+
+export async function uploadBankStatement(file: File): Promise<StatementImportOut> {
+  const { data, error, response } = await appApiClient.POST("/admin/bank-statements", {
+    body: { file: file as unknown as string },
+    bodySerializer: () => {
+      const form = new FormData();
+      form.append("file", file);
+      return form;
+    },
+  });
+
+  if (error) {
+    throw buildApiError(response.status, error);
+  }
+
+  return data;
+}
