@@ -523,6 +523,7 @@
     "periodNotOpen": "This period isn't open for submissions right now. Refresh and try again",
     "requestFailed": "Something went wrong. Please try again",
     "retry": "Retry",
+    "sessionUnreachable": "Can't reach the server. Check your connection and try again.",
     "serverError": "Something went wrong. Please try again",
     "tooManyAttempts": "Too many failed attempts. Please wait and try again",
     "tooManyRequests": "Too many requests. Please wait and try again",
