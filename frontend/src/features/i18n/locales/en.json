@@ -319,6 +319,9 @@
       "dismissTitle": "Dismiss this credit?",
       "dismissBody": "{amount} will leave the queue as not a resident payment.",
       "dismissAccept": "Dismiss",
+      "linkTitle": "Link payment?",
+      "linkBody": "The credit of {amount} will be matched to the existing transfer for {name} dated {date}. No new payment is created.",
+      "linkAccept": "Link",
       "linked": "Linked",
       "confirmed": "Payments created"
     },

@@ -1,6 +1,6 @@
 """Bank review queue (issue #253). Fixtures are synthetic."""
 
-from datetime import date
+from datetime import date, datetime
 from decimal import Decimal
 
 from sqlmodel import Session, select
@@ -231,3 +231,80 @@ def test_link_existing_manual_transfer(client, session: Session) -> None:
 def test_unknown_transaction_404(client, session: Session) -> None:
     _admin(client, session)
     assert client.post(f"{BASE}/999999/dismiss").status_code == 404
+
+
+def test_owner_mid_history(client, session: Session) -> None:
+    from app.db.models import HouseholdOwnership
+
+    _admin(client, session)
+    first, second = make_user(session), make_user(session)
+    household = make_household(session, user_id=second.id)
+    session.add_all(
+        [
+            HouseholdOwnership(
+                household_id=household.id,
+                user_id=first.id,
+                valid_from=datetime(2024, 1, 1),
+                valid_to=datetime(2025, 3, 1),
+            ),
+            HouseholdOwnership(
+                household_id=household.id,
+                user_id=second.id,
+                valid_from=datetime(2025, 3, 1),
+            ),
+        ]
+    )
+    session.flush()
+    old = _tx(session, day=date(2025, 2, 10))
+    new = _tx(session, day=date(2025, 4, 10))
+    _confirm(client, old, (household.id, "500.00"))
+    _confirm(client, new, (household.id, "500.00"))
+    owners = {p.paid_on: p.owner_user_id for p in session.exec(select(Payment))}
+    assert owners == {date(2025, 2, 10): first.id, date(2025, 4, 10): second.id}
+
+
+def test_unknown_household_404_creates_nothing(client, session: Session) -> None:
+    _admin(client, session)
+    tx = _tx(session)
+    assert _confirm(client, tx, (999999, "500.00")).status_code == 404
+    assert session.exec(select(Payment)).first() is None
+
+
+def test_credit_before_opening_balance_rejected(client, session: Session) -> None:
+    _admin(client, session)
+    household = make_household(session)
+    session.add(
+        OpeningBalance(
+            household_id=household.id,
+            amount_uah=Decimal("10.00"),
+            as_of=date(2025, 5, 16),
+        )
+    )
+    session.flush()
+    tx = _tx(session, day=date(2025, 5, 15))
+    assert _confirm(client, tx, (household.id, "500.00")).status_code == 422
+
+
+def test_voiding_linked_payment_requeues(client, session: Session) -> None:
+    admin = _admin(client, session)
+    household = make_household(session)
+    tx = _tx(session)
+    payment = Payment(
+        household_id=household.id,
+        amount_uah=Decimal("500.00"),
+        paid_on=tx.operation_date,
+        method="transfer",
+        recorded_by_user_id=admin.id,
+    )
+    session.add(payment)
+    session.flush()
+    client.post(f"{BASE}/{tx.id}/link", json={"payment_id": payment.id})
+    assert client.get(BASE).json() == []
+    client.post(f"/admin/payments/{payment.id}/void", json={"reason": "wrong"})
+    assert [row["id"] for row in client.get(BASE).json()] == [tx.id]
+
+
+def test_post_endpoints_require_admin(client, session: Session) -> None:
+    authenticate(client, make_user(session))
+    assert client.post(f"{BASE}/1/dismiss").status_code == 403
+    assert _confirm(client, type("T", (), {"id": 1}), (1, "1.00")).status_code == 403

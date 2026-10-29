@@ -167,7 +167,9 @@ def _opening_amount(
 def void_payment(
     *, session: Session, payment_id: int, reason: str, actor_id: int
 ) -> Payment:
-    payment = session.get(Payment, payment_id)
+    payment = session.exec(
+        select(Payment).where(Payment.id == payment_id).with_for_update()
+    ).first()
     if payment is None:
         raise PaymentNotFoundError
     if payment.voided_at is not None:
@@ -183,6 +185,7 @@ def void_payment(
                 .where(Payment.bank_transaction_id == payment.bank_transaction_id)
                 .where(Payment.id != payment.id)
                 .where(col(Payment.voided_at).is_(None))
+                .with_for_update()
             )
         )
     for target in targets:

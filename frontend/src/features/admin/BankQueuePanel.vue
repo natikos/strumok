@@ -14,7 +14,7 @@
         <p class="bank__payer">{{ t("admin.bank.payer", { name: row.payer_name || "—" }) }}</p>
         <p class="bank__purpose">{{ row.purpose }}</p>
         <p v-if="row.suggested_household_id" class="bank__suggested">
-          {{ t("admin.bank.suggested") }}: {{ row.suggestion_source }}
+          {{ t("admin.bank.suggested") }}: {{ householdName(row.suggested_household_id) }}
         </p>
 
         <div v-for="(line, index) in rowLines(row)" :key="index" class="bank__line">
@@ -78,7 +78,7 @@
               })
             "
             :disabled="busyId === row.id"
-            @click="doLink(row, candidate.payment_id)"
+            @click="askLink(row, candidate)"
           />
         </div>
       </li>
@@ -227,8 +227,22 @@
     });
   }
 
-  function doLink(row: BankTransactionOut, paymentId: number): Promise<void> {
-    return run(row, () => linkBankTransaction(row.id, paymentId));
+  function askLink(
+    row: BankTransactionOut,
+    candidate: BankTransactionOut["link_candidates"][number]
+  ): void {
+    confirm.require({
+      header: t("admin.bank.linkTitle"),
+      message: t("admin.bank.linkBody", {
+        amount: money(row.amount_uah),
+        name: householdName(candidate.household_id),
+        date: candidate.paid_on,
+      }),
+      acceptLabel: t("admin.bank.linkAccept"),
+      accept: () => {
+        void run(row, () => linkBankTransaction(row.id, candidate.payment_id));
+      },
+    });
   }
 
   onMounted(load);

@@ -107,6 +107,9 @@ describe("BankQueuePanel", () => {
     await flushPromises();
 
     await buttonByText(wrapper, "Link to Plot 1")?.trigger("click");
+    expect(api.linkBankTransaction).not.toHaveBeenCalled();
+
+    confirmRequire.mock.calls[0]?.[0].accept();
     await flushPromises();
 
     expect(api.linkBankTransaction).toHaveBeenCalledWith(5, 9);
