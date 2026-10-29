@@ -18,7 +18,7 @@ from app.api.auth.throttle import (
     record_failure,
 )
 from app.core import audit
-from app.core.ownership import set_owner
+from app.core.ownership import last_owner_id, set_owner
 from app.api.billing.payments import get_balance
 from app.api.billing.service import derive_reading_usage
 from app.core.domain import (
@@ -401,14 +401,23 @@ def assign_household_owner(
     if is_reassignment and not confirm_reassignment:
         raise HouseholdAlreadyAssignedError
 
-    is_transfer = is_reassignment and user_id is not None
+    outgoing_owner_id = previous_owner_id
+    if outgoing_owner_id is None and user_id is not None:
+        # An unowned plot that someone held before is handed over all the same:
+        # unassigning first must not skip the handover reading or the balance.
+        outgoing_owner_id = last_owner_id(session, household.id)
+    is_transfer = (
+        user_id is not None
+        and outgoing_owner_id is not None
+        and outgoing_owner_id != user_id
+    )
     handover = None
     if is_transfer:
         if handover_day is None or handover_night is None:
             raise HandoverReadingRequiredError
         handover = (handover_day, handover_night)
         owed = get_balance(
-            session=session, household_id=household.id, owner_user_id=previous_owner_id
+            session=session, household_id=household.id, owner_user_id=outgoing_owner_id
         ).balance_uah
         if owed > 0 and not acknowledge_balance:
             raise HouseholdHasOutstandingBalanceError
@@ -420,7 +429,14 @@ def assign_household_owner(
         entity_type="household",
         entity_id=household.id,
         household_id=household.id,
-        before={"user_id": previous_owner_id},
+        before={
+            "user_id": previous_owner_id,
+            **(
+                {"outgoing_user_id": outgoing_owner_id}
+                if outgoing_owner_id != previous_owner_id
+                else {}
+            ),
+        },
         after={
             "user_id": user_id,
             **(
