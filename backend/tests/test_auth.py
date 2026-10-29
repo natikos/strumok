@@ -953,3 +953,78 @@ class TestPasswordReset:
             json={"token": create_access_token(user), "password": "brand-new-pass-1"},
         )
         assert response.status_code == 400
+
+
+class TestMeHasPastHouseholds:
+    @staticmethod
+    def _me(client, session, user):
+        from tests.factories import authenticate
+
+        session.commit()
+        authenticate(client, user)
+        res = client.get("/auth/me")
+        assert res.status_code == 200
+        return res.json()
+
+    def test_true_for_user_whose_only_plot_was_handed_over(
+        self, client, session
+    ) -> None:
+        from app.core.ownership import set_owner
+        from tests.factories import make_household, make_user
+
+        old, new = make_user(session), make_user(session)
+        plot = make_household(session, user_id=old.id)
+        set_owner(session, plot, old.id)
+        set_owner(session, plot, new.id)
+        body = self._me(client, session, old)
+        assert body["households"] == []
+        assert body["has_past_households"] is True
+
+    def test_false_for_current_owner_of_a_plot_that_changed_hands(
+        self, client, session
+    ) -> None:
+        from app.core.ownership import set_owner
+        from tests.factories import make_household, make_user
+
+        old, new = make_user(session), make_user(session)
+        plot = make_household(session, user_id=old.id)
+        set_owner(session, plot, old.id)
+        set_owner(session, plot, new.id)
+        assert self._me(client, session, new)["has_past_households"] is False
+
+    def test_false_for_user_with_no_tenure(self, client, session) -> None:
+        from tests.factories import make_user
+
+        assert (
+            self._me(client, session, make_user(session))["has_past_households"]
+            is False
+        )
+
+    def test_false_when_user_got_the_same_plot_back(self, client, session) -> None:
+        from app.core.ownership import set_owner
+        from tests.factories import make_household, make_user
+
+        a, b = make_user(session), make_user(session)
+        plot = make_household(session, user_id=a.id)
+        set_owner(session, plot, a.id)
+        set_owner(session, plot, b.id)
+        set_owner(session, plot, a.id)
+        body = self._me(client, session, a)
+        assert [h["id"] for h in body["households"]] == [plot.id]
+        assert body["has_past_households"] is False
+
+    def test_true_when_user_holds_one_plot_and_gave_up_another(
+        self, client, session
+    ) -> None:
+        from app.core.ownership import set_owner
+        from tests.factories import make_household, make_user
+
+        a, b = make_user(session), make_user(session)
+        kept = make_household(session, name="Kept", user_id=a.id)
+        gone = make_household(session, name="Gone", user_id=a.id)
+        set_owner(session, kept, a.id)
+        set_owner(session, gone, a.id)
+        set_owner(session, gone, b.id)
+        body = self._me(client, session, a)
+        assert [h["id"] for h in body["households"]] == [kept.id]
+        assert body["has_past_households"] is True

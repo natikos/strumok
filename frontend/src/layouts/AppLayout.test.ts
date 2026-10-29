@@ -78,6 +78,7 @@ describe("AppLayout household-membership gate", () => {
     getMe.mockReset();
     logoutUser.mockReset();
     useCurrentHousehold().setHouseholds([]);
+    useCurrentHousehold().setPastOnly(false);
   });
 
   afterEach(() => {
@@ -126,5 +127,47 @@ describe("AppLayout household-membership gate", () => {
       { id: 3, name: "Plot 3" },
       { id: 4, name: "Plot 4" },
     ]);
+  });
+
+  it("shows the app read-only, not the blocking screen, for a former owner with no plot", async () => {
+    getMe.mockResolvedValue(makeMe({ households: [], has_past_households: true }));
+
+    const wrapper = await mountLayout();
+
+    expect(wrapper.findComponent({ name: "NoHouseholdScreen" }).exists()).toBe(false);
+    expect(wrapper.find(".app-sidebar").exists()).toBe(true);
+    expect(useCurrentHousehold().isPastOnly.value).toBe(true);
+  });
+
+  it("is not past-only when the user has no plot and never had one", async () => {
+    getMe.mockResolvedValue(makeMe({ households: [], has_past_households: false }));
+
+    await mountLayout();
+
+    expect(useCurrentHousehold().isPastOnly.value).toBe(false);
+  });
+
+  it("is not past-only when the user still holds a plot even with past households", async () => {
+    getMe.mockResolvedValue(
+      makeMe({ households: [{ id: 7, name: "Plot 7" }], has_past_households: true })
+    );
+
+    await mountLayout();
+
+    expect(useCurrentHousehold().isPastOnly.value).toBe(false);
+  });
+
+  it("clears past-only state when a former owner is later given a plot via check-again", async () => {
+    useCurrentHousehold().setPastOnly(true);
+    getMe.mockResolvedValue(makeMe({ households: [], has_past_households: false }));
+    const wrapper = await mountLayout();
+    expect(useCurrentHousehold().isPastOnly.value).toBe(false);
+
+    await wrapper
+      .findComponent({ name: "NoHouseholdScreen" })
+      .vm.$emit("unblocked", makeMe({ households: [{ id: 2, name: "Plot 2" }] }));
+    await flushPromises();
+
+    expect(useCurrentHousehold().isPastOnly.value).toBe(false);
   });
 });

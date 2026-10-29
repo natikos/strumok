@@ -15,6 +15,7 @@ const { getBalance, getPaymentDetails, listMyStatements } = vi.hoisted(() => ({
 let BalanceStrip: Component;
 let PaySheet: Component;
 let setHouseholds: (households: { id: number; name: string }[]) => unknown;
+let setPastOnly: (value: boolean) => void;
 
 beforeAll(async () => {
   vi.resetModules();
@@ -24,6 +25,7 @@ beforeAll(async () => {
   // Same module instance as the component imports after the reset.
   const household = await import("@/features/households/useCurrentHousehold");
   setHouseholds = household.useCurrentHousehold().setHouseholds;
+  setPastOnly = household.useCurrentHousehold().setPastOnly;
 });
 
 afterAll(() => {
@@ -57,6 +59,68 @@ describe("BalanceStrip", () => {
     getPaymentDetails.mockReset().mockResolvedValue(null);
     listMyStatements.mockReset().mockResolvedValue([]);
     setHouseholds([{ id: 1, name: "Plot 1" }]);
+    setPastOnly(false);
+  });
+
+  describe("past-only (no plot left)", () => {
+    const details = { iban: "UA213223130000026007233566001", recipient_name: "Strumok Co-op" };
+    const past = (id: number, amount: string) => ({
+      household_id: id,
+      is_current_owner: false,
+      balance: balance({ household_id: id, balance_uah: amount }),
+    });
+
+    beforeEach(() => {
+      setHouseholds([]);
+      setPastOnly(true);
+    });
+
+    it("does not request a current-plot balance and shows what is owed on gave-up plots", async () => {
+      listMyStatements.mockResolvedValue([past(9, "212.40")]);
+      const wrapper = mountStrip();
+      await flushPromises();
+
+      expect(getBalance).not.toHaveBeenCalled();
+      expect(wrapper.text()).toContain("You owe");
+      expect(wrapper.text()).toContain("212");
+    });
+
+    it("pays only for the gave-up plots that owe, referencing exactly those plots", async () => {
+      getPaymentDetails.mockResolvedValue(details);
+      listMyStatements.mockResolvedValue([past(9, "100.10"), past(11, "-40.00"), past(12, "50.20")]);
+      const wrapper = mountStrip();
+      await flushPromises();
+
+      expect(wrapper.find(".balance-strip__pay").exists()).toBe(true);
+      const props = wrapper.findComponent({ name: "PaySheet" }).props();
+      expect(props.comment).toContain("STR-9");
+      expect(props.comment).toContain("STR-12");
+      expect(props.comment).not.toContain("STR-11");
+      expect(props.amount).toBe("150.30");
+    });
+
+    it("shows the net owed but pays only the owing plot when another is in credit", async () => {
+      getPaymentDetails.mockResolvedValue(details);
+      listMyStatements.mockResolvedValue([past(21, "500.00"), past(22, "-200.00")]);
+      const wrapper = mountStrip();
+      await flushPromises();
+
+      expect(wrapper.text()).toContain("You owe");
+      expect(wrapper.text()).toContain("300");
+      const props = wrapper.findComponent({ name: "PaySheet" }).props();
+      expect(props.amount).toBe("500.00");
+      expect(props.comment).toContain("STR-21");
+      expect(props.comment).not.toContain("STR-22");
+    });
+
+    it("offers no Pay when gave-up plots are all paid or in credit", async () => {
+      getPaymentDetails.mockResolvedValue(details);
+      listMyStatements.mockResolvedValue([past(9, "-40.00")]);
+      const wrapper = mountStrip();
+      await flushPromises();
+
+      expect(wrapper.find(".balance-strip__pay").exists()).toBe(false);
+    });
   });
 
   it("says what is owed and how many months are unpaid", async () => {

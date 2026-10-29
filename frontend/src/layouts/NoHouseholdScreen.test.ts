@@ -91,6 +91,17 @@ describe("NoHouseholdScreen", () => {
     expect(wrapper.find(".no-household-card__notice").exists()).toBe(false);
   });
 
+  it("emits unblocked for a former owner who has no plot but has past households", async () => {
+    const updatedMe = makeMe({ households: [], has_past_households: true });
+    getMe.mockResolvedValue(updatedMe);
+
+    const wrapper = mountScreen();
+    await findButton(wrapper, "Check again")?.trigger("click");
+    await flushPromises();
+
+    expect(wrapper.emitted("unblocked")).toEqual([[updatedMe]]);
+  });
+
   it("shows the still-not-assigned notice and does not emit when the resident remains unassigned", async () => {
     getMe.mockResolvedValue(makeMe({ households: [] }));
 

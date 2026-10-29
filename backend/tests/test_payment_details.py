@@ -3,6 +3,7 @@
 from sqlmodel import Session, select
 
 from app.api.billing.payment_details import InvalidIbanError, normalize_iban
+from app.core.ownership import set_owner
 from app.db.models import AuditLog
 from tests.factories import authenticate, make_household, make_user
 
@@ -103,3 +104,29 @@ class TestResidentRead:
 
     def test_requires_authentication(self, client) -> None:
         assert client.get("/billing/payment-details").status_code == 401
+
+    def test_former_owner_with_no_plot_left_can_still_read_details(
+        self, client, session: Session
+    ) -> None:
+        authenticate(client, make_user(session, is_admin=True))
+        _put(client)
+        old, new = make_user(session), make_user(session)
+        plot = make_household(session, user_id=old.id)
+        set_owner(session, plot, old.id)
+        set_owner(session, plot, new.id)
+        session.commit()
+        authenticate(client, old)
+        res = client.get("/billing/payment-details")
+        assert res.status_code == 200
+        assert res.json() == {"iban": IBAN, "recipient_name": "Strumok Co-op"}
+
+    def test_user_who_never_owned_anything_gets_404_even_if_others_have_plots(
+        self, client, session: Session
+    ) -> None:
+        owner = make_user(session)
+        set_owner(session, make_household(session), owner.id)
+        session.commit()
+        authenticate(client, make_user(session))
+        res = client.get("/billing/payment-details")
+        assert res.status_code == 404
+        assert res.json()["detail"] == "noHouseholdMembership"

@@ -65,6 +65,25 @@ async function mountPage() {
   return wrapper;
 }
 
+describe("UsageHistoryPage past-only", () => {
+  beforeEach(() => {
+    listMyMeterReadings.mockReset().mockResolvedValue([]);
+    listStatements.mockReset().mockResolvedValue([]);
+    useCurrentHousehold().setHouseholds([]);
+    useCurrentHousehold().setPastOnly(true);
+  });
+
+  afterEach(() => {
+    useCurrentHousehold().setPastOnly(false);
+  });
+
+  it("does not load the current plot's readings for a user with no plot", async () => {
+    await mountPage();
+
+    expect(listMyMeterReadings).not.toHaveBeenCalled();
+  });
+});
+
 describe("UsageHistoryPage submissionRecord", () => {
   beforeEach(() => {
     listMyMeterReadings.mockReset();
