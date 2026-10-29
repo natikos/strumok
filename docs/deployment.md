@@ -77,6 +77,18 @@ days; if it is put to sleep after the 10th, wake it before the 1st. Users are
 claimed in `NotificationLog` before sending, so overlapping runs or multiple
 instances notify each `(user, period, variant)` at most once.
 
+## Bank Statement Inbox
+
+When the `IMAP_*` variables are set, the same scheduler runs an hourly check
+(minute 30 UTC) of the mailbox, read-only, for messages from the allow-listed
+senders in the last 45 days. A message is imported only if the receiving
+server's top `Authentication-Results` (authserv-id `IMAP_AUTHSERV_ID`) shows
+`dmarc=pass` for the sender's domain (or a `dkim=pass` aligned with it) and it carries a `.csv` attachment under
+1 MB. Imported credits go to the review queue like an upload. Each message is
+recorded once in `bank_mail_fetches` (`received`, `imported` or `rejected` with
+a reason code). Admins can run `POST /admin/bank-statements/check-inbox` if the
+instance was asleep. Gmail needs 2-step verification to issue the app password.
+
 ## Environment Variables
 
 | Variable                 | Description                                                                       |
@@ -93,3 +105,9 @@ instances notify each `(user, period, variant)` at most once.
 | `PUSH_VAPID_PUBLIC_KEY`  | VAPID public key for Web Push notifications                                       |
 | `PUSH_VAPID_PRIVATE_KEY` | VAPID private key for Web Push notifications                                      |
 | `PUSH_VAPID_SUBJECT`     | Contact URI (`mailto:` or URL) sent with Web Push requests                        |
+| `IMAP_USER`              | Co-op mailbox that receives the accountant's statement (ingest is off until set)  |
+| `IMAP_PASSWORD`          | Gmail app password for `IMAP_USER`. Secret: never log it or commit it             |
+| `IMAP_ALLOWED_SENDERS`   | Comma-separated sender addresses whose `.csv` attachments are imported            |
+| `IMAP_HOST`              | IMAP server (default `imap.gmail.com`)                                            |
+| `IMAP_AUTHSERV_ID`       | Receiving server whose `Authentication-Results` is trusted (default `mx.google.com`) |
+| `IMAP_FOLDER`            | Mailbox folder to read (default `INBOX`)                                          |

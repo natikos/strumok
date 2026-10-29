@@ -63,6 +63,38 @@ class PushSettings(BaseSettings):
     vapid_subject: str
 
 
+class ImapSettings(BaseSettings):
+    """Mailbox the accountant's statement is emailed to. Ingest stays off
+    until the user, app password and at least one allowed sender are set."""
+
+    model_config = SettingsConfigDict(
+        env_prefix="IMAP_",
+        extra="ignore",
+        env_file=".env",
+    )
+
+    host: str = "imap.gmail.com"
+    user: str = ""
+    password: SecretStr = SecretStr("")
+    folder: str = "INBOX"
+    # Whose Authentication-Results header is trusted: the receiving server.
+    authserv_id: str = "mx.google.com"
+    allowed_senders: Annotated[list[str], NoDecode] = []
+
+    @field_validator("allowed_senders", mode="before")
+    @classmethod
+    def parse_allowed_senders(cls, value: str | list[str]) -> list[str]:
+        if isinstance(value, str):
+            return [s.strip().lower() for s in value.split(",") if s.strip()]
+        return [s.lower() for s in value]
+
+    @property
+    def enabled(self) -> bool:
+        return bool(
+            self.user and self.password.get_secret_value() and self.allowed_senders
+        )
+
+
 class Settings(BaseSettings):
     """Application-wide grouped configuration."""
 
@@ -87,6 +119,7 @@ class Settings(BaseSettings):
     auth: AuthSettings = AuthSettings()  # type: ignore
     brevo: BrevoSettings = BrevoSettings()
     push: PushSettings = PushSettings()  # type: ignore
+    imap: ImapSettings = ImapSettings()
 
     @property
     def auth_cookie_secure(self) -> bool:

@@ -57,7 +57,7 @@ def _existing(session: Session, sha256: str) -> ImportResult | None:
 
 
 def import_statement(
-    session: Session, *, actor_id: int, filename: str, data: bytes
+    session: Session, *, actor_id: int | None, filename: str, data: bytes
 ) -> ImportResult:
     """Stores a statement's credits idempotently. Re-uploading identical bytes
     or a file overlapping an earlier one adds no duplicate rows. Raises
