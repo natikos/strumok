@@ -13,7 +13,18 @@ class EmailSendError(Exception):
     pass
 
 
+# ENVIRONMENT=e2e only: sent emails land here instead of Brevo, and the e2e
+# router reads them back (an invite link, a reset link).
+e2e_outbox: list[dict[str, str]] = []
+
+
 def send_email(*, to_email: str, to_name: str, subject: str, html_content: str) -> None:
+    if settings.environment == "e2e":
+        e2e_outbox.append(
+            {"to": to_email, "subject": subject, "html_content": html_content}
+        )
+        return
+
     if not settings.brevo.api_key.get_secret_value() or not settings.brevo.sender_email:
         raise EmailSendError("Brevo is not configured")
 

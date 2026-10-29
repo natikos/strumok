@@ -87,3 +87,75 @@ jobs:
       - name: Build
         run: bun run build
         working-directory: frontend
+
+  e2e:
+    # Playwright against the real stack: the built frontend served by uvicorn
+    # under ENVIRONMENT=e2e, on a throwaway database (docs/testing.md#e2e).
+    # The deploy preflight requires this workflow to pass, so e2e gates releases.
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17.6
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: astral-sh/setup-uv@v7
+        with:
+          working-directory: backend
+
+      - name: Install backend dependencies
+        run: uv sync
+        working-directory: backend
+
+      - uses: oven-sh/setup-bun@v2
+
+      - name: Install frontend dependencies
+        run: bun install
+        working-directory: frontend
+
+      - name: Cache Playwright browsers
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('frontend/bun.lock') }}
+
+      - name: Install Chromium
+        # --with-deps even on a cache hit: the system libraries aren't cached.
+        run: bunx playwright install --with-deps chromium
+        working-directory: frontend
+
+      - name: Build
+        run: bun run build
+        working-directory: frontend
+
+      - name: Type check specs
+        run: bunx tsc -p e2e --noEmit
+        working-directory: frontend
+
+      - name: Test
+        # playwright.config.ts starts the server with its own e2e environment.
+        run: bun run e2e:only
+        working-directory: frontend
+        env:
+          E2E_DATABASE_URL: postgresql://postgres:postgres@localhost:5432/strumok_e2e
+
+      - name: Upload report
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: |
+            frontend/playwright-report/
+            frontend/test-results/
+          retention-days: 14

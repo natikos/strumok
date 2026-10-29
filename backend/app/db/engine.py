@@ -41,7 +41,8 @@ def init_db() -> None:
     if current == head:
         return
     logger.error("schemaOutdated: database at %s, expected %s", current, head)
-    if settings.environment == "production":
+    # e2e fails too, so a missing migration fails the suite instead of logging.
+    if settings.environment in ("production", "e2e"):
         raise RuntimeError("schemaOutdated")
 
 

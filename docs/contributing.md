@@ -15,10 +15,12 @@ lefthook install
 docker compose up -d              # backend tests need a local Postgres
 cd backend  && uv run pytest
 cd frontend && bun run test
+cd frontend && bun run e2e        # Playwright; builds first
 ```
 
-Both suites run in CI. Pre-commit hooks deliberately don't run them — the backend
-suite needs a database, which a hook can't assume. See [testing.md](testing.md) for
+All three suites run in CI, and a failing one blocks deploys. Pre-commit hooks
+deliberately don't run them — the backend and e2e suites need a database, which a
+hook can't assume. See [testing.md](testing.md) for
 the harness, fixtures, and what still needs coverage.
 
 ## Commit Messages

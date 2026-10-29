@@ -4,6 +4,8 @@ from datetime import datetime
 from decimal import ROUND_HALF_UP, Decimal
 from zoneinfo import ZoneInfo
 
+from app.core.time import now_utc_aware
+
 # Residents are in Kyiv; "the current period" must follow Kyiv local time, not
 # server UTC, or a resident near midnight on the 1st sees the wrong month (issue
 # #141).
@@ -42,7 +44,7 @@ def period_window_closed(period: str, now: datetime | None = None) -> bool:
 
 
 def kyiv_now() -> datetime:
-    return datetime.now(KYIV_TZ)
+    return now_utc_aware().astimezone(KYIV_TZ)
 
 
 def current_billing_period(now: datetime | None = None) -> str:

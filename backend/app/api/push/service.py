@@ -33,6 +33,9 @@ from app.db.models import (
 
 logger = logging.getLogger(__name__)
 
+# ENVIRONMENT=e2e only: pushes land here instead of the browser vendor.
+e2e_push_outbox: list[dict[str, str]] = []
+
 ReminderVariant = Literal["opening", "final"]
 
 # Keyed by language so this stays separate from the frontend's vue-i18n JSON:
@@ -173,6 +176,11 @@ def send_one(
     subscription: PushSubscription, payload: str, ttl: int | None = None
 ) -> SendOutcome:
     """Send to a single subscription. Runs on a worker thread; must not touch the session."""
+    if settings.environment == "e2e":
+        # Never reach a vendor push service from a test run; the e2e suite
+        # reads what would have been sent.
+        e2e_push_outbox.append({"endpoint": subscription.endpoint, "payload": payload})
+        return SendOutcome.SENT
     try:
         webpush(
             subscription_info={

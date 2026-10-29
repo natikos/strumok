@@ -10,7 +10,7 @@ Electricity billing for a garden cooperative on one shared utility bill. Residen
 - **Backend** (`backend/`, Python 3.14 + uv): FastAPI, SQLModel, PostgreSQL (psycopg), JWT in an HttpOnly cookie. Run `uvicorn app.main:app --reload`; lint with `ruff`.
 - **Frontend** (`frontend/`, Bun): Vue 3 + TS, Vite, PrimeVue (Aura preset customized in `src/preset.ts`), vue-i18n (en/ua), zod, openapi-fetch, installable PWA (`vite-plugin-pwa`, configured in `vite.config.ts`). `bun run dev` / `bun run lint` / `bun run build` (vue-tsc + vite, outputs to `backend/dist/`).
 - **Local Postgres**: `docker compose up -d` from repo root.
-- **Tests**: `cd backend && uv run pytest` (needs local Postgres: `docker compose up -d`); `cd frontend && bun run test`. See [docs/testing.md](docs/testing.md).
+- **Tests**: `cd backend && uv run pytest` (needs local Postgres: `docker compose up -d`); `cd frontend && bun run test`; end-to-end `cd frontend && bun run e2e` (Playwright, Chromium at 360px, same Postgres; backend runs under `ENVIRONMENT=e2e`). See [docs/testing.md](docs/testing.md).
 - **Metrics**: `python3 scripts/project_metrics.py` reports rework, commit-convention compliance, open-issue age, and (with `--coverage`) frontend coverage. Read-only. See [docs/metrics.md](docs/metrics.md) for what it deliberately doesn't measure and why.
 
 ## Domain

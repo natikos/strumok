@@ -1,8 +1,10 @@
+import re
 from functools import lru_cache
 from typing import Annotated, Literal
 
-from pydantic import SecretStr, field_validator
+from pydantic import SecretStr, field_validator, model_validator
 from pydantic_settings import BaseSettings, NoDecode, SettingsConfigDict
+from sqlalchemy.engine import make_url
 
 
 class DbSettings(BaseSettings):
@@ -10,6 +12,7 @@ class DbSettings(BaseSettings):
         env_prefix="DATABASE_",
         extra="ignore",
         env_file=".env",
+        hide_input_in_errors=True,
     )
 
     url: str
@@ -27,6 +30,7 @@ class AuthSettings(BaseSettings):
         env_prefix="AUTH_",
         extra="ignore",
         env_file=".env",
+        hide_input_in_errors=True,
     )
 
     secret_key: SecretStr
@@ -43,6 +47,7 @@ class BrevoSettings(BaseSettings):
         env_prefix="BREVO_",
         extra="ignore",
         env_file=".env",
+        hide_input_in_errors=True,
     )
 
     api_key: SecretStr = SecretStr("")
@@ -56,6 +61,7 @@ class PushSettings(BaseSettings):
         env_prefix="PUSH_",
         extra="ignore",
         env_file=".env",
+        hide_input_in_errors=True,
     )
 
     vapid_public_key: str
@@ -71,6 +77,7 @@ class ImapSettings(BaseSettings):
         env_prefix="IMAP_",
         extra="ignore",
         env_file=".env",
+        hide_input_in_errors=True,
     )
 
     host: str = "imap.gmail.com"
@@ -95,15 +102,41 @@ class ImapSettings(BaseSettings):
         )
 
 
+E2E_DATABASE_HOSTS = {"localhost", "127.0.0.1"}
+
+
+# libpq reads these from the query string too, so any of them could point a
+# URL that looks local at another server.
+CONNECTION_QUERY_KEYS = {"host", "hostaddr", "service"}
+E2E_DATABASE_NAME = re.compile(r"[a-z0-9_]+_e2e")
+
+
+def is_e2e_database(url: str) -> bool:
+    """A throwaway e2e database: local host, a plain name ending in `_e2e`, and
+    nothing in the query string that could redirect the connection."""
+    parsed = make_url(url)
+    return (
+        parsed.host in E2E_DATABASE_HOSTS
+        and E2E_DATABASE_NAME.fullmatch(parsed.database or "") is not None
+        and not CONNECTION_QUERY_KEYS & set(parsed.query)
+    )
+
+
 class Settings(BaseSettings):
     """Application-wide grouped configuration."""
 
     model_config = SettingsConfigDict(
         env_file=".env",
         extra="ignore",
+        # A failed validation would otherwise print the whole input, which
+        # holds every secret read from .env.
+        hide_input_in_errors=True,
     )
 
-    environment: Literal["development", "production"]
+    # `e2e` is only for the Playwright suite (docs/testing.md): it shifts the
+    # app clock and mounts test-only routes, so it refuses any database that
+    # isn't a local `*_e2e` one. Never set it in production.
+    environment: Literal["development", "production", "e2e"]
     app_name: str = "Strumok"
     app_port: int = 8000
     cors_origins: Annotated[list[str], NoDecode] = ["http://localhost:5173"]
@@ -120,6 +153,18 @@ class Settings(BaseSettings):
     brevo: BrevoSettings = BrevoSettings()
     push: PushSettings = PushSettings()  # type: ignore
     imap: ImapSettings = ImapSettings()
+
+    @model_validator(mode="after")
+    def guard_e2e(self) -> "Settings":
+        if self.environment != "e2e":
+            return self
+        if not is_e2e_database(self.db.url):
+            raise ValueError(
+                "ENVIRONMENT=e2e needs a local database whose name ends in _e2e"
+            )
+        if self.imap.enabled:
+            raise ValueError("ENVIRONMENT=e2e must not have IMAP configured")
+        return self
 
     @property
     def auth_cookie_secure(self) -> bool:
