@@ -8,7 +8,14 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vites
 import { appPlugins } from "@/shared/testing/mount";
 import type { Component } from "vue";
 
-const { listAdminUsers, updateAdminUser, confirmRequire, inviteAdminUser, listAdminHouseholds, resendAdminInvite } = vi.hoisted(() => ({
+const {
+  listAdminUsers,
+  updateAdminUser,
+  confirmRequire,
+  inviteAdminUser,
+  listAdminHouseholds,
+  resendAdminInvite,
+} = vi.hoisted(() => ({
   inviteAdminUser: vi.fn(),
   listAdminHouseholds: vi.fn(),
   resendAdminInvite: vi.fn(),
@@ -53,7 +60,11 @@ const bob = { ...ada, email: "bob@example.com", first_name: "Bob", household_cou
 
 function mountPanel() {
   return mount(ResidentsPanel, {
-    global: { components: { Button, InputText, Message, Select }, plugins: appPlugins(), stubs: { ErrorState: true, Menu: true } },
+    global: {
+      components: { Button, InputText, Message, Select },
+      plugins: appPlugins(),
+      stubs: { ErrorState: true, Menu: true },
+    },
   });
 }
 

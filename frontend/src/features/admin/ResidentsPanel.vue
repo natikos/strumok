@@ -9,16 +9,28 @@
     />
 
     <div class="residents__invite">
-      <Button
-        v-if="!showInvite"
-        :label="t('admin.users.invite')"
-        @click="openInvite"
-      />
+      <Button v-if="!showInvite" :label="t('admin.users.invite')" @click="openInvite" />
 
       <form v-else class="residents__invite-form" @submit.prevent="submitInvite">
-        <InputText v-model="invite.first_name" fluid :placeholder="t('admin.users.inviteFirstName')" :aria-label="t('admin.users.inviteFirstName')" />
-        <InputText v-model="invite.last_name" fluid :placeholder="t('admin.users.inviteLastName')" :aria-label="t('admin.users.inviteLastName')" />
-        <InputText v-model="invite.email" fluid type="email" :placeholder="t('admin.users.inviteEmail')" :aria-label="t('admin.users.inviteEmail')" />
+        <InputText
+          v-model="invite.first_name"
+          fluid
+          :placeholder="t('admin.users.inviteFirstName')"
+          :aria-label="t('admin.users.inviteFirstName')"
+        />
+        <InputText
+          v-model="invite.last_name"
+          fluid
+          :placeholder="t('admin.users.inviteLastName')"
+          :aria-label="t('admin.users.inviteLastName')"
+        />
+        <InputText
+          v-model="invite.email"
+          fluid
+          type="email"
+          :placeholder="t('admin.users.inviteEmail')"
+          :aria-label="t('admin.users.inviteEmail')"
+        />
         <Select
           v-model="invite.language"
           fluid
@@ -54,7 +66,11 @@
         </div>
       </form>
 
-      <Message v-if="inviteResult" class="residents__result" :severity="inviteResult.email_sent ? 'success' : 'warn'">
+      <Message
+        v-if="inviteResult"
+        class="residents__result"
+        :severity="inviteResult.email_sent ? 'success' : 'warn'"
+      >
         <div class="residents__result-body">
           <span>{{
             inviteResult.email_sent
@@ -83,7 +99,9 @@
               <th scope="col">{{ t("admin.users.households") }}</th>
               <th scope="col">{{ t("admin.users.status") }}</th>
               <th scope="col">{{ t("admin.users.role") }}</th>
-              <th scope="col"><span class="sr-only">{{ t("admin.users.actions", { name: "" }) }}</span></th>
+              <th scope="col">
+                <span class="sr-only">{{ t("admin.users.actions", { name: "" }) }}</span>
+              </th>
             </tr>
           </thead>
           <tbody>
@@ -197,7 +215,13 @@
         ...(householdId !== null ? { household_id: householdId } : {}),
       });
       showInvite.value = false;
-      invite.value = { email: "", first_name: "", household_id: null, language: "ua", last_name: "" };
+      invite.value = {
+        email: "",
+        first_name: "",
+        household_id: null,
+        language: "ua",
+        last_name: "",
+      };
       await load();
     } catch (caught: unknown) {
       if (!(caught instanceof ApiError)) {

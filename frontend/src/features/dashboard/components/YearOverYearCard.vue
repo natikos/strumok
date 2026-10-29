@@ -102,9 +102,7 @@
     ];
   });
 
-  const deltaIcon = computed(() =>
-    props.comparison?.direction === "down" ? ArrowDown : ArrowUp
-  );
+  const deltaIcon = computed(() => (props.comparison?.direction === "down" ? ArrowDown : ArrowUp));
 
   const deltaUahText = computed(() => {
     const delta = props.comparison?.deltaUah;

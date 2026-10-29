@@ -23,9 +23,7 @@ function declaredErrorCodes(): string[] {
   const source = readFileSync(openapiPath, "utf-8");
   const matches = source.matchAll(/"detail":\s*"([a-zA-Z]+)"/g);
   const codes = new Set(
-    [...matches]
-      .map((match) => match[1])
-      .filter((code): code is string => code !== undefined),
+    [...matches].map((match) => match[1]).filter((code): code is string => code !== undefined)
   );
 
   for (const handled of HANDLED_OUTSIDE_ERRORS_NAMESPACE) {

@@ -7,7 +7,6 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vites
 import { appPlugins } from "@/shared/testing/mount";
 import type { Component } from "vue";
 
-
 const { getAuditLog, listAdminHouseholds } = vi.hoisted(() => ({
   getAuditLog: vi.fn(),
   listAdminHouseholds: vi.fn(),

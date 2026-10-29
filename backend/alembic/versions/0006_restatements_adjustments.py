@@ -3,6 +3,7 @@
 Revision ID: 0006
 Revises: 0005
 """
+
 from typing import Sequence, Union
 
 import sqlalchemy as sa
@@ -66,8 +67,15 @@ def upgrade() -> None:
         sa.ForeignKeyConstraint(["created_by_user_id"], ["users.id"]),
         sa.PrimaryKeyConstraint("id"),
     )
-    for column in ("household_id", "applies_to_period", "posted_in_period", "restatement_id"):
-        op.create_index(f"ix_charge_adjustments_{column}", "charge_adjustments", [column])
+    for column in (
+        "household_id",
+        "applies_to_period",
+        "posted_in_period",
+        "restatement_id",
+    ):
+        op.create_index(
+            f"ix_charge_adjustments_{column}", "charge_adjustments", [column]
+        )
     op.get_bind().exec_driver_sql(CHARGE_ADJUSTMENTS_APPEND_ONLY_SQL)
 
 

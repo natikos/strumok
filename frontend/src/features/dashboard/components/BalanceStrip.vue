@@ -46,7 +46,12 @@
 
   import { useCurrentHousehold } from "@/features/households/useCurrentHousehold";
   import { useHouseholdTenures } from "@/features/households/useHouseholdTenures";
-  import { type BalanceOut, getBalance, getPaymentDetails, type PaymentDetailsOut } from "@shared/api/billing";
+  import {
+    type BalanceOut,
+    getBalance,
+    getPaymentDetails,
+    type PaymentDetailsOut,
+  } from "@shared/api/billing";
   import { formatUah, toDecimal } from "@shared/utils/format";
 
   defineEmits<{ "open-history": [] }>();

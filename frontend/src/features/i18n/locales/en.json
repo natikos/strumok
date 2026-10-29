@@ -348,6 +348,52 @@
     "setExpired": "This invite link has expired or was already used. Ask the head for a new one.",
     "setDone": "Welcome! Your password is set."
   },
+  "balance": {
+    "owe": "You owe {amount}",
+    "unpaidMonths": "{count} unpaid month(s)",
+    "paidUp": "You're all paid up",
+    "credit": "Credit: {amount}",
+    "household": "{name}",
+    "loadError": "Couldn't load your balance",
+    "retry": "Retry",
+    "paid": "Paid",
+    "partial": "Partly paid ({paid} of {due})",
+    "unpaid": "Unpaid",
+    "aria": "Your balance",
+    "pay": "Pay",
+    "payTitle": "Pay your balance",
+    "payHint": "Send this in your bank app. Copy each field below. The head confirms receipt manually.",
+    "payAmount": "Amount",
+    "payIban": "IBAN",
+    "payRecipient": "Recipient",
+    "payComment": "Comment",
+    "payCopy": "Copy",
+    "payCopied": "Copied",
+    "payCopyFailed": "Couldn't copy — select the text instead"
+  },
+  "bill": {
+    "for": "for {month}",
+    "plain": "Your {usage} at the co-op rate, plus your share of the co-op's shared costs.",
+    "plainEstimated": "Estimated (no reading received) + 30% late fee.",
+    "howCalculated": "How was this calculated?",
+    "soFar": "So far this month (estimate): about {amount}",
+    "usage": "Your usage",
+    "total": "Total",
+    "rows": {
+      "tariff": "At the co-op rate",
+      "sharedLosses": "Your share of shared costs",
+      "lateFee": "Late fee (no reading received)",
+      "lateFeeCredit": "Credit from other households' late fees",
+      "correction": "Correction"
+    }
+  },
+  "confirmEmailChange": {
+    "confirming": "Confirming your new email...",
+    "successTitle": "Email changed",
+    "successBody": "Your email was updated. Sign in again with the new address.",
+    "errorExpired": "This link is invalid or has expired. Request the change again from Settings.",
+    "signIn": "Sign in"
+  },
   "dashboard": {
     "awaitingReading": "{month} awaiting reading",
     "chargedThisPeriod": "Charged this period",
@@ -520,6 +566,41 @@
     "checkAgain": "Check again",
     "stillNotAssigned": "Still not assigned to a household. Please check back later."
   },
+  "ownership": {
+    "noLongerOwner": "You no longer own {name} as of {date}. Your past bills and any balance remain below.",
+    "pastTitle": "Past households",
+    "ownedUntil": "Owned until {date}",
+    "noStatements": "No bills for this household.",
+    "previousOwnerNote": "Records before {date} belong to the previous owner."
+  },
+  "privacy": {
+    "link": "Privacy notice",
+    "title": "Privacy notice",
+    "back": "Back",
+    "intro": "Strumok is used only to split the co-op's shared electricity bill between households.",
+    "sections": {
+      "collected": {
+        "title": "What we collect",
+        "body": "Your name and email, the meter readings you submit, and the charges and payments worked out from them. Monthly consumption can show when a plot is in use, so we treat it as personal data. We use it for co-op billing and nothing else."
+      },
+      "access": {
+        "title": "Who can see it",
+        "body": "You see your own households. The head of the co-op and the administrators see everyone's data, because they reconcile the shared bill. It is not shared with anyone else or used for advertising."
+      },
+      "hosting": {
+        "title": "Where it is kept",
+        "body": "The app runs on FastAPI Cloud and the database is hosted on Supabase. Encrypted backups are stored with Backblaze. Email goes through Brevo and reminders through your browser's push service."
+      },
+      "retention": {
+        "title": "How long we keep it",
+        "body": "Billing records are kept for as long as the co-op needs its accounts. Encrypted backups are deleted after about 90 days."
+      },
+      "rights": {
+        "title": "Correction, export and deletion",
+        "body": "To correct your data, get a copy of it or have it deleted, contact the head of the co-op. Requests are handled by hand. Deleting an account anonymizes you but keeps the billing lines, because the co-op's charges and payments must stay on record."
+      }
+    }
+  },
   "settings": {
     "title": "Settings",
     "appearance": "Appearance",
@@ -613,86 +694,5 @@
     "sendFailed": "We couldn't send the verification email. Please try again shortly.",
     "stillNotVerified": "Still not verified. Check your inbox and click the link we sent you.",
     "goToDashboard": "Go to dashboard"
-  },
-  "confirmEmailChange": {
-    "confirming": "Confirming your new email...",
-    "successTitle": "Email changed",
-    "successBody": "Your email was updated. Sign in again with the new address.",
-    "errorExpired": "This link is invalid or has expired. Request the change again from Settings.",
-    "signIn": "Sign in"
-  },
-  "balance": {
-    "owe": "You owe {amount}",
-    "unpaidMonths": "{count} unpaid month(s)",
-    "paidUp": "You're all paid up",
-    "credit": "Credit: {amount}",
-    "household": "{name}",
-    "loadError": "Couldn't load your balance",
-    "retry": "Retry",
-    "paid": "Paid",
-    "partial": "Partly paid ({paid} of {due})",
-    "unpaid": "Unpaid",
-    "aria": "Your balance",
-    "pay": "Pay",
-    "payTitle": "Pay your balance",
-    "payHint": "Send this in your bank app. Copy each field below. The head confirms receipt manually.",
-    "payAmount": "Amount",
-    "payIban": "IBAN",
-    "payRecipient": "Recipient",
-    "payComment": "Comment",
-    "payCopy": "Copy",
-    "payCopied": "Copied",
-    "payCopyFailed": "Couldn't copy — select the text instead"
-  },
-  "bill": {
-    "for": "for {month}",
-    "plain": "Your {usage} at the co-op rate, plus your share of the co-op's shared costs.",
-    "plainEstimated": "Estimated (no reading received) + 30% late fee.",
-    "howCalculated": "How was this calculated?",
-    "soFar": "So far this month (estimate): about {amount}",
-    "usage": "Your usage",
-    "total": "Total",
-    "rows": {
-      "tariff": "At the co-op rate",
-      "sharedLosses": "Your share of shared costs",
-      "lateFee": "Late fee (no reading received)",
-      "lateFeeCredit": "Credit from other households' late fees",
-      "correction": "Correction"
-    }
-  },
-  "privacy": {
-    "link": "Privacy notice",
-    "title": "Privacy notice",
-    "back": "Back",
-    "intro": "Strumok is used only to split the co-op's shared electricity bill between households.",
-    "sections": {
-      "collected": {
-        "title": "What we collect",
-        "body": "Your name and email, the meter readings you submit, and the charges and payments worked out from them. Monthly consumption can show when a plot is in use, so we treat it as personal data. We use it for co-op billing and nothing else."
-      },
-      "access": {
-        "title": "Who can see it",
-        "body": "You see your own households. The head of the co-op and the administrators see everyone's data, because they reconcile the shared bill. It is not shared with anyone else or used for advertising."
-      },
-      "hosting": {
-        "title": "Where it is kept",
-        "body": "The app runs on FastAPI Cloud and the database is hosted on Supabase. Encrypted backups are stored with Backblaze. Email goes through Brevo and reminders through your browser's push service."
-      },
-      "retention": {
-        "title": "How long we keep it",
-        "body": "Billing records are kept for as long as the co-op needs its accounts. Encrypted backups are deleted after about 90 days."
-      },
-      "rights": {
-        "title": "Correction, export and deletion",
-        "body": "To correct your data, get a copy of it or have it deleted, contact the head of the co-op. Requests are handled by hand. Deleting an account anonymizes you but keeps the billing lines, because the co-op's charges and payments must stay on record."
-      }
-    }
-  },
-  "ownership": {
-    "noLongerOwner": "You no longer own {name} as of {date}. Your past bills and any balance remain below.",
-    "pastTitle": "Past households",
-    "ownedUntil": "Owned until {date}",
-    "noStatements": "No bills for this household.",
-    "previousOwnerNote": "Records before {date} belong to the previous owner."
   }
 }

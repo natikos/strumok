@@ -380,8 +380,18 @@ describe("useMeterReadings", () => {
       vi.useFakeTimers();
       vi.setSystemTime(new Date(2026, 6, 15));
       listMyMeterReadings.mockResolvedValue([
-        makeReading({ id: 2, period: "2026-05", day_meter_value: "120.00", night_meter_value: "0.00" }),
-        makeReading({ id: 1, period: "2026-04", day_meter_value: "100.00", night_meter_value: "0.00" }),
+        makeReading({
+          id: 2,
+          period: "2026-05",
+          day_meter_value: "120.00",
+          night_meter_value: "0.00",
+        }),
+        makeReading({
+          id: 1,
+          period: "2026-04",
+          day_meter_value: "100.00",
+          night_meter_value: "0.00",
+        }),
       ]);
       const harness = mountComposable();
       await harness.result.loadHistory();

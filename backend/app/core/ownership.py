@@ -49,7 +49,9 @@ def set_owner(
         session.flush()
     if user_id is not None:
         session.add(
-            HouseholdOwnership(household_id=household.id, user_id=user_id, valid_from=now)
+            HouseholdOwnership(
+                household_id=household.id, user_id=user_id, valid_from=now
+            )
         )
     household.user_id = user_id
     session.add(household)

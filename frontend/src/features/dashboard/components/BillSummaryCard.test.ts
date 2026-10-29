@@ -17,9 +17,8 @@ beforeAll(async () => {
   vi.doMock("@shared/api/billing", () => api);
   BillSummaryCard = (await import("./BillSummaryCard.vue")).default;
   BillBreakdown = (await import("./BillBreakdown.vue")).default;
-  setHouseholds = (
-    await import("@/features/households/useCurrentHousehold")
-  ).useCurrentHousehold().setHouseholds;
+  setHouseholds = (await import("@/features/households/useCurrentHousehold")).useCurrentHousehold()
+    .setHouseholds;
 });
 
 afterAll(() => {
@@ -71,16 +70,21 @@ describe("BillSummaryCard", () => {
   it("expands a breakdown whose rows add up to the total shown", async () => {
     api.listStatements.mockResolvedValue([closedLine()]);
     api.listAdjustments.mockResolvedValue([
-      { amount_uah: "-12.40", applies_to_period: "2026-09", id: 1, posted_in_period: "2026-10", reason: "bill corrected", reason_code: "billCorrection" },
+      {
+        amount_uah: "-12.40",
+        applies_to_period: "2026-09",
+        id: 1,
+        posted_in_period: "2026-10",
+        reason: "bill corrected",
+        reason_code: "billCorrection",
+      },
     ]);
     const wrapper = mountCard();
     await flushPromises();
 
     await wrapper.find(".bill-summary__toggle").trigger("click");
 
-    const amounts = wrapper
-      .findAll(".bill-breakdown__row dd")
-      .map((dd) => dd.text());
+    const amounts = wrapper.findAll(".bill-breakdown__row dd").map((dd) => dd.text());
     expect(wrapper.text()).toContain("bill corrected");
     expect(amounts.at(-1)).toContain("500.04"); // 500.10 + 12.34 - 12.40
     expect(wrapper.find(".bill-summary__amount").text()).toContain("500.04");
@@ -88,7 +92,12 @@ describe("BillSummaryCard", () => {
 
   it("marks an estimated period with an Estimated pill and its own copy", async () => {
     api.listStatements.mockResolvedValue([
-      closedLine({ is_estimated: true, loss_share_uah: "0.00", penalty_uah: "30.00", total_uah: "530.10" }),
+      closedLine({
+        is_estimated: true,
+        loss_share_uah: "0.00",
+        penalty_uah: "30.00",
+        total_uah: "530.10",
+      }),
     ]);
     const wrapper = mountCard();
     await flushPromises();

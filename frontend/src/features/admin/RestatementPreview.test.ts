@@ -37,7 +37,12 @@ const result = (overrides = {}) => ({
 
 function mountPreview(request: ReturnType<typeof vi.fn>) {
   return mount(RestatementPreview, {
-    props: { request: request as unknown as (o: { dryRun: boolean; reason: string }) => Promise<ReturnType<typeof result>> },
+    props: {
+      request: request as unknown as (o: {
+        dryRun: boolean;
+        reason: string;
+      }) => Promise<ReturnType<typeof result>>,
+    },
     global: { components: { Button, InputText, Skeleton }, plugins: appPlugins() },
   });
 }

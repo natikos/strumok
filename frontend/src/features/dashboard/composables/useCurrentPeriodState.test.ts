@@ -34,7 +34,13 @@ describe("useCurrentPeriodState", () => {
   it("reports an estimate with its usage and total once the period is closed", async () => {
     getCurrentPeriod.mockResolvedValue({ period: "2026-09", status: "closed" });
     listStatements.mockResolvedValue([
-      { day_usage_kwh: "40.00", is_estimated: true, night_usage_kwh: "10.00", period: "2026-09", total_uah: "169.00" },
+      {
+        day_usage_kwh: "40.00",
+        is_estimated: true,
+        night_usage_kwh: "10.00",
+        period: "2026-09",
+        total_uah: "169.00",
+      },
     ]);
     const state = useCurrentPeriodState(ref([estimateReading]), ref(1));
 

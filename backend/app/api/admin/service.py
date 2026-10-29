@@ -693,9 +693,12 @@ def admin_submit_reading(
     ).first()
     if existing is not None:
         raise ReadingAlreadyExistsError
-    if kind == "baseline" and session.exec(
-        select(MeterReading.id).where(MeterReading.household_id == household_id)
-    ).first():
+    if (
+        kind == "baseline"
+        and session.exec(
+            select(MeterReading.id).where(MeterReading.household_id == household_id)
+        ).first()
+    ):
         raise BaselineNotFirstError
 
     reading = MeterReading(

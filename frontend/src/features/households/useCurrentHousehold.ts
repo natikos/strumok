@@ -35,7 +35,7 @@ function writeStored(household: HouseholdSummary | null): void {
 
 export function useCurrentHousehold() {
   const current = computed<HouseholdSummary | null>(
-    () => households.value.find((h) => h.id === currentId.value) ?? null,
+    () => households.value.find((h) => h.id === currentId.value) ?? null
   );
 
   /** Returns what changed when the remembered household is no longer listed. */

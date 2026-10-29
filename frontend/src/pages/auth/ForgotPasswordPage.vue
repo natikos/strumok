@@ -9,7 +9,12 @@
         <div class="forgot-password-card__content">
           <template v-if="!isSent">
             <Typography variant="subtitle">{{ $t("auth.forgotSubtitle") }}</Typography>
-            <Form v-slot="$form" class="forgot-password-card__form" :resolver="resolver" @submit="handleSubmit">
+            <Form
+              v-slot="$form"
+              class="forgot-password-card__form"
+              :resolver="resolver"
+              @submit="handleSubmit"
+            >
               <FormFieldControl
                 id="forgot-email"
                 name="email"
@@ -70,13 +75,14 @@
   const isSent = ref(false);
   const isSubmitting = ref(false);
   const email = ref("");
-  const { formatted: cooldownTimer, seconds: cooldownSeconds, start: startCooldown } = useCountdown();
+  const {
+    formatted: cooldownTimer,
+    seconds: cooldownSeconds,
+    start: startCooldown,
+  } = useCountdown();
 
   const schema = z.object({
-    email: z
-      .string({ error: "auth.requiredField" })
-      .trim()
-      .pipe(z.email("auth.invalidEmail")),
+    email: z.string({ error: "auth.requiredField" }).trim().pipe(z.email("auth.invalidEmail")),
   });
   const resolver = zodResolver(schema);
 

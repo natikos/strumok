@@ -103,7 +103,11 @@
   const tokenState = ref<"idle" | "pending" | "confirmed" | "error">("idle");
   const sendState = ref<"idle" | "sending" | "failed">("idle");
   const stillNotVerified = ref(false);
-  const { formatted: cooldownTimer, seconds: cooldownSeconds, start: startCooldown } = useCountdown();
+  const {
+    formatted: cooldownTimer,
+    seconds: cooldownSeconds,
+    start: startCooldown,
+  } = useCountdown();
   const router = useRouter();
   const route = useRoute();
   const { t } = useI18n();

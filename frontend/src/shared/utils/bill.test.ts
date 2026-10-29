@@ -40,7 +40,12 @@ describe("buildBill", () => {
 
   it("labels the late fee and its credit as separate signed rows", () => {
     const estimated = buildBill(
-      line({ is_estimated: true, loss_share_uah: "0.00", penalty_uah: "30.00", total_uah: "530.10" }),
+      line({
+        is_estimated: true,
+        loss_share_uah: "0.00",
+        penalty_uah: "30.00",
+        total_uah: "530.10",
+      }),
       []
     );
     const credited = buildBill(

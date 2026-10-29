@@ -126,7 +126,11 @@
   defineProps<{ currentEmail: string }>();
 
   const { t } = useI18n();
-  const { formatted: cooldownTimer, seconds: cooldownSeconds, start: startCooldown } = useCountdown();
+  const {
+    formatted: cooldownTimer,
+    seconds: cooldownSeconds,
+    start: startCooldown,
+  } = useCountdown();
 
   const openForm = ref<"email" | "password" | null>(null);
   const currentPassword = ref("");

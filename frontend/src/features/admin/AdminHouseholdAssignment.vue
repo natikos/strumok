@@ -179,7 +179,11 @@
       v-if="selectedHousehold"
       class="admin-assignment__status"
       :disabled="isLoading"
-      :label="selectedHousehold.is_active ? $t('admin.deactivateHousehold') : $t('admin.reactivateHousehold')"
+      :label="
+        selectedHousehold.is_active
+          ? $t('admin.deactivateHousehold')
+          : $t('admin.reactivateHousehold')
+      "
       :severity="selectedHousehold.is_active ? 'danger' : 'secondary'"
       variant="outlined"
       @click="confirmStatusChange"
@@ -327,9 +331,12 @@
     confirm.require({
       accept: () => void applyHouseholdUpdate({ is_active: !deactivating }),
       acceptLabel: t("admin.users.confirm"),
-      header: t(deactivating ? "admin.deactivateHouseholdTitle" : "admin.reactivateHouseholdTitle", {
-        name: household.name,
-      }),
+      header: t(
+        deactivating ? "admin.deactivateHouseholdTitle" : "admin.reactivateHouseholdTitle",
+        {
+          name: household.name,
+        }
+      ),
       message: t(deactivating ? "admin.deactivateHouseholdBody" : "admin.reactivateHouseholdBody", {
         owner,
       }),

@@ -7,9 +7,7 @@ export type MeterReadingOut = components["schemas"]["MeterReadingOut"];
 
 export const NO_RATE_CONFIGURED_ERROR_CODE = "noRateConfigured";
 
-export async function listMyMeterReadings(
-  householdId?: number | null,
-): Promise<MeterReadingOut[]> {
+export async function listMyMeterReadings(householdId?: number | null): Promise<MeterReadingOut[]> {
   const { data, error, response } = await appApiClient.GET("/meter-readings", {
     params: {
       query: householdId == null ? {} : { household_id: householdId },
@@ -25,7 +23,7 @@ export async function listMyMeterReadings(
 
 export async function submitMyMeterReading(
   payload: MeterReadingIn,
-  householdId?: number | null,
+  householdId?: number | null
 ): Promise<MeterReadingOut> {
   const { data, error, response } = await appApiClient.POST("/meter-readings", {
     params: {

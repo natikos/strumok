@@ -319,9 +319,7 @@ describe("UsageHistoryPage load error handling", () => {
   });
 
   it("labels an estimated period as Estimated and never as a normal charge", async () => {
-    listMyMeterReadings.mockResolvedValue([
-      makeReading({ source: "estimate" }),
-    ]);
+    listMyMeterReadings.mockResolvedValue([makeReading({ source: "estimate" })]);
 
     const wrapper = await mountPage();
 
