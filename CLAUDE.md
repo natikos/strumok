@@ -1,5 +1,8 @@
 @docs/contributing.md
 @docs/deployment.md
+@docs/domain.md
+
+Task-based doc index: [docs/README.md](docs/README.md). Local setup and migrations: [docs/development.md](docs/development.md).
 
 # Strumok
 
@@ -15,40 +18,9 @@ Electricity billing for a garden cooperative on one shared utility bill. Residen
 
 ## Domain
 
-A `User` owns zero or more `Household`s (garden plots on the shared bill). Each month, on
-days 1–5 Kyiv time, a resident submits one `MeterReading` per household for the prior period —
-cumulative day/night meter values, from which usage is derived. The submission window is
-computed client-side in Kyiv time (`frontend/src/shared/utils/deadline.ts`), not the device's
-timezone; the backend (`backend/app/core/domain/billing.py`) uses Kyiv time for the current
-period but does not enforce the window. The head uses these across all households to reconcile
-the one shared utility bill. A user can
-hold multiple households (frontend tracks a "current household" in localStorage), but a
-household has at most one owning user.
-
-Billing lives in a ledger. `MeterReading` is a raw fact (meter values + `source`); usage is
-derived from consecutive readings (`derive_usage`, the first reading is a baseline). A period
-is `open` or `closed` (`billing_periods`); closing writes immutable `household_charges` rows
-(a DB trigger rejects UPDATE/DELETE) computed by the pure `compute_period_statement` in
-`backend/app/core/domain/billing.py`. Amounts round `ROUND_HALF_UP` once per final line.
-`GET /billing/statements` returns a household's closed charges plus a read-time
-`provisional` line for the open period (never stored). History before go-live was
-backfilled as closed periods. Closing needs the utility bill (`PUT /admin/periods/{period}/bill`)
-and splits bill − Σ tariff across households pro-rata by usage (largest remainder, so charges
-equal the bill exactly). At close, `create_estimates` writes a `source='estimate'` reading for each active household with a reading history but none for the period (owner or not): a virtual cumulative value, previous reading + the last real month's usage, or the median of the period's real submissions when there is no usage history (or it was zero), so the next real reading trues it up. Households with no reading at all are skipped. The close response (`POST /admin/periods/{period}/close`) lists `unowned_estimated` households (estimated, no owner, so the charge has `owner_user_id=None`), and the admin close card shows them as a warning. An estimated household pays a 30% penalty on its estimated tariff only (not its loss share); the penalties are credited pro-rata by usage to the households that submitted, so charges still equal the bill (no penalty if nobody submitted). A meter replacement is a `meter_segments` row (`POST /admin/households/{id}/meter-change`): the period's usage is (old final − previous reading) + (reading − new start), and it clears a `decrease` flag. A household's opening values are a `baseline` reading (`kind='baseline'` on `POST /admin/households/{id}/readings`, or the starting-values fields on household creation; left empty, a new household gets a 0/0 baseline, as a brand-new meter, so its first resident reading is billed in full and flagged `zeroBaseline` for the head's review before close): never billed, the first resident reading is measured against it. Ownership is history: `household_ownerships` (`valid_from`/`valid_to`, one open row per household), and `households.user_id` mirrors the open row — change owners only through `app.core.ownership.set_owner`. A charge's billed owner is whoever held the plot at the period's end (Kyiv). Reassigning (`PATCH /admin/households/{id}/owner`, including giving an unowned plot to someone other than its last owner) needs a handover meter reading and, if the outgoing owner owes money, `acknowledge_balance`; a handover on days 1–5 while the reported period is open is recorded as that period's reading (`source='admin'`, billed to the outgoing owner) unless one exists, and the new owner's tenure then starts at that period, otherwise at the handover month; once a plot has changed hands, resident endpoints filter readings, charges, adjustments and balance to the current owner's tenure, and `GET /me/statements` shows each owner everything they were billed, including plots they gave up (`has_previous_owner` marks a plot someone else held first). The dashboard tells an old owner they no longer own the plot, history lists gave-up plots read-only under "Past households" and tells a new owner that earlier records belong to the previous owner; the balance strip still counts debt on gave-up plots. A user whose plots were all handed over is not locked out: `/auth/me` reports `has_past_households`, and the app shows only the gave-up plots' bills and balance, with a Pay sheet for that debt (`GET /billing/payment-details` serves any past or current owner). Balances start from an opening balance: `opening_balances`, one row per household (signed `amount_uah`, positive = owes, plus `as_of`), set once via `POST /admin/households/{id}/opening-balance` or `backend/scripts/import_opening_balances.py` (the sheet's "Стан рахунку", sign flipped). `get_balance` adds it to what is owed and payments settle it before any period; a wrong figure is never edited but corrected by an append-only, audited, signed `opening_balance_corrections` row with a required reason (`POST /admin/households/{id}/opening-balance/corrections`), billed to the opening balance's owner. The co-op's IBAN, recipient and optional 8-digit EDRPOU (`payment_details`, one row) are set by the head via `PUT /admin/payment-details` (audited, UA IBAN checksum validated) and read by residents at `GET /billing/payment-details`; the dashboard's Pay sheet shows them with copy buttons next to the current plot's balance. There are no bank deep links yet (unverified), and payment status stays manual. A rate can be edited or
-deleted until a closed period was billed with it. A reading carries only meter values: usage
-is derived (`derive_reading_usage`) and charges live in `household_charges`. The spreadsheet
-import (`backend/scripts/import_meter_history.py`) writes the reading plus a closed period and
-a charge with the sheet's exact amount, never recomputed from rates, and refuses the current
-period.
-
-An admin uploads the accountant's bank statement at `POST /admin/bank-statements` (multipart `.csv`, 1 MB, 5,000 rows, parsed in memory and never stored): credits are inserted idempotently (re-uploading the same sha256 or overlapping files adds nothing), debits are skipped, and the response reports new/duplicate/skipped counts and `covered_through`. With the `IMAP_*` env set, `backend/app/api/bank/inbox.py` fetches the accountant's emailed `.csv` from allow-listed, DMARC/DKIM-authenticated senders hourly (and on `POST /admin/bank-statements/check-inbox`) through the same `import_statement` (system actor, no uploader), recording each message once in `bank_mail_fetches` as received/imported/rejected with a reason code. Each import is audited with counts only, and admins are notified when rows join the review queue. Credits become payments only through the review queue (`/admin/bank-transactions`, `backend/app/api/bank/review.py`): an admin confirms a credit (all-or-nothing split across households, sum equals the row; a `transfer` payment owned by whoever held the plot on the operation date, rejected on or before the household's `opening_balances.as_of`), links it to an existing manual transfer (same amount, within 5 days), or dismisses it. A credit's state is derived, not stored (live linked payment = confirmed, `dismissed_at` = dismissed, else queued); each action locks the row and a repeat returns 409 `bankTransactionResolved`. Voiding one payment of a confirmed credit voids its siblings, so the credit returns to the queue. Payer name and purpose never reach `Payment.note` or the audit log. The queue suggests households deterministically (`backend/app/api/bank/matching`, computed on read, no LLM, never from payer tax ID or IBAN): `STR-<household id>` references in the purpose (several for a split), else a single fuzzy payer-surname match against active household names, else none. A suggestion only pre-fills the confirm dialog with its reason. The Pay sheet's purpose lists the `STR-<id>` of every household the user holds (`frontend/src/shared/utils/paymentPurpose.ts` mirrors `household_reference`). `GET /billing/bank-coverage` reports the max `covered_through` over imported files and `awaiting_statement` (true when none was ever imported or the newest is more than 21 days old, since statements arrive about days 1–6 and ~17); admins also get `last_imported_at`. The dashboard and the admin Bank tab show "payments included up to DD.MM" or an awaiting notice (`BankCoverageNotice`). Shortfall (`backend/app/api/billing/shortfall.py`): each *app-closed* period (`closed_by_user_id` set; backfilled periods have none) is due on the 20th after the month following it (or the next 20th after a late close). The window is the newest such period whose due date max `covered_through` has reached, provided no queued credit dated on or before that date remains, so closing a later period does not hide an earlier one. `notify_shortfall` runs after each import, close, and queue confirm/link/dismiss: it tells each owner who still owes their overdue amount (balance minus unpaid later periods) once per (user, period) via `NotificationLog` (overpaid get nothing; indebted ownerless households go to admins). `GET /billing/shortfall` drives the dashboard's persistent `ShortfallNotice` while the household owes while the household owes.
-
-Deadline push reminders go out on days 1 and 5 at each user's chosen Kyiv hour
-(`User.reminder_hour`, default 9, set via `PATCH /auth/preferences`).
-Users with no push subscription get the reminder by email (Brevo) instead.
-
-Keep this section current as the domain evolves — update it in the same change that adds or
-changes a concept, not as separate cleanup later.
+Domain rules (billing ledger, period close, estimates, ownership, balances, bank
+import, shortfall notices, reminders) live in [docs/domain.md](docs/domain.md). Keep
+it current: update it in the same change that adds or changes a concept.
 
 ## Conventions
 
