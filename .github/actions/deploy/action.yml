@@ -1,0 +1,37 @@
+name: Build and deploy
+description: Builds the frontend and deploys the backend of the checked-out ref to FastAPI Cloud.
+inputs:
+  token:
+    description: FastAPI Cloud deploy token
+    required: true
+  app-id:
+    description: FastAPI Cloud app identifier
+    required: true
+runs:
+  using: composite
+  steps:
+    - uses: oven-sh/setup-bun@v2
+
+    - name: Install frontend dependencies
+      shell: bash
+      run: bun install
+      working-directory: frontend
+
+    - name: Build frontend
+      shell: bash
+      run: bun run build
+      working-directory: frontend
+      env:
+        VITE_API_BASE_URL: ""
+
+    - uses: astral-sh/setup-uv@v7
+      with:
+        working-directory: backend
+
+    - name: Deploy
+      shell: bash
+      run: uv run fastapi deploy
+      working-directory: backend
+      env:
+        FASTAPI_CLOUD_TOKEN: ${{ inputs.token }}
+        FASTAPI_CLOUD_APP_ID: ${{ inputs.app-id }}

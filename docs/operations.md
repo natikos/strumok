@@ -46,14 +46,17 @@ repo.
 
 Supabase's free tier has no backups or PITR, so these dumps are the only backup.
 
-`.github/workflows/db-backup.yml` (schedule only, no manual trigger) runs
-`pg_dump -Fc`, encrypts with `age`, and uploads to Backblaze B2 as
-`period-close/<kind>-<timestamp>.dump.age`. A failed run emails the repo admins.
+`.github/workflows/db-backup.yml` runs on a schedule and is also called by every
+release (`deployment.yml`). It runs `pg_dump -Fc`, encrypts with `age`, and
+uploads to Backblaze B2 as `period-close/<kind>-<timestamp>.dump.age`, or
+`release/release-<tag>-<timestamp>.dump.age` for a release. A failed run emails
+the repo admins. There is no manual trigger.
 
 | Kind | When (UTC) | Why |
 | --- | --- | --- |
 | `window-closed` | day 6, 06:00 | submission window (days 1–5 Kyiv) is over |
 | `payments-verified` | day 11, 18:00 | bank receipt is in, who paid what is recorded |
+| `release-<tag>` | each release, before migrating | restore point if a migration or deploy goes wrong |
 
 Anything written between runs is not backed up until the next one. A B2
 lifecycle rule hides files after 90 days and deletes them a day later (about 6
@@ -95,6 +98,23 @@ is paused, unpause it; the missed dump waits for the next run.
 GitHub disables scheduled workflows on public repos after 60 days without repo
 activity, which would silently stop both workflows. Re-enable them from the
 Actions tab, or make the repo private (the rule doesn't apply there).
+
+### Failed release
+
+`deployment.yml` migrates, deploys, then checks `/health`. What happens on failure:
+
+- **Migration fails**: Postgres rolls the transaction back; production stays at
+  its previous revision and nothing is deployed. Fix and re-tag.
+- **Deploy or health check fails after migrating**: the `release-failed` job
+  ends the run red and nothing is redeployed or restored. The schema is at head.
+  Check which version is serving, then fix forward with a new tag, or redeploy
+  an older tag with `workflow_dispatch` + `rollback`. That is safe only if the
+  release applied no `# contract:` migration; otherwise the old code may not run
+  on the new schema, so fix forward or restore the release dump. Don't restore
+  while something may still be writing.
+
+Restoring the `release/` dump (below) is a deliberate manual step that loses every
+write since the backup. The workflow never downgrades or restores by itself.
 
 ### Restore
 
