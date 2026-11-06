@@ -57,6 +57,14 @@ const AppPreset = definePreset(Aura, {
     },
     toast: {
       css: () => `
+        @media (max-width: 480px) {
+          .p-toast {
+            left: 1rem;
+            right: 1rem;
+            width: auto;
+          }
+        }
+
         .p-toast .p-toast-message .p-toast-message-content {
           align-items: center;
         }
