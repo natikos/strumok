@@ -1,6 +1,6 @@
 ---
 description: Tag and push a release to trigger the FastAPI Cloud deployment
-allowed-tools: Bash(git status:*), Bash(git rev-parse:*), Bash(git switch:*), Bash(git pull:*), Bash(git fetch:*), Bash(git log:*), Bash(git tag:*), Bash(git push origin v*), Bash(git describe:*), Bash(gh api:*), Bash(gh run list:*), Bash(gh run view:*), Bash(gh workflow run:*), Bash(uv run python scripts/check_migrations.py)
+allowed-tools: Bash(git status:*), Bash(git rev-parse:*), Bash(git switch:*), Bash(git pull:*), Bash(git fetch:*), Bash(git log:*), Bash(git tag:*), Bash(git push origin v*), Bash(git describe:*), Bash(gh api:*), Bash(gh run list:*), Bash(gh run view:*), Bash(gh workflow run:*), Bash(uv run python scripts/check_migrations.py --allow-behind)
 ---
 
 Deploy to production. Takes no arguments — the version is always derived from
@@ -27,9 +27,10 @@ pushed tag deploys straight to production.
   — must include `success`. If CI is red, missing, or still running, stop: the
   deployment workflow's preflight job would reject the tag anyway.
 - If `PROD_DATABASE_URL_READONLY` is available, run
-  `cd backend && PROD_DATABASE_URL="$PROD_DATABASE_URL_READONLY" uv run python scripts/check_migrations.py`.
-  A non-zero exit lists unapplied migrations: stop and tell the user to
-  migrate production first (migrate, then tag). If the variable isn't set,
+  `cd backend && PROD_DATABASE_URL="$PROD_DATABASE_URL_READONLY" uv run python scripts/check_migrations.py --allow-behind`.
+  Use `--allow-behind`: the release workflow applies unapplied migrations
+  itself, so only a non-zero exit (production at a revision this checkout
+  doesn't know) is a stop. If the variable isn't set,
   say so and note the workflow will check it.
 
 ## 2. Determine the version
@@ -42,7 +43,7 @@ If no tag exists yet, this is the first release — start at `v0.1.0`.
   in this release, subject and body.
 
 Major stays pinned at `0` — the project isn't at a stable/real release yet
-(billing is unimplemented, per `docs/known-limitations.md`). It only moves to
+(billing is live, but the head hasn't declared v1.0). It only moves to
 `1` when the user explicitly declares the v1.0 release; never infer that bump
 from commits. Until then, classify only between minor and patch, from
 Conventional Commits types (per `docs/contributing.md`):

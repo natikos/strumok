@@ -217,21 +217,20 @@ comment naming the issue; the mark comes off in the fix's PR. Never run `bun run
 against the e2e server. On a CI failure, download the `playwright-report` artifact
 and open the trace.
 
-## Not yet covered
+## Candidate coverage gaps
 
-The harness is in place but real coverage is thin — currently only the harness's own
-tests. Highest-value gaps, roughly in order:
+These were noted when the harness landed and have not been re-audited against the
+current suite (about 40 backend test files). Check before assuming one is still open.
 
 1. **Household scoping.** `require_household_id` takes `household_id` from the query
    string and is safe only because ownership is re-checked; nothing stops a future
    route skipping that dependency. Also worth pinning: with the parameter omitted, a
    user owning several households resolves to the oldest one.
 2. **Usage maths.** The service clamps negative usage and takes the previous reading
-   as the latest one before the submitted period; both behaviours still want pinning
-   in tests.
-3. **Duplicate periods**, including the concurrent case that the unique constraint
+   as the latest one before the submitted period.
+3. **Duplicate periods**, including the concurrent case the unique constraint
    catches.
-4. **`shared/api/client.ts` refresh path** — single in-flight refresh, one retry, no
+4. **`shared/api/client.ts` refresh path**: single in-flight refresh, one retry, no
    recursion.
 5. **Dashboard composables** (`useMeterReadings`), which reimplement deadline maths
    that `deadline.ts` already gets right.

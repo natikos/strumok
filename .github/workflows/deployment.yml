@@ -4,30 +4,73 @@ on:
     tags:
       - "v*"
   workflow_dispatch:
+    inputs:
+      tag:
+        description: Release tag to deploy (v*), reachable from main
+        required: true
+        type: string
+      rollback:
+        description: Redeploy an older tag as-is, skipping backup and migrations
+        required: false
+        default: false
+        type: boolean
 permissions:
   contents: read
   actions: read
+# Never cancel a release mid-migration.
+concurrency:
+  group: production-release
+  cancel-in-progress: false
+env:
+  TAG: ${{ inputs.tag || github.ref_name }}
 jobs:
   preflight:
     runs-on: ubuntu-latest
+    outputs:
+      pre_rev: ${{ steps.migrations.outputs.pre_rev }}
+      needs_migration: ${{ steps.migrations.outputs.needs_migration }}
     steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: refs/tags/${{ env.TAG }}
+          fetch-depth: 0
+
+      - name: Require a release tag on main
+        run: |
+          case "$TAG" in v*) ;; *) echo "::error::$TAG is not a v* tag"; exit 1 ;; esac
+          git fetch origin main
+          if ! git merge-base --is-ancestor HEAD origin/main; then
+            echo "::error::$TAG is not reachable from main."
+            exit 1
+          fi
+
+      - name: Require the smoke-test origin
+        env:
+          APP_ORIGIN: ${{ vars.APP_ORIGIN }}
+        run: |
+          if [ -z "$APP_ORIGIN" ]; then
+            echo "::error::vars.APP_ORIGIN is not set; the smoke job would fail a good deploy and trigger a rollback."
+            exit 1
+          fi
+
       - name: Require green CI on this commit
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          passed=$(gh api "repos/${{ github.repository }}/actions/workflows/ci.yml/runs?head_sha=${{ github.sha }}&status=success" --jq '.total_count')
+          sha=$(git rev-parse HEAD)
+          passed=$(gh api "repos/${{ github.repository }}/actions/workflows/ci.yml/runs?head_sha=$sha&status=success" --jq '.total_count')
           if [ "$passed" -lt 1 ]; then
-            echo "::error::No successful CI run for ${{ github.sha }}. Fix or re-run CI before deploying."
+            echo "::error::No successful CI run for $sha. Fix or re-run CI before deploying."
             exit 1
           fi
-
-      - uses: actions/checkout@v6
 
       - uses: astral-sh/setup-uv@v7
         with:
           working-directory: backend
 
-      - name: Require production migrations applied
+      - name: Read production migration state
+        id: migrations
+        if: ${{ !inputs.rollback }}
         working-directory: backend
         env:
           PROD_DATABASE_URL: ${{ secrets.PROD_DATABASE_URL_READONLY }}
@@ -44,36 +87,106 @@ jobs:
             exit 1
           fi
           uv sync
-          uv run python scripts/check_migrations.py || {
-            echo "::error::Apply the listed migrations to production before deploying."
-            exit 1
-          }
+          uv run python scripts/check_migrations.py --allow-behind
 
-  deploy:
+  backup:
     needs: preflight
+    if: ${{ !inputs.rollback }}
+    uses: ./.github/workflows/db-backup.yml
+    with:
+      kind: release-${{ inputs.tag || github.ref_name }}
+    secrets: inherit
+
+  migrate:
+    needs: [preflight, backup]
+    if: ${{ !inputs.rollback && needs.preflight.outputs.needs_migration == 'true' }}
     runs-on: ubuntu-latest
+    environment: production
     steps:
       - uses: actions/checkout@v6
-
-      - uses: oven-sh/setup-bun@v2
-
-      - name: Install frontend dependencies
-        run: bun install
-        working-directory: frontend
-
-      - name: Build frontend
-        run: bun run build
-        working-directory: frontend
-        env:
-          VITE_API_BASE_URL: ""
+        with:
+          ref: refs/tags/${{ env.TAG }}
 
       - uses: astral-sh/setup-uv@v7
         with:
           working-directory: backend
 
-      - name: Deploy
-        run: uv run fastapi deploy
+      # Alembic on Postgres runs the whole upgrade in one transaction, so a
+      # failed migration leaves production at the revision it started from.
+      - name: Apply migrations
         working-directory: backend
         env:
-          FASTAPI_CLOUD_TOKEN: ${{ secrets.FASTAPI_CLOUD_TOKEN }}
-          FASTAPI_CLOUD_APP_ID: ${{ secrets.FASTAPI_CLOUD_APP_ID }}
+          DATABASE_URL: ${{ secrets.PROD_DATABASE_URL_MIGRATE }}
+          ENVIRONMENT: production
+          AUTH_SECRET_KEY: migrate-only
+          PUSH_VAPID_PUBLIC_KEY: migrate-only
+          PUSH_VAPID_PRIVATE_KEY: migrate-only
+          PUSH_VAPID_SUBJECT: mailto:ci@example.com
+        run: |
+          if [ -z "$DATABASE_URL" ]; then
+            echo "::error::Missing secret PROD_DATABASE_URL_MIGRATE"
+            exit 1
+          fi
+          uv sync
+          uv run alembic upgrade head
+
+      - name: Verify production is at head
+        working-directory: backend
+        env:
+          PROD_DATABASE_URL: ${{ secrets.PROD_DATABASE_URL_READONLY }}
+          DATABASE_URL: postgresql+psycopg://unused@localhost/unused
+          ENVIRONMENT: development
+          AUTH_SECRET_KEY: preflight-only
+          PUSH_VAPID_PUBLIC_KEY: preflight-only
+          PUSH_VAPID_PRIVATE_KEY: preflight-only
+          PUSH_VAPID_SUBJECT: mailto:ci@example.com
+        run: uv run python scripts/check_migrations.py
+
+  deploy:
+    needs: [preflight, backup, migrate]
+    # A skipped backup/migrate (nothing to apply, or a rollback) is fine; a
+    # failed or cancelled one must stop the release.
+    if: ${{ !cancelled() && needs.preflight.result == 'success' && contains(fromJSON('["success","skipped"]'), needs.backup.result) && contains(fromJSON('["success","skipped"]'), needs.migrate.result) }}
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: refs/tags/${{ env.TAG }}
+
+      - uses: ./.github/actions/deploy
+        with:
+          token: ${{ secrets.FASTAPI_CLOUD_TOKEN }}
+          app-id: ${{ secrets.FASTAPI_CLOUD_APP_ID }}
+
+  smoke:
+    needs: deploy
+    runs-on: ubuntu-latest
+    steps:
+      # Only proves the app is up and reaches Postgres; /health does not report
+      # the running version.
+      - name: Wait for /health
+        env:
+          APP_ORIGIN: ${{ vars.APP_ORIGIN }}
+        run: |
+          for i in $(seq 1 18); do
+            if curl -fsS --max-time 10 "$APP_ORIGIN/health" > /dev/null; then
+              echo "Healthy after attempt $i"
+              exit 0
+            fi
+            sleep 10
+          done
+          echo "::error::$APP_ORIGIN/health not healthy 3 minutes after deploy"
+          exit 1
+
+  release-failed:
+    needs: [migrate, deploy, smoke]
+    # Only after migrating: before that, production is untouched and the failed
+    # job already says why. Nothing is redeployed or restored automatically,
+    # because whether the previous release runs on the new schema is a human call.
+    if: ${{ always() && !inputs.rollback && needs.migrate.result == 'success' && (needs.deploy.result == 'failure' || needs.smoke.result == 'failure') }}
+    runs-on: ubuntu-latest
+    steps:
+      - run: |
+          echo "::error::Release $TAG failed after migrating. The schema is at head and nothing was redeployed. Check the app, then fix forward with a new tag or redeploy an older tag via workflow_dispatch + rollback. See 'Failed release' in docs/operations.md."
+          exit 1

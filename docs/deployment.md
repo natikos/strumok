@@ -4,6 +4,22 @@
 
 The app is deployed to [FastAPI Cloud](https://fastapicloud.com). FastAPI Cloud supports FastAPI backend deployments only — it does not host frontends separately.
 
+## Ways to deploy
+
+Production is the only environment; there is no staging. All deploys go
+through `.github/workflows/deployment.yml`, which is the only supported path
+(nobody runs `fastapi deploy` or migrations from a laptop).
+
+| Way | How | Backup + migrations | When to use |
+| --- | --- | --- | --- |
+| **Tag release** (normal) | `git tag vX.Y.Z && git push origin vX.Y.Z` on a `main` commit with green CI. Claude Code's `/deploy` picks the version and does this after confirmation. | yes | every regular release |
+| **Manual run** | Actions → Deployment → *Run workflow*, `tag` = an existing `v*` tag reachable from `main` | yes | re-run a release whose tag already exists |
+| **Rollback** | Same manual run with `rollback` ticked and an older tag | skipped | the new release is broken and the schema is still compatible with the old code (see [operations.md](operations.md#failed-release)) |
+
+Not deploy paths: `ci.yml` (runs on PRs and `main`, deploys nothing),
+`db-backup.yml` (backups only), `keep-alive.yml`. Running locally is covered in
+[development.md](development.md).
+
 ## Frontend Strategy
 
 The Vue.js frontend is served by FastAPI as static files. This means:
@@ -22,28 +38,42 @@ git tag v1.2.3
 git push origin v1.2.3
 ```
 
-The workflow (`.github/workflows/deployment.yml`) will:
+The workflow (`.github/workflows/deployment.yml`) runs these jobs in order, one
+release at a time (`production-release` concurrency group, never cancelled):
 
-0. Run a `preflight` job that fails the workflow unless `ci.yml` succeeded on
-   the tagged SHA, and (via `backend/scripts/check_migrations.py`, read-only)
-   that production has every migration bundled in the tag; unapplied versions
-   are listed in the failure. `deploy` `needs:` it, so nothing deploys on red
-   CI or ahead of its migrations.
-1. Build the frontend (`bun run build` inside `frontend/`)
-2. Deploy the backend to FastAPI Cloud (`uv run fastapi deploy` inside `backend/`)
+1. `preflight`: the tag must be `v*` and reachable from `main`; `ci.yml` must
+   have succeeded on its commit; `backend/scripts/check_migrations.py
+   --allow-behind` (read-only) reads production's revision. Production at a
+   revision the tag doesn't know fails the release.
+2. `backup`: calls `db-backup.yml` (`release/release-<tag>-<timestamp>.dump.age`
+   in the backup bucket), so every release has a fresh pre-migration dump.
+3. `migrate` (only if migrations are unapplied): `alembic upgrade head` with
+   `PROD_DATABASE_URL_MIGRATE`, then re-runs the check. Alembic on Postgres
+   applies the whole upgrade in one transaction, so a failed migration leaves
+   production at the revision it started from.
+4. `deploy`: builds the frontend and runs `uv run fastapi deploy`
+   (`.github/actions/deploy`).
+5. `smoke`: polls `$APP_ORIGIN/health` for 3 minutes. It proves the app is up
+   and reaches Postgres, not which version is running.
+6. `release-failed` (only if migrate succeeded and deploy or smoke failed):
+   fails the run with a pointer to the runbook. Nothing is redeployed or
+   restored automatically: the schema stays at head, and whether the previous
+   tag runs on it depends on whether a `# contract:` migration was applied.
+   Migrations are **never** downgraded automatically: most downgrades drop
+   tables or columns holding ledger data, and `0013` cannot be undone. Restoring
+   the release dump is manual, see [operations.md](operations.md#failed-release).
 
 ### Migrations
 
-Apply migrations to production *before* tagging, since the app refuses to start
-on an outdated schema:
-
-```bash
-pg_dump "$DATABASE_URL" -Fc -f pre-migration.dump   # always, first
-cd backend && DATABASE_URL=... uv run alembic upgrade head
-```
-
-Order is always: **migrate, then tag.** Migrations must be backward-compatible
-with the previously deployed code (add first, remove in a later release).
+Migrations now run as part of the release; do **not** run them by hand first.
+Every migration must stay backward-compatible with the previously deployed
+code (add first, remove in a later release), because a failed release leaves the
+new schema running under the old code. CI enforces this
+(`backend/tests/test_migration_safety.py`, from `0019` on): a migration that
+drops, renames or alters something, adds a required column without a server
+default, or runs `DROP`/`RENAME` SQL fails the test unless it has a
+`# contract: <why>` comment. A marked migration is allowed, but a failed release
+that applied it needs manual recovery.
 
 **One-time prod baseline:** `0000` was generated from the models, not from prod.
 Diff a `pg_dump --schema-only` of prod against a fresh `alembic upgrade 0000`
@@ -51,7 +81,9 @@ schema, fix any drift in a new migration, then `alembic stamp 0000` in prod
 (do not run `0000` there). `0001` adds a unique index on
 `electricity_rates.effective_from` and fails if prod has duplicates.
 
-You can also trigger a deployment manually from the GitHub Actions UI using the **workflow_dispatch** option.
+You can also trigger a deployment manually from the GitHub Actions UI
+(**workflow_dispatch**). It needs a `tag` input. Tick `rollback` to redeploy an
+older tag as-is, skipping backup and migrations.
 
 ### Required GitHub Secrets
 
@@ -60,10 +92,23 @@ You can also trigger a deployment manually from the GitHub Actions UI using the 
 | `FASTAPI_CLOUD_TOKEN`  | FastAPI Cloud deploy token   |
 | `FASTAPI_CLOUD_APP_ID` | FastAPI Cloud app identifier |
 | `PROD_DATABASE_URL_READONLY` | Read-only production connection string for the migrations preflight |
+| `PROD_DATABASE_URL_MIGRATE` | Production connection string of a role that can run DDL, used only by the `migrate` job. Use the Supabase *session* pooler string (Alembic needs session semantics) and a dedicated role, not the superuser. Prefer storing it in the `production` GitHub environment, restricted to `v*` tags |
+
+### Required GitHub variable and environment
+
+- **Variable `APP_ORIGIN`** (Settings → Secrets and variables → Actions →
+  Variables): the public app origin, e.g. `https://example.fastapicloud.dev`.
+  `preflight` fails the release when it is empty, so a missing value can't
+  turn a good deploy into a failed smoke check.
+- **Environment `production`** (Settings → Environments): the `migrate` and
+  `deploy` jobs declare it. GitHub creates it unprotected on first use, so
+  create it up front, restrict deployment tags to `v*`, and keep
+  `PROD_DATABASE_URL_MIGRATE` there as an environment secret rather than a
+  repository secret.
 
 ## Backups
 
-The database is backed up on day 6 and day 11 of each month by `.github/workflows/db-backup.yml`. Setup, restore, and
+The database is backed up on day 6 and day 11 of each month and before every release by `.github/workflows/db-backup.yml`. Setup, restore, and
 the quarterly drill are in [operations.md](operations.md#database-backups).
 
 ## Push Reminders

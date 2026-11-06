@@ -1,5 +1,17 @@
 # Operations
 
+Runbook for the running production system. Local setup is in
+[development.md](development.md); how releases work is in [deployment.md](deployment.md).
+
+| Situation | Section |
+| --- | --- |
+| A release failed or the new version is broken | [Failed release](#failed-release) |
+| Need data back from a backup | [Restore](#restore) |
+| Is the app up? | [Health check](#health-check), [Uptime monitor](#uptime-monitor) |
+| Backup missing, setting up backups, project paused | [Database backups](#database-backups), [Keep-alive](#keep-alive) |
+| No admin exists yet | [First admin](#first-admin) |
+| A resident asks to correct, export or delete their data | [Personal data requests](#personal-data-requests) |
+
 ## First admin
 
 Sign-up is closed (`POST /auth/register` always answers `registrationClosed`) and
@@ -46,14 +58,17 @@ repo.
 
 Supabase's free tier has no backups or PITR, so these dumps are the only backup.
 
-`.github/workflows/db-backup.yml` (schedule only, no manual trigger) runs
-`pg_dump -Fc`, encrypts with `age`, and uploads to Backblaze B2 as
-`period-close/<kind>-<timestamp>.dump.age`. A failed run emails the repo admins.
+`.github/workflows/db-backup.yml` runs on a schedule and is also called by every
+release (`deployment.yml`). It runs `pg_dump -Fc`, encrypts with `age`, and
+uploads to Backblaze B2 as `period-close/<kind>-<timestamp>.dump.age`, or
+`release/release-<tag>-<timestamp>.dump.age` for a release. A failed run emails
+the repo admins. There is no manual trigger.
 
 | Kind | When (UTC) | Why |
 | --- | --- | --- |
 | `window-closed` | day 6, 06:00 | submission window (days 1–5 Kyiv) is over |
 | `payments-verified` | day 11, 18:00 | bank receipt is in, who paid what is recorded |
+| `release-<tag>` | each release, before migrating | restore point if a migration or deploy goes wrong |
 
 Anything written between runs is not backed up until the next one. A B2
 lifecycle rule hides files after 90 days and deletes them a day later (about 6
@@ -96,7 +111,24 @@ GitHub disables scheduled workflows on public repos after 60 days without repo
 activity, which would silently stop both workflows. Re-enable them from the
 Actions tab, or make the repo private (the rule doesn't apply there).
 
-### Restore
+## Failed release
+
+`deployment.yml` migrates, deploys, then checks `/health`. What happens on failure:
+
+- **Migration fails**: Postgres rolls the transaction back; production stays at
+  its previous revision and nothing is deployed. Fix and re-tag.
+- **Deploy or health check fails after migrating**: the `release-failed` job
+  ends the run red and nothing is redeployed or restored. The schema is at head.
+  Check which version is serving, then fix forward with a new tag, or redeploy
+  an older tag with `workflow_dispatch` + `rollback`. That is safe only if the
+  release applied no `# contract:` migration; otherwise the old code may not run
+  on the new schema, so fix forward or restore the release dump. Don't restore
+  while something may still be writing.
+
+Restoring the `release/` dump (below) is a deliberate manual step that loses every
+write since the backup. The workflow never downgrades or restores by itself.
+
+## Restore
 
 Needs `age`, `pg_restore` 17, the `aws` CLI, and the private key.
 
