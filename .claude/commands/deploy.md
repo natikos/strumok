@@ -43,7 +43,7 @@ If no tag exists yet, this is the first release — start at `v0.1.0`.
   in this release, subject and body.
 
 Major stays pinned at `0` — the project isn't at a stable/real release yet
-(billing is unimplemented, per `docs/known-limitations.md`). It only moves to
+(billing is live, but the head hasn't declared v1.0). It only moves to
 `1` when the user explicitly declares the v1.0 release; never infer that bump
 from commits. Until then, classify only between minor and patch, from
 Conventional Commits types (per `docs/contributing.md`):
