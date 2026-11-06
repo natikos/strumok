@@ -1,9 +1,14 @@
 """Fail unless the database has every Alembic migration bundled in this checkout.
 
 Read-only: only SELECTs from ``alembic_version``. Used by the deployment
-preflight and the /deploy command.
+workflow and the /deploy command.
 
     PROD_DATABASE_URL=... uv run python scripts/check_migrations.py
+
+With ``--allow-behind`` unapplied migrations are not a failure (the release
+workflow applies them); only a production revision this checkout does not know
+still fails. When ``GITHUB_OUTPUT`` is set, ``pre_rev``, ``head_rev`` and
+``needs_migration`` are written to it.
 
 Migration files import the app, so the usual app settings (AUTH_SECRET_KEY,
 PUSH_VAPID_*, ENVIRONMENT, DATABASE_URL) must be set to something; only
@@ -32,7 +37,22 @@ def missing_revisions(applied: str | None, script: ScriptDirectory) -> list[str]
     return list(reversed(revs))
 
 
+def write_outputs(
+    pre_rev: str | None,
+    head_rev: str | None,
+    missing: list[str],
+) -> None:
+    path = os.environ.get("GITHUB_OUTPUT")
+    if not path:
+        return
+    with open(path, "a") as out:
+        out.write(f"pre_rev={pre_rev or ''}\n")
+        out.write(f"head_rev={head_rev or ''}\n")
+        out.write(f"needs_migration={'true' if missing else 'false'}\n")
+
+
 def main() -> int:
+    allow_behind = "--allow-behind" in sys.argv[1:]
     url = os.environ.get("PROD_DATABASE_URL")
     if not url:
         print("PROD_DATABASE_URL is not set", file=sys.stderr)
@@ -55,6 +75,10 @@ def main() -> int:
         print(f"Production is at {applied}, which this checkout does not know.")
         return 1
     missing = missing_revisions(applied, script)
+    write_outputs(applied, script.get_current_head(), missing)
+    if missing and allow_behind:
+        print(f"Production is at {applied}; will apply: {', '.join(missing)}")
+        return 0
     if missing:
         print(f"Production is at {applied}; unapplied migrations: {', '.join(missing)}")
         return 1
