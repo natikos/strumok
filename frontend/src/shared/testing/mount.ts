@@ -1,5 +1,6 @@
 import { mount } from "@vue/test-utils";
 import PrimeVue from "primevue/config";
+import { defineComponent, h, type Plugin } from "vue";
 import { createI18n } from "vue-i18n";
 
 import AppPreset from "@/preset";
@@ -27,6 +28,23 @@ export function createTestI18n(locale: Locale = "en") {
   });
 }
 
+// Tests don't install vue-router, which is what registers `RouterLink` in the app.
+// A stub keeps templates using it from warning, and renders an `<a href>` from `to`
+// so specs can assert the link target.
+const RouterLinkStub = defineComponent({
+  name: "RouterLink",
+  props: { to: { default: "", type: [String, Object] } },
+  setup(props, { slots }) {
+    return () => h("a", { href: typeof props.to === "string" ? props.to : undefined }, slots["default"]?.());
+  },
+});
+
+const routerLinkStubPlugin: Plugin = {
+  install(app) {
+    app.component("RouterLink", RouterLinkStub);
+  },
+};
+
 /**
  * The plugins the real app installs, for spreading into a `mount` call:
  *
@@ -38,16 +56,19 @@ export function createTestI18n(locale: Locale = "en") {
  * or custom `global` options — it keeps `mount`'s own typing intact.
  */
 export function appPlugins(locale: Locale = "en") {
-  return [createTestI18n(locale), [PrimeVue, PRIMEVUE_OPTIONS] as [typeof PrimeVue, object]];
+  return [
+    createTestI18n(locale),
+    [PrimeVue, PRIMEVUE_OPTIONS] as [typeof PrimeVue, object],
+    routerLinkStubPlugin,
+  ];
 }
 
 /**
  * Mount a component with the plugins the real app installs.
  *
- * `vitest.config.ts` deliberately omits the PrimeVue auto-import resolver, so
- * PrimeVue components used in a template are not registered globally the way they
- * are in `vite.config.ts`. Register the ones a component needs via
- * `global.components`, or stub them via `global.stubs`.
+ * `vitest.config.ts` auto-imports components like `vite.config.ts` does, so
+ * PrimeVue and our own components resolve without registration; stub heavy ones
+ * via `global.stubs`.
  */
 export function mountWithPlugins(
   component: Parameters<typeof mount>[0],

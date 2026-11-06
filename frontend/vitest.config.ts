@@ -1,11 +1,22 @@
+import { PrimeVueResolver } from "@primevue/auto-import-resolver";
 import vue from "@vitejs/plugin-vue";
 import { fileURLToPath, URL } from "node:url";
+import Components from "unplugin-vue-components/vite";
 import { defineConfig } from "vitest/config";
 
-// Separate from vite.config.ts to avoid pulling in the PrimeVue auto-import
-// resolver and PWA plugin, which aren't needed (and add noise) for unit tests.
+// Separate from vite.config.ts to avoid pulling in the PWA plugin, which isn't
+// needed for unit tests. Components are auto-imported exactly as in the app, so a
+// spec mounting a component sees the same children (PrimeVue and our own) the
+// app does instead of "Failed to resolve component" warnings.
 export default defineConfig({
-  plugins: [vue()],
+  plugins: [
+    vue(),
+    Components({
+      dirs: ["src"],
+      dts: false,
+      resolvers: [PrimeVueResolver()],
+    }),
+  ],
   resolve: {
     alias: {
       "@": fileURLToPath(new URL("./src", import.meta.url)),
