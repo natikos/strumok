@@ -1,5 +1,17 @@
 # Operations
 
+Runbook for the running production system. Local setup is in
+[development.md](development.md); how releases work is in [deployment.md](deployment.md).
+
+| Situation | Section |
+| --- | --- |
+| A release failed or the new version is broken | [Failed release](#failed-release) |
+| Need data back from a backup | [Restore](#restore) |
+| Is the app up? | [Health check](#health-check), [Uptime monitor](#uptime-monitor) |
+| Backup missing, setting up backups, project paused | [Database backups](#database-backups), [Keep-alive](#keep-alive) |
+| No admin exists yet | [First admin](#first-admin) |
+| A resident asks to correct, export or delete their data | [Personal data requests](#personal-data-requests) |
+
 ## First admin
 
 Sign-up is closed (`POST /auth/register` always answers `registrationClosed`) and
@@ -99,7 +111,7 @@ GitHub disables scheduled workflows on public repos after 60 days without repo
 activity, which would silently stop both workflows. Re-enable them from the
 Actions tab, or make the repo private (the rule doesn't apply there).
 
-### Failed release
+## Failed release
 
 `deployment.yml` migrates, deploys, then checks `/health`. What happens on failure:
 
@@ -116,7 +128,7 @@ Actions tab, or make the repo private (the rule doesn't apply there).
 Restoring the `release/` dump (below) is a deliberate manual step that loses every
 write since the backup. The workflow never downgrades or restores by itself.
 
-### Restore
+## Restore
 
 Needs `age`, `pg_restore` 17, the `aws` CLI, and the private key.
 

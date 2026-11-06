@@ -4,6 +4,22 @@
 
 The app is deployed to [FastAPI Cloud](https://fastapicloud.com). FastAPI Cloud supports FastAPI backend deployments only — it does not host frontends separately.
 
+## Ways to deploy
+
+Production is the only environment; there is no staging. All deploys go
+through `.github/workflows/deployment.yml`, which is the only supported path
+(nobody runs `fastapi deploy` or migrations from a laptop).
+
+| Way | How | Backup + migrations | When to use |
+| --- | --- | --- | --- |
+| **Tag release** (normal) | `git tag vX.Y.Z && git push origin vX.Y.Z` on a `main` commit with green CI. Claude Code's `/deploy` picks the version and does this after confirmation. | yes | every regular release |
+| **Manual run** | Actions → Deployment → *Run workflow*, `tag` = an existing `v*` tag reachable from `main` | yes | re-run a release whose tag already exists |
+| **Rollback** | Same manual run with `rollback` ticked and an older tag | skipped | the new release is broken and the schema is still compatible with the old code (see [operations.md](operations.md#failed-release)) |
+
+Not deploy paths: `ci.yml` (runs on PRs and `main`, deploys nothing),
+`db-backup.yml` (backups only), `keep-alive.yml`. Running locally is covered in
+[development.md](development.md).
+
 ## Frontend Strategy
 
 The Vue.js frontend is served by FastAPI as static files. This means:

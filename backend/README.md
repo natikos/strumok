@@ -1,107 +1,48 @@
 # Backend
 
-## Prerequisites
-
-- Python 3.14+ (see [Python Version](#python-version))
-- `uv` installed at user/system level (not inside project venv)
-- `backend/.env` file (copy from `backend/.env.example`)
-
-## Python Version
-
-This project requires Python 3.14+. To ensure you're using the correct version:
-
-### Using pyenv (Recommended)
-
-```bash
-# Install pyenv (if not already installed)
-curl https://pyenv.run | bash
-
-# Install Python 3.14
-pyenv install
-
-# Verify
-python --version  # Should show 3.14.x
-```
-
-### Manual installation
-
-Download Python 3.14 from [python.org](https://www.python.org/downloads/)
+FastAPI + SQLModel + PostgreSQL. Run every command below from `backend/`.
+Full local setup (database, migrations, frontend): [docs/development.md](../docs/development.md).
 
 ## Setup
 
-⚠️ Run all commands from the `backend/` folder.
-
-### 1. Create virtual environment
+Requires Python 3.14+ and [`uv`](https://docs.astral.sh/uv/) installed at user/system level (not inside the project venv).
 
 ```bash
-uv venv
+cp .env.example .env        # then adjust values; defaults match docker-compose Postgres
+uv sync --extra dev         # creates .venv and installs dependencies
+uv run alembic upgrade head # create/upgrade the database schema
 ```
 
-### 2. Activate virtual environment
-
-```bash
-source .venv/bin/activate
-```
-
-### 3. Install dependencies
-
-```bash
-uv sync --extra dev
-```
-
-## Environment Configuration
-
-Copy the example environment file:
-
-```bash
-cp .env.example .env
-```
-
-Update `.env` with your local configuration.
+`uv run <cmd>` uses the project venv automatically; activating it
+(`source .venv/bin/activate`) is optional.
 
 ## Run
 
-### Production mode
-
 ```bash
-python -m app.main
+uv run uvicorn app.main:app --reload    # development, auto-reload
+python -m app.main                      # production-style, no reload
 ```
 
-### Development mode (with auto-reload)
+API: `http://localhost:8000`. Swagger UI at `/docs`, ReDoc at `/redoc`.
 
-```bash
-uvicorn app.main:app --reload
-```
+## Common commands
 
-The API will be available at `http://localhost:8000`
+| Task | Command |
+| ---- | ------- |
+| Tests (needs `docker compose up -d`) | `uv run pytest` |
+| Lint | `uv run ruff check .` |
+| Apply migrations | `uv run alembic upgrade head` |
+| New migration | `uv run alembic revision --autogenerate -m <name> --rev-id <NNNN>` |
 
-**API Documentation:**
+More on migrations in [docs/development.md](../docs/development.md#migrations); on tests in [docs/testing.md](../docs/testing.md).
 
-- Swagger UI: `http://localhost:8000/docs`
-- ReDoc: `http://localhost:8000/redoc`
+## Python version
 
-## Deactivate Virtual Environment
-
-When done working:
-
-```bash
-deactivate
-```
+Install 3.14 with [pyenv](https://github.com/pyenv/pyenv) (`pyenv install`, reads the version from the repo) or from [python.org](https://www.python.org/downloads/). Check with `python --version`.
 
 ## Troubleshooting
 
-**Python version mismatch:**
-
-- Ensure you have Python 3.14+ installed
-- Check: `python --version`
-- Use pyenv to install the correct version (see [Python Version](#python-version))
-
-**uv not found:**
-
-- Install uv: `curl -LsSf https://astral.sh/uv/install.sh | sh`
-- Or: `pip install uv`
-
-**Module not found errors:**
-
-- Make sure venv is activated (you should see `(.venv)` in your terminal)
-- Run `uv sync --extra dev` again
+- **Wrong Python version:** see above; `uv` picks the interpreter from `pyproject.toml`.
+- **`uv` not found:** `curl -LsSf https://astral.sh/uv/install.sh | sh` or `pip install uv`.
+- **Module not found:** run `uv sync --extra dev` again and use `uv run`.
+- **`schemaOutdated` in the log:** the database is behind the newest migration; run `uv run alembic upgrade head`.
