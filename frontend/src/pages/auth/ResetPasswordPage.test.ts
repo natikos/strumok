@@ -1,16 +1,8 @@
-import { Form, FormField } from "@primevue/forms";
 import { flushPromises, mount } from "@vue/test-utils";
-import Button from "primevue/button";
-import Card from "primevue/card";
-import InputText from "primevue/inputtext";
-import Message from "primevue/message";
-import Password from "primevue/password";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { appPlugins } from "@/shared/testing/mount";
-import Typography from "@/shared/Typography.vue";
 import type * as AuthApi from "@shared/api/auth";
-import FormFieldControl from "@shared/FormFieldControl.vue";
 
 import ResetPasswordPage from "./ResetPasswordPage.vue";
 
@@ -35,17 +27,6 @@ function mountPage() {
     global: {
       plugins: appPlugins(),
       stubs: { AuthLayout: { template: "<div><slot /></div>" } },
-      components: {
-        Button,
-        Card,
-        Form,
-        FormField,
-        FormFieldControl,
-        InputText,
-        Message,
-        Password,
-        Typography,
-      },
     },
   });
 }

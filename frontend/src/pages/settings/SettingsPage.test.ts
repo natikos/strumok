@@ -50,7 +50,6 @@ function mountSettingsPage() {
   return mount(SettingsPage, {
     global: {
       plugins: appPlugins(),
-      components: { Select, ToggleSwitch },
       stubs: {
         ThemeToggleButton: true,
         LanguageToggleButton: true,

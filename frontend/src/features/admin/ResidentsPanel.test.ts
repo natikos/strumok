@@ -1,8 +1,4 @@
 import { flushPromises, mount } from "@vue/test-utils";
-import Button from "primevue/button";
-import InputText from "primevue/inputtext";
-import Message from "primevue/message";
-import Select from "primevue/select";
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { appPlugins } from "@/shared/testing/mount";
@@ -61,7 +57,6 @@ const bob = { ...ada, email: "bob@example.com", first_name: "Bob", household_cou
 function mountPanel() {
   return mount(ResidentsPanel, {
     global: {
-      components: { Button, InputText, Message, Select },
       plugins: appPlugins(),
       stubs: { ErrorState: true, Menu: true },
     },

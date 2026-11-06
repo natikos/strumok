@@ -16,8 +16,7 @@ const split: DayNightSplit = {
 describe("DayNightSplitCard", () => {
   it("renders the bar and day/night rows with values and percentages when data is available", () => {
     const wrapper = mountWithPlugins(DayNightSplitCard, {
-      props: { split },
-      global: { components: { Skeleton } },
+      props: { split }
     });
 
     expect(wrapper.find('[role="img"]').exists()).toBe(true);
@@ -27,8 +26,7 @@ describe("DayNightSplitCard", () => {
 
   it("shows an empty state instead of a bar when split data is unavailable", () => {
     const wrapper = mountWithPlugins(DayNightSplitCard, {
-      props: { split: null },
-      global: { components: { Skeleton } },
+      props: { split: null }
     });
 
     expect(wrapper.find(".split-card__empty").exists()).toBe(true);
@@ -38,8 +36,7 @@ describe("DayNightSplitCard", () => {
 
   it("renders skeleton placeholders while loading, hiding both the bar and the empty state", () => {
     const wrapper = mountWithPlugins(DayNightSplitCard, {
-      props: { split: null, isLoading: true },
-      global: { components: { Skeleton } },
+      props: { split: null, isLoading: true }
     });
 
     expect(wrapper.findAllComponents(Skeleton).length).toBeGreaterThan(0);
@@ -49,8 +46,7 @@ describe("DayNightSplitCard", () => {
 
   it("carries both day and night values with units in the bar's aria-label", () => {
     const wrapper = mountWithPlugins(DayNightSplitCard, {
-      props: { split },
-      global: { components: { Skeleton } },
+      props: { split }
     });
 
     const label = wrapper.find('[role="img"]').attributes("aria-label");
@@ -60,8 +56,7 @@ describe("DayNightSplitCard", () => {
 
   it("shows a unit on the day and night row values", () => {
     const wrapper = mountWithPlugins(DayNightSplitCard, {
-      props: { split },
-      global: { components: { Skeleton } },
+      props: { split }
     });
 
     const values = wrapper.findAll(".split-card__value").map((el) => el.text());
@@ -71,8 +66,7 @@ describe("DayNightSplitCard", () => {
 
   it("emits view-history when the history link is clicked", async () => {
     const wrapper = mountWithPlugins(DayNightSplitCard, {
-      props: { split },
-      global: { components: { Skeleton } },
+      props: { split }
     });
 
     await wrapper.find(".split-card__link").trigger("click");

@@ -1,6 +1,5 @@
 import { flushPromises, mount } from "@vue/test-utils";
 import Button from "primevue/button";
-import InputNumber from "primevue/inputnumber";
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { appPlugins } from "@/shared/testing/mount";
@@ -46,7 +45,6 @@ const credit = {
 function mountPanel() {
   return mount(BankQueuePanel, {
     global: {
-      components: { Button, InputNumber },
       plugins: appPlugins(),
       stubs: { ErrorState: true, Select: true },
     },

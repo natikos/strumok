@@ -24,8 +24,7 @@ function makeComparison(overrides: Partial<YearOverYear> = {}): YearOverYear {
 describe("YearOverYearCard", () => {
   it("renders two comparison rows with an image role and aria-labels carrying both year and value", () => {
     const wrapper = mountWithPlugins(YearOverYearCard, {
-      props: { comparison: makeComparison(), emptyMonth: "June", emptyYear: 2026 },
-      global: { components: { Skeleton } },
+      props: { comparison: makeComparison(), emptyMonth: "June", emptyYear: 2026 }
     });
 
     const rows = wrapper.findAll('[role="img"]');
@@ -39,8 +38,7 @@ describe("YearOverYearCard", () => {
 
   it("shows the unavailable message with the missing month and year when no comparison exists", () => {
     const wrapper = mountWithPlugins(YearOverYearCard, {
-      props: { comparison: null, emptyMonth: "January", emptyYear: 2025 },
-      global: { components: { Skeleton } },
+      props: { comparison: null, emptyMonth: "January", emptyYear: 2025 }
     });
 
     expect(wrapper.find(".yoy-card__empty").exists()).toBe(true);
@@ -51,8 +49,7 @@ describe("YearOverYearCard", () => {
 
   it("renders skeleton placeholders while loading, without rows or the empty message", () => {
     const wrapper = mountWithPlugins(YearOverYearCard, {
-      props: { comparison: null, emptyMonth: "June", emptyYear: 2026, isLoading: true },
-      global: { components: { Skeleton } },
+      props: { comparison: null, emptyMonth: "June", emptyYear: 2026, isLoading: true }
     });
 
     expect(wrapper.findAllComponents(Skeleton).length).toBeGreaterThan(0);
@@ -66,8 +63,7 @@ describe("YearOverYearCard", () => {
         comparison: makeComparison({ direction: "down", deltaKwh: -50 }),
         emptyMonth: "June",
         emptyYear: 2026,
-      },
-      global: { components: { Skeleton } },
+      }
     });
 
     const pill = wrapper.find(".yoy-card__pill");
@@ -83,8 +79,7 @@ describe("YearOverYearCard", () => {
         comparison: makeComparison({ direction: "up", deltaKwh: 50, current: 200, previous: 150 }),
         emptyMonth: "June",
         emptyYear: 2026,
-      },
-      global: { components: { Skeleton } },
+      }
     });
 
     const pill = wrapper.find(".yoy-card__pill");

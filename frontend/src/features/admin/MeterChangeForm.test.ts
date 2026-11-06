@@ -1,7 +1,6 @@
 import { flushPromises, mount } from "@vue/test-utils";
 import Button from "primevue/button";
 import InputNumber from "primevue/inputnumber";
-import InputText from "primevue/inputtext";
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { appPlugins } from "@/shared/testing/mount";
@@ -33,7 +32,7 @@ afterAll(() => {
 function mountForm() {
   return mount(MeterChangeForm, {
     props: { household: { id: 4, name: "Plot 4" }, period: "2026-07" },
-    global: { components: { Button, InputNumber, InputText }, plugins: appPlugins() },
+    global: {plugins: appPlugins() },
   });
 }
 

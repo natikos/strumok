@@ -1,10 +1,27 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
+
+import type { initAuthSession as initAuthSessionType } from "./auth-session";
 
 const { GET, POST } = vi.hoisted(() => ({ GET: vi.fn(), POST: vi.fn() }));
 
 vi.mock("./client", () => ({ authApiClient: { GET, POST } }));
 
-import { initAuthSession } from "./auth-session";
+type InitAuthSession = typeof initAuthSessionType;
+
+// `isolate: false` shares the module cache across spec files, so a spec that ran
+// earlier may already have loaded `./auth-session` against the real client, and a
+// static import here would reuse it and bypass the mock above. Evaluate it fresh,
+// and drop it afterwards so later specs don't inherit the mocked client.
+let initAuthSession: InitAuthSession;
+
+beforeAll(async () => {
+  vi.resetModules();
+  ({ initAuthSession } = await import("./auth-session"));
+});
+
+afterAll(() => {
+  vi.resetModules();
+});
 
 function respond(status: number, data?: unknown) {
   return { data, response: new Response(null, { status }) };

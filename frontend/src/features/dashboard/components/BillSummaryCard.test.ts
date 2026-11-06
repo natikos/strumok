@@ -1,5 +1,4 @@
 import { flushPromises, mount } from "@vue/test-utils";
-import Button from "primevue/button";
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { appPlugins } from "@/shared/testing/mount";
@@ -9,14 +8,12 @@ const api = vi.hoisted(() => ({ listAdjustments: vi.fn(), listStatements: vi.fn(
 
 // The suite runs with isolate: false, so mock the API late (see AuditLogPanel.test).
 let BillSummaryCard: Component;
-let BillBreakdown: Component;
 let setHouseholds: (households: { id: number; name: string }[]) => unknown;
 
 beforeAll(async () => {
   vi.resetModules();
   vi.doMock("@shared/api/billing", () => api);
   BillSummaryCard = (await import("./BillSummaryCard.vue")).default;
-  BillBreakdown = (await import("./BillBreakdown.vue")).default;
   setHouseholds = (await import("@/features/households/useCurrentHousehold")).useCurrentHousehold()
     .setHouseholds;
 });
@@ -43,7 +40,6 @@ const closedLine = (overrides = {}) => ({
 function mountCard() {
   return mount(BillSummaryCard, {
     global: {
-      components: { BillBreakdown, Button },
       plugins: appPlugins(),
       stubs: { ErrorState: true, Skeleton: true },
     },

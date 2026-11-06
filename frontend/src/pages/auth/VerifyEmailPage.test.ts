@@ -1,11 +1,7 @@
 import { flushPromises, mount } from "@vue/test-utils";
-import Button from "primevue/button";
-import Card from "primevue/card";
-import ProgressSpinner from "primevue/progressspinner";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { appPlugins } from "@/shared/testing/mount";
-import Typography from "@/shared/Typography.vue";
 import type * as AuthApi from "@shared/api/auth";
 import type * as VueRouter from "vue-router";
 
@@ -46,7 +42,6 @@ function mountPage() {
   return mount(VerifyEmailPage, {
     global: {
       plugins: appPlugins(),
-      components: { Button, Card, ProgressSpinner, Typography },
       stubs: {
         AuthLayout: { template: "<div><slot /></div>" },
       },

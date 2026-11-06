@@ -1,17 +1,8 @@
-import { Form, FormField } from "@primevue/forms";
 import { flushPromises, mount } from "@vue/test-utils";
-import Button from "primevue/button";
-import Card from "primevue/card";
-import InputText from "primevue/inputtext";
-import Message from "primevue/message";
-import Password from "primevue/password";
-import SelectButton from "primevue/selectbutton";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { appPlugins } from "@/shared/testing/mount";
-import Typography from "@/shared/Typography.vue";
 import type * as AuthApi from "@shared/api/auth";
-import FormFieldControl from "@shared/FormFieldControl.vue";
 
 import AuthForm from "./AuthForm.vue";
 
@@ -28,18 +19,6 @@ function mountForm() {
   return mount(AuthForm, {
     global: {
       plugins: appPlugins(),
-      components: {
-        Button,
-        Card,
-        Form,
-        FormField,
-        FormFieldControl,
-        InputText,
-        Message,
-        Password,
-        SelectButton,
-        Typography,
-      },
     },
   });
 }

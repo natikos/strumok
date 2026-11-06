@@ -1,13 +1,10 @@
 import { flushPromises, mount } from "@vue/test-utils";
-import Button from "primevue/button";
 import InputNumber from "primevue/inputnumber";
-import InputText from "primevue/inputtext";
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { appPlugins } from "@/shared/testing/mount";
 import type { Component } from "vue";
 
-import RestatementPreview from "./RestatementPreview.vue";
 
 const { confirmRequire, getPeriodReconciliation, putPeriodBill, restatePeriod } = vi.hoisted(
   () => ({
@@ -69,7 +66,6 @@ function mountPanel() {
   return mount(ReconciliationPanel, {
     props: { period: "2026-09" },
     global: {
-      components: { Button, InputNumber, InputText, RestatementPreview },
       plugins: appPlugins(),
       stubs: { ErrorState: true, Skeleton: true },
     },
