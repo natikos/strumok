@@ -7,4 +7,4 @@ echo "→ Building frontend"
 (cd "$repo_root/frontend" && bun install && bun run build)
 
 echo "→ Deploying backend to FastAPI Cloud"
-(cd "$repo_root/backend" && fastapi deploy)
+(cd "$repo_root/backend" && uv run fastapi deploy)
