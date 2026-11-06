@@ -7,8 +7,27 @@ from app.db.models import PaymentDetails
 IBAN_LENGTH = 29
 
 
+EDRPOU_LENGTH = 8
+
+
 class InvalidIbanError(Exception):
     pass
+
+
+class InvalidEdrpouError(Exception):
+    pass
+
+
+def normalize_edrpou(raw: str | None) -> str | None:
+    """A blank value clears the code; otherwise it must be the 8 digits of a
+    legal entity's EDRPOU, since a typo would make residents' bank apps reject
+    or misroute the transfer."""
+    code = "".join((raw or "").split())
+    if not code:
+        return None
+    if len(code) != EDRPOU_LENGTH or not (code.isascii() and code.isdigit()):
+        raise InvalidEdrpouError
+    return code
 
 
 def normalize_iban(raw: str) -> str:
@@ -30,17 +49,34 @@ def get_payment_details(session: Session) -> PaymentDetails | None:
 
 
 def set_payment_details(
-    session: Session, *, actor_id: int, iban: str, recipient_name: str
+    session: Session,
+    *,
+    actor_id: int,
+    iban: str,
+    recipient_name: str,
+    edrpou: str | None = None,
 ) -> PaymentDetails:
     normalized = normalize_iban(iban)
+    code = normalize_edrpou(edrpou)
     recipient = recipient_name.strip()
     row = session.get(PaymentDetails, 1)
-    before = {"iban": row.iban, "recipient_name": row.recipient_name} if row else None
+    before = (
+        {
+            "iban": row.iban,
+            "recipient_name": row.recipient_name,
+            "edrpou": row.edrpou,
+        }
+        if row
+        else None
+    )
     if row is None:
-        row = PaymentDetails(id=1, iban=normalized, recipient_name=recipient)
+        row = PaymentDetails(
+            id=1, iban=normalized, recipient_name=recipient, edrpou=code
+        )
     else:
         row.iban = normalized
         row.recipient_name = recipient
+        row.edrpou = code
         row.updated_at = utc_now()
     row.updated_by_user_id = actor_id
     session.add(row)
@@ -51,7 +87,7 @@ def set_payment_details(
         entity_type="payment_details",
         entity_id=1,
         before=before,
-        after={"iban": normalized, "recipient_name": recipient},
+        after={"iban": normalized, "recipient_name": recipient, "edrpou": code},
     )
     session.commit()
     session.refresh(row)

@@ -38,6 +38,7 @@
     amount: string;
     iban: string;
     recipient: string;
+    edrpou?: string | null | undefined;
     comment: string;
   }>();
 
@@ -52,6 +53,9 @@
     { key: "amount", label: t("balance.payAmount"), value: props.amount },
     { key: "iban", label: t("balance.payIban"), value: props.iban },
     { key: "recipient", label: t("balance.payRecipient"), value: props.recipient },
+    ...(props.edrpou
+      ? [{ key: "edrpou", label: t("balance.payEdrpou"), value: props.edrpou }]
+      : []),
     { key: "comment", label: t("balance.payComment"), value: props.comment },
   ]);
 

@@ -335,6 +335,7 @@
       "hint": "Мешканці бачать цей IBAN під час оплати. Зміни записуються в журнал аудиту.",
       "iban": "IBAN",
       "recipient": "Назва отримувача",
+      "edrpou": "Код ЄДРПОУ (необов'язково)",
       "save": "Зберегти",
       "saved": "Збережено",
       "empty": "Ще не вказано"
@@ -419,6 +420,7 @@
     "payAmount": "Сума",
     "payIban": "IBAN",
     "payRecipient": "Отримувач",
+    "payEdrpou": "ЄДРПОУ",
     "payPurposeLabel": "Електроенергія",
     "payComment": "Призначення",
     "payCopy": "Копіювати",
@@ -557,6 +559,7 @@
     "handoverReadingRequired": "Введіть показники лічильників при передачі",
     "householdHasOutstandingBalance": "У попереднього власника є неоплачений борг",
     "invalidIban": "Цей IBAN недійсний. Перевірте його й спробуйте ще раз",
+    "invalidEdrpou": "Код ЄДРПОУ має містити 8 цифр",
     "bankStatementTooLarge": "Виписка більша за 1 МБ",
     "bankStatementInvalid": "Виписку неможливо імпортувати. Перевірте файл і спробуйте ще раз",
     "bankStatementNotCsv": "Завантажте виписку у форматі .csv",

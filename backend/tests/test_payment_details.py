@@ -44,7 +44,11 @@ class TestAdminWrite:
         assert client.get("/admin/payment-details").json() is None
         res = _put(client, iban=" ua21 3223 1300 0002 6007 2335 6600 1 ")
         assert res.status_code == 200
-        assert res.json() == {"iban": IBAN, "recipient_name": "Strumok Co-op"}
+        assert res.json() == {
+            "iban": IBAN,
+            "recipient_name": "Strumok Co-op",
+            "edrpou": None,
+        }
         assert client.get("/admin/payment-details").json()["iban"] == IBAN
 
     def test_change_is_audited_with_before_and_after(
@@ -94,7 +98,11 @@ class TestResidentRead:
         make_household(session, user_id=resident.id)
         authenticate(client, resident)
         res = client.get("/billing/payment-details")
-        assert res.json() == {"iban": IBAN, "recipient_name": "Strumok Co-op"}
+        assert res.json() == {
+            "iban": IBAN,
+            "recipient_name": "Strumok Co-op",
+            "edrpou": None,
+        }
 
     def test_requires_a_household(self, client, session: Session) -> None:
         authenticate(client, make_user(session))
@@ -118,7 +126,11 @@ class TestResidentRead:
         authenticate(client, old)
         res = client.get("/billing/payment-details")
         assert res.status_code == 200
-        assert res.json() == {"iban": IBAN, "recipient_name": "Strumok Co-op"}
+        assert res.json() == {
+            "iban": IBAN,
+            "recipient_name": "Strumok Co-op",
+            "edrpou": None,
+        }
 
     def test_user_who_never_owned_anything_gets_404_even_if_others_have_plots(
         self, client, session: Session
@@ -130,3 +142,40 @@ class TestResidentRead:
         res = client.get("/billing/payment-details")
         assert res.status_code == 404
         assert res.json()["detail"] == "noHouseholdMembership"
+
+
+class TestEdrpou:
+    def test_saved_normalized_and_returned_to_residents(
+        self, client, session: Session
+    ) -> None:
+        authenticate(client, make_user(session, is_admin=True))
+        res = _put(client, edrpou=" 1234 5678 ")
+        assert res.status_code == 200
+        assert res.json()["edrpou"] == "12345678"
+        assert client.get("/admin/payment-details").json()["edrpou"] == "12345678"
+        resident = make_user(session)
+        make_household(session, user_id=resident.id)
+        authenticate(client, resident)
+        assert client.get("/billing/payment-details").json()["edrpou"] == "12345678"
+
+    def test_blank_clears_it(self, client, session: Session) -> None:
+        authenticate(client, make_user(session, is_admin=True))
+        _put(client, edrpou="12345678")
+        assert _put(client, edrpou="  ").json()["edrpou"] is None
+
+    def test_rejects_wrong_length_and_non_digits(
+        self, client, session: Session
+    ) -> None:
+        authenticate(client, make_user(session, is_admin=True))
+        for bad in ("1234567", "123456789", "1234567a"):
+            res = _put(client, edrpou=bad)
+            assert res.status_code == 422
+            assert res.json()["detail"] == "invalidEdrpou"
+
+    def test_change_is_audited(self, client, session: Session) -> None:
+        authenticate(client, make_user(session, is_admin=True))
+        _put(client, edrpou="12345678")
+        entry = session.exec(
+            select(AuditLog).where(AuditLog.action == "payment_details.set")
+        ).one()
+        assert entry.after["edrpou"] == "12345678"

@@ -81,6 +81,7 @@ from app.api.admin.service import (
 )
 from app.api.auth.schemas import ErrorOut
 from app.api.billing.payment_details import (
+    InvalidEdrpouError,
     InvalidIbanError,
     get_payment_details,
     set_payment_details,
@@ -395,7 +396,7 @@ def get_admin_payment_details(
     response_model=PaymentDetailsOut,
     responses={
         422: {
-            "description": "IBAN is malformed or fails its checksum",
+            "description": "IBAN is malformed or fails its checksum, or EDRPOU is not 8 digits",
             "model": ErrorOut,
             "content": {"application/json": {"example": {"detail": "invalidIban"}}},
         }
@@ -412,9 +413,12 @@ def put_admin_payment_details(
             actor_id=admin.id,
             iban=payload.iban,
             recipient_name=payload.recipient_name,
+            edrpou=payload.edrpou,
         )
     except InvalidIbanError as exc:
         raise HTTPException(status_code=422, detail="invalidIban") from exc
+    except InvalidEdrpouError as exc:
+        raise HTTPException(status_code=422, detail="invalidEdrpou") from exc
     return PaymentDetailsOut.model_validate(row)
 
 

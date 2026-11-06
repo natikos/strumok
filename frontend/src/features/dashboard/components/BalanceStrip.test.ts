@@ -184,7 +184,11 @@ describe("BalanceStrip", () => {
   });
 
   describe("pay action", () => {
-    const details = { iban: "UA213223130000026007233566001", recipient_name: "Strumok Co-op" };
+    const details = {
+      iban: "UA213223130000026007233566001",
+      recipient_name: "Strumok Co-op",
+      edrpou: "12345678",
+    };
 
     it("offers Pay with this plot's balance when money is owed and details exist", async () => {
       getBalance.mockResolvedValue(balance({ balance_uah: "250.50" }));
@@ -198,6 +202,7 @@ describe("BalanceStrip", () => {
         amount: "250.50",
         iban: details.iban,
         recipient: "Strumok Co-op",
+        edrpou: "12345678",
         comment: "Electricity STR-1",
       });
     });
