@@ -1,4 +1,5 @@
 import { flushPromises, mount } from "@vue/test-utils";
+import Button from "primevue/button";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { appPlugins } from "@/shared/testing/mount";
@@ -28,7 +29,7 @@ const stubs = {
   ProgressSpinner: true,
 };
 
-const components = { ErrorState };
+const components = { Button, ErrorState };
 
 function makeDashboard(): AdminDashboardOut {
   return {

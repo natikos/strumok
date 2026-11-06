@@ -14,6 +14,8 @@ const { listMyMeterReadings, submitMyMeterReading } = vi.hoisted(() => ({
   submitMyMeterReading: vi.fn(),
 }));
 
+vi.mock("@shared/api/billing", () => ({ listStatements: vi.fn().mockResolvedValue([]) }));
+
 vi.mock("@shared/api/meter-readings", () => ({
   listMyMeterReadings,
   submitMyMeterReading,
