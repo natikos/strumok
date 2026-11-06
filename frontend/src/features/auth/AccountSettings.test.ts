@@ -1,8 +1,4 @@
 import { flushPromises, mount } from "@vue/test-utils";
-import Button from "primevue/button";
-import InputText from "primevue/inputtext";
-import Message from "primevue/message";
-import Password from "primevue/password";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { appPlugins } from "@/shared/testing/mount";
@@ -25,7 +21,6 @@ function mountSettings() {
     props: { currentEmail: "resident@example.com" },
     global: {
       plugins: appPlugins(),
-      components: { Button, InputText, Message, Password },
     },
   });
 }

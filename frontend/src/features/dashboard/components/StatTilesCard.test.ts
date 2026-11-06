@@ -60,8 +60,7 @@ function mountCard(overrides: MountOverrides = {}) {
       daysIntoPeriod,
       seasonComparison,
       ...overrides,
-    },
-    global: { components: { Skeleton } },
+    }
   });
 }
 

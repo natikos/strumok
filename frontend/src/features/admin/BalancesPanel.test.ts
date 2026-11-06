@@ -1,8 +1,4 @@
 import { flushPromises, mount } from "@vue/test-utils";
-import Button from "primevue/button";
-import InputNumber from "primevue/inputnumber";
-import InputText from "primevue/inputtext";
-import Select from "primevue/select";
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { appPlugins } from "@/shared/testing/mount";
@@ -70,7 +66,6 @@ const payment = {
 function mountPanel() {
   return mount(BalancesPanel, {
     global: {
-      components: { Button, InputNumber, InputText, Select },
       plugins: appPlugins(),
       stubs: { ErrorState: true, Skeleton: true },
     },

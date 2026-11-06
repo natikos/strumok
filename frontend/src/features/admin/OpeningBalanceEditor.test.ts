@@ -1,7 +1,4 @@
 import { flushPromises, mount } from "@vue/test-utils";
-import Button from "primevue/button";
-import InputNumber from "primevue/inputnumber";
-import InputText from "primevue/inputtext";
 import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 
 import { appPlugins } from "@/shared/testing/mount";
@@ -45,7 +42,6 @@ const opening: OpeningBalanceOut = {
 async function mountEditor() {
   const wrapper = mount(OpeningBalanceEditor, {
     global: {
-      components: { Button, InputNumber, InputText },
       plugins: appPlugins(),
       stubs: { Skeleton: true },
     },

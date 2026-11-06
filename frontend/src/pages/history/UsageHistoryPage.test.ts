@@ -4,7 +4,6 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { useCurrentHousehold } from "@/features/households/useCurrentHousehold";
 import { appPlugins } from "@/shared/testing/mount";
 import type { MeterReadingOut } from "@shared/api/meter-readings";
-import ErrorState from "@shared/components/ErrorState.vue";
 
 import UsageHistoryPage from "./UsageHistoryPage.vue";
 
@@ -58,7 +57,6 @@ async function mountPage() {
     global: {
       plugins: appPlugins(),
       stubs: { Button: true },
-      components: { ErrorState },
     },
   });
   await flushPromises();

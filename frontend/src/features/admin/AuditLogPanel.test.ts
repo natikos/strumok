@@ -1,7 +1,4 @@
 import { flushPromises, mount } from "@vue/test-utils";
-import Button from "primevue/button";
-import InputText from "primevue/inputtext";
-import Select from "primevue/select";
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { appPlugins } from "@/shared/testing/mount";
@@ -45,7 +42,6 @@ function mountPanel() {
   return mount(AuditLogPanel, {
     global: {
       plugins: appPlugins(),
-      components: { Button, InputText, Select },
       stubs: { ErrorState: true },
     },
   });

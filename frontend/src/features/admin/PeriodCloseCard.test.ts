@@ -1,5 +1,4 @@
 import { flushPromises, mount } from "@vue/test-utils";
-import Button from "primevue/button";
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { appPlugins } from "@/shared/testing/mount";
@@ -40,7 +39,7 @@ const open = {
 function mountCard() {
   return mount(PeriodCloseCard, {
     props: { period: "2026-09" },
-    global: { components: { Button }, plugins: appPlugins() },
+    global: {plugins: appPlugins() },
   });
 }
 

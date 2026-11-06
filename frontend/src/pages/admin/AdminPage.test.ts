@@ -1,10 +1,8 @@
 import { flushPromises, mount } from "@vue/test-utils";
-import Button from "primevue/button";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { appPlugins } from "@/shared/testing/mount";
 import type { AdminDashboardOut } from "@shared/api/admin";
-import ErrorState from "@shared/components/ErrorState.vue";
 
 import AdminPage from "./AdminPage.vue";
 
@@ -28,8 +26,6 @@ const stubs = {
   PeriodCloseCard: true,
   ProgressSpinner: true,
 };
-
-const components = { Button, ErrorState };
 
 function makeDashboard(): AdminDashboardOut {
   return {
@@ -76,7 +72,6 @@ describe("AdminPage submission overview", () => {
       global: {
         plugins: appPlugins(),
         stubs,
-        components,
       },
     });
     await flushPromises();
@@ -102,7 +97,6 @@ describe("AdminPage submission overview", () => {
       global: {
         plugins: appPlugins(),
         stubs,
-        components,
       },
     });
 

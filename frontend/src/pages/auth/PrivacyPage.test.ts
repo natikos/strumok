@@ -16,7 +16,6 @@ describe("PrivacyPage", () => {
         plugins: appPlugins(),
         stubs: {
           AuthLayout: { template: "<div><slot /></div>" },
-          RouterLink: { props: ["to"], template: '<a :href="to"><slot /></a>' },
         },
       },
     });

@@ -1,7 +1,4 @@
 import { flushPromises, mount } from "@vue/test-utils";
-import Button from "primevue/button";
-import InputNumber from "primevue/inputnumber";
-import InputText from "primevue/inputtext";
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { appPlugins } from "@/shared/testing/mount";
@@ -44,7 +41,7 @@ const rate = {
 function mountEditor(overrides: Partial<typeof rate> = {}) {
   return mount(RateEditor, {
     props: { rate: { ...rate, ...overrides } },
-    global: { components: { Button, InputNumber, InputText }, plugins: appPlugins() },
+    global: {plugins: appPlugins() },
   });
 }
 

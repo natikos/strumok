@@ -1,10 +1,7 @@
 import { flushPromises, mount } from "@vue/test-utils";
-import Button from "primevue/button";
-import Card from "primevue/card";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { appPlugins } from "@/shared/testing/mount";
-import Typography from "@/shared/Typography.vue";
 import type { UserWithHouseholdsOut } from "@shared/api/auth";
 import type * as VueRouter from "vue-router";
 
@@ -53,7 +50,6 @@ function mountScreen() {
   return mount(NoHouseholdScreen, {
     global: {
       plugins: appPlugins(),
-      components: { Button, Card, Typography },
       stubs: {
         // Real AuthLayout pulls in language/theme toggle components that are
         // irrelevant here; render its default slot only.

@@ -1,7 +1,5 @@
 import { flushPromises, mount } from "@vue/test-utils";
-import Button from "primevue/button";
 import InputNumber from "primevue/inputnumber";
-import InputText from "primevue/inputtext";
 import Select from "primevue/select";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -69,7 +67,6 @@ function fillHandover(wrapper: Awaited<ReturnType<typeof mountForm>>) {
 async function mountForm() {
   const wrapper = mount(AdminHouseholdAssignment, {
     global: {
-      components: { Button, InputNumber, InputText, Select },
       plugins: appPlugins(),
     },
   });

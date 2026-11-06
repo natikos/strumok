@@ -1,5 +1,4 @@
 import { flushPromises, mount } from "@vue/test-utils";
-import Button from "primevue/button";
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { appPlugins } from "@/shared/testing/mount";
@@ -13,7 +12,6 @@ const { getBalance, getPaymentDetails, listMyStatements } = vi.hoisted(() => ({
 
 // The suite runs with isolate: false, so mock the API late (see AuditLogPanel.test).
 let BalanceStrip: Component;
-let PaySheet: Component;
 let setHouseholds: (households: { id: number; name: string }[]) => unknown;
 let setPastOnly: (value: boolean) => void;
 
@@ -21,7 +19,6 @@ beforeAll(async () => {
   vi.resetModules();
   vi.doMock("@shared/api/billing", () => ({ getBalance, getPaymentDetails, listMyStatements }));
   BalanceStrip = (await import("./BalanceStrip.vue")).default;
-  PaySheet = (await import("./PaySheet.vue")).default;
   // Same module instance as the component imports after the reset.
   const household = await import("@/features/households/useCurrentHousehold");
   setHouseholds = household.useCurrentHousehold().setHouseholds;
@@ -47,7 +44,6 @@ function mountStrip() {
   return mount(BalanceStrip, {
     global: {
       plugins: appPlugins(),
-      components: { Button, PaySheet },
       stubs: { ErrorState: true, Skeleton: true, Dialog: { template: "<div><slot /></div>" } },
     },
   });

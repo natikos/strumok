@@ -1,7 +1,4 @@
 import { flushPromises, mount } from "@vue/test-utils";
-import Button from "primevue/button";
-import InputText from "primevue/inputtext";
-import Skeleton from "primevue/skeleton";
 import { describe, expect, it, vi } from "vitest";
 
 import { appPlugins } from "@/shared/testing/mount";
@@ -43,7 +40,7 @@ function mountPreview(request: ReturnType<typeof vi.fn>) {
         reason: string;
       }) => Promise<ReturnType<typeof result>>,
     },
-    global: { components: { Button, InputText, Skeleton }, plugins: appPlugins() },
+    global: {plugins: appPlugins() },
   });
 }
 
