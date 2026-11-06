@@ -648,6 +648,7 @@ class PaymentDetails(SQLModel, table=True):
     id: int = Field(default=1, primary_key=True)
     iban: str
     recipient_name: str
+    edrpou: Optional[str] = None
     updated_at: datetime = Field(
         default_factory=utc_now,
         sa_column_kwargs={"server_default": text("CURRENT_TIMESTAMP")},

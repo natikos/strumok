@@ -86,6 +86,7 @@ class PaymentDetailsOut(BaseModel):
 
     iban: str = Field(examples=["UA213223130000026007233566001"])
     recipient_name: str
+    edrpou: str | None = Field(default=None, examples=["12345678"])
 
 
 class BankCoverageOut(BaseModel):
@@ -112,3 +113,4 @@ class PaymentDetailsIn(BaseModel):
 
     iban: str = Field(max_length=40)
     recipient_name: str = Field(min_length=1, max_length=120)
+    edrpou: str | None = Field(default=None, max_length=20)
