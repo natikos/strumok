@@ -18,6 +18,17 @@
       <InputText id="payment-recipient" v-model="recipient" autocomplete="off" :disabled="isBusy" />
     </div>
 
+    <div class="payment-details__field">
+      <label for="payment-edrpou">{{ t("admin.paymentDetails.edrpou") }}</label>
+      <InputText
+        id="payment-edrpou"
+        v-model="edrpou"
+        autocomplete="off"
+        inputmode="numeric"
+        :disabled="isBusy"
+      />
+    </div>
+
     <Button
       type="submit"
       :label="t('admin.paymentDetails.save')"
@@ -41,6 +52,7 @@
 
   const iban = ref("");
   const recipient = ref("");
+  const edrpou = ref("");
   const isBusy = ref(false);
   const isSaved = ref(false);
 
@@ -48,6 +60,7 @@
     const details = await getAdminPaymentDetails();
     iban.value = details?.iban ?? "";
     recipient.value = details?.recipient_name ?? "";
+    edrpou.value = details?.edrpou ?? "";
   }
 
   async function save(): Promise<void> {
@@ -58,9 +71,11 @@
       const saved = await putAdminPaymentDetails({
         iban: iban.value,
         recipient_name: recipient.value,
+        edrpou: edrpou.value.trim() || null,
       });
       iban.value = saved.iban;
       recipient.value = saved.recipient_name;
+      edrpou.value = saved.edrpou ?? "";
       isSaved.value = true;
     } catch (error: unknown) {
       // ApiError is toasted globally (errors.invalidIban); anything else is a bug.

@@ -33,6 +33,7 @@
         :amount="payAmount"
         :iban="paymentDetails!.iban"
         :recipient="paymentDetails!.recipient_name"
+        :edrpou="paymentDetails!.edrpou"
         :comment="payComment"
       />
     </template>

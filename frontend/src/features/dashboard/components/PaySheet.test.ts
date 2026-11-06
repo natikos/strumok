@@ -13,9 +13,9 @@ const props = {
   visible: true,
 };
 
-function mountSheet() {
+function mountSheet(extra: { edrpou?: string | null } = {}) {
   return mount(PaySheet, {
-    props,
+    props: { ...props, ...extra },
     global: {
       plugins: appPlugins(),
       stubs: { Dialog: { template: "<div><slot /></div>" } },
@@ -32,6 +32,25 @@ describe("PaySheet", () => {
     for (const value of [props.amount, props.iban, props.recipient, props.comment]) {
       expect(text).toContain(value);
     }
+  });
+
+  it("shows and copies the EDRPOU when set", async () => {
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    vi.stubGlobal("navigator", { clipboard: { writeText } });
+    const wrapper = mountSheet({ edrpou: "12345678" });
+
+    expect(wrapper.text()).toContain("12345678");
+    const index = wrapper.findAll("dt").findIndex((dt) => dt.text() === "EDRPOU");
+    await wrapper.findAll("button")[index]!.trigger("click");
+    await flushPromises();
+
+    expect(writeText).toHaveBeenCalledWith("12345678");
+  });
+
+  it("omits the EDRPOU row when it is not set", () => {
+    expect(mountSheet({ edrpou: null }).findAll("dt").map((dt) => dt.text())).not.toContain(
+      "EDRPOU"
+    );
   });
 
   it("copies a field to the clipboard", async () => {
