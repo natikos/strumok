@@ -70,14 +70,6 @@ export default defineConfig({
           },
         ],
       },
-      workbox: {
-        navigateFallbackDenylist: [
-          /^\/favicon\//,
-          /^\/admin\/export\//,
-          /^\/(?:health|docs|redoc|openapi\.json)(?:\/|$)/,
-          /\.(?:png|jpe?g|gif|svg|ico|webp|woff2?|ttf|otf|eot|webmanifest|json)$/,
-        ],
-      },
     }),
   ],
   resolve: {
