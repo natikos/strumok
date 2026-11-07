@@ -62,12 +62,14 @@ Supabase's free tier has no backups or PITR, so these dumps are the only backup.
 release (`deployment.yml`). It runs `pg_dump -Fc`, encrypts with `age`, and
 uploads to Backblaze B2 as `period-close/<kind>-<timestamp>.dump.age`, or
 `release/release-<tag>-<timestamp>.dump.age` for a release. A failed run emails
-the repo admins. There is no manual trigger.
+the repo admins. To back up on demand, run it from Actions → Database backup →
+*Run workflow* (kind `manual`).
 
 | Kind | When (UTC) | Why |
 | --- | --- | --- |
 | `window-closed` | day 6, 06:00 | submission window (days 1–5 Kyiv) is over |
 | `payments-verified` | day 11, 18:00 | bank receipt is in, who paid what is recorded |
+| `manual` | Actions → *Run workflow* | on-demand dump, e.g. before risky manual work |
 | `release-<tag>` | each release, before migrating | restore point if a migration or deploy goes wrong |
 
 Anything written between runs is not backed up until the next one. A B2
