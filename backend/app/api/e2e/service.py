@@ -26,10 +26,11 @@ def reset_clock() -> None:
 
 
 def reset(session: Session) -> None:
-    """Empties every table (TRUNCATE skips the row-level append-only
-    triggers), restarts ids so `STR-<id>` references are predictable, and
+    """Empties every table (the append-only TRUNCATE guard is lifted for this
+    transaction only), restarts ids so `STR-<id>` references are predictable, and
     clears the outbox and clock."""
     tables = ", ".join(table.name for table in SQLModel.metadata.sorted_tables)
+    session.exec(text("SET LOCAL strumok.allow_truncate = 'on'"))  # type: ignore[call-overload]
     session.exec(text(f"TRUNCATE {tables} RESTART IDENTITY CASCADE"))  # type: ignore[call-overload]
     session.commit()
     email.e2e_outbox.clear()

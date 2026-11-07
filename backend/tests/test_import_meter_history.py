@@ -68,8 +68,10 @@ def _cleanup(
     rate_ids: list[int],
     periods: list[str] | None = None,
 ) -> None:
-    # household_charges rejects DELETE by trigger; TRUNCATE doesn't fire it, and
-    # only this test's committed charges exist (every other test rolls back).
+    # household_charges rejects DELETE by trigger and TRUNCATE by a guard this
+    # transaction lifts; only this test's committed charges exist (every other
+    # test rolls back).
+    real_session.exec(text("SET LOCAL strumok.allow_truncate = 'on'"))  # type: ignore[call-overload]
     real_session.exec(text("TRUNCATE household_charges"))  # type: ignore[call-overload]
     for period in periods or []:
         billing_period = real_session.get(BillingPeriod, period)
