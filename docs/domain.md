@@ -169,8 +169,9 @@ read, no LLM, never from payer tax ID or IBAN:
 3. else none.
 
 A suggestion only pre-fills the confirm dialog with its reason. The Pay sheet's
-purpose lists the `STR-<id>` of every household the user holds
-(`frontend/src/shared/utils/paymentPurpose.ts` mirrors `household_reference`).
+purpose carries only the `STR-<id>` of the plot being paid, i.e. the current
+plot (or, with no plot left, the gave-up plots that owe), so the amount and the
+reference agree (`frontend/src/shared/utils/paymentPurpose.ts` mirrors `household_reference`).
 
 **Coverage.** `GET /billing/bank-coverage` reports the max `covered_through` over
 imported files and `awaiting_statement` (true when none was ever imported or the

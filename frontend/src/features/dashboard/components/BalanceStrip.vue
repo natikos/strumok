@@ -93,7 +93,7 @@
     paymentPurpose(
       t("balance.payPurposeLabel"),
       hasCurrent.value
-        ? households.value.map((h) => h.id)
+        ? (current.value ? [current.value.id] : [])
         : owingPast.value.map((p) => p.household_id)
     )
   );
