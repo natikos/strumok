@@ -78,6 +78,20 @@ describe("useMeterReadings", () => {
     vi.useRealTimers();
   });
 
+  describe("loadError", () => {
+    it("exposes the failure and clears it after a successful retry", async () => {
+      listMyMeterReadings.mockRejectedValueOnce(new Error("boom"));
+      listMyMeterReadings.mockResolvedValueOnce([makeReading()]);
+
+      const { result } = mountComposable();
+      await result.loadHistory();
+      expect(result.loadError.value).not.toBeNull();
+
+      await result.loadHistory();
+      expect(result.loadError.value).toBeNull();
+    });
+  });
+
   describe("currentBillingPeriod / currentSlot", () => {
     it("resolves the billable period to the previous calendar month", async () => {
       vi.useFakeTimers();

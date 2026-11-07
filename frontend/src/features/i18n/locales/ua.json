@@ -591,6 +591,7 @@
     "switchToDarkTheme": "Увімкнути темну тему"
   },
   "meterReadings": {
+    "loadError": "Не вдалося завантажити ваші показники",
     "day": "День",
     "night": "Ніч",
     "dayMeterValue": "Денний показник",

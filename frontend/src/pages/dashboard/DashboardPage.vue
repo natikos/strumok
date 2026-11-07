@@ -50,6 +50,8 @@
         />
       </div>
 
+      <ErrorState v-if="loadError" message-key="meterReadings.loadError" @retry="reload" />
+
       <FirstRunGuideCard v-if="showFirstRunGuide" />
 
       <BillSummaryCard />
@@ -59,6 +61,8 @@
       <!-- With no readings at all there is nothing to chart, split or compare, so
          one dashed card stands in for the whole analytics block. -->
       <EmptyUsageCard v-if="showEmptyUsage" />
+
+      <template v-else-if="loadError" />
 
       <template v-else>
         <UsageChartCard :series="trendSeries" :is-loading="isLoading" />
@@ -120,6 +124,7 @@
 
   const {
     isLoading,
+    loadError,
     isSubmitting,
     isOffline,
     errors,
@@ -172,8 +177,18 @@
 
   const hasAnyReading = computed(() => submittedPeriods.value.length > 0);
 
-  const showFirstRunGuide = computed(() => !isLoading.value && !hasAnyReading.value);
-  const showEmptyUsage = computed(() => !isLoading.value && !hasAnyReading.value);
+  // A failed load also leaves no readings; that must not read as a new account.
+  const showFirstRunGuide = computed(
+    () => !isLoading.value && !loadError.value && !hasAnyReading.value
+  );
+  const showEmptyUsage = computed(
+    () => !isLoading.value && !loadError.value && !hasAnyReading.value
+  );
+
+  async function reload(): Promise<void> {
+    await loadHistory();
+    await periodState.load();
+  }
 
   /** Meter values from the last submitted period, shown as the "last submitted" hint. */
   const previousMeterValues = computed(() => {

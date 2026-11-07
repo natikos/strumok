@@ -591,6 +591,7 @@
     "switchToDarkTheme": "Switch to dark theme"
   },
   "meterReadings": {
+    "loadError": "Couldn't load your readings",
     "day": "Day",
     "night": "Night",
     "dayMeterValue": "Day reading",

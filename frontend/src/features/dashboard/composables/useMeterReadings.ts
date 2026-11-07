@@ -73,6 +73,7 @@ export function useMeterReadings() {
   const {
     data: readings,
     isLoading,
+    error: loadError,
     execute: loadHistory,
   } = useAsyncData(() => listMyMeterReadings(currentId.value), false);
 
@@ -282,6 +283,7 @@ export function useMeterReadings() {
 
   return {
     isLoading,
+    loadError,
     isSubmitting,
     isOffline,
     errors,
