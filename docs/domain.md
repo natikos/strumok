@@ -122,6 +122,14 @@ through `app.core.ownership.set_owner`**.
   audited, signed `opening_balance_corrections` row with a required reason
   (`POST /admin/households/{id}/opening-balance/corrections`), billed to the
   opening balance's owner.
+- **Balance cutover:** the sheet's balance already contains the backfilled months,
+  so the opening balance plus those months' charges counts them twice. A later
+  `balance_cutovers` row (script only: `backend/scripts/set_balance_cutover.py`, dry
+  run by default, prints each household's balance before and after) replaces the
+  opening balance: periods ending on or before its `as_of` and payments dated on or
+  before it stop counting, and only later months stay payable. The latest `as_of`
+  wins; corrections written before the cutover are superseded. Bank credits dated
+  on or before the opening balance or cutover are rejected (`settled_through`).
 - **Payment details:** the co-op's IBAN, recipient and optional 8-digit EDRPOU
   (`payment_details`, one row) are set by the administrator via `PUT /admin/payment-details`
   (audited, UA IBAN checksum validated) and read by residents at

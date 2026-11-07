@@ -594,6 +594,26 @@ class OpeningBalance(SQLModel, table=True):
     )
 
 
+class BalanceCutover(SQLModel, table=True):
+    """A later sheet balance that supersedes the opening balance: everything up
+    to `as_of` (periods ending by then, payments dated by then, earlier
+    corrections) is already inside `amount_uah`. The one with the latest
+    `as_of` applies. Written only by `scripts/set_balance_cutover.py`."""
+
+    __tablename__ = "balance_cutovers"  # type: ignore
+
+    id: int = Field(default=None, primary_key=True)
+    household_id: int = Field(foreign_key="households.id", index=True)
+    owner_user_id: Optional[int] = Field(default=None, foreign_key="users.id")
+    amount_uah: Decimal = Field(decimal_places=2, max_digits=12)
+    as_of: date
+    note: Optional[str] = Field(default=None)
+    created_at: datetime = Field(
+        default_factory=utc_now,
+        sa_column_kwargs={"server_default": text("CURRENT_TIMESTAMP")},
+    )
+
+
 class OpeningBalanceCorrection(SQLModel, table=True):
     """A signed amount added to a household's opening balance, with the reason
     it was wrong. Append-only (a trigger enforces it): a mistaken correction is

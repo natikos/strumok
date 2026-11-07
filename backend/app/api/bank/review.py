@@ -15,7 +15,8 @@ from app.core.bank_queue import queued_select
 from app.core.domain.billing import KYIV_TZ
 from app.core.ownership import owner_at
 from app.core.time import utc_now
-from app.db.models import BankTransaction, Household, OpeningBalance, Payment
+from app.api.billing.payments import settled_through
+from app.db.models import BankTransaction, Household, Payment
 
 LINK_WINDOW_DAYS = 5
 DISMISS_REASON = "notResidentPayment"
@@ -144,10 +145,8 @@ def confirm(
         household = session.get(Household, line.household_id)
         if household is None:
             raise HouseholdNotFoundError
-        opening = session.exec(
-            select(OpeningBalance).where(OpeningBalance.household_id == household.id)
-        ).first()
-        if opening is not None and transaction.operation_date <= opening.as_of:
+        settled = settled_through(session=session, household_id=household.id)
+        if settled is not None and transaction.operation_date <= settled:
             raise BeforeOpeningBalanceError
         payments.append(
             Payment(
