@@ -273,6 +273,36 @@ def notify_bank_queue(*, session: Session, file_id: int) -> int:
     )
 
 
+def bank_inbox_rejected_content(user: User, *, count: int) -> Content:
+    if _lang(user) == LanguageCode.EN:
+        return {
+            "title": "Bank statement email rejected",
+            "body": f"{count} emailed statement(s) could not be imported. "
+            "Open the Bank tab to see why.",
+        }
+    return {
+        "title": "Лист із випискою відхилено",
+        "body": f"{count} виписок з пошти не вдалося імпортувати. "
+        "Відкрийте вкладку «Банк», щоб побачити причину.",
+    }
+
+
+def notify_bank_inbox_rejected(*, session: Session, fetch_ids: Sequence[int]) -> int:
+    """Tells each active admin the inbox rejected messages. One notice per run:
+    the newest rejected fetch id keys the log, so a rerun never repeats it."""
+    if not fetch_ids:
+        return 0
+    admins = session.exec(select(User).where(User.is_admin, User.is_active)).all()
+    return notify_users(
+        session=session,
+        period=f"bank-mail-{max(fetch_ids)}",
+        variant="bankInboxRejected",
+        content_for={
+            a.id: bank_inbox_rejected_content(a, count=len(fetch_ids)) for a in admins
+        },
+    )
+
+
 def shortfall_content(user: User, *, period: str, owed: Decimal) -> Content:
     if _lang(user) == LanguageCode.EN:
         return {

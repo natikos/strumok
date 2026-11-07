@@ -192,7 +192,8 @@
             <section class="admin-section admin-section--wide">
               <h2 class="admin-section__title">{{ $t("admin.bank.title") }}</h2>
               <BankCoverageNotice v-if="activeTab === 'bank'" />
-              <BankQueuePanel v-if="activeTab === 'bank'" />
+              <BankInboxPanel v-if="activeTab === 'bank'" @imported="bankQueueKey += 1" />
+              <BankQueuePanel v-if="activeTab === 'bank'" :key="bankQueueKey" />
             </section>
           </TabPanel>
 
@@ -216,6 +217,7 @@
   import AdminHouseholdAssignment from "@features/admin/AdminHouseholdAssignment.vue";
   import AuditLogPanel from "@features/admin/AuditLogPanel.vue";
   import BalancesPanel from "@features/admin/BalancesPanel.vue";
+  import BankInboxPanel from "@features/admin/BankInboxPanel.vue";
   import BankQueuePanel from "@features/admin/BankQueuePanel.vue";
   import ElectricityRatesSettings from "@features/admin/ElectricityRatesSettings.vue";
   import PaymentDetailsSettings from "@features/admin/PaymentDetailsSettings.vue";
@@ -229,6 +231,8 @@
   const dashboard = ref<AdminDashboardOut | null>(null);
   const dashboardError = ref<string | null>(null);
   const activeTab = ref("households");
+  // Bumped when a manual inbox check imports rows, so the queue reloads.
+  const bankQueueKey = ref(0);
   const isLoadingDashboard = ref(true);
   const locale = navigator.language;
 

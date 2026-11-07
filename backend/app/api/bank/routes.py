@@ -11,7 +11,7 @@ from fastapi import (
     status,
 )
 from fastapi.responses import JSONResponse
-from sqlmodel import Session
+from sqlmodel import Session, col, select
 
 from app.api.auth.schemas import ErrorOut
 from app.api.bank import inbox, review
@@ -23,6 +23,7 @@ from app.api.bank.schemas import (
     ConfirmIn,
     LinkCandidateOut,
     InboxCheckOut,
+    InboxFetchOut,
     LinkIn,
     StatementImportOut,
     SuggestionOut,
@@ -38,7 +39,7 @@ from app.api.bank.service import (
 from app.api.deps import require_admin
 from app.api.push.billing_notifications import notify_bank_queue, notify_shortfall
 from app.db import get_session
-from app.db.models import User
+from app.db.models import BankMailFetch, User
 
 logger = logging.getLogger(__name__)
 
@@ -156,6 +157,25 @@ def check_inbox(session: Session = Depends(get_session)) -> InboxCheckOut:
         imported=result.imported,
         rejected=result.rejected,
         credits_new=result.credits_new,
+    )
+
+
+INBOX_FETCH_LIMIT = 20
+
+
+@router.get("/inbox-fetches", response_model=list[InboxFetchOut])
+def list_inbox_fetches(
+    session: Session = Depends(get_session),
+) -> list[BankMailFetch]:
+    """The newest messages the inbox looked at, so a rejection is visible."""
+    return list(
+        session.exec(
+            select(BankMailFetch)
+            .order_by(
+                col(BankMailFetch.fetched_at).desc(), col(BankMailFetch.id).desc()
+            )
+            .limit(INBOX_FETCH_LIMIT)
+        ).all()
     )
 
 

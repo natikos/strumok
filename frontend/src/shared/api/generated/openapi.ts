@@ -922,6 +922,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/bank-statements/inbox-fetches": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Inbox Fetches
+         * @description The newest messages the inbox looked at, so a rejection is visible.
+         */
+        get: operations["list_inbox_fetches_admin_bank_statements_inbox_fetches_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/admin/bank-transactions": {
         parameters: {
             query?: never;
@@ -1645,6 +1665,17 @@ export interface components {
             rejected: number;
             /** Credits New */
             credits_new: number;
+        };
+        /** InboxFetchOut */
+        InboxFetchOut: {
+            /** Id */
+            id: number;
+            /** Status */
+            status: string;
+            /** Reason */
+            reason: string | null;
+            /** Fetched At */
+            fetched_at: string;
         };
         /**
          * LanguageCode
@@ -4917,6 +4948,26 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    list_inbox_fetches_admin_bank_statements_inbox_fetches_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InboxFetchOut"][];
                 };
             };
         };

@@ -435,6 +435,25 @@ export async function uploadBankStatement(file: File): Promise<StatementImportOu
   return data;
 }
 
+export type InboxFetchOut = components["schemas"]["InboxFetchOut"];
+export type InboxCheckOut = components["schemas"]["InboxCheckOut"];
+
+export async function listInboxFetches(): Promise<InboxFetchOut[]> {
+  const { data } = await appApiClient.GET("/admin/bank-statements/inbox-fetches");
+
+  return data ?? [];
+}
+
+export async function checkBankInbox(): Promise<InboxCheckOut> {
+  const { data, error, response } = await appApiClient.POST("/admin/bank-statements/check-inbox");
+
+  if (error) {
+    throw buildApiError(response.status, error);
+  }
+
+  return data;
+}
+
 export type BankTransactionOut = components["schemas"]["BankTransactionOut"];
 export type ConfirmedPaymentOut = components["schemas"]["ConfirmedPaymentOut"];
 

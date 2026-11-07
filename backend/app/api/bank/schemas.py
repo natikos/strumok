@@ -3,6 +3,8 @@ from decimal import Decimal
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from app.core.time import UtcDatetime
+
 
 class StatementImportOut(BaseModel):
     already_imported: bool
@@ -71,3 +73,10 @@ class InboxCheckOut(BaseModel):
     imported: int
     rejected: int
     credits_new: int
+
+
+class InboxFetchOut(BaseModel):
+    id: int
+    status: str
+    reason: str | None
+    fetched_at: UtcDatetime
