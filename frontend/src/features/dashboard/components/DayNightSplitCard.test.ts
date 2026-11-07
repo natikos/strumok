@@ -78,7 +78,7 @@ describe("DayNightSplitCard", () => {
     expect(wrapper.attributes("aria-busy")).toBe("true");
     expect(wrapper.findAllComponents(Skeleton).length).toBeGreaterThan(0);
 
-    await wrapper.setProps({ isLoading: false });
+    await wrapper.setProps({ isLoading: false } as never);
 
     expect(wrapper.attributes("aria-busy")).not.toBe("true");
     expect(wrapper.findAllComponents(Skeleton)).toHaveLength(0);

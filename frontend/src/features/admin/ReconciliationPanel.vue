@@ -1,5 +1,5 @@
 <template>
-  <div class="reconciliation">
+  <div class="reconciliation" :aria-busy="isLoading">
     <ErrorState v-if="error" :message-key="error" @retry="load" />
 
     <template v-else-if="data">
@@ -144,7 +144,7 @@
     </template>
 
     <template v-else-if="isLoading">
-      <div class="reconciliation__result" aria-busy="true">
+      <div class="reconciliation__result">
         <Skeleton height="1rem" width="70%" />
       </div>
       <Skeleton height="0.85rem" width="50%" />

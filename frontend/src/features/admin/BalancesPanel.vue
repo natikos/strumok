@@ -1,5 +1,5 @@
 <template>
-  <div class="balances">
+  <div class="balances" :aria-busy="isLoading">
     <ExportCsvButton path="balances" />
     <ErrorState v-if="error" :message-key="error" @retry="load" />
 
@@ -130,8 +130,8 @@
     </template>
 
     <template v-else-if="isLoading">
-      <Skeleton height="1rem" width="55%" />
-      <ul class="balances__list" aria-busy="true">
+      <p class="balances__total"><Skeleton height="1rem" width="55%" /></p>
+      <ul class="balances__list">
         <li v-for="n in 3" :key="n" class="balances__row">
           <Skeleton height="1.5rem" />
         </li>
