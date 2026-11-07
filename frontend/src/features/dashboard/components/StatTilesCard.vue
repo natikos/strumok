@@ -1,5 +1,5 @@
 <template>
-  <div class="stat-tiles">
+  <div class="stat-tiles" :aria-busy="isLoading">
     <template v-if="isLoading">
       <Skeleton v-for="n in 3" :key="n" height="4.75rem" class="stat-tiles__skeleton" />
     </template>

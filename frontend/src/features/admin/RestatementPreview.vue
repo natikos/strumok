@@ -1,6 +1,9 @@
 <template>
-  <div class="restatement">
-    <Skeleton v-if="isLoading" height="6rem" />
+  <div class="restatement" :aria-busy="isLoading">
+    <template v-if="isLoading">
+      <Skeleton height="1rem" width="80%" />
+      <Skeleton height="1rem" width="60%" />
+    </template>
 
     <template v-else-if="preview">
       <p class="restatement__summary">

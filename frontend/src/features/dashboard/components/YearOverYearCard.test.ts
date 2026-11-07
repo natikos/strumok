@@ -3,6 +3,7 @@ import Skeleton from "primevue/skeleton";
 import { describe, expect, it } from "vitest";
 
 import type { YearOverYear } from "@/features/dashboard/composables/useUsageInsights";
+import { expectLoaded, expectLoading } from "@/shared/testing/loading";
 import { mountWithPlugins } from "@/shared/testing/mount";
 
 import YearOverYearCard from "./YearOverYearCard.vue";
@@ -87,5 +88,14 @@ describe("YearOverYearCard", () => {
     expect(wrapper.findComponent(ArrowUp).exists()).toBe(true);
     expect(pill.text()).toContain("50");
     expect(pill.text()).toContain("kWh");
+  });
+
+  it("keeps its container aria-busy with skeletons while loading and drops both once loaded", async () => {
+    const wrapper = mountWithPlugins(YearOverYearCard, { props: { comparison: makeComparison(), emptyMonth: "June", emptyYear: 2026, isLoading: true } });
+    expectLoading(wrapper);
+
+    await wrapper.setProps({ isLoading: false } as never);
+
+    expectLoaded(wrapper);
   });
 });

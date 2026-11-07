@@ -1,6 +1,8 @@
 import { flushPromises, mount } from "@vue/test-utils";
 import { describe, expect, it, vi } from "vitest";
+import { nextTick } from "vue";
 
+import { deferred, expectLoaded, expectLoading } from "@/shared/testing/loading";
 import { appPlugins } from "@/shared/testing/mount";
 
 import RestatementPreview from "./RestatementPreview.vue";
@@ -86,5 +88,19 @@ describe("RestatementPreview", () => {
 
     expect(wrapper.text()).toContain("nets to zero");
     expect(wrapper.text()).toContain("No household's amount changes");
+  });
+
+  it("shows aria-busy skeletons while the preview loads and none once it arrives", async () => {
+    const gate = deferred<ReturnType<typeof result>>();
+    const request = vi.fn().mockReturnValue(gate.promise);
+    const wrapper = mountPreview(request);
+    await nextTick();
+
+    expectLoading(wrapper);
+
+    gate.resolve(result());
+    await flushPromises();
+
+    expectLoaded(wrapper);
   });
 });

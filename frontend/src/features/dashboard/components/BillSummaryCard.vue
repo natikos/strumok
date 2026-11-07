@@ -1,5 +1,9 @@
 <template>
-  <Skeleton v-if="isLoading" height="9rem" />
+  <section v-if="isLoading" class="bill-summary" aria-busy="true">
+    <Skeleton height="1.8rem" width="45%" />
+    <Skeleton height="1rem" width="65%" />
+    <Skeleton height="1rem" width="85%" />
+  </section>
 
   <ErrorState v-else-if="error" :message-key="error" @retry="load" />
 

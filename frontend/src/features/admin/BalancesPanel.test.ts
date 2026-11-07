@@ -1,6 +1,8 @@
 import { flushPromises, mount } from "@vue/test-utils";
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
+import { nextTick } from "vue";
 
+import { deferred, expectLoaded, expectLoading } from "@/shared/testing/loading";
 import { appPlugins } from "@/shared/testing/mount";
 import type { Component } from "vue";
 
@@ -151,5 +153,19 @@ describe("BalancesPanel", () => {
 
     expect(wrapper.find(".balances__payment--voided").exists()).toBe(true);
     expect(wrapper.text()).toContain("Voided: wrong plot");
+  });
+
+  it("shows aria-busy skeletons while loading and none once loaded", async () => {
+    const gate = deferred<unknown>();
+    api.listAdminBalances.mockReturnValue(gate.promise);
+    const wrapper = mountPanel();
+    await nextTick();
+
+    expectLoading(wrapper);
+
+    gate.resolve(balances);
+    await flushPromises();
+
+    expectLoaded(wrapper);
   });
 });

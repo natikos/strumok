@@ -1,10 +1,10 @@
 <template>
-  <section class="card split-card">
+  <section class="card split-card" :aria-busy="isLoading">
     <h2 class="split-card__title">{{ t("dashboard.splitTitle") }}</h2>
 
     <template v-if="isLoading">
-      <Skeleton height="14px" class="split-card__skeleton" />
-      <Skeleton height="2.5rem" class="split-card__skeleton" />
+      <Skeleton height="14px" />
+      <Skeleton height="2.5rem" />
     </template>
 
     <template v-else-if="split">
@@ -222,10 +222,6 @@
       &:hover {
         color: var(--s-primary-hover-color);
       }
-    }
-
-    &__skeleton {
-      border-radius: var(--s-app-radius-sm);
     }
   }
 </style>

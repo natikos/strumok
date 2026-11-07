@@ -14,6 +14,11 @@ const AppPreset = definePreset(Aura, {
         }
       `,
     },
+    skeleton: {
+      root: {
+        borderRadius: "{border.radius.sm}",
+      },
+    },
     card: {
       css: () => `
         .p-card {

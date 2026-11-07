@@ -1,6 +1,8 @@
 import { flushPromises, mount } from "@vue/test-utils";
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
+import { nextTick } from "vue";
 
+import { deferred, expectLoaded, expectLoading } from "@/shared/testing/loading";
 import { appPlugins } from "@/shared/testing/mount";
 import type { Component } from "vue";
 
@@ -244,5 +246,19 @@ describe("BalanceStrip", () => {
       expect(wrapper.text()).toContain("You owe");
       expect(wrapper.find(".balance-strip__pay").exists()).toBe(false);
     });
+  });
+
+  it("shows aria-busy skeletons while loading and none once loaded", async () => {
+    const gate = deferred<unknown>();
+    getBalance.mockReturnValue(gate.promise);
+    const wrapper = mountStrip();
+    await nextTick();
+
+    expectLoading(wrapper);
+
+    gate.resolve(balance());
+    await flushPromises();
+
+    expectLoaded(wrapper);
   });
 });

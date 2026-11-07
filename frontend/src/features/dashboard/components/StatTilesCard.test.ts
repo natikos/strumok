@@ -8,6 +8,7 @@ import type {
   PeriodUsage,
   SeasonComparison,
 } from "@/features/dashboard/composables/useUsageInsights";
+import { expectLoaded, expectLoading } from "@/shared/testing/loading";
 import { mountWithPlugins } from "@/shared/testing/mount";
 
 import StatTilesCard from "./StatTilesCard.vue";
@@ -200,5 +201,14 @@ describe("StatTilesCard", () => {
       // Last-period sub line and comparison sub line both carry raw kWh figures too.
       expect(wrapper.text()).toContain("kWh");
     });
+  });
+
+  it("keeps its container aria-busy with skeleton tiles while loading and drops both once loaded", async () => {
+    const wrapper = mountCard({ isLoading: true });
+    expectLoading(wrapper);
+
+    await wrapper.setProps({ isLoading: false } as never);
+
+    expectLoaded(wrapper);
   });
 });

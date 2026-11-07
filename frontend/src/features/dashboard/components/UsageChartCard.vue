@@ -1,5 +1,5 @@
 <template>
-  <section class="card usage-chart">
+  <section class="card usage-chart" :aria-busy="isLoading">
     <header class="usage-chart__header">
       <h2 class="usage-chart__title">{{ t("dashboard.recentUsage") }}</h2>
 
@@ -15,7 +15,7 @@
       </ul>
     </header>
 
-    <Skeleton v-if="isLoading" height="180px" class="usage-chart__skeleton" />
+    <Skeleton v-if="isLoading" height="180px" />
 
     <div v-else class="usage-chart__canvas-wrap">
       <Chart
@@ -240,10 +240,6 @@
     &__canvas {
       width: 100%;
       height: 100%;
-    }
-
-    &__skeleton {
-      border-radius: var(--s-app-radius-sm);
     }
 
     &__note {

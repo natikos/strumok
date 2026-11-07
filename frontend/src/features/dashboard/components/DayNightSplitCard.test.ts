@@ -2,6 +2,7 @@ import Skeleton from "primevue/skeleton";
 import { describe, expect, it } from "vitest";
 
 import type { DayNightSplit } from "@/features/dashboard/composables/useUsageInsights";
+import { expectLoaded, expectLoading } from "@/shared/testing/loading";
 import { mountWithPlugins } from "@/shared/testing/mount";
 
 import DayNightSplitCard from "./DayNightSplitCard.vue";
@@ -71,5 +72,14 @@ describe("DayNightSplitCard", () => {
 
     await wrapper.find(".split-card__link").trigger("click");
     expect(wrapper.emitted("view-history")).toHaveLength(1);
+  });
+
+  it("keeps its container aria-busy with skeletons while loading and drops both once loaded", async () => {
+    const wrapper = mountWithPlugins(DayNightSplitCard, { props: { split, isLoading: true } });
+    expectLoading(wrapper);
+
+    await wrapper.setProps({ isLoading: false } as never);
+
+    expectLoaded(wrapper);
   });
 });
