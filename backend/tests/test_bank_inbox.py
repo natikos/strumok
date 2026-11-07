@@ -310,8 +310,12 @@ def test_rejections_notify_each_admin_once(session: Session) -> None:
     result = _process(session, _mail(sender="stranger@example.com"))
     assert len(result.rejected_ids) == 1
 
-    notify_bank_inbox_rejected(session=session, fetch_ids=result.rejected_ids)
-    notify_bank_inbox_rejected(session=session, fetch_ids=result.rejected_ids)
+    with patch(
+        "app.api.push.billing_notifications._email_fallback", return_value=True
+    ) as email:
+        notify_bank_inbox_rejected(session=session, fetch_ids=result.rejected_ids)
+        notify_bank_inbox_rejected(session=session, fetch_ids=result.rejected_ids)
+    assert email.call_count == 1
 
     logged = session.exec(
         select(NotificationLog).where(NotificationLog.variant == "bankInboxRejected")
