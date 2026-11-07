@@ -29,7 +29,49 @@ export function setAuthSessionState(isAuthenticated: boolean, isEmailVerified: b
   authState = isAuthenticated ? { isAuthenticated, isEmailVerified } : UNAUTHENTICATED_STATE;
 }
 
+// The session cookie is HttpOnly, so logging out offline can only be finished
+// on the server later: the intent is remembered and replayed once reachable.
+const PENDING_LOGOUT_KEY = "strumok:pending-logout";
+
+function hasPendingLogout(): boolean {
+  try {
+    return localStorage.getItem(PENDING_LOGOUT_KEY) !== null;
+  } catch {
+    return false;
+  }
+}
+
+export function markPendingLogout(): void {
+  try {
+    localStorage.setItem(PENDING_LOGOUT_KEY, "1");
+  } catch {
+    // Without storage the server session simply expires on its own.
+  }
+}
+
+/** Replays a logout that couldn't reach the server. Resolves true once nothing is pending. */
+export async function flushPendingLogout(): Promise<boolean> {
+  if (!hasPendingLogout()) {
+    return true;
+  }
+
+  try {
+    await authApiClient.POST("/auth/logout");
+    localStorage.removeItem(PENDING_LOGOUT_KEY);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 export async function initAuthSession(): Promise<AuthSessionState> {
+  // The resident logged out; don't bring the old session back while the server
+  // still holds it.
+  if (!(await flushPendingLogout())) {
+    authState = UNAUTHENTICATED_STATE;
+    return authState;
+  }
+
   authState = await fetchAuthState().catch(() => UNREACHABLE_STATE);
   return authState;
 }

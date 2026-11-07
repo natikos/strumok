@@ -1,6 +1,6 @@
 import type { components } from "./generated/openapi.ts";
 
-import { setAuthSessionState } from "./auth-session";
+import { markPendingLogout, setAuthSessionState } from "./auth-session";
 import { appApiClient, buildApiError } from "./client";
 
 type LoginIn = components["schemas"]["LoginIn"];
@@ -48,7 +48,20 @@ export async function updateMyPreferences(payload: Partial<UserPreferencesIn>): 
 }
 
 export async function logoutUser(): Promise<void> {
-  const { response } = await appApiClient.POST("/auth/logout");
+  let response: Response;
+
+  try {
+    ({ response } = await appApiClient.POST("/auth/logout"));
+  } catch (caught: unknown) {
+    // fetch throws a TypeError when there is no connection: sign out locally
+    // and finish on the server once it is reachable again.
+    if (!(caught instanceof TypeError)) {
+      throw caught;
+    }
+    markPendingLogout();
+    setAuthSessionState(false, false);
+    return;
+  }
 
   if (!response.ok) {
     throw buildApiError(response.status, undefined);
