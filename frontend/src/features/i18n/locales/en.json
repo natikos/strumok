@@ -303,6 +303,24 @@
     "balanceConfirmBodyPrevious": "The previous owner still owes money for this household. The balance stays with them and is not passed on to the new owner. Transfer anyway?",
     "balanceConfirmAccept": "Transfer anyway",
     "bank": {
+      "inbox": {
+        "title": "Statement mailbox",
+        "check": "Check inbox",
+        "empty": "No emails looked at yet",
+        "checked": "Checked: {received} new, {imported} imported, {rejected} rejected",
+        "status": {
+          "received": "Already imported",
+          "imported": "Imported",
+          "rejected": "Rejected"
+        },
+        "reason": {
+          "senderNotAllowed": "Sender isn't on the allowed list",
+          "senderNotAuthenticated": "Sender couldn't be verified",
+          "noCsvAttachment": "No .csv attachment",
+          "processingFailed": "Processing failed",
+          "alreadyImported": "Already imported"
+        }
+      },
       "title": "Bank credits",
       "hint": "Imported credits wait here. Nothing becomes a payment until you confirm it.",
       "empty": "No credits to review",
@@ -578,6 +596,8 @@
     "manualPaymentNotLinkable": "That payment can't be linked to this credit",
     "bankStatementWrongAccount": "The statement is for a different account",
     "paymentDetailsMissing": "Set the co-op's payment details first",
+    "inboxNotConfigured": "The statement mailbox isn't set up",
+    "inboxUnavailable": "Couldn't reach the statement mailbox. Try again later",
     "openingBalanceNotFound": "This household has no opening balance to correct"
   },
   "household": {
