@@ -637,6 +637,50 @@ event.listen(
 )
 
 
+# TRUNCATE skips row-level triggers, so each append-only table also gets a
+# statement-level guard. It guards against accidents (a stray script, a pasted
+# psql command), not against an owner who could drop the trigger. The e2e reset
+# and one test opt out per transaction with `SET LOCAL strumok.allow_truncate =
+# 'on'`; the setting dies with the transaction. CREATE OR REPLACE because
+# create_all installs the function once per table.
+APPEND_ONLY_TRUNCATE_GUARD_FN_SQL = """
+CREATE OR REPLACE FUNCTION append_only_reject_truncate() RETURNS trigger AS $$
+BEGIN
+    IF current_setting('strumok.allow_truncate', true) = 'on' THEN
+        RETURN NULL;
+    END IF;
+    RAISE EXCEPTION USING MESSAGE = TG_TABLE_NAME || ' is append-only';
+END;
+$$ LANGUAGE plpgsql;
+"""
+
+
+def truncate_guard_trigger_sql(table: str) -> str:
+    return (
+        f"CREATE TRIGGER {table}_no_truncate BEFORE TRUNCATE ON {table} "
+        "FOR EACH STATEMENT EXECUTE FUNCTION append_only_reject_truncate();"
+    )
+
+
+APPEND_ONLY_TABLES = (
+    "audit_log",
+    "household_charges",
+    "charge_adjustments",
+    "opening_balance_corrections",
+)
+
+
+def _guard_truncate_on_create(table_name: str) -> None:
+    table = SQLModel.metadata.tables[table_name]
+    event.listen(table, "after_create", DDL(APPEND_ONLY_TRUNCATE_GUARD_FN_SQL))
+    event.listen(table, "after_create", DDL(truncate_guard_trigger_sql(table_name)))
+
+
+
+for _name in APPEND_ONLY_TABLES:
+    _guard_truncate_on_create(_name)
+
+
 class PaymentDetails(SQLModel, table=True):
     """Where residents send money. A single row (id=1): the co-op has one
     account, and changes are audited because a swapped IBAN would redirect
