@@ -1,5 +1,5 @@
 <template>
-  <div class="dashboard">
+  <div class="dashboard" :class="{ 'dashboard--submit-first': submitFirst }">
     <PastHouseholdNotice />
 
     <BalanceStrip @open-history="goToHistory" />
@@ -175,6 +175,12 @@
     return t("meterReadings.periodClosed", { month });
   });
 
+  // While the window is open and nothing is sent, submitting is the main task, so
+  // on a phone the form moves above the notices (they stay, just below it).
+  const submitFirst = computed(
+    () => !isPastOnly.value && deadlineStatus.value === "due" && !periodState.isClosed.value
+  );
+
   const hasAnyReading = computed(() => submittedPeriods.value.length > 0);
 
   // A failed load also leaves no readings; that must not read as a new account.
@@ -237,6 +243,14 @@
 <style scoped lang="scss">
   .dashboard {
     @include layout.stack(var(--s-app-space-4));
+
+    &--submit-first &__top {
+      order: -1;
+
+      @include layout.respond-to("lg") {
+        order: 0;
+      }
+    }
 
     &__top {
       @include layout.stack(var(--s-app-space-4));
