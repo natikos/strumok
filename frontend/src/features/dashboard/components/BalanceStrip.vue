@@ -1,6 +1,8 @@
 <template>
   <section class="balance-strip" :aria-label="t('balance.aria')">
-    <Skeleton v-if="isLoading" height="3rem" />
+    <div v-if="isLoading" class="balance-strip__body balance-strip__body--loading" aria-busy="true">
+      <Skeleton height="1rem" width="60%" />
+    </div>
 
     <ErrorState v-else-if="error" :message-key="error" @retry="load" />
 
@@ -156,6 +158,10 @@
 
       &--owe {
         border-color: var(--s-amber-500);
+      }
+
+      &--loading {
+        cursor: default;
       }
     }
 

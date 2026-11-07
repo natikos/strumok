@@ -129,7 +129,14 @@
       </ul>
     </template>
 
-    <Skeleton v-else-if="isLoading" height="10rem" />
+    <template v-else-if="isLoading">
+      <Skeleton height="1rem" width="55%" />
+      <ul class="balances__list" aria-busy="true">
+        <li v-for="n in 3" :key="n" class="balances__row">
+          <Skeleton height="1.5rem" />
+        </li>
+      </ul>
+    </template>
   </div>
 </template>
 

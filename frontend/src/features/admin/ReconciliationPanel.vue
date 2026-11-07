@@ -143,7 +143,12 @@
       </p>
     </template>
 
-    <Skeleton v-else-if="isLoading" height="12rem" />
+    <template v-else-if="isLoading">
+      <div class="reconciliation__result" aria-busy="true">
+        <Skeleton height="1rem" width="70%" />
+      </div>
+      <Skeleton height="0.85rem" width="50%" />
+    </template>
   </div>
 </template>
 

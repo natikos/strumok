@@ -1,13 +1,13 @@
 <template>
-  <section class="card yoy-card" :class="{ 'yoy-card--unavailable': !isLoading && !comparison }">
+  <section class="card yoy-card" :aria-busy="isLoading" :class="{ 'yoy-card--unavailable': !isLoading && !comparison }">
     <header class="yoy-card__header">
       <h2 class="yoy-card__title">{{ t("dashboard.yoyTitle") }}</h2>
       <span v-if="comparison" class="yoy-card__month">{{ comparison.monthLong }}</span>
     </header>
 
     <template v-if="isLoading">
-      <Skeleton height="12px" class="yoy-card__skeleton" />
-      <Skeleton height="12px" class="yoy-card__skeleton" />
+      <Skeleton height="12px" />
+      <Skeleton height="12px" />
     </template>
 
     <template v-else-if="comparison">

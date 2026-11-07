@@ -1,8 +1,11 @@
 <template>
-  <section class="opening" :aria-label="t('admin.openingBalance.title')">
+  <section class="opening" :aria-busy="isLoading" :aria-label="t('admin.openingBalance.title')">
     <h3 class="opening__title">{{ t("admin.openingBalance.title") }}</h3>
 
-    <Skeleton v-if="isLoading" height="3rem" />
+    <template v-if="isLoading">
+      <Skeleton height="1rem" width="70%" />
+      <Skeleton height="1rem" width="40%" />
+    </template>
 
     <template v-else-if="opening">
       <p class="opening__line">
