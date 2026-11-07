@@ -203,6 +203,21 @@ describe("BalanceStrip", () => {
       });
     });
 
+    it("references only the current plot when the user holds several", async () => {
+      getBalance.mockResolvedValue(balance({ balance_uah: "300.00" }));
+      getPaymentDetails.mockResolvedValue(details);
+      setHouseholds([
+        { id: 1, name: "Plot 1" },
+        { id: 2, name: "Plot 2" },
+      ]);
+      const wrapper = mountStrip();
+      await flushPromises();
+
+      const props = wrapper.findComponent({ name: "PaySheet" }).props();
+      expect(props.comment).toContain("STR-1");
+      expect(props.comment).not.toContain("STR-2");
+    });
+
     it("hides Pay when nothing is owed", async () => {
       getBalance.mockResolvedValue(balance({ balance_uah: "-10.00" }));
       getPaymentDetails.mockResolvedValue(details);
