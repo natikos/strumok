@@ -292,34 +292,37 @@ describe("useUsageInsights", () => {
       expect(seasonComparison.value).toBeNull();
     });
 
-    it("sums whatever summer months exist this year and last year, rather than requiring all three", () => {
+    it("compares only months present in both years, not a partial season against a full one", () => {
+      const mk = (period: string, kwh: string) =>
+        makeSlot(period, makeReading({ period, day_usage_kwh: kwh, night_usage_kwh: "0.00" }));
       const slots = ref<MeterPeriod[]>([
-        // last year: only June and July submitted (August missed)
-        makeSlot(
-          "2025-06",
-          makeReading({ period: "2025-06", day_usage_kwh: "10.00", night_usage_kwh: "0.00" })
-        ),
-        makeSlot(
-          "2025-07",
-          makeReading({ period: "2025-07", day_usage_kwh: "5.00", night_usage_kwh: "0.00" })
-        ),
-        // this year: only August submitted so far
-        makeSlot(
-          "2026-08",
-          makeReading({ period: "2026-08", day_usage_kwh: "18.00", night_usage_kwh: "0.00" })
-        ),
+        mk("2025-06", "10.00"),
+        mk("2025-07", "5.00"),
+        mk("2025-08", "100.00"), // no matching month this year yet
+        mk("2026-06", "12.00"),
+        mk("2026-07", "6.00"),
       ]);
       const { seasonComparison } = useUsageInsights(slots);
 
       expect(seasonComparison.value).toEqual({
         season: "summer",
         currentKwh: 18,
-        currentPeriodCount: 1,
+        currentPeriodCount: 2,
         previousYearKwh: 15,
         previousPeriodCount: 2,
         deltaPercent: 20,
         direction: "up",
       });
+    });
+
+    it("is null when the two years share no month of the season", () => {
+      const slots = ref<MeterPeriod[]>([
+        makeSlot("2025-06", makeReading({ period: "2025-06", day_usage_kwh: "10.00" })),
+        makeSlot("2026-08", makeReading({ period: "2026-08", day_usage_kwh: "18.00" })),
+      ]);
+      const { seasonComparison } = useUsageInsights(slots);
+
+      expect(seasonComparison.value).toBeNull();
     });
 
     it("keeps December in the winter that ends the following February", () => {
