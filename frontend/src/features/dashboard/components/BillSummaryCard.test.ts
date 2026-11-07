@@ -1,5 +1,6 @@
 import { flushPromises, mount } from "@vue/test-utils";
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
+import { nextTick } from "vue";
 
 import { appPlugins } from "@/shared/testing/mount";
 import type { Component } from "vue";
@@ -165,5 +166,21 @@ describe("BillSummaryCard", () => {
 
       expect(toggle(wrapper)).toHaveLength(1);
     });
+  });
+
+  it("shows aria-busy skeletons while loading and none once loaded", async () => {
+    let resolve!: (value: unknown) => void;
+    api.listStatements.mockReturnValue(new Promise((r) => (resolve = r)));
+    const wrapper = mountCard();
+    await nextTick();
+
+    expect(wrapper.find('[aria-busy="true"]').exists()).toBe(true);
+    expect(wrapper.findAllComponents({ name: "Skeleton" }).length).toBeGreaterThan(0);
+
+    resolve([closedLine()]);
+    await flushPromises();
+
+    expect(wrapper.find('[aria-busy="true"]').exists()).toBe(false);
+    expect(wrapper.findAllComponents({ name: "Skeleton" })).toHaveLength(0);
   });
 });

@@ -72,4 +72,15 @@ describe("DayNightSplitCard", () => {
     await wrapper.find(".split-card__link").trigger("click");
     expect(wrapper.emitted("view-history")).toHaveLength(1);
   });
+
+  it("keeps its container aria-busy with skeletons while loading and drops both once loaded", async () => {
+    const wrapper = mountWithPlugins(DayNightSplitCard, { props: { split, isLoading: true } });
+    expect(wrapper.attributes("aria-busy")).toBe("true");
+    expect(wrapper.findAllComponents(Skeleton).length).toBeGreaterThan(0);
+
+    await wrapper.setProps({ isLoading: false });
+
+    expect(wrapper.attributes("aria-busy")).not.toBe("true");
+    expect(wrapper.findAllComponents(Skeleton)).toHaveLength(0);
+  });
 });

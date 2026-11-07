@@ -201,4 +201,15 @@ describe("StatTilesCard", () => {
       expect(wrapper.text()).toContain("kWh");
     });
   });
+
+  it("keeps its container aria-busy with skeleton tiles while loading and drops both once loaded", async () => {
+    const wrapper = mountCard({ isLoading: true });
+    expect(wrapper.attributes("aria-busy")).toBe("true");
+    expect(wrapper.findAllComponents(Skeleton).length).toBeGreaterThan(0);
+
+    await wrapper.setProps({ isLoading: false });
+
+    expect(wrapper.attributes("aria-busy")).not.toBe("true");
+    expect(wrapper.findAllComponents(Skeleton)).toHaveLength(0);
+  });
 });

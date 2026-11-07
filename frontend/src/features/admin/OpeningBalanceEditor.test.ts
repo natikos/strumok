@@ -1,5 +1,6 @@
 import { flushPromises, mount } from "@vue/test-utils";
 import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from "vitest";
+import { nextTick } from "vue";
 
 import { appPlugins } from "@/shared/testing/mount";
 import type { OpeningBalanceOut } from "@shared/api/admin";
@@ -86,5 +87,21 @@ describe("OpeningBalanceEditor", () => {
 
     expect(wrapper.find("#opening-amount-7").exists()).toBe(true);
     expect(wrapper.find("#opening-correction-7").exists()).toBe(false);
+  });
+
+  it("shows aria-busy skeletons while loading and none once loaded", async () => {
+    let resolve!: (value: unknown) => void;
+    getOpeningBalance.mockReturnValue(new Promise((r) => (resolve = r)));
+    const wrapper = mount(OpeningBalanceEditor, { global: { plugins: appPlugins(), stubs: { Skeleton: true } }, props: { householdId: 7 } });
+    await nextTick();
+
+    expect(wrapper.find('[aria-busy="true"]').exists()).toBe(true);
+    expect(wrapper.findAllComponents({ name: "Skeleton" }).length).toBeGreaterThan(0);
+
+    resolve(opening);
+    await flushPromises();
+
+    expect(wrapper.find('[aria-busy="true"]').exists()).toBe(false);
+    expect(wrapper.findAllComponents({ name: "Skeleton" })).toHaveLength(0);
   });
 });

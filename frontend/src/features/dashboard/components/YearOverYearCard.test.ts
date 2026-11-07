@@ -88,4 +88,15 @@ describe("YearOverYearCard", () => {
     expect(pill.text()).toContain("50");
     expect(pill.text()).toContain("kWh");
   });
+
+  it("keeps its container aria-busy with skeletons while loading and drops both once loaded", async () => {
+    const wrapper = mountWithPlugins(YearOverYearCard, { props: { comparison: makeComparison(), emptyMonth: "June", emptyYear: 2026, isLoading: true } });
+    expect(wrapper.attributes("aria-busy")).toBe("true");
+    expect(wrapper.findAllComponents(Skeleton).length).toBeGreaterThan(0);
+
+    await wrapper.setProps({ isLoading: false });
+
+    expect(wrapper.attributes("aria-busy")).not.toBe("true");
+    expect(wrapper.findAllComponents(Skeleton)).toHaveLength(0);
+  });
 });

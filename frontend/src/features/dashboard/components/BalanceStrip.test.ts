@@ -1,5 +1,6 @@
 import { flushPromises, mount } from "@vue/test-utils";
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
+import { nextTick } from "vue";
 
 import { appPlugins } from "@/shared/testing/mount";
 import type { Component } from "vue";
@@ -244,5 +245,21 @@ describe("BalanceStrip", () => {
       expect(wrapper.text()).toContain("You owe");
       expect(wrapper.find(".balance-strip__pay").exists()).toBe(false);
     });
+  });
+
+  it("shows aria-busy skeletons while loading and none once loaded", async () => {
+    let resolve!: (value: unknown) => void;
+    getBalance.mockReturnValue(new Promise((r) => (resolve = r)));
+    const wrapper = mountStrip();
+    await nextTick();
+
+    expect(wrapper.find('[aria-busy="true"]').exists()).toBe(true);
+    expect(wrapper.findAllComponents({ name: "Skeleton" }).length).toBeGreaterThan(0);
+
+    resolve(balance());
+    await flushPromises();
+
+    expect(wrapper.find('[aria-busy="true"]').exists()).toBe(false);
+    expect(wrapper.findAllComponents({ name: "Skeleton" })).toHaveLength(0);
   });
 });
