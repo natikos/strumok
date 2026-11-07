@@ -335,6 +335,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/billing/current-rate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Current Rate */
+        get: operations["get_current_rate_billing_current_rate_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/billing/bank-coverage": {
         parameters: {
             query?: never;
@@ -1484,6 +1501,21 @@ export interface components {
              * @enum {string}
              */
             status: "open" | "closed";
+        };
+        /**
+         * CurrentRateOut
+         * @description The co-op's per-kWh rate for the current billing period.
+         */
+        CurrentRateOut: {
+            /** Day Rate Uah */
+            day_rate_uah: string;
+            /** Night Rate Uah */
+            night_rate_uah: string;
+            /**
+             * Effective From
+             * @example 2026-11
+             */
+            effective_from: string;
         };
         /** ElectricityRateCreateIn */
         ElectricityRateCreateIn: {
@@ -3270,6 +3302,26 @@ export interface operations {
                      *     }
                      */
                     "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    get_current_rate_billing_current_rate_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CurrentRateOut"] | null;
                 };
             };
         };

@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import type { AdjustmentOut, StatementLineOut } from "@shared/api/billing";
 
-import { buildBill, toKopecks } from "./bill";
+import { buildBill, hasExtraRows, toKopecks } from "./bill";
 
 function line(overrides: Partial<StatementLineOut> = {}): StatementLineOut {
   return {
@@ -72,5 +72,28 @@ describe("buildBill", () => {
 
   it("marks the open period's figure as provisional", () => {
     expect(buildBill(line({ status: "provisional" }), []).isProvisional).toBe(true);
+  });
+});
+
+describe("hasExtraRows", () => {
+  const tariffOnly = { loss_share_uah: "0.00" };
+
+  it("is false for a tariff-only bill", () => {
+    expect(hasExtraRows(buildBill(line(tariffOnly), []))).toBe(false);
+  });
+
+  it.each([
+    ["a shared-loss share", { loss_share_uah: "0.01" }],
+    ["a late fee", { ...tariffOnly, penalty_uah: "30.00" }],
+    ["a late-fee credit", { ...tariffOnly, penalty_credit_uah: "4.50" }],
+  ])("is true when the bill has %s", (_name, overrides) => {
+    expect(hasExtraRows(buildBill(line(overrides), []))).toBe(true);
+  });
+
+  it("is true when a correction applies to the period, false for another period's", () => {
+    expect(hasExtraRows(buildBill(line(tariffOnly), [adjustment()]))).toBe(true);
+    expect(
+      hasExtraRows(buildBill(line(tariffOnly), [adjustment({ applies_to_period: "2026-08" })]))
+    ).toBe(false);
   });
 });

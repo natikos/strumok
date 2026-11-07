@@ -9,6 +9,7 @@ export type HouseholdStatementsOut = components["schemas"]["HouseholdStatementsO
 export type PaymentDetailsOut = components["schemas"]["PaymentDetailsOut"];
 export type ShortfallOut = components["schemas"]["ShortfallOut"];
 export type BankCoverageOut = components["schemas"]["BankCoverageOut"];
+export type CurrentRateOut = components["schemas"]["CurrentRateOut"];
 export type CurrentPeriodOut = components["schemas"]["CurrentPeriodOut"];
 
 export async function getCurrentPeriod(): Promise<CurrentPeriodOut> {
@@ -98,4 +99,10 @@ export async function getShortfall(householdId?: number | null): Promise<Shortfa
   }
 
   return data;
+}
+
+export async function getCurrentRate(): Promise<CurrentRateOut | null> {
+  const { data } = await appApiClient.GET("/billing/current-rate");
+
+  return data ?? null;
 }

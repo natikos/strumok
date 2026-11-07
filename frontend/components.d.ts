@@ -85,6 +85,7 @@ declare module 'vue' {
     TabPanel: typeof import('primevue/tabpanel')['default']
     TabPanels: typeof import('primevue/tabpanels')['default']
     Tabs: typeof import('primevue/tabs')['default']
+    TariffStrip: typeof import('./src/features/dashboard/components/TariffStrip.vue')['default']
     ThemeToggleButton: typeof import('./src/shared/components/theme/ThemeToggleButton.vue')['default']
     Toast: typeof import('primevue/toast')['default']
     ToggleSwitch: typeof import('primevue/toggleswitch')['default']

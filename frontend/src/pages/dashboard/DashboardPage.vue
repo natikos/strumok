@@ -54,6 +54,8 @@
 
       <BillSummaryCard />
 
+      <TariffStrip />
+
       <!-- With no readings at all there is nothing to chart, split or compare, so
          one dashed card stands in for the whole analytics block. -->
       <EmptyUsageCard v-if="showEmptyUsage" />
