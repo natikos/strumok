@@ -676,7 +676,6 @@ def _guard_truncate_on_create(table_name: str) -> None:
     event.listen(table, "after_create", DDL(truncate_guard_trigger_sql(table_name)))
 
 
-
 for _name in APPEND_ONLY_TABLES:
     _guard_truncate_on_create(_name)
 

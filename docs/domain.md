@@ -37,7 +37,9 @@ does not enforce the window.
 - `MeterReading` is a raw fact (meter values + `source`). Usage comes from
   consecutive readings (`derive_usage`); the first reading is a baseline.
 - A period is `open` or `closed` (`billing_periods`). Closing writes immutable
-  `household_charges` rows (DB triggers reject UPDATE, DELETE and TRUNCATE; the same holds for `charge_adjustments`, `audit_log` and `opening_balance_corrections`, and only the e2e reset lifts the TRUNCATE guard, per transaction), computed by
+  `household_charges` rows (DB triggers reject UPDATE, DELETE and TRUNCATE; the same holds for
+  `charge_adjustments`, `audit_log` and `opening_balance_corrections`. Only the
+  e2e reset and tests lift the TRUNCATE guard, per transaction), computed by
   the pure `compute_period_statement` in `backend/app/core/domain/billing.py`.
 - Amounts round `ROUND_HALF_UP` once per final line.
 - `GET /billing/statements` returns a household's closed charges plus a read-time
