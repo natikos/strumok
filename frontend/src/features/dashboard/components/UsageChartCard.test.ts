@@ -1,7 +1,7 @@
-import Skeleton from "primevue/skeleton";
-import { describe, expect, it } from "vitest";
+import { describe, it } from "vitest";
 
 import type { TrendSeries } from "@/features/dashboard/composables/useUsageInsights";
+import { expectLoaded, expectLoading } from "@/shared/testing/loading";
 import { mountWithPlugins } from "@/shared/testing/mount";
 
 import UsageChartCard from "./UsageChartCard.vue";
@@ -20,12 +20,10 @@ describe("UsageChartCard", () => {
       props: { series, isLoading: true },
       global: { stubs: { Chart: true } },
     });
-    expect(wrapper.attributes("aria-busy")).toBe("true");
-    expect(wrapper.findAllComponents(Skeleton).length).toBeGreaterThan(0);
+    expectLoading(wrapper);
 
     await wrapper.setProps({ isLoading: false } as never);
 
-    expect(wrapper.attributes("aria-busy")).not.toBe("true");
-    expect(wrapper.findAllComponents(Skeleton)).toHaveLength(0);
+    expectLoaded(wrapper);
   });
 });

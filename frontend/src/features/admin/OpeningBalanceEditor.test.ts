@@ -2,6 +2,7 @@ import { flushPromises, mount } from "@vue/test-utils";
 import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 import { nextTick } from "vue";
 
+import { deferred, expectLoaded, expectLoading } from "@/shared/testing/loading";
 import { appPlugins } from "@/shared/testing/mount";
 import type { OpeningBalanceOut } from "@shared/api/admin";
 import type { Component } from "vue";
@@ -90,18 +91,16 @@ describe("OpeningBalanceEditor", () => {
   });
 
   it("shows aria-busy skeletons while loading and none once loaded", async () => {
-    let resolve!: (value: unknown) => void;
-    getOpeningBalance.mockReturnValue(new Promise((r) => (resolve = r)));
+    const gate = deferred<unknown>();
+    getOpeningBalance.mockReturnValue(gate.promise);
     const wrapper = mount(OpeningBalanceEditor, { global: { plugins: appPlugins(), stubs: { Skeleton: true } }, props: { householdId: 7 } });
     await nextTick();
 
-    expect(wrapper.find('[aria-busy="true"]').exists()).toBe(true);
-    expect(wrapper.findAllComponents({ name: "Skeleton" }).length).toBeGreaterThan(0);
+    expectLoading(wrapper);
 
-    resolve(opening);
+    gate.resolve(opening);
     await flushPromises();
 
-    expect(wrapper.find('[aria-busy="true"]').exists()).toBe(false);
-    expect(wrapper.findAllComponents({ name: "Skeleton" })).toHaveLength(0);
+    expectLoaded(wrapper);
   });
 });

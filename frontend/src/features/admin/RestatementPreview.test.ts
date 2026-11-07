@@ -2,6 +2,7 @@ import { flushPromises, mount } from "@vue/test-utils";
 import { describe, expect, it, vi } from "vitest";
 import { nextTick } from "vue";
 
+import { deferred, expectLoaded, expectLoading } from "@/shared/testing/loading";
 import { appPlugins } from "@/shared/testing/mount";
 
 import RestatementPreview from "./RestatementPreview.vue";
@@ -90,18 +91,16 @@ describe("RestatementPreview", () => {
   });
 
   it("shows aria-busy skeletons while the preview loads and none once it arrives", async () => {
-    let resolve!: (value: ReturnType<typeof result>) => void;
-    const request = vi.fn().mockReturnValue(new Promise((r) => (resolve = r)));
+    const gate = deferred<ReturnType<typeof result>>();
+    const request = vi.fn().mockReturnValue(gate.promise);
     const wrapper = mountPreview(request);
     await nextTick();
 
-    expect(wrapper.find('[aria-busy="true"]').exists()).toBe(true);
-    expect(wrapper.findAllComponents({ name: "Skeleton" }).length).toBeGreaterThan(0);
+    expectLoading(wrapper);
 
-    resolve(result());
+    gate.resolve(result());
     await flushPromises();
 
-    expect(wrapper.find('[aria-busy="true"]').exists()).toBe(false);
-    expect(wrapper.findAllComponents({ name: "Skeleton" })).toHaveLength(0);
+    expectLoaded(wrapper);
   });
 });

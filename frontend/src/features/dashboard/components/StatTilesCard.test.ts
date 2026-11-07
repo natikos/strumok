@@ -8,6 +8,7 @@ import type {
   PeriodUsage,
   SeasonComparison,
 } from "@/features/dashboard/composables/useUsageInsights";
+import { expectLoaded, expectLoading } from "@/shared/testing/loading";
 import { mountWithPlugins } from "@/shared/testing/mount";
 
 import StatTilesCard from "./StatTilesCard.vue";
@@ -204,12 +205,10 @@ describe("StatTilesCard", () => {
 
   it("keeps its container aria-busy with skeleton tiles while loading and drops both once loaded", async () => {
     const wrapper = mountCard({ isLoading: true });
-    expect(wrapper.attributes("aria-busy")).toBe("true");
-    expect(wrapper.findAllComponents(Skeleton).length).toBeGreaterThan(0);
+    expectLoading(wrapper);
 
     await wrapper.setProps({ isLoading: false } as never);
 
-    expect(wrapper.attributes("aria-busy")).not.toBe("true");
-    expect(wrapper.findAllComponents(Skeleton)).toHaveLength(0);
+    expectLoaded(wrapper);
   });
 });

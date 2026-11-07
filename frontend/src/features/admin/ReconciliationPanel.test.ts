@@ -3,6 +3,7 @@ import InputNumber from "primevue/inputnumber";
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { nextTick } from "vue";
 
+import { deferred, expectLoaded, expectLoading } from "@/shared/testing/loading";
 import { appPlugins } from "@/shared/testing/mount";
 import type { Component } from "vue";
 
@@ -156,18 +157,16 @@ describe("ReconciliationPanel", () => {
   });
 
   it("shows aria-busy skeletons while loading and none once loaded", async () => {
-    let resolve!: (value: unknown) => void;
-    getPeriodReconciliation.mockReturnValue(new Promise((r) => (resolve = r)));
+    const gate = deferred<unknown>();
+    getPeriodReconciliation.mockReturnValue(gate.promise);
     const wrapper = mountPanel();
     await nextTick();
 
-    expect(wrapper.find('[aria-busy="true"]').exists()).toBe(true);
-    expect(wrapper.findAllComponents({ name: "Skeleton" }).length).toBeGreaterThan(0);
+    expectLoading(wrapper);
 
-    resolve(base);
+    gate.resolve(base);
     await flushPromises();
 
-    expect(wrapper.find('[aria-busy="true"]').exists()).toBe(false);
-    expect(wrapper.findAllComponents({ name: "Skeleton" })).toHaveLength(0);
+    expectLoaded(wrapper);
   });
 });
