@@ -65,8 +65,8 @@ but many downgrades drop ledger tables or columns, and `0013` cannot be undone.
 ## Data scripts
 
 In `backend/scripts/` (run with `uv run python scripts/<name>.py`):
-`import_meter_history.py`, `import_opening_balances.py` (spreadsheet
-imports), `check_migrations.py` (read-only revision check used by the release
+`import_meter_history.py`, `import_opening_balances.py`,
+`set_balance_cutover.py` (spreadsheet imports), `check_migrations.py` (read-only revision check used by the release
 workflow). `e2e_prepare_db.py` belongs to the Playwright harness.
 
 ## Git hooks
