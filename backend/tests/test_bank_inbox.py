@@ -280,3 +280,45 @@ def test_imap_error_mid_run_is_unavailable(session: Session) -> None:
 
     with pytest.raises(inbox.InboxUnavailableError):
         inbox._check(session, Dropped({b"1": ("<a@x>", _mail())}), _cfg())  # type: ignore[arg-type]
+
+
+def test_inbox_fetches_route_lists_newest_first_for_admins_only(
+    client, session: Session
+) -> None:
+    _details(session)
+    _process(session, _mail(sender="stranger@example.com"), message_id="<old@x>")
+    _process(session, _mail(), message_id="<new@x>")
+    authenticate(client, make_user(session))
+    assert client.get("/admin/bank-statements/inbox-fetches").status_code == 403
+
+    authenticate(client, make_user(session, is_admin=True))
+    res = client.get("/admin/bank-statements/inbox-fetches")
+
+    assert res.status_code == 200
+    assert [(r["status"], r["reason"]) for r in res.json()] == [
+        ("imported", None),
+        ("rejected", "senderNotAllowed"),
+    ]
+
+
+def test_rejections_notify_each_admin_once(session: Session) -> None:
+    from app.api.push.billing_notifications import notify_bank_inbox_rejected
+    from app.db.models import NotificationLog
+
+    admin = make_user(session, is_admin=True)
+    _details(session)
+    result = _process(session, _mail(sender="stranger@example.com"))
+    assert len(result.rejected_ids) == 1
+
+    notify_bank_inbox_rejected(session=session, fetch_ids=result.rejected_ids)
+    notify_bank_inbox_rejected(session=session, fetch_ids=result.rejected_ids)
+
+    logged = session.exec(
+        select(NotificationLog).where(NotificationLog.variant == "bankInboxRejected")
+    ).all()
+    assert [entry.user_id for entry in logged] == [admin.id]
+
+
+def test_accepted_message_notifies_nobody(session: Session) -> None:
+    _details(session)
+    assert _process(session, _mail()).rejected_ids == []

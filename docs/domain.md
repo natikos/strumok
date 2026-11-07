@@ -144,7 +144,9 @@ the accountant's emailed `.csv` from allow-listed, DMARC/DKIM-authenticated send
 hourly (and on `POST /admin/bank-statements/check-inbox`) through the same
 `import_statement` (system actor, no uploader). Each message is recorded once in
 `bank_mail_fetches` as received/imported/rejected with a reason code. Each import is
-audited with counts only, and admins are notified when rows join the review queue.
+audited with counts only, and admins are notified when rows join the review queue. Admins are also notified when a message is rejected (once per run); the admin Bank
+tab lists the 20 newest fetches (`GET /admin/bank-statements/inbox-fetches`) with the
+reason and has a Check inbox button.
 
 **Review queue** (`/admin/bank-transactions`, `backend/app/api/bank/review.py`).
 Credits become payments only here. An admin can:

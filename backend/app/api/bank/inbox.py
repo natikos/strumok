@@ -18,7 +18,11 @@ from app.api.bank.service import (
     import_statement,
 )
 from app.api.billing.payment_details import get_payment_details
-from app.api.push.billing_notifications import notify_bank_queue, notify_shortfall
+from app.api.push.billing_notifications import (
+    notify_bank_inbox_rejected,
+    notify_bank_queue,
+    notify_shortfall,
+)
 from app.core.config import ImapSettings, settings
 from app.core.domain.bank_statement import parse_statement
 from app.core.time import utc_now
@@ -49,6 +53,7 @@ class InboxResult:
     rejected: int = 0
     credits_new: int = 0
     file_ids: list[int] = field(default_factory=list)
+    rejected_ids: list[int] = field(default_factory=list)
 
 
 def _aligned(signer: str, domain: str) -> bool:
@@ -106,17 +111,17 @@ def _record(
     reason: str | None = None,
     file_id: int | None = None,
 ) -> None:
-    session.add(
-        BankMailFetch(
-            message_id=message_id[:512], status=status, reason=reason, file_id=file_id
-        )
+    fetch = BankMailFetch(
+        message_id=message_id[:512], status=status, reason=reason, file_id=file_id
     )
+    session.add(fetch)
     session.commit()
     result.received += 1
     if status == "imported":
         result.imported += 1
     elif status == "rejected":
         result.rejected += 1
+        result.rejected_ids.append(fetch.id)
 
 
 def process_message(
@@ -300,6 +305,11 @@ def check_inbox(session: Session) -> InboxResult:
             notify_bank_queue(session=session, file_id=file_id)
         except Exception:
             logger.exception("Bank queue notification failed")
+    if result.rejected_ids:
+        try:
+            notify_bank_inbox_rejected(session=session, fetch_ids=result.rejected_ids)
+        except Exception:
+            logger.exception("Bank inbox rejection notification failed")
     if result.file_ids:
         try:
             notify_shortfall(session=session)
