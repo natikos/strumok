@@ -78,6 +78,45 @@ describe("useMeterReadings", () => {
     vi.useRealTimers();
   });
 
+  describe("unsent reading draft", () => {
+    beforeEach(() => {
+      localStorage.clear();
+      useCurrentHousehold().setHouseholds([{ id: 4, name: "Plot 4" }]);
+    });
+
+    it("survives a reload and is cleared after a successful submit", async () => {
+      listMyMeterReadings.mockResolvedValue([]);
+      submitMyMeterReading.mockResolvedValue(makeReading());
+
+      const first = mountComposable();
+      first.result.dayMeterValue.value = 150;
+      first.result.nightMeterValue.value = 70;
+      await nextTick();
+      first.wrapper.unmount();
+
+      const reloaded = mountComposable();
+      expect(reloaded.result.dayMeterValue.value).toBe(150);
+      expect(reloaded.result.nightMeterValue.value).toBe(70);
+
+      await reloaded.result.handleSubmit();
+      await flushPromises();
+
+      expect(localStorage.getItem("strumok:reading-draft:4")).toBeNull();
+      expect(reloaded.result.dayMeterValue.value).toBeNull();
+    });
+
+    it("can be dropped when the period closes", async () => {
+      const { result } = mountComposable();
+      result.dayMeterValue.value = 10;
+      await nextTick();
+      expect(localStorage.getItem("strumok:reading-draft:4")).not.toBeNull();
+
+      result.clearDraft();
+
+      expect(localStorage.getItem("strumok:reading-draft:4")).toBeNull();
+    });
+  });
+
   describe("loadError", () => {
     it("exposes the failure and clears it after a successful retry", async () => {
       listMyMeterReadings.mockRejectedValueOnce(new Error("boom"));
