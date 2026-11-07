@@ -768,6 +768,42 @@ class TestEmailFallback:
 
         mock_email.assert_not_called()
 
+    def test_user_whose_only_subscription_is_gone_gets_the_email(
+        self, session: Session
+    ) -> None:
+        user = make_user(session)
+        make_household(session, user_id=user.id)
+        make_push_subscription(session, user_id=user.id)
+
+        with (
+            patch(
+                "app.api.push.service.webpush",
+                side_effect=_fake_webpush_exception(410),
+            ),
+            patch("app.api.push.service.send_email") as mock_email,
+        ):
+            _send(session, "opening")
+
+        assert mock_email.call_count == 1
+
+    def test_transient_push_failure_does_not_also_send_the_email(
+        self, session: Session
+    ) -> None:
+        user = make_user(session)
+        make_household(session, user_id=user.id)
+        make_push_subscription(session, user_id=user.id)
+
+        with (
+            patch(
+                "app.api.push.service.webpush",
+                side_effect=_fake_webpush_exception(500),
+            ),
+            patch("app.api.push.service.send_email") as mock_email,
+        ):
+            _send(session, "opening")
+
+        mock_email.assert_not_called()
+
     def test_failed_email_releases_the_claim_for_retry(self, session: Session) -> None:
         from app.core.email import EmailSendError
 

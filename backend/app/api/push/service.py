@@ -329,12 +329,17 @@ def send_reminders(*, session: Session, now: datetime) -> tuple[int, int]:
     sent = [sub for sub, outcome in results if outcome == SendOutcome.SENT]
     gone = [sub for sub, outcome in results if outcome == SendOutcome.GONE]
     delivered_users = {
-        sub.user_id for sub, outcome in results if outcome != SendOutcome.FAILED
+        sub.user_id for sub, outcome in results if outcome == SendOutcome.SENT
     }
-    # Users with no push subscription get the email instead.
+    # A transient failure is retried by the next run, so emailing now could
+    # duplicate it; everyone else without a delivered push (no subscription, or
+    # only expired ones) gets the email instead.
+    retrying_users = {
+        sub.user_id for sub, outcome in results if outcome == SendOutcome.FAILED
+    }
     emailed = {
         user_id
-        for user_id in claimed - {sub.user_id for sub in subscriptions}
+        for user_id in claimed - delivered_users - retrying_users
         if _send_reminder_email(users_by_id[user_id], variant, due[user_id], now)
     }
     unreached = claimed - delivered_users - emailed

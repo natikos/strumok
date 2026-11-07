@@ -200,7 +200,7 @@ Code: `backend/app/api/billing/shortfall.py`.
 
 Deadline push reminders go out on days 1 and 5 at each user's chosen Kyiv hour
 (`User.reminder_hour`, default 9, set via `PATCH /auth/preferences`). Users with no
-push subscription get the reminder by email (Brevo) instead. Scheduler details are
+push subscription, or only expired ones, get the reminder by email (Brevo) instead. Scheduler details are
 in [deployment.md](deployment.md#push-reminders).
 
 ## Imports
