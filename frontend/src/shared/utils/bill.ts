@@ -18,6 +18,11 @@ export interface BillRow {
   reason?: string;
 }
 
+/** True when the bill has anything beyond usage x tariff worth explaining. */
+export function hasExtraRows(bill: Bill): boolean {
+  return bill.rows.some((row) => row.kind !== "tariff");
+}
+
 export interface Bill {
   period: string;
   isEstimated: boolean;

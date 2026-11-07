@@ -26,6 +26,7 @@
     </p>
 
     <Button
+      v-if="hasExtraRows(latest)"
       class="bill-summary__toggle"
       severity="secondary"
       variant="text"
@@ -33,7 +34,7 @@
       :label="t('bill.howCalculated')"
       @click="isOpen = !isOpen"
     />
-    <BillBreakdown v-if="isOpen" :bill="latest" />
+    <BillBreakdown v-if="isOpen && hasExtraRows(latest)" :bill="latest" />
 
     <p v-if="provisional" class="bill-summary__provisional">
       {{ t("bill.soFar", { amount: money(provisional.totalKopecks) }) }}
@@ -48,7 +49,7 @@
 
   import { useCurrentHousehold } from "@/features/households/useCurrentHousehold";
   import { listAdjustments, listStatements } from "@shared/api/billing";
-  import { type Bill, buildBill } from "@shared/utils/bill";
+  import { type Bill, buildBill, hasExtraRows } from "@shared/utils/bill";
   import { formatKwh, formatUah } from "@shared/utils/format";
 
   import BillBreakdown from "./BillBreakdown.vue";

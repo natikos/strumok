@@ -382,4 +382,30 @@ describe("UsageHistoryPage load error handling", () => {
 
     expect(wrapper.find(".usage-history__payment").text()).toContain("Partly paid");
   });
+
+  it.each([
+    ["is hidden for a tariff-only month", { loss_share_uah: "0.00" }, false],
+    ["is shown when the month has a shared-loss share", { loss_share_uah: "5.00" }, true],
+  ])("the 'What is included' toggle %s", async (_name, overrides, expected) => {
+    listMyMeterReadings.mockResolvedValue([makeReading()]);
+    listStatements.mockResolvedValue([
+      {
+        period: "2026-06",
+        status: "closed",
+        day_usage_kwh: "10.00",
+        night_usage_kwh: "5.00",
+        is_estimated: false,
+        tariff_uah: "123.00",
+        penalty_uah: "0.00",
+        penalty_credit_uah: "0.00",
+        total_uah: "123.00",
+        ...overrides,
+      },
+    ]);
+
+    const wrapper = await mountPage();
+
+    // Button is stubbed here, so the label survives as an attribute.
+    expect(wrapper.find('[label="What is included"]').exists()).toBe(expected);
+  });
 });

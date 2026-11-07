@@ -214,7 +214,7 @@
                   {{ paymentLine(entry.period) }}
                 </p>
 
-                <template v-if="bills.get(entry.period)">
+                <template v-if="bills.get(entry.period) && hasExtraRows(bills.get(entry.period)!)">
                   <Button
                     class="usage-history__calc-toggle"
                     severity="secondary"
@@ -303,7 +303,7 @@
   } from "@shared/api/billing";
   import { listMyMeterReadings, type MeterReadingOut } from "@shared/api/meter-readings";
   import { ROUTES } from "@shared/routing/routes";
-  import { type Bill, buildBill } from "@shared/utils/bill";
+  import { type Bill, buildBill, hasExtraRows } from "@shared/utils/bill";
   import {
     formatPeriodMonth,
     currentBillingPeriod as getCurrentBillingPeriod,

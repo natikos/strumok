@@ -114,3 +114,11 @@ class PaymentDetailsIn(BaseModel):
     iban: str = Field(max_length=40)
     recipient_name: str = Field(min_length=1, max_length=120)
     edrpou: str | None = Field(default=None, max_length=20)
+
+
+class CurrentRateOut(BaseModel):
+    """The co-op's per-kWh rate for the current billing period."""
+
+    day_rate_uah: Decimal = Field(max_digits=12, decimal_places=4)
+    night_rate_uah: Decimal = Field(max_digits=12, decimal_places=4)
+    effective_from: str = Field(examples=["2026-11"])

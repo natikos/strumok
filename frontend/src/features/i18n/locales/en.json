@@ -397,6 +397,13 @@
   "shortfall": {
     "notice": "The statement now covers the {date} due date and {amount} is still unpaid."
   },
+  "tariff": {
+    "title": "Co-op rate",
+    "day": "Day",
+    "night": "Night",
+    "perKwh": "{amount}/kWh",
+    "from": "from {date}"
+  },
   "bankCoverage": {
     "includedUpTo": "Payments included up to {date}",
     "awaiting": "Awaiting bank statement: recent payments may not be reflected yet",
@@ -431,7 +438,7 @@
     "for": "for {month}",
     "plain": "Your {usage} at the co-op rate, plus your share of the co-op's shared costs.",
     "plainEstimated": "Estimated (no reading received) + 30% late fee.",
-    "howCalculated": "How was this calculated?",
+    "howCalculated": "What is included",
     "soFar": "So far this month (estimate): about {amount}",
     "usage": "Your usage",
     "total": "Total",

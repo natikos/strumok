@@ -118,4 +118,52 @@ describe("BillSummaryCard", () => {
     expect(wrapper.findComponent({ name: "ErrorState" }).exists()).toBe(true);
     expect(wrapper.find(".bill-summary").exists()).toBe(false);
   });
+
+  describe("'What is included' toggle", () => {
+    const toggle = (wrapper: ReturnType<typeof mountCard>) =>
+      wrapper.findAll("button").filter((b) => b.text().includes("What is included"));
+
+    it("is absent for a tariff-only bill", async () => {
+      api.listStatements.mockResolvedValue([closedLine({ loss_share_uah: "0.00" })]);
+      const wrapper = mountCard();
+      await flushPromises();
+
+      expect(wrapper.find(".bill-summary").exists()).toBe(true);
+      expect(toggle(wrapper)).toHaveLength(0);
+    });
+
+    it.each([
+      ["a shared-loss row", {}],
+      ["a late-fee row", { loss_share_uah: "0.00", penalty_uah: "30.00" }],
+      ["a late-fee credit row", { loss_share_uah: "0.00", penalty_credit_uah: "4.50" }],
+    ])("is present and opens the breakdown for %s", async (_name, overrides) => {
+      api.listStatements.mockResolvedValue([closedLine(overrides)]);
+      const wrapper = mountCard();
+      await flushPromises();
+
+      expect(wrapper.find(".bill-breakdown__row").exists()).toBe(false);
+      const buttons = toggle(wrapper);
+      expect(buttons).toHaveLength(1);
+      await buttons[0]!.trigger("click");
+      expect(wrapper.find(".bill-breakdown__row").exists()).toBe(true);
+    });
+
+    it("is present for a tariff-only bill that has a correction", async () => {
+      api.listStatements.mockResolvedValue([closedLine({ loss_share_uah: "0.00" })]);
+      api.listAdjustments.mockResolvedValue([
+        {
+          amount_uah: "-1.00",
+          applies_to_period: "2026-09",
+          id: 1,
+          posted_in_period: "2026-10",
+          reason: "bill corrected",
+          reason_code: "billCorrection",
+        },
+      ]);
+      const wrapper = mountCard();
+      await flushPromises();
+
+      expect(toggle(wrapper)).toHaveLength(1);
+    });
+  });
 });

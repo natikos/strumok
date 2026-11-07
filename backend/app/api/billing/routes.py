@@ -9,6 +9,7 @@ from app.api.billing.schemas import (
     BalanceOut,
     BankCoverageOut,
     CurrentPeriodOut,
+    CurrentRateOut,
     HouseholdStatementsOut,
     PaymentDetailsOut,
     ShortfallOut,
@@ -17,6 +18,10 @@ from app.api.billing.schemas import (
 from app.api.billing.shortfall import settled_window, shortfall_for_household_id
 from app.api.billing.service import list_adjustments, list_statements
 from app.api.deps import get_current_user
+from app.api.electricity_rates.service import (
+    NoRateConfiguredError,
+    get_effective_rate,
+)
 from app.core.domain import current_billing_period
 from app.core.ownership import owner_scope
 from app.db.models import BillingPeriod, Household, HouseholdOwnership, User
@@ -123,6 +128,18 @@ def get_my_payment_details(
         )
     row = get_payment_details(session)
     return PaymentDetailsOut.model_validate(row) if row else None
+
+
+@router.get("/current-rate", response_model=CurrentRateOut | None)
+def get_current_rate(
+    _: User = Depends(get_current_user),
+    session: Session = Depends(get_session),
+) -> CurrentRateOut | None:
+    try:
+        rate = get_effective_rate(session=session, period=current_billing_period())
+    except NoRateConfiguredError:
+        return None
+    return CurrentRateOut.model_validate(rate, from_attributes=True)
 
 
 @router.get("/bank-coverage", response_model=BankCoverageOut)
