@@ -1,7 +1,7 @@
 """balance_cutovers: sheet balances that settle history up to a date
 
-Revision ID: 0020
-Revises: 0019
+Revision ID: 0021
+Revises: 0020
 """
 
 from typing import Sequence, Union
@@ -9,8 +9,8 @@ from typing import Sequence, Union
 import sqlalchemy as sa
 from alembic import op
 
-revision: str = "0020"
-down_revision: Union[str, Sequence[str], None] = "0019"
+revision: str = "0021"
+down_revision: Union[str, Sequence[str], None] = "0020"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
