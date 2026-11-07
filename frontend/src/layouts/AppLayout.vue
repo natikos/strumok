@@ -90,6 +90,8 @@
         </div>
       </header>
 
+      <TariffStrip class="app-rate" />
+
       <main class="app-content">
         <RouterView />
       </main>
@@ -376,7 +378,7 @@
 
   .app-main {
     display: grid;
-    grid-template-rows: auto 1fr;
+    grid-template-rows: auto auto 1fr;
     min-height: 0;
     min-width: 0;
   }
@@ -401,6 +403,16 @@
     &__actions {
       @include layout.row(var(--s-app-space-2));
       margin-left: auto;
+    }
+  }
+
+  .app-rate {
+    border-bottom: 1px solid var(--s-content-border-color);
+    padding: var(--s-app-space-2) var(--s-app-space-4);
+
+    @include layout.respond-to("lg") {
+      border-bottom: none;
+      padding: 0 var(--s-app-space-5) var(--s-app-space-2);
     }
   }
 
