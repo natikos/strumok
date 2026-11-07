@@ -104,3 +104,34 @@ describe("DashboardPage for a former owner with no plot", () => {
     expect(listMyMeterReadings).toHaveBeenCalled();
   });
 });
+
+describe("DashboardPage submit-first layout", () => {
+  beforeEach(() => {
+    listMyMeterReadings.mockReset().mockResolvedValue([]);
+    listMyStatements.mockReset().mockResolvedValue([]);
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+    vi.doUnmock("@shared/api/meter-readings");
+    vi.doUnmock("@shared/api/billing");
+  });
+
+  it("puts the form first while the window is open and nothing is submitted", async () => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date("2026-10-03T12:00:00Z"));
+
+    const wrapper = await mountPage({ pastOnly: false });
+
+    expect(wrapper.classes()).toContain("dashboard--submit-first");
+  });
+
+  it("keeps the notices first once the window has closed", async () => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date("2026-10-20T12:00:00Z"));
+
+    const wrapper = await mountPage({ pastOnly: false });
+
+    expect(wrapper.classes()).not.toContain("dashboard--submit-first");
+  });
+});
