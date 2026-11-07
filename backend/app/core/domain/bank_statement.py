@@ -141,7 +141,7 @@ def parse_statement(data: bytes, expected_iban: str | None = None) -> ParsedStat
     accounts: set[str] = set()
     dates: list[date] = []
 
-    # Row numbers are 1-based file lines, so the head can find them in the CSV.
+    # Row numbers are 1-based file lines, so the administrator can find them in the CSV.
     for row, record in enumerate(reader, start=2):
         if not any(c.strip() for c in record):
             continue

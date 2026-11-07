@@ -1,4 +1,4 @@
-"""Invite-only registration: the head creates accounts, residents set a password."""
+"""Invite-only registration: the administrator creates accounts, residents set a password."""
 
 from unittest.mock import patch
 

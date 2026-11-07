@@ -6,7 +6,7 @@ export type HouseholdSummary = components["schemas"]["HouseholdSummary"];
 
 const STORAGE_KEY = "strumok:current-household-id";
 // Remembered so a household that disappears between sessions (deactivated by
-// the head) can still be named in the "switched to" notice.
+// the administrator) can still be named in the "switched to" notice.
 const NAME_STORAGE_KEY = "strumok:current-household-name";
 
 export interface HouseholdSwitch {

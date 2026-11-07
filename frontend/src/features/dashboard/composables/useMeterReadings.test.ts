@@ -329,7 +329,7 @@ describe("useMeterReadings", () => {
     });
 
     it("routes noRateConfigured to errors.info and leaves the entered values untouched", async () => {
-      // The head hasn't set a rate yet -- not the resident's fault, so this
+      // The administrator hasn't set a rate yet -- not the resident's fault, so this
       // must not land in the generic `form` error path, and the values the
       // resident just typed must survive so they don't have to retype them
       // once the rate is configured and they retry.

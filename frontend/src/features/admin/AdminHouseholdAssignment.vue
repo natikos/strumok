@@ -448,7 +448,7 @@
         throw error;
       }
 
-      // The outgoing owner still owes money; it stays with them, but the head
+      // The outgoing owner still owes money; it stays with them, but the administrator
       // must say they know.
       if (error.message === "householdHasOutstandingBalance") {
         confirmBalanceDialog();

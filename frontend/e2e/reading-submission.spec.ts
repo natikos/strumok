@@ -58,7 +58,7 @@ test("a resident's submitted reading is shown as submitted and survives a reload
   expect(list.find((r) => r.period === "2026-06")?.day_meter_value).toBe("1234.00");
 });
 
-// The owner took over this month (the head created the plot, freed it, and
+// The owner took over this month (the administrator created the plot, freed it, and
 // handed it to the resident during days 1-5) and must still see the handover
 // reading that stands in for the open period.
 test("a reading for the open period survives a reload when the owner was assigned this month", async ({

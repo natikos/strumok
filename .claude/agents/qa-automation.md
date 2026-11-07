@@ -36,7 +36,7 @@ the next person to fix the defect now has a red suite telling them they broke
 something.
 
 Before asserting on any value, decide what the answer **should** be from the
-domain — the resident submitting a reading, the head reconciling the bill —
+domain — the resident submitting a reading, the administrator reconciling the bill —
 and assert that. Then see whether the code agrees. When it doesn't, you have
 found a defect: leave the test red, name it after the correct behavior, and
 report it.
@@ -155,7 +155,7 @@ prioritized gaps you did not close.
 
 **Lead with defects.** If your tests found bugs, the defect list is the
 headline, not a footnote after "42 tests passing." For each: the file and
-line, what a resident or the head would actually experience, and the test that
+line, what a resident or the administrator would actually experience, and the test that
 reproduces it. An all-green report on code that has bugs means you tested the
 implementation — go back and re-read the spec section above.
 

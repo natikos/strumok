@@ -66,7 +66,7 @@
   const acknowledged = ref(false);
   const unownedEstimated = ref<PeriodCloseOut["unowned_estimated"]>([]);
 
-  // Unreviewed readings are a soft blocker: the head may close anyway.
+  // Unreviewed readings are a soft blocker: the administrator may close anyway.
   const hardBlockers = computed(
     () => overview.value?.blockers.filter((b) => b !== "periodHasUnreviewedReadings") ?? []
   );

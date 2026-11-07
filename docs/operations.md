@@ -49,7 +49,7 @@ UptimeRobot (free plan) monitor `Strumok /health`, created by hand in the
 UptimeRobot dashboard:
 
 - Type HTTP(s), URL `https://strumok.fastapicloud.dev/health`, interval 5 minutes.
-- Alert contact: the head's email, after 2 consecutive failures.
+- Alert contact: the administrator's email, after 2 consecutive failures.
 
 It also keeps Supabase awake. It lives in the monitoring service, not in this
 repo.
@@ -79,7 +79,7 @@ dumps).
 1. **B2**: private bucket, default encryption on, holding only these backups.
    Create an application key limited to it. Lifecycle Settings → custom rule:
    empty prefix, days till hide `90`, days till delete `1`.
-2. **Age keypair**: the head runs `age-keygen -o strumok-backup.key`, keeps two
+2. **Age keypair**: the administrator runs `age-keygen -o strumok-backup.key`, keeps two
    offline copies, and never commits it. Losing it makes every backup unreadable.
 3. **Variables** (Settings → Secrets and variables → Actions):
    `BACKUP_AGE_RECIPIENT` (the `age1...` public key), `APP_ORIGIN`
@@ -153,7 +153,7 @@ Record the date and result on a comment of the tracking issue.
 
 ## Personal data requests
 
-Residents are told (at `/privacy`) to ask the head to correct, export or delete
+Residents are told (at `/privacy`) to ask the administrator to correct, export or delete
 their data. Handle each request by hand, and confirm the person by replying to
 the email on their account.
 

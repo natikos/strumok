@@ -2395,7 +2395,7 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Self-registration is closed; the head invites residents */
+            /** @description Self-registration is closed; the administrator invites residents */
             403: {
                 headers: {
                     [name: string]: unknown;

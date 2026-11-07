@@ -6,7 +6,7 @@ Task-based doc index: [docs/README.md](docs/README.md). Local setup and migratio
 
 # Strumok
 
-Electricity billing for a garden cooperative on one shared utility bill. Residents submit monthly meter readings; the head gets consistent per-household accounting. Mobile-first PWA — residents are expected to use it on their phones out in the garden, not at a desk.
+Electricity billing for a garden cooperative on one shared utility bill. Residents submit monthly meter readings; the administrator gets consistent per-household accounting. Mobile-first PWA — residents are expected to use it on their phones out in the garden, not at a desk.
 
 ## Stack & commands
 

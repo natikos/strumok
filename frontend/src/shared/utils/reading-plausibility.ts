@@ -24,7 +24,7 @@ function median(values: number[]): number {
 /**
  * Mirrors the backend's detect_review_reason: `history` is the household's real
  * readings newest first. The reading is never blocked; this only tells the
- * resident before they send, and the backend flags it for the head either way.
+ * resident before they send, and the backend flags it for the administrator either way.
  */
 export function detectReadingWarning(
   history: MeterPair[],

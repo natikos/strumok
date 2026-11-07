@@ -98,7 +98,7 @@ describe("PeriodCloseCard", () => {
     expect(wrapper.find("button").exists()).toBe(false);
   });
 
-  it("lets the head close anyway after acknowledging unreviewed readings", async () => {
+  it("lets the administrator close anyway after acknowledging unreviewed readings", async () => {
     listAdminPeriods.mockResolvedValue([
       { ...open, blockers: ["periodHasUnreviewedReadings"], unreviewed_count: 2 },
     ]);

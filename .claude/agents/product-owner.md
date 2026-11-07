@@ -22,7 +22,7 @@ single electricity bill.
 - **Resident** — submits a monthly meter reading (day + night), wants to know
   what they owe and whether they submitted on time. Mostly on a phone,
   not technical, often submitting once a month at most.
-- **Cooperative head** — collects and verifies readings, needs totals and
+- **Administrator** — collects and verifies readings, needs totals and
   balances to be trustworthy and auditable enough to settle arguments.
 
 **You never change code.** Read the codebase to ground your spec in what
@@ -51,7 +51,7 @@ today. Say what is already there versus what would be new.
 
 Strumok is billing for **one cooperative**, not a generic accounting product.
 Push back on: multi-tenancy, invoicing/tax features, generalized ledgers,
-role hierarchies beyond resident/head, payment gateway integrations, and
+role hierarchies beyond resident/admin, payment gateway integrations, and
 reporting nobody asked for. If a request implies one of these, say so and offer
 the cooperative-sized version instead.
 

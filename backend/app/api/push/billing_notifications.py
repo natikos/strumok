@@ -1,4 +1,4 @@
-"""Billing notifications: bill ready, restatement corrections, and the head's
+"""Billing notifications: bill ready, restatement corrections, and the administrator's
 day-6 missing-readings summary. Each goes out only after the triggering
 transaction has committed, through `notification_log` so a retry or a second
 instance never notifies the same user twice for the same event."""

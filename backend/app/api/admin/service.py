@@ -371,7 +371,7 @@ class HandoverReadingRequiredError(Exception):
 
 
 class HouseholdHasOutstandingBalanceError(Exception):
-    """The outgoing owner still owes money; the head must acknowledge that it
+    """The outgoing owner still owes money; the administrator must acknowledge that it
     stays with them."""
 
 

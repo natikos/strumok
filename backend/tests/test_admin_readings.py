@@ -1,4 +1,4 @@
-"""The head can enter, correct and void readings on a household's behalf."""
+"""The administrator can enter, correct and void readings on a household's behalf."""
 
 from decimal import Decimal
 

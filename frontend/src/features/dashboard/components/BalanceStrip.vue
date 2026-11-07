@@ -78,8 +78,8 @@
   // With no plot left, the gave-up plots are all there is to view and pay.
   const hasCurrent = computed(() => !isPastOnly.value);
   // Pay only the current plot's own balance (not the gave-up-plots debt shown in
-  // the strip total): the head reconciles per household.
-  // A credit on one gave-up plot can't settle another's debt (the head
+  // the strip total): the administrator reconciles per household.
+  // A credit on one gave-up plot can't settle another's debt (the administrator
   // reconciles per household), so only the plots that owe are paid.
   const owingPast = computed(() => past.value.filter((p) => toDecimal(p.balance.balance_uah) > 0));
   const ownBalance = computed(() =>

@@ -240,8 +240,8 @@
       "accept": "Apply",
       "reject": "Cancel",
       "closedNote": "This period is closed, so the change becomes adjustments.",
-      "correctedBy": "Corrected by the head on {date}: {reason}",
-      "enteredBy": "Entered by the head on {date}: {reason}"
+      "correctedBy": "Corrected by the administrator on {date}: {reason}",
+      "enteredBy": "Entered by the administrator on {date}: {reason}"
     },
     "estimated": "Estimated",
     "estimatedCount": "Estimated ({count})",
@@ -387,11 +387,11 @@
     "resetExpired": "This link is invalid or has expired, or was already used.",
     "requestNewLink": "Request a new link",
     "resetDone": "Password changed. You are now signed in.",
-    "inviteNote": "Strumok is for co-op members. Ask the head for an invite.",
+    "inviteNote": "Strumok is for co-op members. Invites are sent by the app administrator.",
     "setTitle": "Set your password",
     "setSubtitle": "From your invite",
     "setSubmit": "Set password and continue",
-    "setExpired": "This invite link has expired or was already used. Ask the head for a new one.",
+    "setExpired": "This invite link has expired or was already used. Ask the administrator for a new one.",
     "setDone": "Welcome! Your password is set."
   },
   "shortfall": {
@@ -423,7 +423,7 @@
     "aria": "Your balance",
     "pay": "Pay",
     "payTitle": "Pay your balance",
-    "payHint": "Send this in your bank app. Copy each field below. The head confirms receipt manually.",
+    "payHint": "Send this in your bank app. Copy each field below. The administrator confirms receipt manually.",
     "payAmount": "Amount",
     "payIban": "IBAN",
     "payRecipient": "Recipient",
@@ -464,7 +464,7 @@
     "emptyChartBody": "Your usage chart, day/night split and year-over-year comparison appear here as readings come in.",
     "emptyChartTitle": "No usage to chart yet",
     "firstRunStep1": "Read both numbers off your meter between the 1st and the 5th",
-    "firstRunStep2": "Your first reading is measured against the plot's starting values set by the head",
+    "firstRunStep2": "Your first reading is measured against the plot's starting values set by the administrator",
     "firstRunStep3": "The cooperative splits one shared bill across all logged readings",
     "firstRunTitle": "How Strumok works",
     "lastPeriodEmpty": "Last period",
@@ -546,7 +546,7 @@
     "userOwnsActiveHouseholds": "This user still owns households",
     "registrationClosed": "Registration is by invitation only",
     "inviteAlreadyAccepted": "This invite was already accepted",
-    "periodClosed": "This period has been closed by the head, so readings can't be submitted",
+    "periodClosed": "This period has been closed by the administrator, so readings can't be submitted",
     "periodAlreadyClosed": "This period is already closed",
     "periodNotEnded": "The submission window for this period is still open",
     "billNotEntered": "Enter the utility bill before closing the period",
@@ -639,7 +639,7 @@
   },
   "noHousehold": {
     "title": "No household yet",
-    "body": "You're not linked to a household yet, so there's nothing to show. Contact the cooperative head to get added to one.",
+    "body": "You're not linked to a household yet, so there's nothing to show. Contact the administrator to get added to one.",
     "checkAgain": "Check again",
     "stillNotAssigned": "Still not assigned to a household. Please check back later."
   },
@@ -662,7 +662,7 @@
       },
       "access": {
         "title": "Who can see it",
-        "body": "You see your own households. The head of the co-op and the administrators see everyone's data, because they reconcile the shared bill. It is not shared with anyone else or used for advertising."
+        "body": "You see your own households. Administrators see everyone's data, because they reconcile the shared bill. It is not shared with anyone else or used for advertising."
       },
       "hosting": {
         "title": "Where it is kept",
@@ -674,7 +674,7 @@
       },
       "rights": {
         "title": "Correction, export and deletion",
-        "body": "To correct your data, get a copy of it or have it deleted, contact the head of the co-op. Requests are handled by hand. Deleting an account anonymizes you but keeps the billing lines, because the co-op's charges and payments must stay on record."
+        "body": "To correct your data, get a copy of it or have it deleted, contact the administrator. Requests are handled by hand. Deleting an account anonymizes you but keeps the billing lines, because the co-op's charges and payments must stay on record."
       }
     }
   },
@@ -754,8 +754,8 @@
     "recordStreak": "On-time streak: {count} months",
     "recordMissedPeriods": "You missed last month | You missed the last {count} months",
     "recordLateThisMonth": "You're late this month",
-    "correctedByHead": "Corrected by the head on {date}: {reason}",
-    "enteredByHead": "Entered by the head on {date}: {reason}",
+    "correctedByHead": "Corrected by the administrator on {date}: {reason}",
+    "enteredByHead": "Entered by the administrator on {date}: {reason}",
     "meterReplaced": "Meter replaced in {month}"
   },
   "verifyEmail": {

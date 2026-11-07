@@ -68,7 +68,7 @@ export async function listMyStatements(): Promise<HouseholdStatementsOut[]> {
   return data;
 }
 
-/** Where to send money; null until the head has configured it. */
+/** Where to send money; null until the administrator has configured it. */
 export async function getPaymentDetails(): Promise<PaymentDetailsOut | null> {
   const { data, error, response } = await appApiClient.GET("/billing/payment-details");
 

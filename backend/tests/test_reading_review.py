@@ -1,4 +1,4 @@
-"""Implausible readings are accepted but flagged for the head."""
+"""Implausible readings are accepted but flagged for the administrator."""
 
 from decimal import Decimal
 

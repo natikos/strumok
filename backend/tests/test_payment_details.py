@@ -1,4 +1,4 @@
-"""Co-op payment details (IBAN) shown to residents and edited by the head."""
+"""Co-op payment details (IBAN) shown to residents and edited by the administrator."""
 
 from sqlmodel import Session, select
 

@@ -71,7 +71,7 @@ SUBMIT_RESPONSES: dict[int | str, dict[str, Any]] = {
                         "value": {"detail": "periodNotOpen"},
                     },
                     "periodClosed": {
-                        "summary": "The head has closed this period",
+                        "summary": "The administrator has closed this period",
                         "value": {"detail": "periodClosed"},
                     },
                     "noRateConfigured": {

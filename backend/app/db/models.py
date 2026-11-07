@@ -101,7 +101,7 @@ class HouseholdOwnership(SQLModel, table=True):
     user_id: int = Field(foreign_key="users.id", index=True)
     valid_from: datetime = Field(default_factory=utc_now)
     valid_to: Optional[datetime] = Field(default=None)
-    # Meter values the head recorded when the plot changed hands (set on the
+    # Meter values the administrator recorded when the plot changed hands (set on the
     # row that ends with a transfer).
     handover_day_meter_value: Optional[Decimal] = Field(
         default=None, decimal_places=2, max_digits=12
@@ -143,14 +143,14 @@ class MeterReading(SQLModel, table=True):
     )
     # Set when the reading looks off (a decrease, a spike, or a first reading
     # against a 0/0 baseline). It is accepted
-    # either way; the head clears the flag after looking.
+    # either way; the administrator clears the flag after looking.
     needs_review: bool = Field(
         default=False, sa_column_kwargs={"server_default": "false"}
     )
     review_reason: Optional[str] = Field(
         default=None
     )  # 'decrease' | 'spike' | 'zeroBaseline'
-    # Set when the head entered or changed the values; shown to the resident so
+    # Set when the administrator entered or changed the values; shown to the resident so
     # a correction is never a silent overwrite.
     corrected_at: Optional[datetime] = Field(default=None)
     correction_reason: Optional[str] = Field(default=None)
