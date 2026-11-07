@@ -236,6 +236,27 @@ class TestCreateHousehold:
         assert body["owner"]["id"] == new_owner.id
         assert body["owner"]["email"] == new_owner.email
 
+    def test_without_user_id_creates_an_unowned_household(
+        self, client, session: Session
+    ) -> None:
+        from app.db.models import HouseholdOwnership
+
+        admin = make_user(session, email="admin-unowned@example.com", is_admin=True)
+        authenticate(client, admin)
+
+        response = client.post("/admin/households", json={"name": "Free Plot"})
+
+        assert response.status_code == 201, response.text
+        body = response.json()
+        assert body["user_id"] is None
+        assert body["owner"] is None
+        ownerships = session.exec(
+            select(HouseholdOwnership).where(
+                HouseholdOwnership.household_id == body["id"]
+            )
+        ).all()
+        assert ownerships == []
+
 
 class TestAssignHouseholdOwner:
     def test_nonexistent_household_is_not_found(self, client, session: Session) -> None:

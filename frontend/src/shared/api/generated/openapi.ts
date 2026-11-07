@@ -1158,7 +1158,7 @@ export interface components {
             /** Name */
             name: string;
             /** User Id */
-            user_id: number;
+            user_id?: number | null;
             /** Starting Day Meter Value */
             starting_day_meter_value?: number | string | null;
             /** Starting Night Meter Value */

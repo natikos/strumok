@@ -304,21 +304,28 @@ def _get_active_user(*, session: Session, user_id: int) -> User:
     return user
 
 
-def create_household_for_user(
+def create_household(
     *,
     session: Session,
     name: str,
-    user_id: int,
+    user_id: int | None,
     actor_id: int,
     starting_day: Decimal | None = None,
     starting_night: Decimal | None = None,
-) -> tuple[Household, User]:
-    owner = _get_active_user(session=session, user_id=user_id)
+) -> tuple[Household, User | None]:
+    """Creates a plot with its baseline. Without `user_id` it starts unowned
+    (no ownership row), so whoever is invited onto it later is its only owner."""
+    owner = (
+        _get_active_user(session=session, user_id=user_id)
+        if user_id is not None
+        else None
+    )
 
     household = Household(name=name)
     session.add(household)
     session.flush()
-    set_owner(session, household, user_id)
+    if user_id is not None:
+        set_owner(session, household, user_id)
     audit.record(
         session,
         actor_user_id=actor_id,

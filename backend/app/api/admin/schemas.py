@@ -53,7 +53,9 @@ class AdminHouseholdCreateIn(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     name: str = Field(min_length=1, max_length=255)
-    user_id: int
+    # Omitted, the plot is created unowned and an invited resident becomes its
+    # first owner.
+    user_id: int | None = None
     # Optional opening meter values for a plot with an existing meter. They are
     # stored as an unbilled baseline for the period before the first one
     # residents submit. Omitted, the meter is brand-new and starts at 0, so the

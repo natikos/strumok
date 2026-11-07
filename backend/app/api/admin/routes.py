@@ -73,7 +73,7 @@ from app.api.admin.service import (
     UserInactiveError,
     UserNotFoundError,
     assign_household_owner,
-    create_household_for_user,
+    create_household,
     get_admin_dashboard,
     list_audit_log,
     list_households_with_owners,
@@ -312,7 +312,7 @@ def create_admin_household(
     admin: User = CurrentAdmin,
 ) -> AdminHouseholdOut:
     try:
-        household, owner = create_household_for_user(
+        household, owner = create_household(
             session=session,
             name=payload.name,
             user_id=payload.user_id,

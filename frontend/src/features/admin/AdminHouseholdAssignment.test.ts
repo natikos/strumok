@@ -275,4 +275,33 @@ describe("AdminHouseholdAssignment", () => {
 
     expect(createAdminHousehold).not.toHaveBeenCalled();
   });
+
+  it("creates an unowned household when no resident is picked", async () => {
+    listAdminUsers.mockResolvedValue([makeUser({ email: "x@example.com", id: 7 })]);
+    listAdminHouseholds.mockResolvedValue([]);
+    createAdminHousehold.mockResolvedValue(makeHousehold({ id: 31, name: "Free plot" }));
+
+    const wrapper = await mountForm();
+
+    await wrapper.find("#admin-household-name").setValue("Free plot");
+    await wrapper.find(".admin-assignment__submit").trigger("click");
+    await flushPromises();
+
+    expect(createAdminHousehold).toHaveBeenCalledWith({ name: "Free plot" });
+    expect(wrapper.find(".admin-assignment__submit").text()).toBe("Create household");
+  });
+
+  it("still requires a resident when assigning an existing household", async () => {
+    listAdminUsers.mockResolvedValue([makeUser({ email: "y@example.com", id: 8 })]);
+    listAdminHouseholds.mockResolvedValue([makeHousehold({ id: 40, name: "Plot 40" })]);
+
+    const wrapper = await mountForm();
+
+    await wrapper.findAllComponents(Select)[0]!.setValue(40);
+    await wrapper.find(".admin-assignment__submit").trigger("click");
+    await flushPromises();
+
+    expect(assignAdminHouseholdOwner).not.toHaveBeenCalled();
+    expect(wrapper.find("#admin-user-select-error").exists()).toBe(true);
+  });
 });

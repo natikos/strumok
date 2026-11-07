@@ -122,7 +122,9 @@
         :aria-invalid="!!errors.selectedUserId"
         :aria-describedby="errors.selectedUserId ? 'admin-user-select-error' : undefined"
         :pt="{ label: { class: 'admin-assignment__select-label' } }"
+        :show-clear="isCreating"
       />
+      <span v-if="isCreating" class="admin-assignment__hint">{{ $t("admin.ownerOptionalHint") }}</span>
       <span
         v-if="errors.selectedUserId"
         id="admin-user-select-error"
@@ -170,7 +172,7 @@
 
     <Button
       class="admin-assignment__submit"
-      :label="$t('admin.assign')"
+      :label="isCreating && selectedUserId === null ? $t('admin.create') : $t('admin.assign')"
       :loading="isLoading"
       @click="handleSubmit"
     />
@@ -279,6 +281,9 @@
     return owner ? userLabel(owner) : null;
   });
 
+  // No plot picked means a new one is being created, and then the owner is optional.
+  const isCreating = computed(() => selectedHouseholdId.value === null);
+
   const renameValue = ref("");
 
   watch(selectedHousehold, (household) => {
@@ -364,7 +369,7 @@
 
     const next: FieldErrors = {};
 
-    if (!parsed.success) {
+    if (!parsed.success && !isCreating.value) {
       const flat = z.flattenError(parsed.error).fieldErrors;
       if (flat.selectedUserId?.[0]) {
         next.selectedUserId = flat.selectedUserId[0];
@@ -394,7 +399,7 @@
     confirmReassignment: boolean,
     acknowledgeBalance = false
   ): Promise<void> {
-    if (selectedUserId.value === null) {
+    if (selectedUserId.value === null && !isCreating.value) {
       return;
     }
 
@@ -403,7 +408,7 @@
     try {
       let household: AdminHouseholdOut;
 
-      if (selectedHouseholdId.value !== null) {
+      if (selectedHouseholdId.value !== null && selectedUserId.value !== null) {
         household = await assignAdminHouseholdOwner(selectedHouseholdId.value, {
           acknowledge_balance: acknowledgeBalance,
           confirm_reassignment: confirmReassignment,
@@ -418,7 +423,7 @@
       } else {
         household = await createAdminHousehold({
           name: newHouseholdName.value.trim(),
-          user_id: selectedUserId.value,
+          ...(selectedUserId.value !== null ? { user_id: selectedUserId.value } : {}),
           ...(startingDay.value !== null && startingNight.value !== null
             ? {
                 starting_day_meter_value: String(startingDay.value),
@@ -433,10 +438,9 @@
       toast.add({
         life: 4000,
         severity: "success",
-        summary: t("admin.assignSuccess", {
-          household: household.name,
-          owner: owner ? userLabel(owner) : "",
-        }),
+        summary: owner
+          ? t("admin.assignSuccess", { household: household.name, owner: userLabel(owner) })
+          : t("admin.createdUnowned", { household: household.name }),
       });
 
       resetForm();
