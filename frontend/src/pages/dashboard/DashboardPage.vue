@@ -52,6 +52,8 @@
 
       <ErrorState v-if="loadError" message-key="meterReadings.loadError" @retry="reload" />
 
+      <InstallPrompt />
+
       <FirstRunGuideCard v-if="showFirstRunGuide" />
 
       <BillSummaryCard />

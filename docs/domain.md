@@ -211,6 +211,13 @@ Deadline push reminders go out on days 1 and 5 at each user's chosen Kyiv hour
 push subscription, or only expired ones, get the reminder by email (Brevo) instead. Scheduler details are
 in [deployment.md](deployment.md#push-reminders).
 
+## Install prompt
+
+The dashboard offers installing the PWA (`frontend/src/features/pwa`): the browser's
+`beforeinstallprompt` where it exists, Share → Add to Home Screen steps on iPhone
+(where push needs the installed app). Dismissal is remembered per device in
+localStorage.
+
 ## Imports
 
 The spreadsheet import (`backend/scripts/import_meter_history.py`) writes the

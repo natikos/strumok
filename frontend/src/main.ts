@@ -6,6 +6,7 @@ import { createApp } from "vue";
 import { createRouter, createWebHistory, type RouteRecordRaw } from "vue-router";
 
 import { i18n } from "@features/i18n";
+import { captureInstallPrompt } from "@features/pwa/useInstallPrompt";
 import {
   flushPendingLogout,
   getAuthSessionState,
@@ -22,6 +23,7 @@ import "./style.scss";
 const app = createApp(App);
 
 registerSW();
+captureInstallPrompt();
 
 const routes: RouteRecordRaw[] = [
   {
