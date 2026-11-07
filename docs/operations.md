@@ -79,18 +79,13 @@ dumps).
 1. **B2**: private bucket, default encryption on, holding only these backups.
    Create an application key limited to it. Lifecycle Settings → custom rule:
    empty prefix, days till hide `90`, days till delete `1`.
-2. **DB role**, in the Supabase SQL editor:
-   ```sql
-   create role backup_ro login password '<generated>';
-   grant pg_read_all_data to backup_ro;
-   ```
-3. **Age keypair**: the head runs `age-keygen -o strumok-backup.key`, keeps two
+2. **Age keypair**: the head runs `age-keygen -o strumok-backup.key`, keeps two
    offline copies, and never commits it. Losing it makes every backup unreadable.
-4. **Variables** (Settings → Secrets and variables → Actions):
+3. **Variables** (Settings → Secrets and variables → Actions):
    `BACKUP_AGE_RECIPIENT` (the `age1...` public key), `APP_ORIGIN`
    (`https://strumok.fastapicloud.dev`).
-5. **Secrets**: `BACKUP_DATABASE_URL` (the *session pooler* string, user
-   `backup_ro.<project-ref>`; the direct host is IPv6-only and runners are IPv4),
+4. **Secrets**: `PROD_DATABASE_URL` (shared with releases, see
+   [deployment.md](deployment.md#required-github-secrets)),
    `BACKUP_S3_ACCESS_KEY_ID`, `BACKUP_S3_SECRET_ACCESS_KEY`,
    `BACKUP_S3_ENDPOINT` (`https://s3.<region>.backblazeb2.com`),
    `BACKUP_S3_REGION`, `BACKUP_S3_BUCKET`.

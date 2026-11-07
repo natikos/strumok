@@ -26,8 +26,8 @@ pushed tag deploys straight to production.
 - `gh run list --workflow=ci.yml --commit $(git rev-parse HEAD) --json conclusion --jq '.[].conclusion'`
   — must include `success`. If CI is red, missing, or still running, stop: the
   deployment workflow's preflight job would reject the tag anyway.
-- If `PROD_DATABASE_URL_READONLY` is available, run
-  `cd backend && PROD_DATABASE_URL="$PROD_DATABASE_URL_READONLY" uv run python scripts/check_migrations.py --allow-behind`.
+- If `PROD_DATABASE_URL` is available, run
+  `cd backend && uv run python scripts/check_migrations.py --allow-behind`.
   Use `--allow-behind`: the release workflow applies unapplied migrations
   itself, so only a non-zero exit (production at a revision this checkout
   doesn't know) is a stop. If the variable isn't set,

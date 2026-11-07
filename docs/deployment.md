@@ -48,7 +48,7 @@ release at a time (`production-release` concurrency group, never cancelled):
 2. `backup`: calls `db-backup.yml` (`release/release-<tag>-<timestamp>.dump.age`
    in the backup bucket), so every release has a fresh pre-migration dump.
 3. `migrate` (only if migrations are unapplied): `alembic upgrade head` with
-   `PROD_DATABASE_URL_MIGRATE`, then re-runs the check. Alembic on Postgres
+   `PROD_DATABASE_URL`, then re-runs the check. Alembic on Postgres
    applies the whole upgrade in one transaction, so a failed migration leaves
    production at the revision it started from.
 4. `deploy`: builds the frontend and runs `uv run fastapi deploy`
@@ -91,8 +91,7 @@ older tag as-is, skipping backup and migrations.
 | ---------------------- | ---------------------------- |
 | `FASTAPI_CLOUD_TOKEN`  | FastAPI Cloud deploy token   |
 | `FASTAPI_CLOUD_APP_ID` | FastAPI Cloud app identifier |
-| `PROD_DATABASE_URL_READONLY` | Read-only production connection string for the migrations preflight |
-| `PROD_DATABASE_URL_MIGRATE` | Production connection string of a role that can run DDL, used only by the `migrate` job. Use the Supabase *session* pooler string (Alembic needs session semantics) and a dedicated role, not the superuser. Prefer storing it in the `production` GitHub environment, restricted to `v*` tags |
+| `PROD_DATABASE_URL` | Production connection string, the one database secret. Used by the preflight check, the backup, and the `migrate` job. Use the Supabase *session* pooler string (Alembic needs session semantics; the direct host is IPv6-only and runners are IPv4). Prefer storing it in the `production` GitHub environment, restricted to `v*` tags |
 
 ### Required GitHub variable and environment
 
@@ -103,7 +102,7 @@ older tag as-is, skipping backup and migrations.
 - **Environment `production`** (Settings → Environments): the `migrate` and
   `deploy` jobs declare it. GitHub creates it unprotected on first use, so
   create it up front, restrict deployment tags to `v*`, and keep
-  `PROD_DATABASE_URL_MIGRATE` there as an environment secret rather than a
+  `PROD_DATABASE_URL` there as an environment secret rather than a
   repository secret.
 
 ## Backups
