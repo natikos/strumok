@@ -613,6 +613,13 @@
     "switchToLightTheme": "Switch to light theme",
     "switchToDarkTheme": "Switch to dark theme"
   },
+  "install": {
+    "title": "Install Strumok",
+    "text": "Add the app to your home screen to open it in one tap and get deadline reminders.",
+    "ios": "Add the app to your home screen: tap Share, then Add to Home Screen. Reminders need it on iPhone.",
+    "action": "Install",
+    "dismiss": "Not now"
+  },
   "meterReadings": {
     "fixHint": "Made a mistake? A sent reading can't be changed here: ask the administrator to correct it.",
     "loadError": "Couldn't load your readings",

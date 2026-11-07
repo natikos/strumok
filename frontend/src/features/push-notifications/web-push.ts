@@ -61,11 +61,14 @@ export function isPushSupported(): boolean {
  * Checks whether iOS is running the app outside the installed PWA.
  */
 export function isIosNotInstalled(): boolean {
-  const isIos = /iPad|iPhone|iPod/.test(navigator.userAgent);
+  if (!/iPad|iPhone|iPod/.test(navigator.userAgent)) {
+    return false;
+  }
+
   const isStandalone =
     window.matchMedia("(display-mode: standalone)").matches ||
     (navigator as Navigator & { standalone?: boolean }).standalone;
-  return isIos && !isStandalone;
+  return !isStandalone;
 }
 
 /**
