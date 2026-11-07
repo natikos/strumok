@@ -3,6 +3,7 @@ charges + adjustments - non-voided payments, so a late adjustment or a voided
 payment just changes the sum."""
 
 from dataclasses import dataclass
+import calendar
 from datetime import date
 from decimal import Decimal
 
@@ -11,6 +12,7 @@ from sqlmodel import Session, col, desc, func, select
 from app.core import audit
 from app.core.time import utc_now
 from app.db.models import (
+    BalanceCutover,
     ChargeAdjustment,
     Household,
     HouseholdCharge,
@@ -212,18 +214,62 @@ def list_opening_balance_corrections(
     )
 
 
+def get_cutover(*, session: Session, household_id: int) -> BalanceCutover | None:
+    """The sheet balance currently settling the household's history, if any."""
+    return session.exec(
+        select(BalanceCutover)
+        .where(BalanceCutover.household_id == household_id)
+        .order_by(desc(BalanceCutover.as_of), desc(BalanceCutover.id))
+    ).first()
+
+
+def settled_through(*, session: Session, household_id: int) -> date | None:
+    """The date up to which the sheet balance already covers everything: the
+    later of the opening balance's and the cutover's `as_of`."""
+    dates = [
+        row.as_of
+        for row in (
+            get_opening_balance(session=session, household_id=household_id),
+            get_cutover(session=session, household_id=household_id),
+        )
+        if row is not None
+    ]
+    return max(dates) if dates else None
+
+
 def _opening_amount(
-    *, session: Session, household_id: int, owner_user_id: int | None = None
+    *,
+    session: Session,
+    household_id: int,
+    owner_user_id: int | None = None,
+    cutover: BalanceCutover | None = None,
 ) -> Decimal:
+    """With a cutover, its amount replaces the opening balance and only the
+    corrections written after it still apply."""
     total = ZERO
-    for model in (OpeningBalance, OpeningBalanceCorrection):
+    models = (
+        (BalanceCutover, OpeningBalanceCorrection)
+        if cutover
+        else (OpeningBalance, OpeningBalanceCorrection)
+    )
+    for model in models:
         query = select(func.coalesce(func.sum(model.amount_uah), 0)).where(
             model.household_id == household_id
         )
+        if cutover is not None:
+            if model is BalanceCutover:
+                query = query.where(BalanceCutover.id == cutover.id)
+            else:
+                query = query.where(model.created_at > cutover.created_at)
         if owner_user_id is not None:
             query = query.where(model.owner_user_id == owner_user_id)
         total += Decimal(session.exec(query).one() or ZERO)
     return total
+
+
+def _last_day(period: str) -> date:
+    year, month = (int(part) for part in period.split("-"))
+    return date(year, month, calendar.monthrange(year, month)[1])
 
 
 def void_payment(
@@ -302,11 +348,17 @@ def _dues_by_period(
 
 
 def _paid_total(
-    *, session: Session, household_id: int, owner_user_id: int | None = None
+    *,
+    session: Session,
+    household_id: int,
+    owner_user_id: int | None = None,
+    after: date | None = None,
 ) -> Decimal:
     query = select(func.coalesce(func.sum(Payment.amount_uah), 0)).where(
         Payment.household_id == household_id, col(Payment.voided_at).is_(None)
     )
+    if after is not None:
+        query = query.where(Payment.paid_on > after)
     if owner_user_id is not None:
         query = query.where(Payment.owner_user_id == owner_user_id)
     return session.exec(query).one() or ZERO
@@ -316,20 +368,31 @@ def get_balance(
     *, session: Session, household_id: int, owner_user_id: int | None = None
 ) -> Balance:
     """The opening balance (debt carried over from the spreadsheets, or credit)
-    counts in the total and is settled first. Oldest periods are settled next, so a partial payment covers the early
+    counts in the total and is settled first. A `BalanceCutover` replaces it:
+    months ending by its date and payments up to it are already inside its amount. Oldest periods are settled next, so a partial payment covers the early
     months and the status of each period reads naturally. With `owner_user_id`
     only that owner's charges, adjustments and payments count: a plot that
     changed hands keeps each owner's debt separate."""
     dues = _dues_by_period(
         session=session, household_id=household_id, owner_user_id=owner_user_id
     )
+    cutover = get_cutover(session=session, household_id=household_id)
+    if cutover is not None:
+        # The sheet balance already contains these months and earlier payments.
+        dues = {p: d for p, d in dues.items() if _last_day(p) > cutover.as_of}
     paid_total = Decimal(
         _paid_total(
-            session=session, household_id=household_id, owner_user_id=owner_user_id
+            session=session,
+            household_id=household_id,
+            owner_user_id=owner_user_id,
+            after=cutover.as_of if cutover else None,
         )
     )
     opening = _opening_amount(
-        session=session, household_id=household_id, owner_user_id=owner_user_id
+        session=session,
+        household_id=household_id,
+        owner_user_id=owner_user_id,
+        cutover=cutover,
     )
     remaining = paid_total
     # Carried-over debt is the oldest money owed, so payments settle it first.
