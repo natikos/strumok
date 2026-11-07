@@ -46,8 +46,8 @@ function mockPushState(initial: PushToggleState) {
   return { state, enable, disable };
 }
 
-function mountSettingsPage() {
-  return mount(SettingsPage, {
+async function mountSettingsPage() {
+  const wrapper = mount(SettingsPage, {
     global: {
       plugins: appPlugins(),
       stubs: {
@@ -58,6 +58,8 @@ function mountSettingsPage() {
       },
     },
   });
+  await flushPromises();
+  return wrapper;
 }
 
 describe("SettingsPage notifications section", () => {
@@ -84,29 +86,29 @@ describe("SettingsPage notifications section", () => {
     ["unsupported", "Unavailable in this browser"],
   ] as [PushToggleState, string][])(
     "shows the %s hint for push state %s",
-    (state, expectedHint) => {
+    async (state, expectedHint) => {
       mockPushState(state);
 
-      const wrapper = mountSettingsPage();
+      const wrapper = await mountSettingsPage();
 
       expect(wrapper.text()).toContain(expectedHint);
     }
   );
 
-  it("does not render a switch at all when push is unsupported", () => {
+  it("does not render a switch at all when push is unsupported", async () => {
     mockPushState("unsupported");
 
-    const wrapper = mountSettingsPage();
+    const wrapper = await mountSettingsPage();
 
     expect(wrapper.find('input[role="switch"]').exists()).toBe(false);
   });
 
   it.each(["off", "on", "ios-not-installed"] as PushToggleState[])(
     "leaves the switch enabled in the %s state",
-    (state) => {
+    async (state) => {
       mockPushState(state);
 
-      const wrapper = mountSettingsPage();
+      const wrapper = await mountSettingsPage();
 
       expect(wrapper.find('input[role="switch"]').attributes("disabled")).toBeUndefined();
     }
@@ -114,28 +116,28 @@ describe("SettingsPage notifications section", () => {
 
   it.each(["denied", "requesting"] as PushToggleState[])(
     "disables the switch in the %s state so the resident can't act on a state that ignores input",
-    (state) => {
+    async (state) => {
       mockPushState(state);
 
-      const wrapper = mountSettingsPage();
+      const wrapper = await mountSettingsPage();
 
       expect(wrapper.find('input[role="switch"]').attributes("disabled")).toBeDefined();
     }
   );
 
-  it("reflects on/off as the switch's checked state", () => {
+  it("reflects on/off as the switch's checked state", async () => {
     mockPushState("on");
-    const onWrapper = mountSettingsPage();
+    const onWrapper = await mountSettingsPage();
     expect(onWrapper.find<HTMLInputElement>('input[role="switch"]').element.checked).toBe(true);
 
     mockPushState("off");
-    const offWrapper = mountSettingsPage();
+    const offWrapper = await mountSettingsPage();
     expect(offWrapper.find<HTMLInputElement>('input[role="switch"]').element.checked).toBe(false);
   });
 
-  it("calls enable() when the resident turns the switch on", () => {
+  it("calls enable() when the resident turns the switch on", async () => {
     const { enable, disable } = mockPushState("off");
-    const wrapper = mountSettingsPage();
+    const wrapper = await mountSettingsPage();
 
     wrapper.findComponent(ToggleSwitch).vm.$emit("update:modelValue", true);
 
@@ -143,9 +145,9 @@ describe("SettingsPage notifications section", () => {
     expect(disable).not.toHaveBeenCalled();
   });
 
-  it("calls disable() when the resident turns the switch off", () => {
+  it("calls disable() when the resident turns the switch off", async () => {
     const { enable, disable } = mockPushState("on");
-    const wrapper = mountSettingsPage();
+    const wrapper = await mountSettingsPage();
 
     wrapper.findComponent(ToggleSwitch).vm.$emit("update:modelValue", false);
 
@@ -153,12 +155,12 @@ describe("SettingsPage notifications section", () => {
     expect(enable).not.toHaveBeenCalled();
   });
 
-  it("ignores a toggle attempt while the iOS PWA is not yet installed", () => {
+  it("ignores a toggle attempt while the iOS PWA is not yet installed", async () => {
     // The switch isn't disabled in this state (it doubles as the entry point
     // for the "add to home screen" instructions), but acting on it must not
     // call enable()/disable() -- there is nothing installed to subscribe.
     const { enable, disable } = mockPushState("ios-not-installed");
-    const wrapper = mountSettingsPage();
+    const wrapper = await mountSettingsPage();
 
     wrapper.findComponent(ToggleSwitch).vm.$emit("update:modelValue", true);
 
@@ -174,19 +176,19 @@ describe("SettingsPage reminder hour", () => {
 
   it("shows the reminder hour selector only while push is on", async () => {
     mockPushState("on");
-    const on = mountSettingsPage();
+    const on = await mountSettingsPage();
     await flushPromises();
     expect(on.findComponent(Select).exists()).toBe(true);
 
     mockPushState("off");
-    const off = mountSettingsPage();
+    const off = await mountSettingsPage();
     await flushPromises();
     expect(off.findComponent(Select).exists()).toBe(false);
   });
 
   it("saves the chosen hour as a preference", async () => {
     mockPushState("on");
-    const wrapper = mountSettingsPage();
+    const wrapper = await mountSettingsPage();
     await flushPromises();
 
     wrapper.findComponent(Select).vm.$emit("update:modelValue", 18);

@@ -4,7 +4,7 @@
       <h1 class="settings-header__title">{{ t("settings.title") }}</h1>
     </header>
 
-    <div class="settings-body">
+    <div v-if="me" class="settings-body">
       <section class="settings-section">
         <h2 class="settings-section__title">{{ t("settings.appearance") }}</h2>
 
@@ -37,7 +37,7 @@
         </div>
       </section>
 
-      <section v-if="me" class="settings-section">
+      <section class="settings-section">
         <h2 class="settings-section__title">{{ t("settings.account.title") }}</h2>
 
         <AccountSettings :current-email="me.email" />
@@ -74,7 +74,7 @@
             }}</span>
           </div>
 
-          <div v-if="me && pushState === 'on'" class="settings-row">
+          <div v-if="pushState === 'on'" class="settings-row">
             <div class="settings-row__info">
               <Clock class="settings-row__icon" />
               <div>
