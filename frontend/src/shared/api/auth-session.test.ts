@@ -1,22 +1,27 @@
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 
-import type { initAuthSession as initAuthSessionType } from "./auth-session";
+import type {
+  initAuthSession as initAuthSessionType,
+  markPendingLogout as markPendingLogoutType,
+} from "./auth-session";
 
 const { GET, POST } = vi.hoisted(() => ({ GET: vi.fn(), POST: vi.fn() }));
 
 vi.mock("./client", () => ({ authApiClient: { GET, POST } }));
 
 type InitAuthSession = typeof initAuthSessionType;
+type MarkPendingLogout = typeof markPendingLogoutType;
 
 // `isolate: false` shares the module cache across spec files, so a spec that ran
 // earlier may already have loaded `./auth-session` against the real client, and a
 // static import here would reuse it and bypass the mock above. Evaluate it fresh,
 // and drop it afterwards so later specs don't inherit the mocked client.
 let initAuthSession: InitAuthSession;
+let markPendingLogout: MarkPendingLogout;
 
 beforeAll(async () => {
   vi.resetModules();
-  ({ initAuthSession } = await import("./auth-session"));
+  ({ initAuthSession, markPendingLogout } = await import("./auth-session"));
 });
 
 afterAll(() => {
@@ -59,5 +64,32 @@ describe("initAuthSession", () => {
     POST.mockResolvedValue(respond(200));
 
     expect(await initAuthSession()).toEqual({ isAuthenticated: true, isEmailVerified: false });
+  });
+});
+
+describe("pending logout", () => {
+  beforeEach(() => {
+    GET.mockReset();
+    POST.mockReset();
+    localStorage.clear();
+  });
+
+  it("stays logged out while the server can't be reached", async () => {
+    markPendingLogout();
+    POST.mockRejectedValue(new TypeError("Failed to fetch"));
+
+    expect((await initAuthSession()).isAuthenticated).toBe(false);
+    expect(GET).not.toHaveBeenCalled();
+    expect(localStorage.getItem("strumok:pending-logout")).not.toBeNull();
+  });
+
+  it("finishes the logout on the server, then forgets it", async () => {
+    markPendingLogout();
+    POST.mockResolvedValue(respond(200));
+    GET.mockResolvedValue(respond(401));
+
+    expect((await initAuthSession()).isAuthenticated).toBe(false);
+    expect(POST).toHaveBeenCalledWith("/auth/logout");
+    expect(localStorage.getItem("strumok:pending-logout")).toBeNull();
   });
 });

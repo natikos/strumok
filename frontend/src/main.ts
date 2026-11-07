@@ -7,6 +7,7 @@ import { createRouter, createWebHistory, type RouteRecordRaw } from "vue-router"
 
 import { i18n } from "@features/i18n";
 import {
+  flushPendingLogout,
   getAuthSessionState,
   initAuthSession,
   setAuthSessionState,
@@ -73,6 +74,10 @@ export const router = createRouter({
 });
 
 const authReady = initAuthSession();
+
+window.addEventListener("online", () => {
+  void flushPendingLogout();
+});
 
 // A failed login also 401s with a rejected refresh; only a signed-in session
 // is cleared and sent to login.
