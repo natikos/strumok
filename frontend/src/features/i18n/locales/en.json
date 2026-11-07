@@ -611,6 +611,7 @@
     "switchToDarkTheme": "Switch to dark theme"
   },
   "meterReadings": {
+    "fixHint": "Made a mistake? A sent reading can't be changed here: ask the administrator to correct it.",
     "loadError": "Couldn't load your readings",
     "day": "Day",
     "night": "Night",

@@ -13,6 +13,8 @@
       </div>
     </div>
 
+    <p class="submitted-values__fix">{{ t("meterReadings.fixHint") }}</p>
+
     <p v-if="chargedThisPeriod" class="submitted-values__charge">
       <Receipt aria-hidden="true" />
       {{ t("dashboard.chargedThisPeriod") }}
@@ -121,6 +123,13 @@
     &__usage {
       font-size: 0.75rem;
       color: color-mix(in srgb, var(--s-content-color), transparent 45%);
+    }
+
+    &__fix {
+      margin: var(--s-app-space-3) 0 0;
+      font-size: 0.85rem;
+      color: var(--s-content-secondary-color);
+      overflow-wrap: anywhere;
     }
 
     &__charge {

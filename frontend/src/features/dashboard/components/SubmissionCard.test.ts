@@ -160,6 +160,18 @@ describe("SubmissionCard", () => {
       expect(wrapper.text()).toContain("56");
     });
 
+    it("tells the resident how to get a wrong value corrected", () => {
+      vi.setSystemTime(new Date(2026, 5, 20));
+      const wrapper = mountCard({
+        status: "submitted",
+        submittedAt: new Date(2026, 5, 3, 9, 0).toISOString(),
+        submittedDayValue: 1234,
+        submittedNightValue: 56,
+      });
+
+      expect(wrapper.find(".submitted-values__fix").text()).toContain("ask the administrator");
+    });
+
     it("shows the submitted headline and reading-submitted icon", () => {
       vi.setSystemTime(new Date(2026, 5, 20));
       const wrapper = mountCard({
