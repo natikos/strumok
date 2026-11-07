@@ -386,7 +386,7 @@
     "resetSubmit": "Save password",
     "resetExpired": "This link is invalid or has expired, or was already used.",
     "requestNewLink": "Request a new link",
-    "resetDone": "Password changed. Sign in with your new password.",
+    "resetDone": "Password changed. You are now signed in.",
     "inviteNote": "Strumok is for co-op members. Ask the head for an invite.",
     "setTitle": "Set your password",
     "setSubtitle": "From your invite",

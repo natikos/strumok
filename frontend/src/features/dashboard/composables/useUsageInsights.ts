@@ -303,30 +303,27 @@ export function useUsageInsights(slots: Ref<MeterPeriod[]>) {
     );
   }
 
-  /** Sums whatever readings exist for a season occurrence anchored on `seasonYear`. */
-  function sumSeason(
-    season: Season,
-    seasonYear: number
-  ): { totalKwh: number; periodCount: number } {
-    let totalKwh = 0;
-    let periodCount = 0;
+  /** Per-month usage for a season occurrence anchored on `seasonYear`, keyed by month index. */
+  function seasonUsage(season: Season, seasonYear: number): Map<number, number> {
+    const byMonth = new Map<number, number>();
 
     for (const { monthIndex, yearOffset } of seasonMonths(season)) {
       const period = `${seasonYear + yearOffset}-${String(monthIndex + 1).padStart(2, "0")}`;
       const slot = slots.value.find((s) => s.period === period);
       const usage = slot ? toUsage(slot) : null;
       if (usage) {
-        totalKwh += usage.totalKwh;
-        periodCount += 1;
+        byMonth.set(monthIndex, usage.totalKwh);
       }
     }
 
-    return { totalKwh, periodCount };
+    return byMonth;
   }
 
   /**
    * How this season so far compares to the same season one year earlier —
-   * e.g. this autumn vs. last autumn — anchored on today's actual season
+   * e.g. this autumn vs. last autumn. Only months with a reading in both years
+   * are summed, so an unfinished season is not compared against a full one
+   * (which would show a large fake "reduction"). Anchored on today's actual season
    * rather than the last submitted period, so a resident behind on
    * submissions sees "no autumn reading yet" instead of a stale month
    * dressed up as current (#78).
@@ -341,24 +338,33 @@ export function useUsageInsights(slots: Ref<MeterPeriod[]>) {
         ? now.getFullYear() + 1
         : now.getFullYear();
 
-    const current = sumSeason(currentSeason, seasonYear);
-    if (current.periodCount === 0) {
-      return null;
+    const currentUsage = seasonUsage(currentSeason, seasonYear);
+    const previousUsage = seasonUsage(currentSeason, seasonYear - 1);
+
+    let currentKwh = 0;
+    let previousKwh = 0;
+    let periodCount = 0;
+    for (const [monthIndex, kwh] of currentUsage) {
+      const previous = previousUsage.get(monthIndex);
+      if (previous !== undefined) {
+        currentKwh += kwh;
+        previousKwh += previous;
+        periodCount += 1;
+      }
     }
 
-    const previous = sumSeason(currentSeason, seasonYear - 1);
-    if (previous.periodCount === 0) {
+    if (periodCount === 0) {
       return null;
     }
 
     return {
       season: currentSeason,
-      currentKwh: current.totalKwh,
-      currentPeriodCount: current.periodCount,
-      previousYearKwh: previous.totalKwh,
-      previousPeriodCount: previous.periodCount,
-      deltaPercent: percentChange(previous.totalKwh, current.totalKwh),
-      direction: directionOf(current.totalKwh - previous.totalKwh),
+      currentKwh,
+      currentPeriodCount: periodCount,
+      previousYearKwh: previousKwh,
+      previousPeriodCount: periodCount,
+      deltaPercent: percentChange(previousKwh, currentKwh),
+      direction: directionOf(currentKwh - previousKwh),
     };
   });
 

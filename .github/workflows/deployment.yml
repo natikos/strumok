@@ -73,7 +73,7 @@ jobs:
         if: ${{ !inputs.rollback }}
         working-directory: backend
         env:
-          PROD_DATABASE_URL: ${{ secrets.PROD_DATABASE_URL_READONLY }}
+          PROD_DATABASE_URL: ${{ secrets.PROD_DATABASE_URL }}
           # Migration files import app settings; these are never connected to.
           DATABASE_URL: postgresql+psycopg://unused@localhost/unused
           ENVIRONMENT: development
@@ -83,7 +83,7 @@ jobs:
           PUSH_VAPID_SUBJECT: mailto:ci@example.com
         run: |
           if [ -z "$PROD_DATABASE_URL" ]; then
-            echo "::error::Missing secret PROD_DATABASE_URL_READONLY"
+            echo "::error::Missing secret PROD_DATABASE_URL"
             exit 1
           fi
           uv sync
@@ -116,7 +116,7 @@ jobs:
       - name: Apply migrations
         working-directory: backend
         env:
-          DATABASE_URL: ${{ secrets.PROD_DATABASE_URL_MIGRATE }}
+          DATABASE_URL: ${{ secrets.PROD_DATABASE_URL }}
           ENVIRONMENT: production
           AUTH_SECRET_KEY: migrate-only
           PUSH_VAPID_PUBLIC_KEY: migrate-only
@@ -124,7 +124,7 @@ jobs:
           PUSH_VAPID_SUBJECT: mailto:ci@example.com
         run: |
           if [ -z "$DATABASE_URL" ]; then
-            echo "::error::Missing secret PROD_DATABASE_URL_MIGRATE"
+            echo "::error::Missing secret PROD_DATABASE_URL"
             exit 1
           fi
           uv sync
@@ -133,7 +133,7 @@ jobs:
       - name: Verify production is at head
         working-directory: backend
         env:
-          PROD_DATABASE_URL: ${{ secrets.PROD_DATABASE_URL_READONLY }}
+          PROD_DATABASE_URL: ${{ secrets.PROD_DATABASE_URL }}
           DATABASE_URL: postgresql+psycopg://unused@localhost/unused
           ENVIRONMENT: development
           AUTH_SECRET_KEY: preflight-only

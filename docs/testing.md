@@ -138,7 +138,16 @@ plugin or the PrimeVue auto-import resolver. **Because the resolver is absent,
 PrimeVue components are not registered globally in tests** — register the ones a
 component needs via `global.components`, or stub them.
 
-`vitest.setup.ts` restores timers and mocks and clears storage after each test.
+`vitest.setup.ts` restores timers and mocks and clears storage after each test, and
+pins `Date` to 2026-07-15 (outside the day 1-5 submit window) before each one. A spec
+that cares about a particular day calls `vi.setSystemTime` itself. Spec files run
+isolated (`isolate: true`), so module singletons don't leak between files.
+
+Keep specs order-independent: set every shared mock's defaults in a `beforeEach`
+(`mockReset().mockResolvedValue(...)`) rather than relying on an earlier test. To
+check, run `bunx vitest run --sequence.shuffle --sequence.seed=N` under a few seeds
+and `TZ=America/Los_Angeles` / `TZ=Pacific/Auckland`; date decisions must follow
+Kyiv time (`KYIV_TZ`), never the device's zone.
 
 `src/shared/testing/mount.ts` provides `mountWithPlugins` (i18n + PrimeVue
 configured as the app configures them) and `appPlugins()` for specs that want to

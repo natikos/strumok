@@ -274,6 +274,7 @@
 </template>
 
 <script setup lang="ts">
+  import { TZDate } from "@date-fns/tz";
   import {
     ArrowRight,
     CheckCircle,
@@ -308,7 +309,7 @@
     currentBillingPeriod as getCurrentBillingPeriod,
     periodToDate,
   } from "@shared/utils/billing-period";
-  import { DEADLINE_DAY } from "@shared/utils/deadline";
+  import { DEADLINE_DAY, KYIV_TZ } from "@shared/utils/deadline";
   import {
     formatKwh as formatKwhShared,
     formatKyivDate,
@@ -457,11 +458,11 @@
       // days 1-5 of August. Submitted outside that window (before the period
       // even closed, or long after) still counts as late — there's no month
       // it could have landed in on time.
-      const submittedAt = new Date(reading.submitted_at);
-      const dueMonth = addMonths(periodToDate(reading.period), 1);
+      // Judged in Kyiv time like the rest of the window, not the device's zone.
+      const submittedAt = new TZDate(reading.submitted_at, KYIV_TZ);
       const onTime =
-        submittedAt.getFullYear() === dueMonth.getFullYear() &&
-        submittedAt.getMonth() === dueMonth.getMonth() &&
+        format(submittedAt, "yyyy-MM") ===
+          format(addMonths(periodToDate(reading.period), 1), "yyyy-MM") &&
         submittedAt.getDate() <= DEADLINE_DAY;
 
       return { period: reading.period, state: onTime ? "on-time" : "late" };

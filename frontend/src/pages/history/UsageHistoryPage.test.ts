@@ -47,6 +47,15 @@ function makeReading(overrides: Partial<MeterReadingOut> = {}): MeterReadingOut 
   };
 }
 
+// Every test starts from the same mock defaults, so no describe depends on state
+// left behind by one that ran before it.
+beforeEach(() => {
+  listMyMeterReadings.mockReset().mockResolvedValue([]);
+  listStatements.mockReset().mockResolvedValue([]);
+  useCurrentHousehold().setHouseholds([]);
+  useCurrentHousehold().setPastOnly(false);
+});
+
 /**
  * Mount the page the way the router actually does, stubbing the `Button`
  * component's `as="router-link"` usage since there's no real router in this
