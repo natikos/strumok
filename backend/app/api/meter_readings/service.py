@@ -154,7 +154,7 @@ def _review_reason(
     ):
         # A 0/0 baseline is what a household gets when created without
         # starting values; on an existing meter the first reading would bill
-        # its whole lifetime, so the head checks it before close.
+        # its whole lifetime, so the administrator checks it before close.
         return "zeroBaseline"
 
     usages = []

@@ -50,7 +50,7 @@ describe("BankCoverageNotice", () => {
     expect(wrapper.classes()).toContain("bank-coverage--awaiting");
   });
 
-  it("shows the last import time for the head", async () => {
+  it("shows the last import time for the administrator", async () => {
     getBankCoverage.mockResolvedValue({
       covered_through: "2026-05-17",
       awaiting_statement: false,

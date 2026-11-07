@@ -176,7 +176,7 @@ def clear_auth_cookie(response: Response) -> None:
     status_code=status.HTTP_403_FORBIDDEN,
     responses={
         status.HTTP_403_FORBIDDEN: {
-            "description": "Self-registration is closed; the head invites residents",
+            "description": "Self-registration is closed; the administrator invites residents",
             "model": ErrorOut,
             "content": {
                 "application/json": {"example": {"detail": "registrationClosed"}}

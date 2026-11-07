@@ -20,7 +20,7 @@ Contents: [Core concepts](#core-concepts) · [Submission window](#submission-win
   in localStorage.
 - Each month a resident submits one `MeterReading` per household for the prior
   period: cumulative day/night meter values, from which usage is derived.
-- The head uses readings across all households to reconcile the one shared
+- The administrator uses readings across all households to reconcile the one shared
   utility bill.
 - A reading carries only meter values (plus `source`). Usage is derived
   (`derive_reading_usage`); charges live in `household_charges`.
@@ -123,7 +123,7 @@ through `app.core.ownership.set_owner`**.
   (`POST /admin/households/{id}/opening-balance/corrections`), billed to the
   opening balance's owner.
 - **Payment details:** the co-op's IBAN, recipient and optional 8-digit EDRPOU
-  (`payment_details`, one row) are set by the head via `PUT /admin/payment-details`
+  (`payment_details`, one row) are set by the administrator via `PUT /admin/payment-details`
   (audited, UA IBAN checksum validated) and read by residents at
   `GET /billing/payment-details`. The dashboard's Pay sheet shows them with copy
   buttons next to the current plot's balance.

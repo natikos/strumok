@@ -323,7 +323,7 @@ describe("UsageHistoryPage load error handling", () => {
     expect(wrapper.text()).toContain("10");
   });
 
-  it("shows the head's correction note on a corrected or entered reading", async () => {
+  it("shows the administrator's correction note on a corrected or entered reading", async () => {
     listMyMeterReadings.mockResolvedValue([
       makeReading({
         corrected_at: "2026-07-05T09:00:00.000Z",
@@ -333,7 +333,7 @@ describe("UsageHistoryPage load error handling", () => {
 
     const wrapper = await mountPage();
 
-    expect(wrapper.text()).toContain("Corrected by the head on 2026-07-05: typo in the day value");
+    expect(wrapper.text()).toContain("Corrected by the administrator on 2026-07-05: typo in the day value");
   });
 
   it("notes a period in which the meter was replaced", async () => {

@@ -21,7 +21,7 @@ messenger-and-spreadsheet electricity billing.
 - **The resident** — opens the app roughly once a month, on a phone, possibly
   outdoors next to the meter, holding a torch. They need to answer "what do I
   type, did it save, am I late, what do I owe?" with no learning curve.
-- **The cooperative head** — reviews everyone's readings and balances, needs to
+- **The administrator** — reviews everyone's readings and balances, needs to
   spot the missing and the anomalous quickly.
 
 **Mobile viewport first, 360px is the floor.** Design the small screen, then

@@ -212,7 +212,7 @@ describe("BalanceStrip", () => {
       expect(wrapper.find(".balance-strip__pay").exists()).toBe(false);
     });
 
-    it("hides Pay when the head has not set payment details", async () => {
+    it("hides Pay when the administrator has not set payment details", async () => {
       getBalance.mockResolvedValue(balance({ balance_uah: "250.00" }));
       const wrapper = mountStrip();
       await flushPromises();

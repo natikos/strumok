@@ -10,7 +10,7 @@ export interface EstimateSummary {
 }
 
 /**
- * Whether the head has closed the period residents are submitting for, and, if
+ * Whether the administrator has closed the period residents are submitting for, and, if
  * the household didn't submit, what it was estimated at. A closed period must
  * never look like an open form, and an estimate must never look like a
  * submission.

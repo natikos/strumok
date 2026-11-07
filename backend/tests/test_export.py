@@ -1,4 +1,4 @@
-"""CSV export for the head."""
+"""CSV export for the administrator."""
 
 import csv
 import io

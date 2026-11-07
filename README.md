@@ -8,7 +8,7 @@ In our neighborhood cooperative, all households are covered by one shared electr
 Today, the process is mostly manual:
 
 - Residents send meter readings in a messenger chat
-- The cooperative head manually collects and verifies readings
+- The administrator manually collects and verifies readings
 - Payment amounts are calculated manually per household
 - Final totals and balances are tracked in spreadsheets/messages
 

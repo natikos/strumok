@@ -495,7 +495,7 @@ def confirm_email_change(*, session: Session, token: str) -> User:
                 first_name=user.first_name,
                 message=(
                     f"The email on your Strumok account was changed to {new_email}. "
-                    "If this wasn't you, contact the co-op head."
+                    "If this wasn't you, contact the administrator."
                 ),
             ),
         )
@@ -598,12 +598,12 @@ INVITE_TTL = timedelta(days=7)
 _INVITE_EMAIL = {
     "en": (
         "You're invited to Strumok",
-        "The co-op head created an account for you. Set a password to start submitting meter readings. The link works once and expires in 7 days.",
+        "The administrator created an account for you. Set a password to start submitting meter readings. The link works once and expires in 7 days.",
         "Set password",
     ),
     "ua": (
         "Запрошення до Струмок",
-        "Голова кооперативу створив для вас обліковий запис. Встановіть пароль, щоб подавати показники лічильника. Посилання діє один раз і спливає за 7 днів.",
+        "Адміністратор створив для вас обліковий запис. Встановіть пароль, щоб подавати показники лічильника. Посилання діє один раз і спливає за 7 днів.",
         "Встановити пароль",
     ),
 }
@@ -616,7 +616,7 @@ def build_invite_link(user: User) -> str:
 
 def send_invite_email(*, user: User, link: str) -> bool:
     """Returns whether the email went out; the link is still valid either way
-    and the head can pass it on by hand."""
+    and the administrator can pass it on by hand."""
     subject, message, button = _INVITE_EMAIL.get(
         str(getattr(user.language, "value", user.language)), _INVITE_EMAIL["en"]
     )

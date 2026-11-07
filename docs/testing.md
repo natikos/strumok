@@ -51,7 +51,7 @@ docker compose down -v && docker compose up -d
 ## Strategy
 
 Integration-first on the backend, unit tests for frontend logic, and a small
-Playwright suite for the journeys a resident or the head walks through end to end.
+Playwright suite for the journeys a resident or the administrator walks through end to end.
 
 The backend services are thin wrappers around SQL — `get_owned_household_id` is one
 `select` with two `where`s, and `PeriodAlreadySubmittedError` exists only because

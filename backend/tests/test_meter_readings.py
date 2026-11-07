@@ -1,7 +1,7 @@
 """Coverage for the meter-readings service and route layer (issue #18).
 
 Household scoping, first-reading usage defaults, duplicate-period conflicts, and
-period ordering are the behaviors a resident or the head would actually notice
+period ordering are the behaviors a resident or the administrator would actually notice
 going wrong, so they're covered at both the service layer (direct DB behavior)
 and the route layer (HTTP status + stable error codes).
 """
@@ -353,7 +353,7 @@ class TestSubmitMeterReading:
     ) -> None:
         # The autouse fixture seeds a rate covering every period; remove it so
         # the household genuinely has none configured, matching a fresh
-        # cooperative before the head has ever set a rate.
+        # cooperative before the administrator has ever set a rate.
         for rate in session.exec(select(ElectricityRate)).all():
             session.delete(rate)
         session.flush()
@@ -375,7 +375,7 @@ class TestSubmitMeterReading:
         self, session: Session
     ) -> None:
         # A rate exists, but it only takes effect after the period being
-        # submitted -- e.g. the head configured next month's rate but the
+        # submitted -- e.g. the administrator configured next month's rate but the
         # cooperative never had one for the period in question.
         for rate in session.exec(select(ElectricityRate)).all():
             session.delete(rate)

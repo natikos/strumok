@@ -34,7 +34,7 @@ def next_period(period: str) -> str:
 def period_window_closed(period: str, now: datetime | None = None) -> bool:
     """Whether the submission window for `period` is over: it runs through day
     SUBMISSION_DEADLINE_DAY of the following month, Kyiv time. Only then may
-    the head close the period."""
+    the administrator close the period."""
     reference = (now if now is not None else kyiv_now()).astimezone(KYIV_TZ)
     year, month = (int(part) for part in next_period(period).split("-"))
     first_day_after_window = datetime(
@@ -286,7 +286,7 @@ def detect_review_reason(
     day_meter_value: Decimal,
     night_meter_value: Decimal,
 ) -> str | None:
-    """Why a freshly submitted reading deserves the head's eye, or None.
+    """Why a freshly submitted reading deserves the administrator's eye, or None.
 
     `previous` is the household's last real (non-estimate) reading; the recent
     usages are its last up-to-3 real usages. A decrease might be a typo or a

@@ -52,7 +52,7 @@ class PeriodHasUnreviewedReadingsError(Exception):
 
 
 class PeriodClosedError(Exception):
-    """A resident tried to submit for a period the head has closed."""
+    """A resident tried to submit for a period the administrator has closed."""
 
 
 def ensure_period(*, session: Session, period: str) -> None:
