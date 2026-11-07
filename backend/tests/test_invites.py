@@ -47,6 +47,28 @@ class TestInvite:
         assert {"userInvited", "householdOwnerAssigned"} <= actions
 
     @patch("app.api.auth.service.send_email")
+    def test_invited_resident_is_the_only_owner_of_an_unowned_new_plot(
+        self, mock_send_email, client, session: Session
+    ) -> None:
+        from app.db.models import HouseholdOwnership
+
+        authenticate(client, make_user(session, is_admin=True))
+        created = client.post("/admin/households", json={"name": "Fresh"}).json()
+
+        response = client.post(
+            "/admin/users", json={**INVITE, "household_id": created["id"]}
+        )
+
+        assert response.status_code == 201, response.text
+        rows = session.exec(
+            select(HouseholdOwnership).where(
+                HouseholdOwnership.household_id == created["id"]
+            )
+        ).all()
+        assert [r.user_id for r in rows] == [response.json()["user"]["id"]]
+        assert rows[0].valid_to is None
+
+    @patch("app.api.auth.service.send_email")
     def test_invite_link_works_once_verifies_email_and_signs_in(
         self, mock_send_email, client, session: Session
     ) -> None:

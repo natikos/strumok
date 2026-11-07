@@ -93,6 +93,9 @@ Ownership is history: `household_ownerships` (`valid_from`/`valid_to`, one open 
 per household). `households.user_id` mirrors the open row, so **change owners only
 through `app.core.ownership.set_owner`**.
 
+- A plot can be created with no owner (`POST /admin/households` without `user_id`): no
+  ownership row is written, so a resident invited onto it later is its only owner, with
+  no previous owner shown. Create it that way rather than under the administrator.
 - A charge's billed owner is whoever held the plot at the period's end (Kyiv).
 - **Reassigning** (`PATCH /admin/households/{id}/owner`, including giving an
   unowned plot to someone other than its last owner) needs a handover meter
