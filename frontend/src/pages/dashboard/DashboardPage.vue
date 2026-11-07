@@ -141,6 +141,7 @@
     readings,
     loadHistory,
     handleSubmit,
+    clearDraft,
     lastSubmittedPeriod,
     momChange,
     daysIntoPeriod,
@@ -237,6 +238,14 @@
 
   watch(currentId, () => {
     void loadHistory().then(periodState.load);
+  });
+
+  // A closed period can't take the reading any more, so keeping it would only
+  // offer to send something that will be refused.
+  watch(periodState.isClosed, (closed) => {
+    if (closed) {
+      clearDraft();
+    }
   });
 </script>
 

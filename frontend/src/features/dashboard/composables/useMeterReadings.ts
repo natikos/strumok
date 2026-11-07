@@ -1,8 +1,13 @@
 import { capitalize } from "@utils/string";
 import { format, subMonths } from "date-fns";
-import { computed, ref, watch } from "vue";
+import { computed, nextTick, ref, watch } from "vue";
 import { z } from "zod";
 
+import {
+  clearReadingDraft,
+  loadReadingDraft,
+  saveReadingDraft,
+} from "@/features/dashboard/composables/useReadingDraft";
 import { useUsageInsights } from "@/features/dashboard/composables/useUsageInsights";
 import type { FieldErrors } from "@/features/dashboard/types";
 import { useCurrentHousehold } from "@/features/households/useCurrentHousehold";
@@ -202,6 +207,29 @@ export function useMeterReadings() {
     warningAcknowledged.value = false;
   });
 
+  // Restoring assigns the refs, which the save watcher below would write straight
+  // back; the same values are harmless, and a switch of household reloads them.
+  function restoreDraft(): void {
+    const draft =
+      currentId.value === null ? null : loadReadingDraft(currentId.value, currentBillingPeriod);
+    dayMeterValue.value = draft?.day ?? null;
+    nightMeterValue.value = draft?.night ?? null;
+  }
+
+  function clearDraft(): void {
+    if (currentId.value !== null) {
+      clearReadingDraft(currentId.value);
+    }
+  }
+
+  let isRestoring = false;
+  watch([dayMeterValue, nightMeterValue], ([day, night]) => {
+    if (isRestoring || currentId.value === null) {
+      return;
+    }
+    saveReadingDraft(currentId.value, { period: currentBillingPeriod, day, night });
+  });
+
   async function handleSubmit(): Promise<void> {
     errors.value = {};
 
@@ -253,6 +281,7 @@ export function useMeterReadings() {
         ? existing.map((reading) => (reading.period === created.period ? created : reading))
         : [created, ...existing];
 
+      clearDraft();
       dayMeterValue.value = null;
       nightMeterValue.value = null;
       warningAcknowledged.value = false;
@@ -278,8 +307,15 @@ export function useMeterReadings() {
   }
 
   watch(currentId, () => {
+    isRestoring = true;
+    restoreDraft();
+    void nextTick(() => {
+      isRestoring = false;
+    });
     void loadAll();
   });
+
+  restoreDraft();
 
   return {
     isLoading,
@@ -304,6 +340,7 @@ export function useMeterReadings() {
     readings,
     loadHistory: loadAll,
     handleSubmit,
+    clearDraft,
     ...insights,
   };
 }
