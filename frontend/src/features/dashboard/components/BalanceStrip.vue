@@ -57,6 +57,7 @@
     type BalanceOut,
     getBalance,
     getPaymentDetails,
+    listStatements,
     type PaymentDetailsOut,
   } from "@shared/api/billing";
   import { formatUah, toDecimal } from "@shared/utils/format";
@@ -74,6 +75,9 @@
 
   const balance = ref<BalanceOut | null>(null);
   const paymentDetails = ref<PaymentDetailsOut | null>(null);
+  // This month's running estimate: payable once the reading is in, ahead of the
+  // close. Payments settle the oldest months first, so any excess is a credit.
+  const provisional = ref(0);
   const isPayOpen = ref(false);
   const isLoading = ref(true);
   const error = ref<string | null>(null);
@@ -92,7 +96,7 @@
   const owingPast = computed(() => past.value.filter((p) => toDecimal(p.balance.balance_uah) > 0));
   const ownBalance = computed(() =>
     hasCurrent.value
-      ? toDecimal(balance.value?.balance_uah)
+      ? Math.max(toDecimal(balance.value?.balance_uah), 0) + provisional.value
       : owingPast.value.reduce((sum, p) => sum + toDecimal(p.balance.balance_uah), 0)
   );
   const payable = computed(() => ownBalance.value > 0 && paymentDetails.value !== null);
@@ -125,10 +129,14 @@
     error.value = null;
 
     try {
-      [balance.value] = await Promise.all([
+      const [loaded, lines] = await Promise.all([
         hasCurrent.value ? getBalance(currentId.value) : null,
+        hasCurrent.value ? listStatements(currentId.value).catch(() => []) : [],
         loadTenures(),
       ]);
+      balance.value = loaded;
+      const open = lines.find((line) => line.status === "provisional");
+      provisional.value = open ? toDecimal(open.total_uah) : 0;
       // Paying is optional: if the details can't load, just hide the action.
       paymentDetails.value = await getPaymentDetails().catch(() => null);
     } catch {

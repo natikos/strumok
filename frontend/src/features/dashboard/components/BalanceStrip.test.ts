@@ -6,10 +6,11 @@ import { deferred, expectLoaded, expectLoading } from "@/shared/testing/loading"
 import { appPlugins } from "@/shared/testing/mount";
 import type { Component } from "vue";
 
-const { getBalance, getPaymentDetails, listMyStatements } = vi.hoisted(() => ({
+const { getBalance, getPaymentDetails, listMyStatements, listStatements } = vi.hoisted(() => ({
   getBalance: vi.fn(),
   getPaymentDetails: vi.fn(),
   listMyStatements: vi.fn(),
+  listStatements: vi.fn(),
 }));
 
 // The suite runs with isolate: false, so mock the API late (see AuditLogPanel.test).
@@ -19,7 +20,7 @@ let setPastOnly: (value: boolean) => void;
 
 beforeAll(async () => {
   vi.resetModules();
-  vi.doMock("@shared/api/billing", () => ({ getBalance, getPaymentDetails, listMyStatements }));
+  vi.doMock("@shared/api/billing", () => ({ getBalance, getPaymentDetails, listMyStatements, listStatements }));
   BalanceStrip = (await import("./BalanceStrip.vue")).default;
   // Same module instance as the component imports after the reset.
   const household = await import("@/features/households/useCurrentHousehold");
@@ -56,6 +57,7 @@ describe("BalanceStrip", () => {
     getBalance.mockReset();
     getPaymentDetails.mockReset().mockResolvedValue(null);
     listMyStatements.mockReset().mockResolvedValue([]);
+    listStatements.mockReset().mockResolvedValue([]);
     setHouseholds([{ id: 1, name: "Plot 1" }]);
     setPastOnly(false);
   });
@@ -203,6 +205,27 @@ describe("BalanceStrip", () => {
         edrpou: "12345678",
         comment: "Electricity STR-1",
       });
+    });
+
+    it("offers Pay for the open month's estimate once the reading is in", async () => {
+      getBalance.mockResolvedValue(balance({ balance_uah: "100.00" }));
+      listStatements.mockResolvedValue([{ status: "provisional", total_uah: "150.25" }]);
+      getPaymentDetails.mockResolvedValue(details);
+      const wrapper = mountStrip();
+      await flushPromises();
+
+      expect(wrapper.findComponent({ name: "PaySheet" }).props("amount")).toBe("250.25");
+    });
+
+    it("offers Pay with only the estimate when nothing is closed yet", async () => {
+      getBalance.mockResolvedValue(balance());
+      listStatements.mockResolvedValue([{ status: "provisional", total_uah: "80.00" }]);
+      getPaymentDetails.mockResolvedValue(details);
+      const wrapper = mountStrip();
+      await flushPromises();
+
+      expect(wrapper.find(".balance-strip__pay").exists()).toBe(true);
+      expect(wrapper.findComponent({ name: "PaySheet" }).props("amount")).toBe("80.00");
     });
 
     it("references only the current plot when the user holds several", async () => {

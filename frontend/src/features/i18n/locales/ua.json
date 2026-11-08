@@ -451,6 +451,8 @@
     "payEdrpou": "ЄДРПОУ",
     "payPurposeLabel": "Електроенергія",
     "payComment": "Призначення",
+    "payOpenBank": "Відкрити в банку",
+    "payCopyLink": "Копіювати посилання на оплату",
     "payCopy": "Копіювати",
     "payCopied": "Скопійовано",
     "payCopyFailed": "Не вдалося скопіювати — виділіть текст вручну"

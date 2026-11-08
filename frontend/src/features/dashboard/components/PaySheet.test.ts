@@ -2,6 +2,7 @@ import { flushPromises, mount } from "@vue/test-utils";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { appPlugins } from "@/shared/testing/mount";
+import { bankPaymentLink } from "@shared/utils/bankLink";
 
 import PaySheet from "./PaySheet.vue";
 
@@ -41,7 +42,7 @@ describe("PaySheet", () => {
 
     expect(wrapper.text()).toContain("12345678");
     const index = wrapper.findAll("dt").findIndex((dt) => dt.text() === "EDRPOU");
-    await wrapper.findAll("button")[index]!.trigger("click");
+    await wrapper.findAll(".pay-sheet__row button")[index]!.trigger("click");
     await flushPromises();
 
     expect(writeText).toHaveBeenCalledWith("12345678");
@@ -58,7 +59,7 @@ describe("PaySheet", () => {
     vi.stubGlobal("navigator", { clipboard: { writeText } });
     const wrapper = mountSheet();
 
-    await wrapper.findAll("button")[1]!.trigger("click");
+    await wrapper.findAll(".pay-sheet__row button")[1]!.trigger("click");
     await flushPromises();
 
     expect(writeText).toHaveBeenCalledWith(props.iban);
@@ -68,9 +69,37 @@ describe("PaySheet", () => {
     vi.stubGlobal("navigator", {});
     const wrapper = mountSheet();
 
-    await wrapper.findAll("button")[0]!.trigger("click");
+    await wrapper.findAll(".pay-sheet__row button")[0]!.trigger("click");
     await flushPromises();
 
     expect(wrapper.find('[role="alert"]').exists()).toBe(true);
+  });
+});
+
+describe("PaySheet bank link", () => {
+  afterEach(() => vi.unstubAllGlobals());
+
+  it("links to the prefilled bank payment", () => {
+    const href = mountSheet().find("a.pay-sheet__bank").attributes("href");
+
+    expect(href).toBe(
+      bankPaymentLink({
+        recipient: props.recipient,
+        iban: props.iban,
+        amount: props.amount,
+        purpose: props.comment,
+      })
+    );
+  });
+
+  it("copies the bank link", async () => {
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    vi.stubGlobal("navigator", { clipboard: { writeText } });
+    const wrapper = mountSheet();
+
+    await wrapper.find(".pay-sheet__link").trigger("click");
+    await flushPromises();
+
+    expect(writeText).toHaveBeenCalledWith(expect.stringContaining("https://bank.gov.ua/qr/"));
   });
 });

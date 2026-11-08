@@ -7,6 +7,17 @@
   >
     <p class="pay-sheet__hint">{{ t("balance.payHint") }}</p>
 
+    <a class="pay-sheet__bank p-button" :href="bankLink" target="_blank" rel="noopener">
+      {{ t("balance.payOpenBank") }}
+    </a>
+    <Button
+      type="button"
+      severity="secondary"
+      class="pay-sheet__link"
+      :label="copied === 'link' ? t('balance.payCopied') : t('balance.payCopyLink')"
+      @click="copy('link', bankLink)"
+    />
+
     <dl class="pay-sheet__fields">
       <div v-for="field in fields" :key="field.key" class="pay-sheet__field">
         <dt class="pay-sheet__label">{{ field.label }}</dt>
@@ -34,6 +45,8 @@
   import { computed, ref } from "vue";
   import { useI18n } from "vue-i18n";
 
+  import { bankPaymentLink } from "@shared/utils/bankLink";
+
   const props = defineProps<{
     amount: string;
     iban: string;
@@ -45,6 +58,16 @@
   const visible = defineModel<boolean>("visible", { required: true });
 
   const { t } = useI18n();
+
+  const bankLink = computed(() =>
+    bankPaymentLink({
+      recipient: props.recipient,
+      iban: props.iban,
+      edrpou: props.edrpou,
+      amount: props.amount,
+      purpose: props.comment,
+    })
+  );
 
   const copied = ref<string | null>(null);
   const copyFailed = ref(false);
@@ -78,6 +101,15 @@
   .pay-sheet {
     &__hint {
       margin: 0 0 var(--s-app-space-4);
+    }
+
+    &__bank,
+    &__link {
+      justify-content: center;
+      margin-bottom: var(--s-app-space-3);
+      min-height: 44px;
+      text-decoration: none;
+      width: 100%;
     }
 
     &__fields {
