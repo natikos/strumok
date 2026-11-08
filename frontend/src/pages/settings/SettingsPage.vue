@@ -137,9 +137,14 @@
     language?: LanguageCode;
     theme?: ThemeMode;
   }): Promise<void> {
-    const updated = await updateMyPreferences(payload);
-    setLocale(updated.language);
-    setTheme(updated.theme);
+    try {
+      await updateMyPreferences(payload);
+    } catch (error) {
+      // The toggle already applied the new value locally; undo it if the save failed.
+      if (payload.language) setLocale(payload.language === "ua" ? "en" : "ua");
+      if (payload.theme) setTheme(payload.theme === "dark" ? "light" : "dark");
+      throw error;
+    }
   }
 
   const reminderHourOptions = Array.from({ length: 24 }, (_, hour) => ({
