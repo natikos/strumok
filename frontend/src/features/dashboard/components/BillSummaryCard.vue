@@ -1,16 +1,8 @@
 <template>
-  <section v-if="isLoading" class="bill-summary" aria-busy="true">
-    <Skeleton height="1.8rem" width="45%" />
-    <Skeleton height="1rem" width="65%" />
-  </section>
+  <section class="bill-summary" :aria-label="t('balance.aria')">
+    <BalanceStrip embedded @open-history="$emit('open-history')" />
 
-  <ErrorState v-else-if="error" :message-key="error" @retry="load" />
-
-  <section v-else-if="rows.length" class="bill-summary" :aria-labelledby="headingId">
-    <h2 :id="headingId" class="bill-summary__amount">{{ money(totalKopecks) }}</h2>
-    <p v-if="householdName" class="bill-summary__household">{{ householdName }}</p>
-
-    <ul class="bill-summary__rows">
+    <ul v-if="rows.length" class="bill-summary__rows">
       <li v-for="row in rows" :key="row.period" class="bill-summary__row">
         <span class="bill-summary__period">
           {{ row.period }}
@@ -19,6 +11,10 @@
         <span class="bill-summary__sum">{{ money(row.kopecks) }}</span>
       </li>
     </ul>
+    <div v-else-if="isLoading" class="bill-summary__rows" aria-busy="true">
+      <Skeleton height="1rem" width="65%" />
+    </div>
+    <ErrorState v-else-if="error" :message-key="error" @retry="load" />
 
     <ShortfallNotice />
     <BankCoverageNotice />
@@ -26,17 +22,18 @@
 </template>
 
 <script setup lang="ts">
-  import { computed, onMounted, ref, watch } from "vue";
+  import { onMounted, ref, watch } from "vue";
   import { useI18n } from "vue-i18n";
 
   import { useCurrentHousehold } from "@/features/households/useCurrentHousehold";
   import { getBalance, listStatements } from "@shared/api/billing";
   import { formatUah, toDecimal } from "@shared/utils/format";
 
+  defineEmits<{ "open-history": [] }>();
+
   const { t } = useI18n();
-  const { current, currentId, households } = useCurrentHousehold();
+  const { currentId, isPastOnly } = useCurrentHousehold();
   const locale = navigator.language;
-  const headingId = "bill-summary-heading";
 
   interface Row {
     period: string;
@@ -48,11 +45,6 @@
   const isLoading = ref(true);
   const error = ref<string | null>(null);
 
-  const householdName = computed(() =>
-    households.value.length > 1 ? (current.value?.name ?? "") : ""
-  );
-  const totalKopecks = computed(() => rows.value.reduce((sum, row) => sum + row.kopecks, 0));
-
   function money(kopecks: number): string {
     return formatUah(kopecks / 100, locale);
   }
@@ -62,6 +54,13 @@
   async function load(): Promise<void> {
     isLoading.value = true;
     error.value = null;
+
+    // A former owner with no plot left has no month lines, only the balance.
+    if (isPastOnly.value) {
+      rows.value = [];
+      isLoading.value = false;
+      return;
+    }
 
     try {
       const [lines, balance] = await Promise.all([
@@ -97,28 +96,19 @@
 
 <style scoped lang="scss">
   .bill-summary {
-    @include layout.stack(var(--s-app-space-2));
+    @include layout.stack(var(--s-app-space-3));
     background: var(--s-content-background);
     border: 1px solid var(--s-content-border-color);
     border-radius: var(--s-app-radius-md);
     min-width: 0;
     padding: var(--s-app-space-4);
 
-    &__amount {
-      font-size: 1.8rem;
-      margin: 0;
-    }
-
-    &__household {
-      color: color-mix(in srgb, var(--s-content-color), transparent 30%);
-      margin: 0;
-    }
-
     &__rows {
       @include layout.stack(var(--s-app-space-1));
+      border-top: 1px solid var(--s-content-border-color);
       list-style: none;
       margin: 0;
-      padding: 0;
+      padding: var(--s-app-space-3) 0 0;
     }
 
     &__row {
