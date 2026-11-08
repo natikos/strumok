@@ -314,6 +314,11 @@
         width: 0.7em;
         height: 0.7em;
         flex-shrink: 0;
+        color: var(--s-green-800);
+      }
+
+      .submission--submitted-late & svg {
+        color: var(--s-amber-800);
       }
 
       @include layout.respond-to("lg") {

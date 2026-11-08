@@ -64,6 +64,8 @@ export interface DayNightSplit {
 
 export interface SeasonComparison {
   season: Season;
+  /** Month indices (0–11) summed on both sides, oldest first. */
+  monthIndexes: number[];
   currentKwh: number;
   currentPeriodCount: number;
   previousYearKwh: number;
@@ -344,12 +346,14 @@ export function useUsageInsights(slots: Ref<MeterPeriod[]>) {
     let currentKwh = 0;
     let previousKwh = 0;
     let periodCount = 0;
+    const monthIndexes: number[] = [];
     for (const [monthIndex, kwh] of currentUsage) {
       const previous = previousUsage.get(monthIndex);
       if (previous !== undefined) {
         currentKwh += kwh;
         previousKwh += previous;
         periodCount += 1;
+        monthIndexes.push(monthIndex);
       }
     }
 
@@ -359,6 +363,7 @@ export function useUsageInsights(slots: Ref<MeterPeriod[]>) {
 
     return {
       season: currentSeason,
+      monthIndexes,
       currentKwh,
       currentPeriodCount: periodCount,
       previousYearKwh: previousKwh,

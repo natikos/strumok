@@ -306,6 +306,7 @@ describe("useUsageInsights", () => {
 
       expect(seasonComparison.value).toEqual({
         season: "summer",
+        monthIndexes: [5, 6],
         currentKwh: 18,
         currentPeriodCount: 2,
         previousYearKwh: 15,
