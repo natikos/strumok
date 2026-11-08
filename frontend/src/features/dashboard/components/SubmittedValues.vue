@@ -13,8 +13,6 @@
       </div>
     </div>
 
-    <p class="submitted-values__fix">{{ t("meterReadings.fixHint") }}</p>
-
     <p v-if="chargedThisPeriod" class="submitted-values__charge">
       <Receipt aria-hidden="true" />
       {{ t("dashboard.chargedThisPeriod") }}

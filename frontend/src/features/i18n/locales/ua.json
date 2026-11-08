@@ -526,7 +526,7 @@
     "windowClosedAt": "Вікно закрилось {day} {month}, 23:59",
     "overdueHeadline": "Термін подання минув",
     "submittedHeadline": "Показники надіслано",
-    "submittedDetail": "Надіслано {date} · можна змінити до {day} {month}",
+    "submittedDetail": "Надіслано {date}",
     "submittedLateDetail": "Надіслано із запізненням",
     "firstPeriodHeadline": "Перший показник",
     "firstPeriodExplainer": "Подавайте показники з 1 по 5 число щомісяця — це вікно повторюється кожен місяць",
@@ -618,7 +618,6 @@
     "dismiss": "Не зараз"
   },
   "meterReadings": {
-    "fixHint": "Помилилися? Надіслані показники тут змінити не можна: попросіть адміністратора їх виправити.",
     "loadError": "Не вдалося завантажити ваші показники",
     "day": "День",
     "night": "Ніч",

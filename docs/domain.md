@@ -23,8 +23,8 @@ Contents: [Core concepts](#core-concepts) · [Submission window](#submission-win
 - The administrator uses readings across all households to reconcile the one shared
   utility bill.
 - A resident can't edit or delete a submitted reading (`periodAlreadySubmitted`); this is
-  a product decision, not a gap. The submitted view says to ask the administrator, who
-  corrects it with the reading editor (audited).
+  a product decision, not a gap. The administrator corrects it with the reading editor
+  (audited); the submitted view no longer says so.
 - A reading carries only meter values (plus `source`). Usage is derived
   (`derive_reading_usage`); charges live in `household_charges`.
 

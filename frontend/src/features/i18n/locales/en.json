@@ -526,7 +526,7 @@
     "windowClosedAt": "Window closed {day} {month}, 23:59",
     "overdueHeadline": "Submission deadline passed",
     "submittedHeadline": "Reading submitted",
-    "submittedDetail": "Submitted {date} · can be changed until {day} {month}",
+    "submittedDetail": "Submitted {date}",
     "submittedLateDetail": "Submitted late",
     "firstPeriodHeadline": "First reading",
     "firstPeriodExplainer": "Submit readings from day 1 to 5 each month — this window repeats every month",
@@ -618,7 +618,6 @@
     "dismiss": "Not now"
   },
   "meterReadings": {
-    "fixHint": "Made a mistake? A sent reading can't be changed here: ask the administrator to correct it.",
     "loadError": "Couldn't load your readings",
     "day": "Day",
     "night": "Night",

@@ -70,11 +70,7 @@ export function useSubmissionCopy(props: ComputedRef<SubmissionCopyInput>) {
           month: deadlineMonth.value,
         });
       case "submitted":
-        return t("deadlineStatus.submittedDetail", {
-          date: formattedSubmittedAt.value,
-          day: DEADLINE_DAY,
-          month: deadlineMonth.value,
-        });
+        return t("deadlineStatus.submittedDetail", { date: formattedSubmittedAt.value });
       case "submitted-late":
         return t("deadlineStatus.submittedLateDetail");
       case "overdue":
