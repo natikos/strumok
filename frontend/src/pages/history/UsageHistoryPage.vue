@@ -210,10 +210,6 @@
                   {{ $t("usageHistory.meterReplaced", { month: entry.monthLabel }) }}
                 </p>
 
-                <p v-if="paymentLine(entry.period)" class="usage-history__payment">
-                  {{ paymentLine(entry.period) }}
-                </p>
-
                 <template v-if="bills.get(entry.period) && hasExtraRows(bills.get(entry.period)!)">
                   <Button
                     class="usage-history__calc-toggle"
@@ -229,19 +225,24 @@
                   />
                 </template>
 
-                <div
-                  class="usage-history__charge"
-                  :class="{ 'usage-history__charge--credit': entry.amountCharged < 0 }"
-                >
-                  <span class="usage-history__charge-label">
-                    {{ $t("usageHistory.charged") }}
-                  </span>
-                  <span class="usage-history__charge-value">
-                    {{ formatUah(entry.amountCharged) }}
-                    <span v-if="entry.amountCharged < 0" class="usage-history__charge-tag">
-                      {{ $t("usageHistory.credit") }}
+                <div class="usage-history__outcome">
+                  <div
+                    class="usage-history__charge"
+                    :class="{ 'usage-history__charge--credit': entry.amountCharged < 0 }"
+                  >
+                    <span class="usage-history__charge-label">
+                      {{ $t("usageHistory.charged") }}
                     </span>
-                  </span>
+                    <span class="usage-history__charge-value">
+                      {{ formatUah(entry.amountCharged) }}
+                      <span v-if="entry.amountCharged < 0" class="usage-history__charge-tag">
+                        {{ $t("usageHistory.credit") }}
+                      </span>
+                    </span>
+                  </div>
+                  <p v-if="paymentLine(entry.period)" class="usage-history__payment">
+                    {{ paymentLine(entry.period) }}
+                  </p>
                 </div>
               </template>
 
@@ -979,10 +980,23 @@
     gap: var(--s-app-space-1);
   }
 
+  .usage-history__outcome {
+    @include layout.stack(var(--s-app-space-1));
+    align-items: flex-start;
+    min-width: 0;
+
+    @include layout.respond-to("md") {
+      align-items: flex-end;
+      grid-column: 3;
+      grid-row: 1;
+      text-align: right;
+    }
+  }
+
   .usage-history__payment {
     color: color-mix(in srgb, var(--s-content-color), transparent 35%);
     font-size: 0.8rem;
-    margin: var(--s-app-space-2) 0 0;
+    margin: 0;
   }
 
   .usage-history__charge {
