@@ -450,6 +450,7 @@
     "payRecipient": "Отримувач",
     "payEdrpou": "ЄДРПОУ",
     "payPurposeLabel": "Електроенергія",
+    "payPurposePeriod": "Електроенергія за {month}",
     "payComment": "Призначення",
     "payOpenBank": "Відкрити в банку",
     "payCopyLink": "Копіювати посилання на оплату",

@@ -450,6 +450,7 @@
     "payRecipient": "Recipient",
     "payEdrpou": "EDRPOU",
     "payPurposeLabel": "Electricity",
+    "payPurposePeriod": "Electricity for {month}",
     "payComment": "Comment",
     "payOpenBank": "Open in bank app",
     "payCopyLink": "Copy payment link",
