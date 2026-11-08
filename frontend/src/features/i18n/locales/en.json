@@ -451,6 +451,8 @@
     "payEdrpou": "EDRPOU",
     "payPurposeLabel": "Electricity",
     "payComment": "Comment",
+    "payOpenBank": "Open in bank app",
+    "payCopyLink": "Copy payment link",
     "payCopy": "Copy",
     "payCopied": "Copied",
     "payCopyFailed": "Couldn't copy — select the text instead"
