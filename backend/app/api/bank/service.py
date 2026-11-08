@@ -6,6 +6,7 @@ from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.exc import IntegrityError
 from sqlmodel import Session, col, func, select
 
+from app.api.bank.auto_confirm import auto_confirm_new_credits, queued_count
 from app.api.billing.payment_details import get_payment_details
 from app.core import audit
 from app.core.domain.bank_statement import BankStatementError, parse_statement
@@ -34,6 +35,8 @@ class ImportResult:
     credits_duplicate: int
     debits_skipped: int
     covered_through: date
+    # New credits left for an admin after automatic confirmation.
+    credits_queued: int = 0
 
 
 def _overall_coverage(session: Session) -> date:
@@ -139,9 +142,11 @@ def import_statement(
         },
     )
     session.commit()
+    auto_confirm_new_credits(session, file_id=file.id)
     return ImportResult(
         file_id=file.id,
         already_imported=False,
+        credits_queued=queued_count(session, file_id=file.id),
         credits_new=file.credits_new,
         credits_duplicate=file.credits_duplicate,
         debits_skipped=file.debits_skipped,

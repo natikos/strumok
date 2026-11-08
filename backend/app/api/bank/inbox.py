@@ -185,7 +185,8 @@ def process_message(
             new_files += 1
             file_id = imported.file_id
             result.credits_new += imported.credits_new
-            result.file_ids.append(imported.file_id)
+            if imported.credits_queued:
+                result.file_ids.append(imported.file_id)
     if new_files:
         _record(
             session, result, message_id=message_id, status="imported", file_id=file_id

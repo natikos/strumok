@@ -16,11 +16,7 @@
         <p v-if="row.suggestions.length" class="bank__suggested">
           {{ t("admin.bank.suggested") }}:
           {{ row.suggestions.map((s) => householdName(s.household_id)).join(", ") }}
-          ({{
-            t(
-              `admin.bank.suggestion${row.suggestions[0]?.source === "name" ? "Name" : "Reference"}`
-            )
-          }})
+          ({{ t("admin.bank.suggestionReference") }})
         </p>
 
         <div v-for="(line, index) in rowLines(row)" :key="index" class="bank__line">

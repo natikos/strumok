@@ -125,7 +125,7 @@ def confirm(
     *,
     transaction_id: int,
     lines: list[SplitLine],
-    actor_id: int,
+    actor_id: int | None,
 ) -> list[Payment]:
     transaction = _lock(session, transaction_id)
     _ensure_unresolved(session, transaction)

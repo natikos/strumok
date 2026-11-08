@@ -122,7 +122,7 @@ def upload_statement(
             content={"detail": exc.code, "row": exc.row, "column": exc.column},
         )  # type: ignore[return-value]
 
-    if result.credits_new:
+    if result.credits_queued:
         try:
             notify_bank_queue(session=session, file_id=result.file_id)
         except Exception:
