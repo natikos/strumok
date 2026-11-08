@@ -20,7 +20,12 @@ test("dashboard shows the co-op rate and does not overflow at 360px", async ({
   await loginAs(resident);
   await page.goto("/");
 
-  const strip = page.getByRole("status").filter({ hasText: "Co-op rate" });
+  // At 360px the strip collapses to a day/night pill that opens a popover.
+  const pill = page.getByRole("button", { name: /Co-op rate/ });
+  await expect(pill).toBeVisible();
+  await expect(pill).toHaveText(/^4[.,]32\/2[.,]16$/);
+  await pill.click();
+  const strip = page.locator(".tariff-strip__details");
   await expect(strip).toBeVisible();
   await expect(strip).toContainText(/4[.,]32/);
   await expect(strip).toContainText(/2[.,]16/);

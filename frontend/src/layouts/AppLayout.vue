@@ -54,6 +54,7 @@
     <div class="app-main">
       <header class="app-topbar">
         <img class="app-topbar__brand" src="/logo.svg" alt="Strumok" />
+        <TariffStrip class="app-topbar__rate" />
         <div class="app-topbar__actions">
           <div v-if="households.length > 1" class="app-household">
             <Select
@@ -89,8 +90,6 @@
           </Menu>
         </div>
       </header>
-
-      <TariffStrip class="app-rate" />
 
       <main class="app-content">
         <RouterView />
@@ -378,7 +377,7 @@
 
   .app-main {
     display: grid;
-    grid-template-rows: auto auto 1fr;
+    grid-template-rows: auto 1fr;
     min-height: 0;
     min-width: 0;
   }
@@ -406,14 +405,8 @@
     }
   }
 
-  .app-rate {
-    border-bottom: 1px solid var(--s-content-border-color);
-    padding: var(--s-app-space-2) var(--s-app-space-4);
-
-    @include layout.respond-to("lg") {
-      border-bottom: none;
-      padding: 0 var(--s-app-space-5) var(--s-app-space-2);
-    }
+  .app-topbar__rate {
+    margin-inline: auto;
   }
 
   .app-topbar__brand {
