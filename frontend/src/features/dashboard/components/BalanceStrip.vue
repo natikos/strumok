@@ -60,6 +60,7 @@
     listStatements,
     type PaymentDetailsOut,
   } from "@shared/api/billing";
+  import { formatPeriodMonth } from "@shared/utils/billing-period";
   import { formatUah, toDecimal } from "@shared/utils/format";
   import { paymentPurpose } from "@shared/utils/paymentPurpose";
 
@@ -78,6 +79,8 @@
   // This month's running estimate: payable once the reading is in, ahead of the
   // close. Payments settle the oldest months first, so any excess is a credit.
   const provisional = ref(0);
+  // Newest month on the statement, named in the payment comment.
+  const latestPeriod = ref<string | null>(null);
   const isPayOpen = ref(false);
   const isLoading = ref(true);
   const error = ref<string | null>(null);
@@ -103,7 +106,11 @@
   const payAmount = computed(() => ownBalance.value.toFixed(2));
   const payComment = computed(() =>
     paymentPurpose(
-      t("balance.payPurposeLabel"),
+      hasCurrent.value && latestPeriod.value
+        ? t("balance.payPurposePeriod", {
+            month: formatPeriodMonth(latestPeriod.value, locale, { month: "long", year: "numeric" }),
+          })
+        : t("balance.payPurposeLabel"),
       hasCurrent.value
         ? (current.value ? [current.value.id] : [])
         : owingPast.value.map((p) => p.household_id)
@@ -136,6 +143,10 @@
       ]);
       balance.value = loaded;
       const open = lines.find((line) => line.status === "provisional");
+      latestPeriod.value = lines.reduce<string | null>(
+        (max, line) => (max === null || line.period > max ? line.period : max),
+        null
+      );
       provisional.value = open ? toDecimal(open.total_uah) : 0;
       // Paying is optional: if the details can't load, just hide the action.
       paymentDetails.value = await getPaymentDetails().catch(() => null);
@@ -199,6 +210,10 @@
       margin-top: var(--s-app-space-3);
       min-height: 44px;
       width: 100%;
+
+      @include layout.respond-to("sm") {
+        width: auto;
+      }
     }
 
     &__text {
