@@ -146,8 +146,8 @@
 
   const router = useRouter();
   const route = useRoute();
-  const { setLocale } = useLocale();
-  const { setTheme } = useTheme();
+  const { setLocale, currentLocale } = useLocale();
+  const { setTheme, theme } = useTheme();
   const { households, currentId, setHouseholds, setPastOnly, setCurrent } = useCurrentHousehold();
 
   const { t } = useI18n();
@@ -197,6 +197,9 @@
   onMounted(loadMe);
 
   async function loadMe(): Promise<void> {
+    const localLanguage = currentLocale.value;
+    const localTheme = theme.value;
+
     try {
       me.value = await getMe();
     } catch (error) {
@@ -211,8 +214,15 @@
     }
 
     isUnreachable.value = false;
-    setLocale(me.value.language);
-    setTheme(me.value.theme);
+    // The request may resolve after the user already switched language or theme
+    // (e.g. on a cold backend); their newer choice must not be overwritten.
+    if (currentLocale.value === localLanguage) {
+      setLocale(me.value.language);
+    }
+
+    if (theme.value === localTheme) {
+      setTheme(me.value.theme);
+    }
 
     if (me.value.households.length === 0) {
       setHouseholds([]);
