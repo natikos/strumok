@@ -61,6 +61,7 @@ declare module 'vue' {
     PaymentDetailsSettings: typeof import('./src/features/admin/PaymentDetailsSettings.vue')['default']
     PaySheet: typeof import('./src/features/dashboard/components/PaySheet.vue')['default']
     PeriodCloseCard: typeof import('./src/features/admin/PeriodCloseCard.vue')['default']
+    Popover: typeof import('primevue/popover')['default']
     PrivacyPage: typeof import('./src/pages/auth/PrivacyPage.vue')['default']
     ProgressSpinner: typeof import('primevue/progressspinner')['default']
     RateEditor: typeof import('./src/features/admin/RateEditor.vue')['default']

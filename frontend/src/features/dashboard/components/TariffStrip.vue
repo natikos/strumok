@@ -13,7 +13,7 @@
       :aria-label="`${t('tariff.title')}: ${t('tariff.day')} ${dayLabel}, ${t('tariff.night')} ${nightLabel}`"
       @click="popover?.toggle($event)"
     >
-      {{ money(rate.day_rate_uah) }}/{{ money(rate.night_rate_uah) }}
+      {{ plain(rate.day_rate_uah) }}/{{ plain(rate.night_rate_uah) }}
     </button>
     <Popover ref="popover">
       <div class="tariff-strip__details">
@@ -32,7 +32,7 @@
   import { useI18n } from "vue-i18n";
 
   import { type CurrentRateOut, getCurrentRate } from "@shared/api/billing";
-  import { formatUah } from "@shared/utils/format";
+  import { formatUah, toDecimal } from "@shared/utils/format";
 
   const { t } = useI18n();
   const locale = navigator.language;
@@ -48,6 +48,14 @@
   const fromLabel = computed(() =>
     rate.value ? format(parseISO(`${rate.value.effective_from}-01`), "dd.MM") : ""
   );
+
+  // Bare number for the compact pill; the popover carries the currency and unit.
+  function plain(value: string): string {
+    return toDecimal(value).toLocaleString(locale, {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    });
+  }
 
   function money(value: string): string {
     return formatUah(value, locale);
