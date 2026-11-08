@@ -456,11 +456,6 @@
     "payCopyFailed": "Couldn't copy — select the text instead"
   },
   "bill": {
-    "for": "for {month}",
-    "plain": "Your {usage} at the co-op rate, plus your share of the co-op's shared costs.",
-    "plainEstimated": "Estimated (no reading received) + 30% late fee.",
-    "howCalculated": "What is included",
-    "soFar": "So far this month (estimate): about {amount}",
     "usage": "Your usage",
     "total": "Total",
     "rows": {
@@ -469,7 +464,9 @@
       "lateFee": "Late fee (no reading received)",
       "lateFeeCredit": "Credit from other households' late fees",
       "correction": "Correction"
-    }
+    },
+    "provisional": "estimate",
+    "howCalculated": "What is included"
   },
   "confirmEmailChange": {
     "confirming": "Confirming your new email...",

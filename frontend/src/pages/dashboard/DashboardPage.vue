@@ -8,9 +8,8 @@
     <PastHouseholds v-if="isPastOnly" />
 
     <template v-else>
-      <ShortfallNotice />
-
-      <BankCoverageNotice />
+      <!-- Owed amount first: after submitting it is what the resident came for. -->
+      <BillSummaryCard />
 
       <div class="dashboard__top">
         <SubmissionCard
@@ -56,8 +55,6 @@
 
       <FirstRunGuideCard v-if="showFirstRunGuide" />
 
-      <BillSummaryCard />
-
       <!-- With no readings at all there is nothing to chart, split or compare, so
          one dashed card stands in for the whole analytics block. -->
       <EmptyUsageCard v-if="showEmptyUsage" />
@@ -96,13 +93,11 @@
   import { useRouter } from "vue-router";
 
   import BalanceStrip from "@/features/dashboard/components/BalanceStrip.vue";
-  import BankCoverageNotice from "@/features/dashboard/components/BankCoverageNotice.vue";
   import BillSummaryCard from "@/features/dashboard/components/BillSummaryCard.vue";
   import DayNightSplitCard from "@/features/dashboard/components/DayNightSplitCard.vue";
   import EmptyUsageCard from "@/features/dashboard/components/EmptyUsageCard.vue";
   import FirstRunGuideCard from "@/features/dashboard/components/FirstRunGuideCard.vue";
   import SeasonCard from "@/features/dashboard/components/SeasonCard.vue";
-  import ShortfallNotice from "@/features/dashboard/components/ShortfallNotice.vue";
   import StatTilesCard from "@/features/dashboard/components/StatTilesCard.vue";
   import SubmissionCard from "@/features/dashboard/components/SubmissionCard.vue";
   import UsageChartCard from "@/features/dashboard/components/UsageChartCard.vue";
