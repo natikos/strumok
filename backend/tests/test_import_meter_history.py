@@ -346,6 +346,51 @@ class TestInsertMeterHistory:
                 periods=["2024-11"],
             )
 
+    def test_matching_resident_reading_keeps_it_and_gets_the_sheet_charge(
+        self, real_session: Session
+    ) -> None:
+        household = make_household(real_session, name="Plot C")
+        real_session.commit()
+        existing = make_meter_reading(
+            real_session,
+            household_id=household.id,
+            period="2024-10",
+            day_meter_value="100.00",
+            night_meter_value="50.00",
+        )
+        real_session.commit()
+        row = ParsedRow(
+            row_num=2,
+            csv_id="1",
+            household_name="Plot C",
+            day_meter=Decimal("100"),
+            night_meter=Decimal("50"),
+            day_usage=Decimal("10"),
+            night_usage=Decimal("5"),
+            amount_charged=Decimal("300.00"),
+        )
+
+        try:
+            inserted, conflicts = insert_meter_history([(row, household.id)], "2024-10")
+
+            assert inserted == 0
+            assert conflicts == []
+            charge = real_session.exec(select(HouseholdCharge)).one()
+            assert charge.reading_id == existing.id
+            assert charge.total_uah == Decimal("300.00")
+
+            # A second run finds the charge and does nothing.
+            _, again = insert_meter_history([(row, household.id)], "2024-10")
+            assert again == [(row, household.id)]
+            assert len(real_session.exec(select(HouseholdCharge)).all()) == 1
+        finally:
+            _cleanup(
+                real_session,
+                household_ids=[household.id],
+                rate_ids=[],
+                periods=["2024-10"],
+            )
+
 
 # --- main(): end-to-end abort on malformed input, no partial writes -------
 
@@ -427,13 +472,13 @@ class TestMainEndToEnd:
         finally:
             _cleanup(real_session, household_ids=[household.id], rate_ids=[])
 
-    def test_current_period_is_refused_and_writes_nothing(
+    def test_future_period_is_refused_and_writes_nothing(
         self, tmp_path, monkeypatch, real_session: Session
     ) -> None:
         household = make_household(real_session, name="Plot H")
         real_session.commit()
 
-        current = current_billing_period()
+        future = f"{int(current_billing_period()[:4]) + 1}-01"
         csv_path = tmp_path / "Грудень24.csv"
         csv_path.write_text("1,Plot H,100,50,10,5,300\n", encoding="utf-8")
         mapping_path = tmp_path / "mapping.csv"
@@ -441,7 +486,7 @@ class TestMainEndToEnd:
             f"csv_id,household_id\n1,{household.id}\n", encoding="utf-8"
         )
         monkeypatch.setattr(
-            "scripts.import_meter_history.get_period", lambda _path: current
+            "scripts.import_meter_history.get_period", lambda _path: future
         )
         monkeypatch.setattr(
             "sys.argv",
