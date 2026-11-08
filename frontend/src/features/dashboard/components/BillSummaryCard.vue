@@ -19,6 +19,9 @@
         <span class="bill-summary__sum">{{ money(row.kopecks) }}</span>
       </li>
     </ul>
+
+    <ShortfallNotice />
+    <BankCoverageNotice />
   </section>
 </template>
 
