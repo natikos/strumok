@@ -4,6 +4,9 @@ Usage:
     cd backend
     uv run python scripts/import_meter_history.py <csv_path> --mapping <mapping.csv> [--apply]
 
+The current period may be imported; a resident's existing reading is kept and
+gets a charge if its values match the sheet.
+
 Without --apply this is a dry run: it prints the match report and would-be
 writes, and changes nothing.
 
@@ -276,7 +279,35 @@ def insert_meter_history(
             .on_conflict_do_nothing(index_elements=["household_id", "period"])
             .returning(MeterReading.household_id, MeterReading.id)
         )
-        reading_ids = dict(session.exec(stmt).all())
+        inserted_ids = dict(session.exec(stmt).all())
+        reading_ids = dict(inserted_ids)
+        # A resident may have submitted before the import ran. Its reading is
+        # kept; it still needs a charge when it matches the sheet and has none.
+        existing = session.exec(
+            select(MeterReading).where(
+                MeterReading.period == period,
+                col(MeterReading.household_id).in_(
+                    [h for _, h in matched if h not in inserted_ids]
+                ),
+            )
+        ).all()
+        charged = set(
+            session.exec(
+                select(HouseholdCharge.household_id).where(
+                    HouseholdCharge.period == period
+                )
+            ).all()
+        )
+        by_household = {reading.household_id: reading for reading in existing}
+        for row, household_id in matched:
+            reading = by_household.get(household_id)
+            if (
+                reading is not None
+                and household_id not in charged
+                and reading.day_meter_value == row.day_meter
+                and reading.night_meter_value == row.night_meter
+            ):
+                reading_ids[household_id] = reading.id
         conflicts = [
             (row, household_id)
             for row, household_id in matched
@@ -309,7 +340,7 @@ def insert_meter_history(
                 )
         session.commit()
 
-    return len(reading_ids), conflicts
+    return len(inserted_ids), conflicts
 
 
 def _close_period(session: Session, period: str) -> None:
@@ -335,6 +366,10 @@ def main() -> int:
         "--mapping", required=True, help="Path to the csv_id,household_id mapping CSV"
     )
     parser.add_argument(
+        "--period",
+        help="YYYY-MM the usage belongs to, overriding the filename",
+    )
+    parser.add_argument(
         "--apply",
         action="store_true",
         help="Actually write to the database (default: dry run)",
@@ -353,11 +388,15 @@ def main() -> int:
         print(f"Aborting: {exc}", file=sys.stderr)
         return 1
 
-    period = get_period(args.csv_path)
-    if period >= current_billing_period():
-        # The import closes the period it writes, which is only right for history.
+    period = args.period or get_period(args.csv_path)
+    if not re.fullmatch(r"\d{4}-(0[1-9]|1[0-2])", period):
+        print(f"Aborting: invalid --period {period!r}", file=sys.stderr)
+        return 1
+    if period > current_billing_period():
+        # The import closes the period it writes, which is only right once
+        # the period's readings are in.
         print(
-            f"Aborting: {period} is not a past period, so it can't be imported as billed history",
+            f"Aborting: {period} is in the future, so it can't be imported as billed history",
             file=sys.stderr,
         )
         return 1
@@ -375,7 +414,7 @@ def main() -> int:
 
     print(f"\nInserted {inserted} reading(s).")
     if conflicts:
-        print("Conflicts (already imported, left unchanged):")
+        print("Conflicts (existing reading left unchanged, no charge written):")
         for row, household_id in conflicts:
             print(
                 f"  row {row.row_num}: household {household_id} already has a {period} reading"

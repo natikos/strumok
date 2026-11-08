@@ -11,13 +11,15 @@ const api = vi.hoisted(() => ({ getBalance: vi.fn(), listStatements: vi.fn() }))
 // The suite runs with isolate: false, so mock the API late (see AuditLogPanel.test).
 let BillSummaryCard: Component;
 let setHouseholds: (households: { id: number; name: string }[]) => unknown;
+let setPastOnly: (value: boolean) => void;
 
 beforeAll(async () => {
   vi.resetModules();
   vi.doMock("@shared/api/billing", () => api);
   BillSummaryCard = (await import("./BillSummaryCard.vue")).default;
-  setHouseholds = (await import("@/features/households/useCurrentHousehold")).useCurrentHousehold()
-    .setHouseholds;
+  const household = (await import("@/features/households/useCurrentHousehold")).useCurrentHousehold();
+  setHouseholds = household.setHouseholds;
+  setPastOnly = household.setPastOnly;
 });
 
 afterAll(() => {
@@ -47,7 +49,13 @@ function mountCard() {
   return mount(BillSummaryCard, {
     global: {
       plugins: appPlugins(),
-      stubs: { ErrorState: true, Skeleton: true },
+      stubs: {
+        BalanceStrip: { template: '<div class="balance-strip-stub" />' },
+        BankCoverageNotice: true,
+        ErrorState: true,
+        ShortfallNotice: true,
+        Skeleton: true,
+      },
     },
   });
 }
@@ -57,9 +65,10 @@ describe("BillSummaryCard", () => {
     api.listStatements.mockReset();
     api.getBalance.mockReset();
     setHouseholds([{ id: 1, name: "Plot 1" }]);
+    setPastOnly(false);
   });
 
-  it("leads with the total owed and lists each month with what is left of it", async () => {
+  it("leads with the balance and lists each month with what is left of it", async () => {
     api.listStatements.mockResolvedValue([provisionalLine]);
     api.getBalance.mockResolvedValue(
       balance([period("2026-08", "500.00"), period("2026-09", "800.00", "200.00")])
@@ -73,8 +82,7 @@ describe("BillSummaryCard", () => {
     expect(rows[1]!.text()).toContain("2026-09");
     expect(rows[1]!.text()).toContain("600");
     expect(rows[2]!.text()).toContain("2026-08");
-    // 300 + 600 + 500
-    expect(wrapper.find(".bill-summary__amount").text()).toContain("1,400");
+    expect(wrapper.find(".balance-strip-stub").exists()).toBe(true);
   });
 
   it("skips fully paid months", async () => {
@@ -86,13 +94,24 @@ describe("BillSummaryCard", () => {
     expect(wrapper.findAll(".bill-summary__row")).toHaveLength(1);
   });
 
-  it("renders nothing when nothing is owed and no month is open", async () => {
+  it("keeps the balance but lists no months when nothing is owed and no month is open", async () => {
     api.listStatements.mockResolvedValue([]);
     api.getBalance.mockResolvedValue(balance([]));
     const wrapper = mountCard();
     await flushPromises();
 
-    expect(wrapper.find(".bill-summary").exists()).toBe(false);
+    expect(wrapper.find(".balance-strip-stub").exists()).toBe(true);
+    expect(wrapper.find(".bill-summary__rows").exists()).toBe(false);
+  });
+
+  it("has no month lines and fetches no statements for a former owner with no plot", async () => {
+    setPastOnly(true);
+    const wrapper = mountCard();
+    await flushPromises();
+
+    expect(api.listStatements).not.toHaveBeenCalled();
+    expect(wrapper.find(".balance-strip-stub").exists()).toBe(true);
+    expect(wrapper.find(".bill-summary__rows").exists()).toBe(false);
   });
 
   it("shows the error block on a failed load, never the empty state", async () => {
@@ -102,7 +121,7 @@ describe("BillSummaryCard", () => {
     await flushPromises();
 
     expect(wrapper.findComponent({ name: "ErrorState" }).exists()).toBe(true);
-    expect(wrapper.find(".bill-summary").exists()).toBe(false);
+    expect(wrapper.find(".bill-summary__rows").exists()).toBe(false);
   });
 
   it("shows aria-busy skeletons while loading and none once loaded", async () => {

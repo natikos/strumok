@@ -1,5 +1,9 @@
 <template>
-  <section class="balance-strip" :aria-label="t('balance.aria')">
+  <section
+    class="balance-strip"
+    :class="{ 'balance-strip--embedded': embedded }"
+    :aria-label="t('balance.aria')"
+  >
     <div v-if="isLoading" class="balance-strip__body balance-strip__body--loading" aria-busy="true">
       <Skeleton height="1rem" width="60%" />
     </div>
@@ -58,6 +62,8 @@
   import { formatUah, toDecimal } from "@shared/utils/format";
   import { paymentPurpose } from "@shared/utils/paymentPurpose";
 
+  // `embedded` drops the strip's own frame so a parent card can host it.
+  defineProps<{ embedded?: boolean }>();
   defineEmits<{ "open-history": [] }>();
 
   const { t } = useI18n();
@@ -163,6 +169,22 @@
       &--loading {
         cursor: default;
       }
+    }
+
+    &--embedded &__body {
+      background: none;
+      border: 0;
+      border-radius: 0;
+      min-height: 0;
+      padding: 0;
+    }
+
+    &--embedded &__text {
+      font-size: 1.5rem;
+    }
+
+    &--embedded &__body--owe &__text {
+      color: var(--s-amber-500);
     }
 
     &__pay {

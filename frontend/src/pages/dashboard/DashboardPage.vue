@@ -2,15 +2,13 @@
   <div class="dashboard" :class="{ 'dashboard--submit-first': submitFirst }">
     <PastHouseholdNotice />
 
-    <BalanceStrip @open-history="goToHistory" />
+    <!-- Balance and owed months first: after submitting it is what the resident came for. -->
+    <BillSummaryCard @open-history="goToHistory" />
 
     <!-- A former owner with no plot left sees only what they were billed. -->
     <PastHouseholds v-if="isPastOnly" />
 
     <template v-else>
-      <!-- Owed amount first: after submitting it is what the resident came for. -->
-      <BillSummaryCard />
-
       <div class="dashboard__top">
         <SubmissionCard
           class="dashboard__submission"
@@ -92,7 +90,6 @@
   import { useI18n } from "vue-i18n";
   import { useRouter } from "vue-router";
 
-  import BalanceStrip from "@/features/dashboard/components/BalanceStrip.vue";
   import BillSummaryCard from "@/features/dashboard/components/BillSummaryCard.vue";
   import DayNightSplitCard from "@/features/dashboard/components/DayNightSplitCard.vue";
   import EmptyUsageCard from "@/features/dashboard/components/EmptyUsageCard.vue";
