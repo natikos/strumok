@@ -92,7 +92,7 @@ describe("PaySheet bank link", () => {
     );
   });
 
-  it("copies the bank link", async () => {
+  it("copies the details as readable text, not a link", async () => {
     const writeText = vi.fn().mockResolvedValue(undefined);
     vi.stubGlobal("navigator", { clipboard: { writeText } });
     const wrapper = mountSheet();
@@ -100,6 +100,9 @@ describe("PaySheet bank link", () => {
     await wrapper.find(".pay-sheet__link").trigger("click");
     await flushPromises();
 
-    expect(writeText).toHaveBeenCalledWith(expect.stringContaining("https://bank.gov.ua/qr/"));
+    const text = writeText.mock.calls[0]![0] as string;
+    expect(text).not.toContain("https://");
+    expect(text).toContain(`IBAN: ${props.iban}`);
+    expect(text.split("\n").length).toBeGreaterThan(3);
   });
 });

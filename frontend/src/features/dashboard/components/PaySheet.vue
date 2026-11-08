@@ -2,8 +2,8 @@
   <Dialog
     v-model:visible="visible"
     modal
+    class="pay-sheet-dialog"
     :header="t('balance.payTitle')"
-    :style="{ width: 'min(28rem, 100vw - 2rem)' }"
   >
     <p class="pay-sheet__hint">{{ t("balance.payHint") }}</p>
 
@@ -15,7 +15,7 @@
       severity="secondary"
       class="pay-sheet__link"
       :label="copied === 'link' ? t('balance.payCopied') : t('balance.payCopyLink')"
-      @click="copy('link', bankLink)"
+      @click="copy('link', detailsText)"
     />
 
     <dl class="pay-sheet__fields">
@@ -69,6 +69,12 @@
     })
   );
 
+  // Labelled plain text: pasted into a bank app (e.g. monobank) it can pick the
+  // IBAN and other details out, unlike a bare link.
+  const detailsText = computed(() =>
+    fields.value.map((field) => `${field.label}: ${field.value}`).join("\n")
+  );
+
   const copied = ref<string | null>(null);
   const copyFailed = ref(false);
 
@@ -96,6 +102,24 @@
     }
   }
 </script>
+
+<style lang="scss">
+  // The dialog is teleported to <body>, so this block can't be scoped. Full
+  // screen at 360px; a centred card from "sm" up.
+  .pay-sheet-dialog {
+    border-radius: 0;
+    height: 100%;
+    max-height: 100%;
+    width: 100vw;
+
+    @include layout.respond-to("sm") {
+      border-radius: var(--s-app-radius-md);
+      height: auto;
+      max-height: 90%;
+      width: 28rem;
+    }
+  }
+</style>
 
 <style scoped lang="scss">
   .pay-sheet {

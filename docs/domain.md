@@ -162,8 +162,16 @@ audited with counts only, and admins are notified when rows join the review queu
 tab lists the 20 newest fetches (`GET /admin/bank-statements/inbox-fetches`) with the
 reason and has a Check inbox button.
 
+**Automatic confirmation** (`backend/app/api/bank/auto_confirm.py`). Right after
+an import (upload or inbox), a credit whose purpose cites exactly one `STR-<id>`
+of an active household is confirmed as a `transfer` payment through the same
+`confirm` path, with no recorder (the audit entry has no actor). Everything else
+(no, several or unknown references, dates on or before the
+household's settled-through date) stays queued, and admins are notified only when
+a file leaves rows in the queue.
+
 **Review queue** (`/admin/bank-transactions`, `backend/app/api/bank/review.py`).
-Credits become payments only here. An admin can:
+Credits that were not auto-confirmed become payments only here. An admin can:
 
 - **Confirm** a credit: all-or-nothing split across households, sum equals the row.
   Creates a `transfer` payment owned by whoever held the plot on the operation date;
@@ -177,14 +185,13 @@ returns 409 `bankTransactionResolved`. Voiding one payment of a confirmed credit
 voids its siblings, so the credit returns to the queue. Payer name and purpose never
 reach `Payment.note` or the audit log.
 
-**Suggestions** (`backend/app/api/bank/matching`) are deterministic, computed on
-read, no LLM, never from payer tax ID or IBAN:
-
-1. `STR-<household id>` references in the purpose (several for a split);
-2. else a single fuzzy payer-surname match against active household names;
-3. else none.
-
-A suggestion only pre-fills the confirm dialog with its reason. The Pay sheet's
+**Matching** (`backend/app/api/bank/matching`) is deterministic, computed on
+read, no LLM. The only signal is the `STR-<household id>` reference in the
+purpose (several for a split); payer names, tax IDs and IBANs are never used,
+since every resident pays through the Pay sheet, which fills the reference in.
+A lone reference is booked by the automatic confirmation above; several
+references only pre-fill the confirm dialog for the admin; a credit with none
+waits in the queue unmatched. The Pay sheet's
 purpose carries only the `STR-<id>` of the plot being paid, i.e. the current
 plot (or, with no plot left, the gave-up plots that owe), so the amount and the
 reference agree (`frontend/src/shared/utils/paymentPurpose.ts` mirrors `household_reference`).
