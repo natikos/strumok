@@ -6,7 +6,7 @@ import { deferred, expectLoaded, expectLoading } from "@/shared/testing/loading"
 import { appPlugins } from "@/shared/testing/mount";
 import type { Component } from "vue";
 
-const api = vi.hoisted(() => ({ listAdjustments: vi.fn(), listStatements: vi.fn() }));
+const api = vi.hoisted(() => ({ getBalance: vi.fn(), listStatements: vi.fn() }));
 
 // The suite runs with isolate: false, so mock the API late (see AuditLogPanel.test).
 let BillSummaryCard: Component;
@@ -25,19 +25,23 @@ afterAll(() => {
   vi.resetModules();
 });
 
-const closedLine = (overrides = {}) => ({
-  day_usage_kwh: "100.00",
-  is_estimated: false,
-  loss_share_uah: "12.34",
-  night_usage_kwh: "40.00",
-  penalty_credit_uah: "0.00",
-  penalty_uah: "0.00",
-  period: "2026-09",
-  status: "closed",
-  tariff_uah: "500.10",
-  total_uah: "512.44",
-  ...overrides,
+const period = (name: string, due: string, paid = "0.00") => ({
+  due_uah: due,
+  paid_uah: paid,
+  period: name,
+  status: paid === "0.00" ? "unpaid" : "partial",
 });
+
+const balance = (periods: ReturnType<typeof period>[]) => ({
+  balance_uah: "0",
+  household_id: 1,
+  periods,
+  total_due_uah: "0",
+  total_paid_uah: "0",
+  unpaid_months: periods.length,
+});
+
+const provisionalLine = { period: "2026-10", status: "provisional", total_uah: "300.00" };
 
 function mountCard() {
   return mount(BillSummaryCard, {
@@ -51,61 +55,40 @@ function mountCard() {
 describe("BillSummaryCard", () => {
   beforeEach(() => {
     api.listStatements.mockReset();
-    api.listAdjustments.mockReset().mockResolvedValue([]);
+    api.getBalance.mockReset();
     setHouseholds([{ id: 1, name: "Plot 1" }]);
   });
 
-  it("leads with the latest closed bill and a plain-language line, without jargon", async () => {
-    api.listStatements.mockResolvedValue([closedLine()]);
+  it("leads with the total owed and lists each month with what is left of it", async () => {
+    api.listStatements.mockResolvedValue([provisionalLine]);
+    api.getBalance.mockResolvedValue(
+      balance([period("2026-08", "500.00"), period("2026-09", "800.00", "200.00")])
+    );
     const wrapper = mountCard();
     await flushPromises();
 
-    expect(wrapper.find(".bill-summary__amount").text()).toContain("512");
-    expect(wrapper.text()).toContain("shared costs");
-    expect(wrapper.text()).not.toMatch(/reconciliation|pro-rata|loss/i);
+    const rows = wrapper.findAll(".bill-summary__row");
+    expect(rows).toHaveLength(3);
+    expect(rows[0]!.text()).toContain("2026-10");
+    expect(rows[1]!.text()).toContain("2026-09");
+    expect(rows[1]!.text()).toContain("600");
+    expect(rows[2]!.text()).toContain("2026-08");
+    // 300 + 600 + 500
+    expect(wrapper.find(".bill-summary__amount").text()).toContain("1,400");
   });
 
-  it("expands a breakdown whose rows add up to the total shown", async () => {
-    api.listStatements.mockResolvedValue([closedLine()]);
-    api.listAdjustments.mockResolvedValue([
-      {
-        amount_uah: "-12.40",
-        applies_to_period: "2026-09",
-        id: 1,
-        posted_in_period: "2026-10",
-        reason: "bill corrected",
-        reason_code: "billCorrection",
-      },
-    ]);
+  it("skips fully paid months", async () => {
+    api.listStatements.mockResolvedValue([provisionalLine]);
+    api.getBalance.mockResolvedValue(balance([period("2026-09", "800.00", "800.00")]));
     const wrapper = mountCard();
     await flushPromises();
 
-    await wrapper.find(".bill-summary__toggle").trigger("click");
-
-    const amounts = wrapper.findAll(".bill-breakdown__row dd").map((dd) => dd.text());
-    expect(wrapper.text()).toContain("bill corrected");
-    expect(amounts.at(-1)).toContain("500.04"); // 500.10 + 12.34 - 12.40
-    expect(wrapper.find(".bill-summary__amount").text()).toContain("500.04");
+    expect(wrapper.findAll(".bill-summary__row")).toHaveLength(1);
   });
 
-  it("marks an estimated period with an Estimated pill and its own copy", async () => {
-    api.listStatements.mockResolvedValue([
-      closedLine({
-        is_estimated: true,
-        loss_share_uah: "0.00",
-        penalty_uah: "30.00",
-        total_uah: "530.10",
-      }),
-    ]);
-    const wrapper = mountCard();
-    await flushPromises();
-
-    expect(wrapper.find(".bill-summary__pill").text()).toContain("Estimated");
-    expect(wrapper.text()).toContain("30% late fee");
-  });
-
-  it("renders nothing - not 0.00 - before any period has closed, but shows the provisional line", async () => {
-    api.listStatements.mockResolvedValue([closedLine({ status: "provisional" })]);
+  it("renders nothing when nothing is owed and no month is open", async () => {
+    api.listStatements.mockResolvedValue([]);
+    api.getBalance.mockResolvedValue(balance([]));
     const wrapper = mountCard();
     await flushPromises();
 
@@ -114,6 +97,7 @@ describe("BillSummaryCard", () => {
 
   it("shows the error block on a failed load, never the empty state", async () => {
     api.listStatements.mockRejectedValue(new Error("down"));
+    api.getBalance.mockResolvedValue(balance([]));
     const wrapper = mountCard();
     await flushPromises();
 
@@ -121,63 +105,16 @@ describe("BillSummaryCard", () => {
     expect(wrapper.find(".bill-summary").exists()).toBe(false);
   });
 
-  describe("'What is included' toggle", () => {
-    const toggle = (wrapper: ReturnType<typeof mountCard>) =>
-      wrapper.findAll("button").filter((b) => b.text().includes("What is included"));
-
-    it("is absent for a tariff-only bill", async () => {
-      api.listStatements.mockResolvedValue([closedLine({ loss_share_uah: "0.00" })]);
-      const wrapper = mountCard();
-      await flushPromises();
-
-      expect(wrapper.find(".bill-summary").exists()).toBe(true);
-      expect(toggle(wrapper)).toHaveLength(0);
-    });
-
-    it.each([
-      ["a shared-loss row", {}],
-      ["a late-fee row", { loss_share_uah: "0.00", penalty_uah: "30.00" }],
-      ["a late-fee credit row", { loss_share_uah: "0.00", penalty_credit_uah: "4.50" }],
-    ])("is present and opens the breakdown for %s", async (_name, overrides) => {
-      api.listStatements.mockResolvedValue([closedLine(overrides)]);
-      const wrapper = mountCard();
-      await flushPromises();
-
-      expect(wrapper.find(".bill-breakdown__row").exists()).toBe(false);
-      const buttons = toggle(wrapper);
-      expect(buttons).toHaveLength(1);
-      await buttons[0]!.trigger("click");
-      expect(wrapper.find(".bill-breakdown__row").exists()).toBe(true);
-    });
-
-    it("is present for a tariff-only bill that has a correction", async () => {
-      api.listStatements.mockResolvedValue([closedLine({ loss_share_uah: "0.00" })]);
-      api.listAdjustments.mockResolvedValue([
-        {
-          amount_uah: "-1.00",
-          applies_to_period: "2026-09",
-          id: 1,
-          posted_in_period: "2026-10",
-          reason: "bill corrected",
-          reason_code: "billCorrection",
-        },
-      ]);
-      const wrapper = mountCard();
-      await flushPromises();
-
-      expect(toggle(wrapper)).toHaveLength(1);
-    });
-  });
-
   it("shows aria-busy skeletons while loading and none once loaded", async () => {
     const gate = deferred<unknown>();
     api.listStatements.mockReturnValue(gate.promise);
+    api.getBalance.mockResolvedValue(balance([]));
     const wrapper = mountCard();
     await nextTick();
 
     expectLoading(wrapper);
 
-    gate.resolve([closedLine()]);
+    gate.resolve([provisionalLine]);
     await flushPromises();
 
     expectLoaded(wrapper);

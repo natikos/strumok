@@ -2,103 +2,86 @@
   <section v-if="isLoading" class="bill-summary" aria-busy="true">
     <Skeleton height="1.8rem" width="45%" />
     <Skeleton height="1rem" width="65%" />
-    <Skeleton height="1rem" width="85%" />
   </section>
 
   <ErrorState v-else-if="error" :message-key="error" @retry="load" />
 
-  <section
-    v-else-if="latest"
-    class="bill-summary"
-    :class="{ 'bill-summary--estimated': latest.isEstimated }"
-    :aria-labelledby="headingId"
-  >
-    <header class="bill-summary__head">
-      <h2 :id="headingId" class="bill-summary__amount">{{ money(latest.totalKopecks) }}</h2>
-      <span v-if="latest.isEstimated" class="bill-summary__pill">
-        <ExclamationTriangle aria-hidden="true" />
-        {{ t("statuses.meterReading.estimated") }}
-      </span>
-    </header>
+  <section v-else-if="rows.length" class="bill-summary" :aria-labelledby="headingId">
+    <h2 :id="headingId" class="bill-summary__amount">{{ money(totalKopecks) }}</h2>
+    <p v-if="householdName" class="bill-summary__household">{{ householdName }}</p>
 
-    <p class="bill-summary__for">
-      {{ t("bill.for", { month: latest.period }) }}
-      <template v-if="householdName"> · {{ householdName }}</template>
-    </p>
-    <p class="bill-summary__plain">
-      {{ latest.isEstimated ? t("bill.plainEstimated") : t("bill.plain", { usage: usage }) }}
-    </p>
-
-    <Button
-      v-if="hasExtraRows(latest)"
-      class="bill-summary__toggle"
-      severity="secondary"
-      variant="text"
-      :aria-expanded="isOpen"
-      :label="t('bill.howCalculated')"
-      @click="isOpen = !isOpen"
-    />
-    <BillBreakdown v-if="isOpen && hasExtraRows(latest)" :bill="latest" />
-
-    <p v-if="provisional" class="bill-summary__provisional">
-      {{ t("bill.soFar", { amount: money(provisional.totalKopecks) }) }}
-    </p>
+    <ul class="bill-summary__rows">
+      <li v-for="row in rows" :key="row.period" class="bill-summary__row">
+        <span class="bill-summary__period">
+          {{ row.period }}
+          <span v-if="row.isProvisional" class="bill-summary__tag">{{ t("bill.provisional") }}</span>
+        </span>
+        <span class="bill-summary__sum">{{ money(row.kopecks) }}</span>
+      </li>
+    </ul>
   </section>
 </template>
 
 <script setup lang="ts">
-  import { ExclamationTriangle } from "@primeicons/vue";
   import { computed, onMounted, ref, watch } from "vue";
   import { useI18n } from "vue-i18n";
 
   import { useCurrentHousehold } from "@/features/households/useCurrentHousehold";
-  import { listAdjustments, listStatements } from "@shared/api/billing";
-  import { type Bill, buildBill, hasExtraRows } from "@shared/utils/bill";
-  import { formatKwh, formatUah } from "@shared/utils/format";
-
-  import BillBreakdown from "./BillBreakdown.vue";
+  import { getBalance, listStatements } from "@shared/api/billing";
+  import { formatUah, toDecimal } from "@shared/utils/format";
 
   const { t } = useI18n();
   const { current, currentId, households } = useCurrentHousehold();
   const locale = navigator.language;
   const headingId = "bill-summary-heading";
 
-  const latest = ref<Bill | null>(null);
-  const provisional = ref<Bill | null>(null);
+  interface Row {
+    period: string;
+    kopecks: number;
+    isProvisional: boolean;
+  }
+
+  const rows = ref<Row[]>([]);
   const isLoading = ref(true);
-  const isOpen = ref(false);
   const error = ref<string | null>(null);
 
   const householdName = computed(() =>
     households.value.length > 1 ? (current.value?.name ?? "") : ""
   );
-  const usage = computed(() =>
-    latest.value ? formatKwh(latest.value.usageKwh, locale, t("units.kwh")) : ""
-  );
+  const totalKopecks = computed(() => rows.value.reduce((sum, row) => sum + row.kopecks, 0));
 
   function money(kopecks: number): string {
     return formatUah(kopecks / 100, locale);
   }
+
+  const toKopecks = (value: string): number => Math.round(toDecimal(value) * 100);
 
   async function load(): Promise<void> {
     isLoading.value = true;
     error.value = null;
 
     try {
-      const [lines, adjustments] = await Promise.all([
+      const [lines, balance] = await Promise.all([
         listStatements(currentId.value),
-        listAdjustments(currentId.value),
+        getBalance(currentId.value),
       ]);
-      const closed = lines.filter((line) => line.status === "closed");
-      const newest = [...closed].sort((a, b) => (a.period < b.period ? 1 : -1))[0];
+      // What is still owed per closed month, then this month's running estimate.
+      const owed: Row[] = balance.periods
+        .map((p) => ({
+          period: p.period,
+          kopecks: toKopecks(p.due_uah) - toKopecks(p.paid_uah),
+          isProvisional: false,
+        }))
+        .filter((row) => row.kopecks > 0)
+        .sort((a, b) => (a.period < b.period ? 1 : -1));
       const open = lines.find((line) => line.status === "provisional");
 
-      latest.value = newest ? buildBill(newest, adjustments) : null;
-      provisional.value = open ? buildBill(open, adjustments) : null;
+      rows.value = open
+        ? [{ period: open.period, kopecks: toKopecks(open.total_uah), isProvisional: true }, ...owed]
+        : owed;
     } catch {
       // A failed load is an error, never the empty state.
-      latest.value = null;
-      provisional.value = null;
+      rows.value = [];
       error.value = "errors.requestFailed";
     } finally {
       isLoading.value = false;
@@ -118,41 +101,40 @@
     min-width: 0;
     padding: var(--s-app-space-4);
 
-    &--estimated {
-      border-color: var(--s-amber-500);
-    }
-
-    &__head {
-      @include layout.row(var(--s-app-space-3), center, space-between);
-    }
-
     &__amount {
       font-size: 1.8rem;
       margin: 0;
     }
 
-    &__pill {
-      align-items: center;
-      color: var(--s-amber-500);
-      display: inline-flex;
-      font-size: 0.8rem;
-      gap: var(--s-app-space-1);
-    }
-
-    &__for,
-    &__plain,
-    &__provisional {
+    &__household {
       color: color-mix(in srgb, var(--s-content-color), transparent 30%);
       margin: 0;
     }
 
-    &__provisional {
-      font-size: 0.85rem;
+    &__rows {
+      @include layout.stack(var(--s-app-space-1));
+      list-style: none;
+      margin: 0;
+      padding: 0;
     }
 
-    &__toggle {
-      align-self: flex-start;
-      min-height: 44px;
+    &__row {
+      @include layout.row(var(--s-app-space-3), center, space-between);
+      color: color-mix(in srgb, var(--s-content-color), transparent 20%);
+    }
+
+    &__period {
+      min-width: 0;
+    }
+
+    &__tag {
+      color: var(--s-amber-500);
+      font-size: 0.8rem;
+      margin-inline-start: var(--s-app-space-1);
+    }
+
+    &__sum {
+      font-variant-numeric: tabular-nums;
     }
   }
 </style>
