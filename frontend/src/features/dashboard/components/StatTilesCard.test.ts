@@ -36,6 +36,7 @@ const momChange: MomChange = {
 
 const seasonComparison: SeasonComparison = {
   season: "summer",
+  monthIndexes: [5, 6],
   currentKwh: 180,
   currentPeriodCount: 2,
   previousYearKwh: 150.4,
@@ -142,6 +143,7 @@ describe("StatTilesCard", () => {
       expect(tile.text()).toContain("Summer");
       expect(tile.text()).toContain("last year");
       expect(tile.text()).toContain("150.4");
+      expect(tile.text()).toContain("June–July");
       expect(tile.findComponent(ArrowUp).exists()).toBe(true);
       expect(tile.find(".stat-tile__value--up").exists()).toBe(true);
     });
@@ -150,6 +152,7 @@ describe("StatTilesCard", () => {
       const wrapper = mountCard({
         seasonComparison: {
           season: "summer",
+          monthIndexes: [5, 6],
           currentKwh: 90,
           currentPeriodCount: 2,
           previousYearKwh: 120,

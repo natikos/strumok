@@ -23,6 +23,7 @@
         </span>
 
         <span class="stat-tile__sub">{{ tile.sub }}</span>
+        <span v-if="tile.detail" class="stat-tile__sub">{{ tile.detail }}</span>
       </div>
     </template>
   </div>
@@ -68,6 +69,8 @@
     value: string;
     unit: string;
     sub: string;
+    /** Second supporting line, e.g. the money side of a kWh figure. */
+    detail?: string | undefined;
     isEmpty: boolean;
     icon?: typeof ArrowDown;
     valueClass?: string;
@@ -98,10 +101,14 @@
 
     return {
       key: "last",
-      label: t("dashboard.lastPeriodEmpty"),
+      label: monthName(last.monthIndex),
       value: num(last.totalKwh),
       unit: kwh.value,
       sub: `${t("meterReadings.day")} ${num(last.dayKwh)} · ${t("meterReadings.night")} ${num(last.nightKwh)} ${kwh.value}`,
+      detail:
+        last.chargedUah === null
+          ? undefined
+          : `${t("usageHistory.charged")} ${formatUah(last.chargedUah, intlLocale.value)}`,
       isEmpty: false,
     };
   });
@@ -135,12 +142,15 @@
     const previousMonth = props.lastPeriod
       ? monthName((props.lastPeriod.monthIndex + 11) % 12)
       : "";
+    const currentMonth = props.lastPeriod ? monthName(props.lastPeriod.monthIndex) : "";
 
-    // The hryvnia delta only exists for billed periods (#45), so the tile falls
-    // back to the kWh movement alone rather than implying a zero-cost change.
-    const sub =
+    // Both months' actual values, so the percentage can be checked at a glance.
+    const sub = `${previousMonth} ${num(mom.from)} → ${currentMonth} ${num(mom.to)} ${kwh.value}`;
+    // The hryvnia delta only exists for billed periods (#45); without it the
+    // tile shows the kWh movement alone rather than implying a zero-cost change.
+    const detail =
       mom.deltaUah == null || mom.deltaUah === 0
-        ? `${num(mom.from)} → ${num(mom.to)} ${kwh.value}`
+        ? undefined
         : t(mom.deltaUah < 0 ? "dashboard.uahLess" : "dashboard.uahMore", {
             value: formatUah(Math.abs(mom.deltaUah), intlLocale.value),
           });
@@ -151,6 +161,7 @@
       value: `${Math.abs(mom.percent).toFixed(1)}%`,
       unit: "",
       sub,
+      detail,
       isEmpty: false,
       icon: mom.direction === "down" ? ArrowDown : ArrowUp,
       valueClass: mom.direction === "down" ? "stat-tile__value--down" : "stat-tile__value--up",
@@ -192,7 +203,14 @@
       };
     }
 
-    const sub = `${num(comparison.currentKwh)} · ${t("dashboard.seasonPreviousYearValue", { value: num(comparison.previousYearKwh) })}`;
+    // Only months with a reading in both years are summed, so name them: an
+    // unfinished season is compared like for like, never against a full one.
+    const months = comparison.monthIndexes.map(monthName);
+    const range = months.length > 1 ? `${months[0]}–${months.at(-1)}` : (months[0] ?? "");
+    const sub = `${range}: ${num(comparison.currentKwh)} ${kwh.value}`;
+    const detail = t("dashboard.seasonPreviousYearValue", {
+      value: `${num(comparison.previousYearKwh)} ${kwh.value}`,
+    });
 
     return {
       key: "season",
@@ -200,6 +218,7 @@
       value: `${Math.abs(comparison.deltaPercent).toFixed(1)}%`,
       unit: "",
       sub,
+      detail,
       isEmpty: false,
       icon: comparison.direction === "down" ? ArrowDown : ArrowUp,
       valueClass:
