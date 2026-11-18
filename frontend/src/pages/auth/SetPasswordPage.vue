@@ -72,7 +72,6 @@
   import { useRoute, useRouter } from "vue-router";
   import { z } from "zod";
 
-  import { useLocale } from "@features/i18n/composables/useLocale";
   import type { FormSubmitEvent } from "@primevue/forms/form";
   import { ApiError, confirmPasswordReset } from "@shared/api/auth";
   import FormFieldControl from "@shared/FormFieldControl.vue";
@@ -81,7 +80,6 @@
   const route = useRoute();
   const router = useRouter();
   const toast = useToast();
-  const { setLocale } = useLocale();
   const { t } = useI18n();
 
   const token = typeof route.query["token"] === "string" ? route.query["token"] : "";
@@ -129,8 +127,7 @@
     isSubmitting.value = true;
 
     try {
-      const me = await confirmPasswordReset(token, parsed.data.password);
-      setLocale(me.language);
+      await confirmPasswordReset(token, parsed.data.password);
       toast.add({ detail: t("auth.setDone"), life: 6000, severity: "success" });
       await goTo(ROUTES.root);
     } catch (error: unknown) {

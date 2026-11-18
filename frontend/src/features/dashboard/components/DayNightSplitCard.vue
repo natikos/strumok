@@ -47,8 +47,7 @@
   import { useI18n } from "vue-i18n";
 
   import type { DayNightSplit } from "@/features/dashboard/composables/useUsageInsights";
-  import { useLocale } from "@/features/i18n/composables/useLocale";
-  import { formatKwh, formatMeterValue } from "@shared/utils/format";
+  import { APP_LOCALE, formatKwh, formatMeterValue } from "@shared/utils/format";
 
   interface Props {
     split: DayNightSplit | null;
@@ -65,14 +64,13 @@
   defineEmits<{ "view-history": [] }>();
 
   const { t } = useI18n();
-  const { intlLocale } = useLocale();
 
   function kwhOf(value: number): string {
-    return formatKwh(value, intlLocale.value, t("units.kwh"));
+    return formatKwh(value, APP_LOCALE, t("units.kwh"));
   }
 
   function pctOf(value: number): string {
-    return `${formatMeterValue(Math.round(value), intlLocale.value)}%`;
+    return `${formatMeterValue(Math.round(value), APP_LOCALE)}%`;
   }
 
   // flex-grow on each segment keeps the bar proportional without percentage math.

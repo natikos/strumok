@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from "vitest";
 import { nextTick } from "vue";
 
 import { deferred, expectLoaded, expectLoading } from "@/shared/testing/loading";
-import { appPlugins } from "@/shared/testing/mount";
+import { appPlugins, tUa } from "@/shared/testing/mount";
 
 import RestatementPreview from "./RestatementPreview.vue";
 
@@ -54,9 +54,9 @@ describe("RestatementPreview", () => {
     const cards = wrapper.findAll(".restatement__card");
     expect(cards).toHaveLength(2);
     expect(cards[0]!.text()).toContain("+");
-    expect(cards[0]!.text()).toContain("extra charge");
-    expect(cards[1]!.text()).toContain("refund");
-    expect(wrapper.text()).toContain("2 household(s) across 1 period(s)");
+    expect(cards[0]!.text()).toContain("доплата");
+    expect(cards[1]!.text()).toContain("повернення");
+    expect(wrapper.text()).toContain(tUa("admin.restatement.summary", { households: 2, periods: 1 }));
   });
 
   it("keeps posting disabled with a hint until a reason is entered", async () => {
@@ -67,7 +67,7 @@ describe("RestatementPreview", () => {
     const confirm = wrapper.find(".restatement__actions button");
     expect(confirm.attributes("disabled")).toBeDefined();
     expect(confirm.attributes("aria-disabled")).toBe("true");
-    expect(wrapper.text()).toContain("Enter a reason to continue");
+    expect(wrapper.text()).toContain("Введіть причину, щоб продовжити");
 
     await wrapper.find("input").setValue("typo in the bill");
     expect(wrapper.find(".restatement__actions button").attributes("disabled")).toBeUndefined();
@@ -86,8 +86,8 @@ describe("RestatementPreview", () => {
     );
     await flushPromises();
 
-    expect(wrapper.text()).toContain("nets to zero");
-    expect(wrapper.text()).toContain("No household's amount changes");
+    expect(wrapper.text()).toContain(tUa("admin.restatement.zeroSum"));
+    expect(wrapper.text()).toContain(tUa("admin.restatement.noChange"));
   });
 
   it("shows aria-busy skeletons while the preview loads and none once it arrives", async () => {

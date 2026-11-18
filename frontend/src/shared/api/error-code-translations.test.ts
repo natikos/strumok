@@ -2,7 +2,6 @@ import { readFileSync } from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
 
-import en from "@/features/i18n/locales/en.json";
 import ua from "@/features/i18n/locales/ua.json";
 
 /**
@@ -14,7 +13,7 @@ const HANDLED_OUTSIDE_ERRORS_NAMESPACE = new Set(["effectiveFromAlreadyExists"])
 
 /**
  * Every ErrorOut example in the generated OpenAPI types is a detail code the
- * backend can actually send. If either locale is missing an `errors.<code>`
+ * backend can actually send. If the locale is missing an `errors.<code>`
  * key, the resident sees generic fallback text instead of a translated
  * message -- so this fails CI rather than surfacing only at runtime.
  */
@@ -38,10 +37,6 @@ describe("error code translation completeness", () => {
 
   it("found at least one declared error code to check", () => {
     expect(codes.length).toBeGreaterThan(0);
-  });
-
-  it.each(codes)("en has a translation for %s", (code) => {
-    expect(en.errors).toHaveProperty(code);
   });
 
   it.each(codes)("ua has a translation for %s", (code) => {

@@ -3,7 +3,8 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vites
 import { nextTick } from "vue";
 
 import { deferred, expectLoaded, expectLoading } from "@/shared/testing/loading";
-import { appPlugins } from "@/shared/testing/mount";
+import { appPlugins, tUa } from "@/shared/testing/mount";
+import { APP_LOCALE, formatUah } from "@shared/utils/format";
 import type { Component } from "vue";
 
 const api = vi.hoisted(() => ({
@@ -95,9 +96,9 @@ describe("BalancesPanel", () => {
     const wrapper = mountPanel();
     await flushPromises();
 
-    expect(wrapper.text()).toContain("Total outstanding");
-    expect(wrapper.text()).toContain("Owes");
-    expect(wrapper.text()).toContain("Credit");
+    expect(wrapper.text()).toContain(tUa("admin.balances.outstanding", { total: formatUah("300.00", APP_LOCALE) }));
+    expect(wrapper.text()).toContain(tUa("admin.balances.owes", { amount: formatUah("300.00", APP_LOCALE) }));
+    expect(wrapper.text()).toContain(tUa("admin.balances.credit", { amount: formatUah("20.00", APP_LOCALE) }));
   });
 
   it("gives every record-payment action an accessible name with the household", async () => {
@@ -105,8 +106,8 @@ describe("BalancesPanel", () => {
     await flushPromises();
 
     const labels = wrapper.findAll("button").map((b) => b.attributes("aria-label"));
-    expect(labels).toContain("Record payment for Plot 1");
-    expect(labels).toContain("Record payment for Plot 2");
+    expect(labels).toContain(tUa("admin.balances.record", { name: "Plot 1" }));
+    expect(labels).toContain(tUa("admin.balances.record", { name: "Plot 2" }));
   });
 
   it("pre-fills the amount with the balance and records without a confirm", async () => {
@@ -114,7 +115,7 @@ describe("BalancesPanel", () => {
     const wrapper = mountPanel();
     await flushPromises();
 
-    await wrapper.find("button[aria-label='Record payment for Plot 1']").trigger("click");
+    await wrapper.find(`button[aria-label="${tUa("admin.balances.record", { name: "Plot 1" })}"]`).trigger("click");
     await flushPromises();
     await wrapper.find(".balances__form").trigger("submit");
     await flushPromises();
@@ -129,7 +130,7 @@ describe("BalancesPanel", () => {
   it("requires a reason before a void can be confirmed", async () => {
     const wrapper = mountPanel();
     await flushPromises();
-    await wrapper.find("button[aria-label='Record payment for Plot 1']").trigger("click");
+    await wrapper.find(`button[aria-label="${tUa("admin.balances.record", { name: "Plot 1" })}"]`).trigger("click");
     await flushPromises();
 
     const voidButton = wrapper.find(".balances__payment button");
@@ -148,11 +149,11 @@ describe("BalancesPanel", () => {
     ]);
     const wrapper = mountPanel();
     await flushPromises();
-    await wrapper.find("button[aria-label='Record payment for Plot 1']").trigger("click");
+    await wrapper.find(`button[aria-label="${tUa("admin.balances.record", { name: "Plot 1" })}"]`).trigger("click");
     await flushPromises();
 
     expect(wrapper.find(".balances__payment--voided").exists()).toBe(true);
-    expect(wrapper.text()).toContain("Voided: wrong plot");
+    expect(wrapper.text()).toContain(tUa("admin.balances.voided", { reason: "wrong plot" }));
   });
 
   it("shows aria-busy skeletons while loading and none once loaded", async () => {

@@ -89,6 +89,7 @@
     getAuditLog,
     listAdminHouseholds,
   } from "@shared/api/admin";
+  import { APP_LOCALE } from "@shared/utils/format";
 
   const ACTIONS = ["householdCreated", "householdOwnerAssigned", "rateCreated"];
   const PERIOD_PATTERN = /^\d{4}-\d{2}$/;
@@ -110,7 +111,7 @@
   }
 
   function formatTime(value: string): string {
-    return new Date(value).toLocaleString();
+    return new Date(value).toLocaleString(APP_LOCALE);
   }
 
   function summarize(value: Record<string, unknown> | null | undefined): string {

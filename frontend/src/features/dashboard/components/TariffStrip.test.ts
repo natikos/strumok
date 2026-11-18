@@ -1,7 +1,7 @@
 import { flushPromises, mount } from "@vue/test-utils";
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { appPlugins } from "@/shared/testing/mount";
+import { appPlugins, tUa } from "@/shared/testing/mount";
 import type { Component } from "vue";
 
 const { getCurrentRate } = vi.hoisted(() => ({ getCurrentRate: vi.fn() }));
@@ -39,9 +39,9 @@ describe("TariffStrip", () => {
     });
     const text = (await render()).text();
 
-    expect(text).toMatch(/Day.*4[.,]32/);
-    expect(text).toMatch(/Night.*2[.,]16/);
-    expect(text).toContain("from 01.01");
+    expect(text).toMatch(new RegExp(`${tUa("tariff.day")}.*4[.,]32`));
+    expect(text).toMatch(new RegExp(`${tUa("tariff.night")}.*2[.,]16`));
+    expect(text).toContain(tUa("tariff.from", { date: "01.01" }));
   });
 
   it("renders nothing when no rate is configured", async () => {

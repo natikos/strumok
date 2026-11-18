@@ -43,7 +43,6 @@ def create_user(
         first_name=payload.first_name,
         last_name=payload.last_name,
         is_admin=payload.is_admin,
-        language=payload.language,
     )
     return E2eUserOut(id=user.id, email=user.email)
 

@@ -4,8 +4,6 @@
       <img class="auth-layout__logo" src="/logo.svg" alt="Strumok Logo" />
 
       <div class="auth-layout__controls">
-        <LanguageToggleButton class="auth-layout__language-toggle" />
-
         <ThemeToggleButton class="auth-layout__theme-toggle" />
       </div>
     </header>
@@ -17,7 +15,6 @@
 </template>
 
 <script setup lang="ts">
-  import LanguageToggleButton from "@shared/components/i18n/LanguageToggleButton.vue";
   import ThemeToggleButton from "@shared/components/theme/ThemeToggleButton.vue";
 </script>
 

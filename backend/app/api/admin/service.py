@@ -32,7 +32,6 @@ from app.db.models import (
     BillingPeriod,
     Household,
     HouseholdCharge,
-    LanguageCode,
     MeterReading,
     MeterSegment,
     User,
@@ -607,7 +606,6 @@ def invite_user(
     email: str,
     first_name: str,
     last_name: str,
-    language: LanguageCode,
     household_id: int | None,
 ) -> tuple[AdminUserOut, str, bool]:
     household = None
@@ -626,7 +624,6 @@ def invite_user(
         email=email,
         first_name=first_name.strip(),
         last_name=last_name.strip(),
-        language=language,
     )
     session.add(user)
     try:

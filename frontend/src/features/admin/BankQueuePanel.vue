@@ -103,7 +103,7 @@
     listBankQueue,
   } from "@shared/api/admin";
   import { ApiError } from "@shared/api/client";
-  import { formatUah } from "@shared/utils/format";
+  import { APP_LOCALE, formatUah } from "@shared/utils/format";
 
   interface Line {
     householdId: number | null;
@@ -112,7 +112,7 @@
 
   const { t } = useI18n();
   const confirm = useConfirm();
-  const locale = navigator.language;
+  const locale = APP_LOCALE;
 
   const rows = ref<BankTransactionOut[]>([]);
   const households = ref<AdminHouseholdOut[]>([]);

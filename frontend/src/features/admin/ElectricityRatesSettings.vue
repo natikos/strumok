@@ -8,8 +8,8 @@
       <li v-for="rate in rates" :key="rate.id" class="electricity-rates__item">
         <span class="electricity-rates__period">{{ rate.effective_from }}</span>
         <span class="electricity-rates__values">
-          {{ t("admin.dayRateShort") }} {{ formatUah(rate.day_rate_uah, intlLocale) }} ·
-          {{ t("admin.nightRateShort") }} {{ formatUah(rate.night_rate_uah, intlLocale) }}
+          {{ t("admin.dayRateShort") }} {{ formatUah(rate.day_rate_uah, APP_LOCALE) }} ·
+          {{ t("admin.nightRateShort") }} {{ formatUah(rate.night_rate_uah, APP_LOCALE) }}
         </span>
         <RateEditor :rate="rate" @changed="loadRates" />
       </li>
@@ -126,7 +126,6 @@
   import { useI18n } from "vue-i18n";
   import { z } from "zod";
 
-  import { useLocale } from "@features/i18n/composables/useLocale";
   import { ApiError } from "@shared/api/client";
   import {
     createElectricityRate,
@@ -139,7 +138,7 @@
     formatPeriodMonth,
     nextBillingPeriod,
   } from "@shared/utils/billing-period";
-  import { formatUah } from "@shared/utils/format";
+  import { APP_LOCALE, formatUah } from "@shared/utils/format";
 
   interface FieldErrors {
     effectiveFrom?: string;
@@ -159,7 +158,6 @@
   });
 
   const { t } = useI18n();
-  const { intlLocale } = useLocale();
   const toast = useToast();
 
   const rates = ref<ElectricityRateOut[]>([]);
@@ -188,7 +186,7 @@
       return null;
     }
 
-    const period = formatPeriodMonth(uncoveredPeriod, intlLocale.value, {
+    const period = formatPeriodMonth(uncoveredPeriod, APP_LOCALE, {
       month: "long",
       year: "numeric",
     });

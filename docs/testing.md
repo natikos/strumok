@@ -152,8 +152,9 @@ Kyiv time (`KYIV_TZ`), never the device's zone.
 `src/shared/testing/mount.ts` provides `mountWithPlugins` (i18n + PrimeVue
 configured as the app configures them) and `appPlugins()` for specs that want to
 call `mount` directly and keep full prop type inference. Each mount gets a fresh
-i18n instance — the app-level singleton reads the stored language at import time,
-so sharing it leaks locale state between tests.
+i18n instance (Ukrainian), so state never leaks between tests. Assert copy with
+`tUa(key, params)` from the same file, which translates with the real `ua.json`,
+rather than hardcoding Ukrainian strings.
 
 Mock the network at `fetch`, not at `openapi-fetch`, and never hand-edit
 `src/shared/api/generated/openapi.ts`.
@@ -218,8 +219,7 @@ service layer; never write raw SQL from a spec.
 
 **Rules.** Don't mock the backend with `page.route` (offline simulation is the
 exception). Use role and label selectors with web-first assertions, never
-`waitForTimeout`. Seed users in English and don't assert Ukrainian text unless the
-test is about i18n. Service workers are blocked by default; a spec that needs one
+`waitForTimeout`. The UI is Ukrainian only, so match visible copy in Ukrainian. Service workers are blocked by default; a spec that needs one
 opts in with `test.use({ serviceWorkers: "allow" })`. A known, tracked defect is
 pinned with `test.fail` (Playwright) or `pytest.mark.xfail(strict=True)` and a
 comment naming the issue; the mark comes off in the fix's PR. Never run `bun run api:types`

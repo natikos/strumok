@@ -1,7 +1,7 @@
 import { CheckCircle, Clock, ExclamationTriangle, TimesCircle } from "@primeicons/vue";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { mountWithPlugins } from "@/shared/testing/mount";
+import { mountWithPlugins, tUa } from "@/shared/testing/mount";
 import type { MeterReadingOut } from "@shared/api/meter-readings";
 
 import DeadlineBadge from "./DeadlineBadge.vue";
@@ -31,7 +31,7 @@ describe("DeadlineBadge", () => {
     vi.setSystemTime(new Date(2026, 5, 3));
     const wrapper = mountWithPlugins(DeadlineBadge, { props: { reading: null } });
 
-    expect(wrapper.text()).toContain("Due");
+    expect(wrapper.text()).toContain(tUa("statuses.meterReading.due"));
     expect(wrapper.findComponent(Clock).exists()).toBe(true);
     expect(wrapper.classes()).toContain("deadline-badge--due");
   });
@@ -40,7 +40,7 @@ describe("DeadlineBadge", () => {
     vi.setSystemTime(new Date(2026, 5, 20));
     const wrapper = mountWithPlugins(DeadlineBadge, { props: { reading: undefined } });
 
-    expect(wrapper.text()).toContain("Overdue");
+    expect(wrapper.text()).toContain("Протерміновано");
     expect(wrapper.findComponent(TimesCircle).exists()).toBe(true);
     expect(wrapper.classes()).toContain("deadline-badge--overdue");
   });
@@ -50,8 +50,8 @@ describe("DeadlineBadge", () => {
     const reading = makeReading({ submitted_at: new Date(2026, 5, 3, 9, 0).toISOString() });
     const wrapper = mountWithPlugins(DeadlineBadge, { props: { reading } });
 
-    expect(wrapper.text()).toContain("Submitted");
-    expect(wrapper.text()).not.toContain("Submitted late");
+    expect(wrapper.text()).toContain("Надіслано");
+    expect(wrapper.text()).not.toContain("Пізня подача");
     expect(wrapper.findComponent(CheckCircle).exists()).toBe(true);
     expect(wrapper.classes()).toContain("deadline-badge--submitted");
   });
@@ -61,7 +61,7 @@ describe("DeadlineBadge", () => {
     const reading = makeReading({ submitted_at: new Date(2026, 5, 10, 9, 0).toISOString() });
     const wrapper = mountWithPlugins(DeadlineBadge, { props: { reading } });
 
-    expect(wrapper.text()).toContain("Submitted late");
+    expect(wrapper.text()).toContain("Пізня подача");
     expect(wrapper.findComponent(ExclamationTriangle).exists()).toBe(true);
     expect(wrapper.classes()).toContain("deadline-badge--submitted-late");
   });

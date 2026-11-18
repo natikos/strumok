@@ -40,7 +40,7 @@ function makeReading(overrides: Partial<MeterReadingOut> = {}): MeterReadingOut 
 }
 
 /**
- * `useMeterReadings` calls `useI18n`/`useLocale`, so it needs a real component
+ * `useMeterReadings` calls `useI18n`, so it needs a real component
  * setup context with the app's plugins installed -- mirroring how the
  * dashboard page actually mounts it, not a bare `withSetup` stub.
  */

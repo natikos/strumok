@@ -294,7 +294,6 @@
   import PastHouseholds from "@/features/households/components/PastHouseholds.vue";
   import { useCurrentHousehold } from "@features/households/useCurrentHousehold";
   import { useHouseholdTenures } from "@features/households/useHouseholdTenures";
-  import { useLocale } from "@features/i18n/composables/useLocale";
   import {
     type BalanceOut,
     getBalance,
@@ -317,6 +316,7 @@
     formatUah as formatUahShared,
     toDecimal,
   } from "@shared/utils/format";
+  import { APP_LOCALE } from "@shared/utils/format";
 
   interface SubmissionRecordEntry {
     period: string;
@@ -354,7 +354,6 @@
   const status = ref<"loading" | "error" | "ready">("loading");
 
   const { t } = useI18n();
-  const { intlLocale } = useLocale();
   const { currentId, isPastOnly } = useCurrentHousehold();
 
   const { forHousehold, load: loadTenures } = useHouseholdTenures();
@@ -366,7 +365,7 @@
 
     return tenure?.has_previous_owner && tenure.owned_since
       ? t("ownership.previousOwnerNote", {
-          date: formatKyivDate(tenure.owned_since, intlLocale.value),
+          date: formatKyivDate(tenure.owned_since, APP_LOCALE),
         })
       : "";
   });
@@ -403,7 +402,7 @@
       return {
         period: reading.period,
         year: String(date.getFullYear()),
-        monthLabel: formatPeriodMonth(reading.period, intlLocale.value),
+        monthLabel: formatPeriodMonth(reading.period, APP_LOCALE),
         dayUsage,
         nightUsage,
         totalUsage: dayUsage + nightUsage,
@@ -532,11 +531,11 @@
   });
 
   function formatKwh(value: number): string {
-    return formatKwhShared(value, intlLocale.value, t("units.kwh"));
+    return formatKwhShared(value, APP_LOCALE, t("units.kwh"));
   }
 
   function formatUah(value: number): string {
-    return formatUahShared(value, intlLocale.value);
+    return formatUahShared(value, APP_LOCALE);
   }
 
   function jumpToPeriod(period: string): void {

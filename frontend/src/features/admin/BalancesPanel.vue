@@ -155,13 +155,13 @@
     voidHouseholdPayment,
   } from "@shared/api/admin";
   import { ApiError } from "@shared/api/client";
-  import { formatUah, toDecimal } from "@shared/utils/format";
+  import { APP_LOCALE, formatUah, toDecimal } from "@shared/utils/format";
 
   type Row = BalancesOut["households"][number];
 
   const { t } = useI18n();
   const confirm = useConfirm();
-  const locale = navigator.language;
+  const locale = APP_LOCALE;
 
   const data = ref<BalancesOut | null>(null);
   const error = ref<string | null>(null);

@@ -132,7 +132,7 @@
     type ElectricityRateOut,
     updateElectricityRate,
   } from "@shared/api/electricity-rates";
-  import { toDecimal } from "@shared/utils/format";
+  import { APP_LOCALE, toDecimal } from "@shared/utils/format";
 
   const props = defineProps<{ rate: ElectricityRateOut }>();
   const emit = defineEmits<{ changed: [] }>();
@@ -163,7 +163,7 @@
   }
 
   function formatWhen(value: string): string {
-    return new Date(value).toLocaleString();
+    return new Date(value).toLocaleString(APP_LOCALE);
   }
 
   async function run(action: () => Promise<unknown>): Promise<void> {

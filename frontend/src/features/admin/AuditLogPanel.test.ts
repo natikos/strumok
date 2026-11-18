@@ -1,7 +1,7 @@
 import { flushPromises, mount } from "@vue/test-utils";
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { appPlugins } from "@/shared/testing/mount";
+import { appPlugins, tUa } from "@/shared/testing/mount";
 import type { Component } from "vue";
 
 const { getAuditLog, listAdminHouseholds } = vi.hoisted(() => ({
@@ -67,8 +67,8 @@ describe("AuditLogPanel", () => {
     const wrapper = mountPanel();
     await flushPromises();
 
-    expect(wrapper.text()).toContain("Rate added");
-    expect(wrapper.text()).toContain("by Head Admin");
+    expect(wrapper.text()).toContain("Тариф додано");
+    expect(wrapper.text()).toContain(tUa("admin.audit.by", { name: "Head Admin" }));
     expect(wrapper.text()).toContain("— → day_rate_uah: 4.32");
   });
 
@@ -92,6 +92,6 @@ describe("AuditLogPanel", () => {
     const wrapper = mountPanel();
     await flushPromises();
 
-    expect(wrapper.text()).toContain("No entries match these filters");
+    expect(wrapper.text()).toContain("Записів за цими фільтрами немає");
   });
 });

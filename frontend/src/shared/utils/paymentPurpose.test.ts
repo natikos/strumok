@@ -8,10 +8,10 @@ describe("paymentPurpose", () => {
   });
 
   it("lists every household reference, sorted", () => {
-    expect(paymentPurpose("Electricity", [9, 2])).toBe("Electricity STR-2, STR-9");
+    expect(paymentPurpose("Електроенергія", [9, 2])).toBe("Електроенергія STR-2, STR-9");
   });
 
   it("falls back to the label alone", () => {
-    expect(paymentPurpose("Electricity", [])).toBe("Electricity");
+    expect(paymentPurpose("Електроенергія", [])).toBe("Електроенергія");
   });
 });

@@ -496,8 +496,6 @@ def test_outbox_filters_by_recipient_case_insensitively(
 def test_create_user_makes_an_active_verified_user_who_can_log_in(
     client: TestClient, session: Session
 ) -> None:
-    from app.db.models import LanguageCode
-
     user = e2e_service.create_user(
         session,
         email_address="  Admin@Example.COM ",
@@ -505,7 +503,6 @@ def test_create_user_makes_an_active_verified_user_who_can_log_in(
         first_name="Ada",
         last_name="Head",
         is_admin=True,
-        language=LanguageCode.EN,
     )
 
     assert user.email == "admin@example.com"

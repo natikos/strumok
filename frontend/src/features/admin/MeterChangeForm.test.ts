@@ -3,7 +3,7 @@ import Button from "primevue/button";
 import InputNumber from "primevue/inputnumber";
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { appPlugins } from "@/shared/testing/mount";
+import { appPlugins, tUa } from "@/shared/testing/mount";
 import type { Component } from "vue";
 
 const { confirmRequire, recordMeterChange, toastAdd } = vi.hoisted(() => ({
@@ -42,7 +42,7 @@ async function fill(wrapper: ReturnType<typeof mountForm>) {
   for (const [index, value] of values.entries()) {
     numbers[index]!.vm.$emit("update:modelValue", value);
   }
-  await wrapper.find("input[placeholder='Reason (required)']").setValue("swapped by the utility");
+  await wrapper.find(`input[placeholder="${tUa("admin.readingEdit.reason")}"]`).setValue("swapped by the utility");
 }
 
 describe("MeterChangeForm", () => {

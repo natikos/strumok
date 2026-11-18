@@ -23,7 +23,6 @@ from app.db.models import (
     BankTransaction,
     BillingPeriod,
     HouseholdCharge,
-    LanguageCode,
     NotificationLog,
     OpeningBalance,
     Payment,
@@ -126,7 +125,6 @@ def _owes(session: Session, household_id: int, owner_id: int | None, amount: str
 
 def _subscribed_user(session: Session, **kw):
     user = make_user(session, **kw)
-    user.language = LanguageCode.EN
     make_push_subscription(session, user_id=user.id)
     return user
 

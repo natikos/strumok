@@ -73,7 +73,6 @@
   import { useRouter } from "vue-router";
   import { z } from "zod";
 
-  import { useLocale } from "@features/i18n/composables/useLocale";
   import { getStoredTheme } from "@features/preferences/preferences.storage";
   import { useTheme } from "@features/theme/composables/useTheme";
   import type { FormSubmitEvent } from "@primevue/forms/form";
@@ -84,7 +83,6 @@
   import { ROUTES } from "@shared/routing/routes";
 
   const router = useRouter();
-  const { setLocale } = useLocale();
   const { setTheme } = useTheme();
 
   const isSubmitting = ref(false);
@@ -134,8 +132,6 @@
       setTheme(me.theme);
 
       await router.push(me.email_verified ? ROUTES.root : ROUTES.verifyEmail);
-
-      setLocale(me.language);
     } catch (error: unknown) {
       if (error instanceof ApiError && error.status === 429) {
         startThrottle(error.retryAfterSeconds ?? 60);

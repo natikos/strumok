@@ -4,13 +4,22 @@ How Strumok models the co-op's billing. Keep this file current: update it in the
 same change that adds or changes a concept, not as separate cleanup later.
 (CLAUDE.md imports it, so Claude Code reads it on every session.)
 
-Contents: [Core concepts](#core-concepts) · [Submission window](#submission-window) ·
+Contents: [Language](#language) · [Core concepts](#core-concepts) · [Submission window](#submission-window) ·
 [Billing ledger](#billing-ledger) · [Closing a period](#closing-a-period) ·
 [Estimates and the penalty](#estimates-and-the-penalty) ·
 [Baselines and meter replacement](#baselines-and-meter-replacement) ·
 [Ownership](#ownership) · [Balances and payments](#balances-and-payments) ·
 [Bank statements](#bank-statements) · [Shortfall notices](#shortfall-notices) ·
 [Reminders](#reminders) · [Imports](#imports)
+
+## Language
+
+The app is Ukrainian only (a co-op in Lviv). There is a single locale file
+(`frontend/src/features/i18n/locales/ua.json`), no language preference, and numbers
+and dates always format as `uk-UA` (`APP_LOCALE` in `frontend/src/shared/utils/format.ts`),
+whatever the device says. Emails, push reminders and billing notifications are
+single Ukrainian templates. `users.language` and the `languagecode` enum were
+dropped by migration `0022`.
 
 ## Core concepts
 

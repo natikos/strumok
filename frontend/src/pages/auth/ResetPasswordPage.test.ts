@@ -1,7 +1,7 @@
 import { flushPromises, mount } from "@vue/test-utils";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { appPlugins } from "@/shared/testing/mount";
+import { appPlugins, tUa } from "@/shared/testing/mount";
 import type * as AuthApi from "@shared/api/auth";
 
 import ResetPasswordPage from "./ResetPasswordPage.vue";
@@ -42,8 +42,8 @@ describe("ResetPasswordPage", () => {
     delete query["token"];
     const wrapper = mountPage();
 
-    expect(wrapper.text()).toContain("invalid or has expired");
-    expect(wrapper.text()).toContain("Request a new link");
+    expect(wrapper.text()).toContain(tUa("auth.resetExpired"));
+    expect(wrapper.text()).toContain("Запросити нове посилання");
   });
 
   it("switches to the expired state when the API rejects the token", async () => {
@@ -61,6 +61,6 @@ describe("ResetPasswordPage", () => {
     await flushPromises();
 
     expect(confirmPasswordReset).toHaveBeenCalledWith("abc", "brand-new-pass");
-    expect(wrapper.text()).toContain("Request a new link");
+    expect(wrapper.text()).toContain("Запросити нове посилання");
   });
 });

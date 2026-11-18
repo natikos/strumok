@@ -61,7 +61,7 @@
     type PaymentDetailsOut,
   } from "@shared/api/billing";
   import { formatPeriodMonth } from "@shared/utils/billing-period";
-  import { formatUah, toDecimal } from "@shared/utils/format";
+  import { APP_LOCALE, formatUah, toDecimal } from "@shared/utils/format";
   import { paymentPurpose } from "@shared/utils/paymentPurpose";
 
   // `embedded` drops the strip's own frame so a parent card can host it.
@@ -70,7 +70,7 @@
 
   const { t } = useI18n();
   const { current, currentId, households, isPastOnly } = useCurrentHousehold();
-  const locale = navigator.language;
+  const locale = APP_LOCALE;
 
   const { past, pastBalance, load: loadTenures } = useHouseholdTenures();
 

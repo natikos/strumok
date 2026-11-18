@@ -21,20 +21,10 @@ describe("frontend test harness", () => {
     expect(text).not.toContain("statuses.meterReading");
   });
 
-  it("honours the requested locale", () => {
-    const en = mountWithPlugins(DeadlineBadge, { props: { reading: null } }).text();
-    const ua = mountWithPlugins(DeadlineBadge, {
-      props: { reading: null },
-      locale: "ua",
-    }).text();
-
-    expect(en).not.toBe(ua);
-  });
-
   it("gives each mount an isolated i18n instance", () => {
-    // Locale set on one mount must not leak into the next; the app-level i18n
+    // State set on one mount must not leak into the next; the app-level i18n
     // singleton would fail this.
-    mountWithPlugins(DeadlineBadge, { props: { reading: null }, locale: "ua" });
+    mountWithPlugins(DeadlineBadge, { props: { reading: null } });
     const after = mountWithPlugins(DeadlineBadge, { props: { reading: null } }).text();
     const baseline = mountWithPlugins(DeadlineBadge, { props: { reading: null } }).text();
 

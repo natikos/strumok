@@ -2,8 +2,6 @@ from datetime import datetime
 
 from pydantic import AwareDatetime, BaseModel, ConfigDict, EmailStr, Field
 
-from app.db.models import LanguageCode
-
 
 class ClockIn(BaseModel):
     model_config = ConfigDict(extra="forbid")
@@ -24,7 +22,6 @@ class E2eUserIn(BaseModel):
     first_name: str = "E2e"
     last_name: str = "User"
     is_admin: bool = False
-    language: LanguageCode = LanguageCode.EN
 
 
 class E2eUserOut(BaseModel):

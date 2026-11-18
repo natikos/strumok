@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 
 import type { YearOverYear } from "@/features/dashboard/composables/useUsageInsights";
 import { expectLoaded, expectLoading } from "@/shared/testing/loading";
-import { mountWithPlugins } from "@/shared/testing/mount";
+import { mountWithPlugins, tUa } from "@/shared/testing/mount";
 
 import YearOverYearCard from "./YearOverYearCard.vue";
 
@@ -33,7 +33,7 @@ describe("YearOverYearCard", () => {
     rows.forEach((row) => {
       const label = row.attributes("aria-label");
       expect(label).toBeTruthy();
-      expect(label).toMatch(/kWh/);
+      expect(label).toContain(tUa("units.kwh"));
     });
   });
 
@@ -71,7 +71,7 @@ describe("YearOverYearCard", () => {
     expect(pill.classes()).toContain("yoy-card__pill--down");
     expect(wrapper.findComponent(ArrowDown).exists()).toBe(true);
     expect(pill.text()).toContain("50");
-    expect(pill.text()).toContain("kWh");
+    expect(pill.text()).toContain(tUa("units.kwh"));
   });
 
   it("uses the increase treatment on the delta pill when usage went up", () => {
@@ -87,7 +87,7 @@ describe("YearOverYearCard", () => {
     expect(pill.classes()).toContain("yoy-card__pill--up");
     expect(wrapper.findComponent(ArrowUp).exists()).toBe(true);
     expect(pill.text()).toContain("50");
-    expect(pill.text()).toContain("kWh");
+    expect(pill.text()).toContain(tUa("units.kwh"));
   });
 
   it("keeps its container aria-busy with skeletons while loading and drops both once loaded", async () => {

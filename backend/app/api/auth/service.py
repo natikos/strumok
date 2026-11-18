@@ -505,18 +505,11 @@ def confirm_email_change(*, session: Session, token: str) -> User:
     return user
 
 
-_PASSWORD_RESET_EMAIL = {
-    "en": (
-        "Reset your Strumok password",
-        "We got a request to reset your password. The link works once and expires in 30 minutes. If this wasn't you, ignore this email.",
-        "Reset password",
-    ),
-    "ua": (
-        "Скидання пароля Струмок",
-        "Ми отримали запит на скидання пароля. Посилання діє один раз і спливає за 30 хвилин. Якщо це були не ви, проігноруйте цей лист.",
-        "Скинути пароль",
-    ),
-}
+_PASSWORD_RESET_EMAIL = (
+    "Скидання пароля Струмок",
+    "Ми отримали запит на скидання пароля. Посилання діє один раз і спливає за 30 хвилин. Якщо це були не ви, проігноруйте цей лист.",
+    "Скинути пароль",
+)
 
 
 def create_password_reset_token(
@@ -543,9 +536,7 @@ def request_password_reset(*, session: Session, email: str) -> None:
     if user is None:
         return
 
-    subject, message, button = _PASSWORD_RESET_EMAIL.get(
-        str(getattr(user.language, "value", user.language)), _PASSWORD_RESET_EMAIL["en"]
-    )
+    subject, message, button = _PASSWORD_RESET_EMAIL
     link = (
         f"{settings.brevo.app_base_url}/reset-password"
         f"?token={create_password_reset_token(user)}"
@@ -595,18 +586,11 @@ def confirm_password_reset(*, session: Session, token: str, password: str) -> Us
 
 INVITE_TTL = timedelta(days=7)
 
-_INVITE_EMAIL = {
-    "en": (
-        "You're invited to Strumok",
-        "The administrator created an account for you. Set a password to start submitting meter readings. The link works once and expires in 7 days.",
-        "Set password",
-    ),
-    "ua": (
-        "Запрошення до Струмок",
-        "Адміністратор створив для вас обліковий запис. Встановіть пароль, щоб подавати показники лічильника. Посилання діє один раз і спливає за 7 днів.",
-        "Встановити пароль",
-    ),
-}
+_INVITE_EMAIL = (
+    "Запрошення до Струмок",
+    "Адміністратор створив для вас обліковий запис. Встановіть пароль, щоб подавати показники лічильника. Посилання діє один раз і спливає за 7 днів.",
+    "Встановити пароль",
+)
 
 
 def build_invite_link(user: User) -> str:
@@ -617,9 +601,7 @@ def build_invite_link(user: User) -> str:
 def send_invite_email(*, user: User, link: str) -> bool:
     """Returns whether the email went out; the link is still valid either way
     and the administrator can pass it on by hand."""
-    subject, message, button = _INVITE_EMAIL.get(
-        str(getattr(user.language, "value", user.language)), _INVITE_EMAIL["en"]
-    )
+    subject, message, button = _INVITE_EMAIL
     try:
         send_email(
             to_email=user.email,

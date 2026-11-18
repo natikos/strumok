@@ -5,7 +5,7 @@ from typing import Any, Literal
 from pydantic import BaseModel, ConfigDict, EmailStr, Field, model_validator
 
 from app.core.time import UtcDatetime
-from app.db.models import Household, LanguageCode, User
+from app.db.models import Household, User
 
 
 class AdminUserSummaryOut(BaseModel):
@@ -30,8 +30,16 @@ class AdminInviteIn(BaseModel):
     email: EmailStr
     first_name: str = Field(min_length=2, max_length=255)
     last_name: str = Field(min_length=2, max_length=255)
-    language: LanguageCode = LanguageCode.UA
     household_id: int | None = None
+
+    # Temporary: a cached admin PWA from before the language was dropped still
+    # sends it, and extra="forbid" would 422 the invite. Remove the next release.
+    @model_validator(mode="before")
+    @classmethod
+    def _ignore_legacy_language(cls, data: Any) -> Any:
+        if isinstance(data, dict):
+            return {k: v for k, v in data.items() if k != "language"}
+        return data
 
 
 class AdminInviteOut(BaseModel):

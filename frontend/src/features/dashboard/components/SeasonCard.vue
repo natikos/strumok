@@ -27,8 +27,7 @@
   import { useI18n } from "vue-i18n";
 
   import type { SeasonAverage } from "@/features/dashboard/composables/useUsageInsights";
-  import { useLocale } from "@/features/i18n/composables/useLocale";
-  import { formatKwh } from "@shared/utils/format";
+  import { APP_LOCALE, formatKwh } from "@shared/utils/format";
 
   interface Props {
     seasons: SeasonAverage[];
@@ -37,7 +36,6 @@
   const props = defineProps<Props>();
 
   const { t } = useI18n();
-  const { intlLocale } = useLocale();
 
   const SEASON_LABEL_KEY: Record<string, string> = {
     summer: "dashboard.seasonSummer",
@@ -55,7 +53,7 @@
       widthPct: max > 0 ? (season.averageKwh / max) * 100 : 0,
       formatted:
         season.periodCount > 0
-          ? formatKwh(season.averageKwh, intlLocale.value, t("units.kwh"))
+          ? formatKwh(season.averageKwh, APP_LOCALE, t("units.kwh"))
           : "—",
     }));
   });

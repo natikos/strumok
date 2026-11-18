@@ -72,18 +72,18 @@ describe("SettingsPage notifications section", () => {
   });
 
   it.each([
-    ["off", "Notifications will arrive on the 1st and 5th of each month"],
-    ["on", "Enabled · reminders on the 1st and 5th"],
-    ["requesting", "Requesting permission…"],
+    ["off", "Сповіщення надійде 1 та 5 числа місяця"],
+    ["on", "Увімкнено · нагадування 1 та 5 числа"],
+    ["requesting", "Запит дозволу…"],
     [
       "denied",
-      "Blocked in browser settings — enable notifications for the app and reload the page",
+      "Заблоковано в налаштуваннях браузера — увімкніть сповіщення для застосунку та перезавантажте сторінку",
     ],
     [
       "ios-not-installed",
-      "On iPhone, first add the app to the home screen (Share → Add to Home Screen), then enable this",
+      "На iPhone спочатку додайте Струмок на головний екран (Поділитися → На екран «Домівка»), потім увімкніть це",
     ],
-    ["unsupported", "Unavailable in this browser"],
+    ["unsupported", "Недоступно в цьому браузері"],
   ] as [PushToggleState, string][])(
     "shows the %s hint for push state %s",
     async (state, expectedHint) => {

@@ -164,13 +164,13 @@
     restatePeriod,
   } from "@shared/api/admin";
   import { ApiError } from "@shared/api/client";
-  import { formatKwh, formatUah, toDecimal } from "@shared/utils/format";
+  import { APP_LOCALE, formatKwh, formatMeterValue, formatUah, toDecimal } from "@shared/utils/format";
 
   const props = defineProps<{ period: string }>();
 
   const { t } = useI18n();
   const confirm = useConfirm();
-  const locale = navigator.language;
+  const locale = APP_LOCALE;
 
   const data = ref<ReconciliationOut | null>(null);
   const error = ref<string | null>(null);
@@ -227,7 +227,7 @@
     }
 
     return t("admin.reconciliation.lossValue", {
-      kwh: current.kwh_loss == null ? "—" : formatKwh(current.kwh_loss, locale, "kWh"),
+      kwh: current.kwh_loss == null ? "—" : formatMeterValue(current.kwh_loss, locale),
       percent: current.loss_percent ?? "—",
       uah: formatUah(current.loss_uah, locale),
     });
@@ -238,7 +238,7 @@
   }
 
   function kwh(value: string | null | undefined): string {
-    return formatKwh(value, locale, "kWh");
+    return formatKwh(value, locale, t("units.kwh"));
   }
 
   function fillBill(current: ReconciliationOut): void {

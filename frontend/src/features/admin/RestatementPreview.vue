@@ -73,7 +73,7 @@
 
   import type { RestatementOut } from "@shared/api/admin";
   import { ApiError } from "@shared/api/client";
-  import { formatUah, toDecimal } from "@shared/utils/format";
+  import { APP_LOCALE, formatUah, toDecimal } from "@shared/utils/format";
 
   const props = defineProps<{
     /** Previews with `dryRun: true`; posts with `dryRun: false` and the reason. */
@@ -82,7 +82,7 @@
   const emit = defineEmits<{ cancel: []; posted: [] }>();
 
   const { t } = useI18n();
-  const locale = navigator.language;
+  const locale = APP_LOCALE;
 
   const preview = ref<RestatementOut | null>(null);
   const reason = ref("");

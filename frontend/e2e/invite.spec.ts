@@ -31,9 +31,9 @@ test("an invited resident sets a password from the emailed link and lands on the
 
   await page.goto(`${link.pathname}${link.search}`);
   // Resolved by accessible name (the placeholder); see the label test below.
-  await page.getByRole("textbox", { name: "Password", exact: true }).fill("a-new-password-1");
-  await page.getByRole("textbox", { name: "Confirm password" }).fill("a-new-password-1");
-  await page.getByRole("button", { name: "Set password and continue" }).click();
+  await page.getByRole("textbox", { name: "Пароль", exact: true }).fill("a-new-password-1");
+  await page.getByRole("textbox", { name: "Підтвердіть пароль" }).fill("a-new-password-1");
+  await page.getByRole("button", { name: "Встановити пароль і продовжити" }).click();
 
   await expect(page).toHaveURL(/\/$/);
   await expect(page.getByRole("navigation", { name: "Main" })).toBeVisible();
@@ -47,6 +47,6 @@ test("an invited resident sets a password from the emailed link and lands on the
 
 test("the set-password fields can be found by their visible labels", async ({ page }) => {
   await page.goto("/set-password?token=not-a-real-token");
-  await expect(page.getByLabel("Password", { exact: true })).toBeVisible({ timeout: 3000 });
-  await expect(page.getByLabel("Confirm password")).toBeVisible({ timeout: 3000 });
+  await expect(page.getByLabel("Пароль", { exact: true })).toBeVisible({ timeout: 3000 });
+  await expect(page.getByLabel("Підтвердіть пароль")).toBeVisible({ timeout: 3000 });
 });

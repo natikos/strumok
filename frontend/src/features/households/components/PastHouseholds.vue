@@ -6,7 +6,7 @@
       <header class="past-households__head">
         <h3 class="past-households__name">{{ item.household_name }}</h3>
         <span class="past-households__until">
-          {{ $t("ownership.ownedUntil", { date: formatKyivDate(item.owned_until, intlLocale) }) }}
+          {{ $t("ownership.ownedUntil", { date: formatKyivDate(item.owned_until, APP_LOCALE) }) }}
         </span>
       </header>
 
@@ -14,8 +14,8 @@
 
       <ol v-if="item.statements.length > 0" class="past-households__list">
         <li v-for="line in item.statements" :key="line.period" class="past-households__line">
-          <span>{{ formatPeriodMonth(line.period, intlLocale) }}</span>
-          <span>{{ formatUah(line.total_uah, intlLocale) }}</span>
+          <span>{{ formatPeriodMonth(line.period, APP_LOCALE) }}</span>
+          <span>{{ formatUah(line.total_uah, APP_LOCALE) }}</span>
         </li>
       </ol>
       <p v-else class="past-households__none">{{ $t("ownership.noStatements") }}</p>
@@ -28,23 +28,21 @@
   import { useI18n } from "vue-i18n";
 
   import { useHouseholdTenures } from "@features/households/useHouseholdTenures";
-  import { useLocale } from "@features/i18n/composables/useLocale";
   import { formatPeriodMonth } from "@shared/utils/billing-period";
-  import { formatKyivDate, formatUah, toDecimal } from "@shared/utils/format";
+  import { APP_LOCALE, formatKyivDate, formatUah, toDecimal } from "@shared/utils/format";
 
   const { t } = useI18n();
-  const { intlLocale } = useLocale();
   const { past, load } = useHouseholdTenures();
 
   function balanceText(value: string): string {
     const amount = toDecimal(value);
 
     if (amount > 0) {
-      return t("balance.owe", { amount: formatUah(amount, intlLocale.value) });
+      return t("balance.owe", { amount: formatUah(amount, APP_LOCALE) });
     }
 
     if (amount < 0) {
-      return t("balance.credit", { amount: formatUah(Math.abs(amount), intlLocale.value) });
+      return t("balance.credit", { amount: formatUah(Math.abs(amount), APP_LOCALE) });
     }
 
     return t("balance.paidUp");

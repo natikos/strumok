@@ -1,7 +1,7 @@
 import { flushPromises, mount } from "@vue/test-utils";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { appPlugins } from "@/shared/testing/mount";
+import { appPlugins, tUa } from "@/shared/testing/mount";
 import type * as AuthApi from "@shared/api/auth";
 
 import AccountSettings from "./AccountSettings.vue";
@@ -51,7 +51,7 @@ describe("AccountSettings", () => {
       current_password: "old-password",
       new_password: "brand-new-pass",
     });
-    expect(wrapper.text()).toContain("Password changed");
+    expect(wrapper.text()).toContain(tUa("settings.account.passwordChanged"));
     expect(wrapper.find("form").exists()).toBe(false);
   });
 

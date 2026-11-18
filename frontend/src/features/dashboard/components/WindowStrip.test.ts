@@ -1,7 +1,7 @@
 import { TZDate } from "@date-fns/tz";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { mountWithPlugins } from "@/shared/testing/mount";
+import { mountWithPlugins, tUa } from "@/shared/testing/mount";
 import { KYIV_TZ } from "@shared/utils/deadline";
 
 import WindowStrip from "./WindowStrip.vue";
@@ -65,6 +65,6 @@ describe("WindowStrip", () => {
     const img = wrapper.find('[role="img"]');
     expect(img.exists()).toBe(true);
     expect(img.attributes("aria-label")).toBeTruthy();
-    expect(img.attributes("aria-label")).toContain("2 of 5");
+    expect(img.attributes("aria-label")).toBe(tUa("deadlineStatus.stripAriaLabel", { elapsed: 2, total: 5, day: 5 }));
   });
 });

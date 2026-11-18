@@ -32,14 +32,6 @@
           :aria-label="t('admin.users.inviteEmail')"
         />
         <Select
-          v-model="invite.language"
-          fluid
-          :options="LANGUAGES"
-          option-label="label"
-          option-value="value"
-          :aria-label="t('admin.users.inviteLanguage')"
-        />
-        <Select
           v-model="invite.household_id"
           fluid
           :options="freeHouseholds"
@@ -172,11 +164,6 @@
   const confirm = useConfirm();
   const toast = useToast();
 
-  const LANGUAGES = [
-    { label: "Українська", value: "ua" as const },
-    { label: "English", value: "en" as const },
-  ];
-
   const households = ref<AdminHouseholdOut[]>([]);
   const showInvite = ref(false);
   const isInviting = ref(false);
@@ -185,9 +172,8 @@
     email: string;
     first_name: string;
     household_id: number | null;
-    language: "en" | "ua";
     last_name: string;
-  }>({ email: "", first_name: "", household_id: null, language: "ua", last_name: "" });
+  }>({ email: "", first_name: "", household_id: null, last_name: "" });
 
   const freeHouseholds = computed(() =>
     households.value.filter((household) => household.is_active && household.user_id === null)
@@ -219,7 +205,6 @@
         email: "",
         first_name: "",
         household_id: null,
-        language: "ua",
         last_name: "",
       };
       await load();

@@ -23,7 +23,6 @@ from app.core.email import EmailSendError
 from app.db.models import (
     BillingPeriod,
     HouseholdCharge,
-    LanguageCode,
     NotificationLog,
 )
 from tests.factories import (
@@ -130,7 +129,6 @@ class TestBillReady:
         est = make_user(session)
         exact = make_user(session)
         for u in (est, exact):
-            u.language = LanguageCode.EN
             make_push_subscription(session, user_id=u.id)
         _charge(
             session,
@@ -146,8 +144,8 @@ class TestBillReady:
         by_user = {
             c.args[0].user_id: _payload(c)["body"] for c in send_one.call_args_list
         }
-        assert "estimate" in by_user[est.id]
-        assert "estimate" not in by_user[exact.id]
+        assert "оцінку" in by_user[est.id]
+        assert "оцінку" not in by_user[exact.id]
 
     def test_unowned_household_charge_notifies_nobody(
         self, session: Session, send_one, send_email
@@ -166,7 +164,6 @@ class TestCorrections:
         zero = make_user(session)
         down = make_user(session)
         for u in (zero, down):
-            u.language = LanguageCode.EN
             make_push_subscription(session, user_id=u.id)
 
         sent = notify_corrections(
@@ -203,7 +200,6 @@ class TestMissingReadings:
         self, session: Session, send_one
     ) -> None:
         admin = make_user(session, is_admin=True)
-        admin.language = LanguageCode.EN
         make_push_subscription(session, user_id=admin.id)
         resident = make_user(session)
         make_push_subscription(session, user_id=resident.id)
@@ -223,7 +219,7 @@ class TestMissingReadings:
         assert call.args[0].user_id == admin.id
         assert (
             _payload(call)["body"]
-            == "3 households haven't submitted 2024-02: Alpha, Beta, Zeta"
+            == "3 ділянок не подали показники за 2024-02: Alpha, Beta, Zeta"
         )
         assert "Done" not in _payload(call)["body"]
         assert "Retired" not in _payload(call)["body"]

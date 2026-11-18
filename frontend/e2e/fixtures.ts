@@ -40,7 +40,6 @@ interface Fixtures {
   loginAs: (user: SeededUser) => Promise<void>;
   readOutbox: (to: string) => Promise<OutboxMessage[]>;
   resetBackend: void;
-  englishUi: void;
 }
 
 let userCounter = 0;
@@ -59,18 +58,6 @@ export const test = base.extend<Fixtures>({
     async ({ api }, use) => {
       const response = await api.post("/__e2e/reset");
       expect(response.status(), await response.text()).toBe(204);
-      await use();
-    },
-    { auto: true },
-  ],
-
-  // The app ignores the browser locale and starts in Ukrainian on a fresh
-  // device, so seed the stored preference the app itself reads.
-  englishUi: [
-    async ({ page }, use) => {
-      await page.addInitScript(() => {
-        window.localStorage.setItem("strumok:user-preferences", JSON.stringify({ language: "en" }));
-      });
       await use();
     },
     { auto: true },
@@ -121,7 +108,6 @@ export const test = base.extend<Fixtures>({
           first_name: user.firstName,
           last_name: user.lastName,
           is_admin: options.isAdmin ?? false,
-          language: "en",
         },
       });
       expect(response.status(), await response.text()).toBe(201);

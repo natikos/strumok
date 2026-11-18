@@ -51,7 +51,7 @@ rather than its content. Both signals also assume squash-merges, which is what
 this repo does; a real merge commit would report no files at all.
 
 Neither is a verdict. A file at the top of the churn list may be under active
-development rather than badly built — `en.json`/`ua.json` move whenever any
+development rather than badly built — `ua.json` moves whenever any
 user-facing string changes, and that is normal. Treat the list as a place to
 look, not a score.
 

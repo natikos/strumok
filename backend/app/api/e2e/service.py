@@ -11,7 +11,7 @@ from app.api.auth.service import pwd_context
 from app.api.push.service import e2e_push_outbox
 from app.core import email
 from app.core.time import now_utc_aware, set_clock_offset
-from app.db.models import LanguageCode, User
+from app.db.models import User
 
 
 def set_clock(now: datetime) -> datetime:
@@ -46,7 +46,6 @@ def create_user(
     first_name: str,
     last_name: str,
     is_admin: bool,
-    language: LanguageCode,
 ) -> User:
     """An active, verified user with a password. Sign-up is closed and invites
     need an admin, so this is how a run gets its first admin."""
@@ -57,7 +56,6 @@ def create_user(
         password_hash=pwd_context.hash(password),
         is_admin=is_admin,
         email_verified=True,
-        language=language,
     )
     session.add(user)
     session.commit()

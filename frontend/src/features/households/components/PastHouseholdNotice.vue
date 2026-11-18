@@ -5,7 +5,7 @@
       {{
         $t("ownership.noLongerOwner", {
           name: item.household_name,
-          date: formatKyivDate(item.owned_until, intlLocale),
+          date: formatKyivDate(item.owned_until, APP_LOCALE),
         })
       }}
     </p>
@@ -17,11 +17,9 @@
   import { onMounted } from "vue";
 
   import { useHouseholdTenures } from "@features/households/useHouseholdTenures";
-  import { useLocale } from "@features/i18n/composables/useLocale";
-  import { formatKyivDate } from "@shared/utils/format";
+  import { APP_LOCALE, formatKyivDate } from "@shared/utils/format";
 
   const { past, load } = useHouseholdTenures();
-  const { intlLocale } = useLocale();
 
   onMounted(load);
 </script>

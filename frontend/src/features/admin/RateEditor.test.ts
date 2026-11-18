@@ -1,7 +1,7 @@
 import { flushPromises, mount } from "@vue/test-utils";
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { appPlugins } from "@/shared/testing/mount";
+import { appPlugins, tUa } from "@/shared/testing/mount";
 import type { Component } from "vue";
 
 const { confirmRequire, deleteElectricityRate, updateElectricityRate } = vi.hoisted(() => ({
@@ -57,7 +57,9 @@ describe("RateEditor", () => {
 
     await wrapper.find(".rate-editor__toggle").trigger("click");
 
-    expect(wrapper.text()).toContain("used to bill 2026-02, 2026-03");
+    expect(wrapper.text()).toContain(
+      tUa("admin.rateEdit.lockedNote", { periods: "2026-02, 2026-03" })
+    );
     expect(wrapper.find(".rate-editor__actions").exists()).toBe(false);
   });
 
@@ -66,7 +68,7 @@ describe("RateEditor", () => {
     const wrapper = mountEditor();
 
     await wrapper.find(".rate-editor__toggle").trigger("click");
-    await wrapper.find("input[placeholder='Reason (optional)']").setValue("duplicate");
+    await wrapper.find(`input[placeholder="${tUa("admin.rateEdit.reason")}"]`).setValue("duplicate");
     await wrapper.findAll(".rate-editor__actions button")[1]!.trigger("click");
 
     expect(deleteElectricityRate).not.toHaveBeenCalled();
