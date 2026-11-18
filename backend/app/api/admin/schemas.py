@@ -5,7 +5,7 @@ from typing import Any, Literal
 from pydantic import BaseModel, ConfigDict, EmailStr, Field, model_validator
 
 from app.core.time import UtcDatetime
-from app.db.models import Household, LanguageCode, User
+from app.db.models import Household, User
 
 
 class AdminUserSummaryOut(BaseModel):
@@ -30,7 +30,6 @@ class AdminInviteIn(BaseModel):
     email: EmailStr
     first_name: str = Field(min_length=2, max_length=255)
     last_name: str = Field(min_length=2, max_length=255)
-    language: LanguageCode = LanguageCode.UA
     household_id: int | None = None
 
 

@@ -5,7 +5,7 @@ from pydantic import BaseModel, ConfigDict, EmailStr, Field
 
 from app.core.config import settings
 from app.core.time import utc_now
-from app.db.models import LanguageCode, ThemeMode, User
+from app.db.models import ThemeMode, User
 
 
 class LoginIn(BaseModel):
@@ -55,7 +55,6 @@ class UserOut(BaseModel):
     email_verified: bool
     verification_email_retry_after_seconds: int
     theme: ThemeMode
-    language: LanguageCode
     reminder_hour: int
 
     @classmethod
@@ -100,7 +99,6 @@ class UserWithHouseholdsOut(UserOut):
 
 class UserPreferencesIn(BaseModel):
     theme: ThemeMode | None = None
-    language: LanguageCode | None = None
     reminder_hour: int | None = Field(
         default=None, ge=0, le=23, description="Hour of day, Europe/Kyiv"
     )

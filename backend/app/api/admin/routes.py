@@ -535,7 +535,6 @@ def invite_admin_user(
             email=payload.email,
             first_name=payload.first_name,
             last_name=payload.last_name,
-            language=payload.language,
             household_id=payload.household_id,
         )
     except EmailTakenError as exc:

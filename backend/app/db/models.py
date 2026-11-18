@@ -27,11 +27,6 @@ class ThemeMode(StrEnum):
     DARK = "dark"
 
 
-class LanguageCode(StrEnum):
-    EN = "en"
-    UA = "ua"
-
-
 class User(SQLModel, table=True):
     """System user account that can belong to one or more households."""
 
@@ -54,7 +49,6 @@ class User(SQLModel, table=True):
     # Bumped on logout to invalidate all of the user's outstanding tokens.
     token_version: int = Field(default=0)
     theme: ThemeMode = Field(default=ThemeMode.LIGHT, max_length=16)
-    language: LanguageCode = Field(default=LanguageCode.UA, max_length=16)
     # Hour of day (Europe/Kyiv) at which deadline push reminders are sent.
     reminder_hour: int = Field(
         default=9, sa_type=SmallInteger, sa_column_kwargs={"server_default": "9"}
