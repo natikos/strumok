@@ -2,6 +2,7 @@ import { flushPromises, mount } from "@vue/test-utils";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { useCurrentHousehold } from "@/features/households/useCurrentHousehold";
+import { deferred, expectLoaded, expectLoading } from "@/shared/testing/loading";
 import { appPlugins, tUa } from "@/shared/testing/mount";
 import type { MeterReadingOut } from "@shared/api/meter-readings";
 import { formatPeriodMonth } from "@shared/utils/billing-period";
@@ -73,6 +74,22 @@ async function mountPage() {
   await flushPromises();
   return wrapper;
 }
+
+describe("UsageHistoryPage loading", () => {
+  it("shows skeletons while readings load and drops them once loaded", async () => {
+    const pending = deferred<MeterReadingOut[]>();
+    listMyMeterReadings.mockReturnValue(pending.promise);
+    useCurrentHousehold().setHouseholds([{ id: 1, name: "A" }]);
+    const wrapper = mount(UsageHistoryPage, {
+      global: { plugins: appPlugins(), stubs: { Button: true } },
+    });
+    await flushPromises();
+    expectLoading(wrapper);
+    pending.resolve([]);
+    await flushPromises();
+    expectLoaded(wrapper);
+  });
+});
 
 describe("UsageHistoryPage past-only", () => {
   beforeEach(() => {
