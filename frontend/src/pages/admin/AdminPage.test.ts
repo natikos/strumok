@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { appPlugins } from "@/shared/testing/mount";
 import type { AdminDashboardOut } from "@shared/api/admin";
+import { APP_LOCALE, formatKwh, formatUah } from "@shared/utils/format";
 
 import AdminPage from "./AdminPage.vue";
 
@@ -81,8 +82,8 @@ describe("AdminPage submission overview", () => {
     expect(wrapper.text()).toContain("Plot 10");
     expect(wrapper.text()).toContain("Ada Owner");
     expect(wrapper.text()).toContain("Submitted");
-    expect(wrapper.text()).toContain("1,234.5 kWh");
-    expect(wrapper.text()).toContain("1,234.50");
+    expect(wrapper.text()).toContain(formatKwh(1234.5, APP_LOCALE, "kWh"));
+    expect(wrapper.text()).toContain(formatUah(1234.5, APP_LOCALE));
     expect(wrapper.text()).toContain("Plot 20");
     expect(wrapper.text()).toContain("Missing");
     expect(wrapper.text()).toContain("— kWh");

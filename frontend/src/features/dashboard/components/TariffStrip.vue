@@ -47,10 +47,10 @@
   import { useI18n } from "vue-i18n";
 
   import { type CurrentRateOut, getCurrentRate } from "@shared/api/billing";
-  import { formatUah, toDecimal } from "@shared/utils/format";
+  import { APP_LOCALE, formatUah, toDecimal } from "@shared/utils/format";
 
   const { t } = useI18n();
-  const locale = navigator.language;
+  const locale = APP_LOCALE;
 
   const rate = ref<CurrentRateOut | null>(null);
   const popover = ref<{ toggle: (event: Event) => void } | null>(null);

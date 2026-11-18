@@ -1,3 +1,6 @@
+/** The app is Ukrainian-only, so numbers and dates always format as uk-UA, whatever the device says. */
+export const APP_LOCALE = "uk-UA";
+
 export function formatMeterValue(
   value: number | string | null | undefined,
   locale: string

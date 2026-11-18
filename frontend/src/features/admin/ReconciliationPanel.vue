@@ -164,13 +164,13 @@
     restatePeriod,
   } from "@shared/api/admin";
   import { ApiError } from "@shared/api/client";
-  import { formatKwh, formatUah, toDecimal } from "@shared/utils/format";
+  import { APP_LOCALE, formatKwh, formatUah, toDecimal } from "@shared/utils/format";
 
   const props = defineProps<{ period: string }>();
 
   const { t } = useI18n();
   const confirm = useConfirm();
-  const locale = navigator.language;
+  const locale = APP_LOCALE;
 
   const data = ref<ReconciliationOut | null>(null);
   const error = ref<string | null>(null);

@@ -6,6 +6,7 @@ import {
   type LanguageCode,
   storeLanguage,
 } from "@/features/preferences/preferences.storage";
+import { APP_LOCALE } from "@shared/utils/format";
 
 const SUPPORTED_LOCALES: readonly LanguageCode[] = ["en", "ua"];
 
@@ -33,7 +34,7 @@ export function useLocale() {
 
   return {
     currentLocale: computed(() => locale.value as LanguageCode),
-    intlLocale: computed(() => (locale.value === "ua" ? "uk-UA" : "en-US")),
+    intlLocale: computed(() => APP_LOCALE),
     initializeLocale,
     setLocale,
     toggleLocale,

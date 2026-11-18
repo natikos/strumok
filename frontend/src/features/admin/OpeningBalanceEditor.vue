@@ -88,13 +88,13 @@
     setOpeningBalance,
   } from "@shared/api/admin";
   import { ApiError } from "@shared/api/client";
-  import { formatUah, toDecimal } from "@shared/utils/format";
+  import { APP_LOCALE, formatUah, toDecimal } from "@shared/utils/format";
 
   const props = defineProps<{ householdId: number }>();
   const emit = defineEmits<{ changed: [] }>();
 
   const { t } = useI18n();
-  const locale = navigator.language;
+  const locale = APP_LOCALE;
 
   const opening = ref<OpeningBalanceOut | null>(null);
   const isLoading = ref(true);

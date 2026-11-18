@@ -27,13 +27,13 @@
 
   import { useCurrentHousehold } from "@/features/households/useCurrentHousehold";
   import { getBalance, listStatements } from "@shared/api/billing";
-  import { formatUah, toDecimal } from "@shared/utils/format";
+  import { APP_LOCALE, formatUah, toDecimal } from "@shared/utils/format";
 
   defineEmits<{ "open-history": [] }>();
 
   const { t } = useI18n();
   const { currentId, isPastOnly } = useCurrentHousehold();
-  const locale = navigator.language;
+  const locale = APP_LOCALE;
 
   interface Row {
     period: string;

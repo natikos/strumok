@@ -10,6 +10,7 @@ import type {
 } from "@/features/dashboard/composables/useUsageInsights";
 import { expectLoaded, expectLoading } from "@/shared/testing/loading";
 import { mountWithPlugins } from "@/shared/testing/mount";
+import { APP_LOCALE, formatMeterValue } from "@shared/utils/format";
 
 import StatTilesCard from "./StatTilesCard.vue";
 
@@ -142,7 +143,7 @@ describe("StatTilesCard", () => {
       expect(tile.text()).toContain("19.7%");
       expect(tile.text()).toContain("Summer");
       expect(tile.text()).toContain("last year");
-      expect(tile.text()).toContain("150.4");
+      expect(tile.text()).toContain(formatMeterValue(150.4, APP_LOCALE));
       expect(tile.text()).toContain("June–July");
       expect(tile.findComponent(ArrowUp).exists()).toBe(true);
       expect(tile.find(".stat-tile__value--up").exists()).toBe(true);

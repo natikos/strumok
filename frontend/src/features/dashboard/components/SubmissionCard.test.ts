@@ -8,6 +8,7 @@ import type { PeriodUsage } from "@/features/dashboard/composables/useUsageInsig
 import type { FieldErrors } from "@/features/dashboard/types";
 import { mountWithPlugins } from "@/shared/testing/mount";
 import type { DeadlineStatus } from "@shared/utils/deadline";
+import { APP_LOCALE, formatMeterValue } from "@shared/utils/format";
 
 import SubmissionCard from "./SubmissionCard.vue";
 
@@ -109,7 +110,7 @@ describe("SubmissionCard", () => {
         submittedAt: "2026-09-02T10:00:00Z",
       });
 
-      expect(wrapper.find(".submission__subline").text()).toContain("September");
+      expect(wrapper.find(".submission__subline").text()).toContain("вересня");
     });
   });
 
@@ -156,7 +157,7 @@ describe("SubmissionCard", () => {
 
       expect(wrapper.find(".submission__values").exists()).toBe(true);
       expect(wrapper.findAllComponents(InputNumber)).toHaveLength(0);
-      expect(wrapper.text()).toContain("1,234");
+      expect(wrapper.text()).toContain(formatMeterValue(1234, APP_LOCALE));
       expect(wrapper.text()).toContain("56");
     });
 

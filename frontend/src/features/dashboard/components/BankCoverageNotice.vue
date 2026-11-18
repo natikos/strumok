@@ -21,10 +21,10 @@
   import { useI18n } from "vue-i18n";
 
   import { type BankCoverageOut, getBankCoverage } from "@shared/api/billing";
-  import { formatKyivDate } from "@shared/utils/format";
+  import { APP_LOCALE, formatKyivDate } from "@shared/utils/format";
 
   const { t } = useI18n();
-  const locale = navigator.language;
+  const locale = APP_LOCALE;
 
   const coverage = ref<BankCoverageOut | null>(null);
   const coveredLabel = computed(() =>

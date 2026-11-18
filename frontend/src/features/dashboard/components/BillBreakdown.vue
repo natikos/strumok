@@ -22,12 +22,12 @@
   import { useI18n } from "vue-i18n";
 
   import { type Bill, type BillRow } from "@shared/utils/bill";
-  import { formatKwh, formatUah } from "@shared/utils/format";
+  import { APP_LOCALE, formatKwh, formatUah } from "@shared/utils/format";
 
   defineProps<{ bill: Bill }>();
 
   const { t } = useI18n();
-  const locale = navigator.language;
+  const locale = APP_LOCALE;
 
   function money(kopecks: number): string {
     return formatUah(kopecks / 100, locale);

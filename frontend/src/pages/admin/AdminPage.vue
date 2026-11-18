@@ -226,7 +226,7 @@
   import ReconciliationPanel from "@features/admin/ReconciliationPanel.vue";
   import ResidentsPanel from "@features/admin/ResidentsPanel.vue";
   import { type AdminDashboardOut, getAdminDashboard, reviewAdminReading } from "@shared/api/admin";
-  import { formatKwh, formatUah } from "@shared/utils/format";
+  import { APP_LOCALE, formatKwh, formatUah } from "@shared/utils/format";
 
   const dashboard = ref<AdminDashboardOut | null>(null);
   const dashboardError = ref<string | null>(null);
@@ -234,7 +234,7 @@
   // Bumped when a manual inbox check imports rows, so the queue reloads.
   const bankQueueKey = ref(0);
   const isLoadingDashboard = ref(true);
-  const locale = navigator.language;
+  const locale = APP_LOCALE;
 
   async function loadDashboard(): Promise<void> {
     isLoadingDashboard.value = true;

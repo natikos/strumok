@@ -16,11 +16,11 @@
 
   import { useCurrentHousehold } from "@/features/households/useCurrentHousehold";
   import { getShortfall, type ShortfallOut } from "@shared/api/billing";
-  import { formatUah, toDecimal } from "@shared/utils/format";
+  import { APP_LOCALE, formatUah, toDecimal } from "@shared/utils/format";
 
   const { t } = useI18n();
   const { currentId } = useCurrentHousehold();
-  const locale = navigator.language;
+  const locale = APP_LOCALE;
 
   const shortfall = ref<ShortfallOut | null>(null);
 

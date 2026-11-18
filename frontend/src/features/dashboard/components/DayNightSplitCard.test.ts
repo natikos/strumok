@@ -4,6 +4,7 @@ import { describe, expect, it } from "vitest";
 import type { DayNightSplit } from "@/features/dashboard/composables/useUsageInsights";
 import { expectLoaded, expectLoading } from "@/shared/testing/loading";
 import { mountWithPlugins } from "@/shared/testing/mount";
+import { APP_LOCALE, formatKwh } from "@shared/utils/format";
 
 import DayNightSplitCard from "./DayNightSplitCard.vue";
 
@@ -51,8 +52,8 @@ describe("DayNightSplitCard", () => {
     });
 
     const label = wrapper.find('[role="img"]').attributes("aria-label");
-    expect(label).toContain("82.5 kWh");
-    expect(label).toContain("27.5 kWh");
+    expect(label).toContain(formatKwh(82.5, APP_LOCALE, "kWh"));
+    expect(label).toContain(formatKwh(27.5, APP_LOCALE, "kWh"));
   });
 
   it("shows a unit on the day and night row values", () => {
