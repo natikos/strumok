@@ -13,7 +13,6 @@ INVITE = {
     "email": "New.Resident@example.com",
     "first_name": "Nina",
     "last_name": "Kovalenko",
-    "language": "ua",
 }
 
 

@@ -24,7 +24,6 @@ from app.core.email import EmailSendError, send_email
 from app.core.time import utc_now
 from app.db.models import (
     Household,
-    LanguageCode,
     MeterReading,
     NotificationLog,
     PushSubscription,
@@ -38,67 +37,40 @@ e2e_push_outbox: list[dict[str, str]] = []
 
 ReminderVariant = Literal["opening", "final"]
 
-# Keyed by language so this stays separate from the frontend's vue-i18n JSON:
-# the service worker renders the payload as-is, with no client-side lookup.
-_NOTIFICATION_CONTENT: dict[LanguageCode, dict[ReminderVariant, dict[str, str]]] = {
-    LanguageCode.EN: {
-        "opening": {
-            "title": "Meter reading window is open",
-            "body": f"Submit your day/night reading by the {SUBMISSION_DEADLINE_DAY}th.",
-        },
-        "final": {
-            "title": "Last day to submit your reading",
-            "body": "Today's the deadline — submit before midnight.",
-        },
+# Kept apart from the frontend's vue-i18n JSON: the service worker renders the
+# payload as-is, with no client-side lookup.
+_NOTIFICATION_CONTENT: dict[ReminderVariant, dict[str, str]] = {
+    "opening": {
+        "title": "Відкрито подання показників лічильника",
+        "body": f"Подайте денний/нічний показник до {SUBMISSION_DEADLINE_DAY} числа.",
     },
-    LanguageCode.UA: {
-        "opening": {
-            "title": "Відкрито подання показників лічильника",
-            "body": f"Подайте денний/нічний показник до {SUBMISSION_DEADLINE_DAY} числа.",
-        },
-        "final": {
-            "title": "Останній день подання показників",
-            "body": "Сьогодні дедлайн — подайте показники до півночі.",
-        },
+    "final": {
+        "title": "Останній день подання показників",
+        "body": "Сьогодні дедлайн — подайте показники до півночі.",
     },
 }
 
 
-def _content_for(user: User, variant: ReminderVariant) -> dict[str, str]:
-    catalog = _NOTIFICATION_CONTENT.get(
-        user.language, _NOTIFICATION_CONTENT[LanguageCode.UA]
-    )
-    return catalog[variant]
+def _content_for(variant: ReminderVariant) -> dict[str, str]:
+    return _NOTIFICATION_CONTENT[variant]
 
 
-_EMAIL_CONTENT: dict[LanguageCode, dict[str, str]] = {
-    LanguageCode.EN: {
-        "opening_subject": "[Strumok] Submit your meter reading by {date}",
-        "final_subject": "[Strumok] Last day to submit your meter reading",
-        "greeting": "Hi {name},",
-        "message": "It's day {day} of the submission window for {households}.",
-        "button": "Submit your reading",
-        "link_hint": "If the button doesn't work, copy and paste this link into your browser:",
-        "footer": "Manage reminders in",
-        "settings": "Settings → Notifications",
-    },
-    LanguageCode.UA: {
-        "opening_subject": "[Strumok] Подайте показники лічильника до {date}",
-        "final_subject": "[Strumok] Останній день подання показників лічильника",
-        "greeting": "Вітаємо, {name}!",
-        "message": "Сьогодні {day}-й день періоду подання показників для: {households}.",
-        "button": "Подати показники",
-        "link_hint": "Якщо кнопка не працює, скопіюйте це посилання у браузер:",
-        "footer": "Керуйте нагадуваннями в",
-        "settings": "Налаштування → Сповіщення",
-    },
+_EMAIL_CONTENT: dict[str, str] = {
+    "opening_subject": "[Strumok] Подайте показники лічильника до {date}",
+    "final_subject": "[Strumok] Останній день подання показників лічильника",
+    "greeting": "Вітаємо, {name}!",
+    "message": "Сьогодні {day}-й день періоду подання показників для: {households}.",
+    "button": "Подати показники",
+    "link_hint": "Якщо кнопка не працює, скопіюйте це посилання у браузер:",
+    "footer": "Керуйте нагадуваннями в",
+    "settings": "Налаштування → Сповіщення",
 }
 
 
 def _send_reminder_email(
     user: User, variant: ReminderVariant, households: list[str], now: datetime
 ) -> bool:
-    text = _EMAIL_CONTENT.get(user.language, _EMAIL_CONTENT[LanguageCode.UA])
+    text = _EMAIL_CONTENT
     base_url = settings.brevo.app_base_url
     deadline = f"{SUBMISSION_DEADLINE_DAY:02}.{now.month:02}.{now.year}"
     day = SUBMISSION_OPEN_DAY if variant == "opening" else SUBMISSION_DEADLINE_DAY
@@ -313,10 +285,7 @@ def send_reminders(*, session: Session, now: datetime) -> tuple[int, int]:
         user.id: user
         for user in session.exec(select(User).where(col(User.id).in_(claimed))).all()
     }
-    payloads = [
-        _notification_payload(_content_for(users_by_id[sub.user_id], variant))
-        for sub in subscriptions
-    ]
+    payloads = [_notification_payload(_content_for(variant)) for sub in subscriptions]
 
     # webpush() is a blocking HTTP call to the browser vendor's push service. Sending
     # serially would make the run take the sum of every round trip, so one slow or

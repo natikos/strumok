@@ -19,7 +19,6 @@ from app.core.time import utc_now
 from app.db.models import (
     Household,
     HouseholdCharge,
-    LanguageCode,
     MeterReading,
     NotificationLog,
     PushSubscription,
@@ -31,49 +30,26 @@ logger = logging.getLogger(__name__)
 Content = dict[str, str]
 
 
-def _lang(user: User) -> LanguageCode:
-    return user.language if user.language in LanguageCode else LanguageCode.UA
-
-
 def _signed(amount: Decimal) -> str:
     return f"{amount:+.2f}"
 
 
-def bill_ready_content(
-    user: User, *, period: str, total: Decimal, estimated: bool
-) -> Content:
-    if _lang(user) == LanguageCode.EN:
-        body = f"Your {period} bill: {total:.2f} ₴."
-        if estimated:
-            body += " Includes an estimate for a missed reading."
-        return {"title": "Your bill is ready", "body": body}
+def bill_ready_content(*, period: str, total: Decimal, estimated: bool) -> Content:
     body = f"Ваш рахунок за {period}: {total:.2f} ₴."
     if estimated:
         body += " Включає оцінку за неподані показники."
     return {"title": "Ваш рахунок готовий", "body": body}
 
 
-def correction_content(user: User, *, period: str, delta: Decimal) -> Content:
-    if _lang(user) == LanguageCode.EN:
-        return {
-            "title": "Your bill was corrected",
-            "body": f"Your {period} bill was corrected: {_signed(delta)} ₴.",
-        }
+def correction_content(*, period: str, delta: Decimal) -> Content:
     return {
         "title": "Ваш рахунок скориговано",
         "body": f"Рахунок за {period} скориговано: {_signed(delta)} ₴.",
     }
 
 
-def missing_readings_content(
-    user: User, *, period: str, names: Sequence[str]
-) -> Content:
+def missing_readings_content(*, period: str, names: Sequence[str]) -> Content:
     listed = ", ".join(names)
-    if _lang(user) == LanguageCode.EN:
-        return {
-            "title": "Readings are missing",
-            "body": f"{len(names)} households haven't submitted {period}: {listed}",
-        }
     return {
         "title": "Бракує показників",
         "body": f"{len(names)} ділянок не подали показники за {period}: {listed}",
@@ -189,9 +165,7 @@ def notify_bill_ready(*, session: Session, period: str) -> int:
         u.id: u for u in session.exec(select(User).where(col(User.id).in_(totals)))
     }
     content = {
-        uid: bill_ready_content(
-            users[uid], period=period, total=total, estimated=uid in estimated
-        )
+        uid: bill_ready_content(period=period, total=total, estimated=uid in estimated)
         for uid, total in totals.items()
         if uid in users
     }
@@ -213,7 +187,7 @@ def notify_corrections(
         u.id: u for u in session.exec(select(User).where(col(User.id).in_(deltas)))
     }
     content = {
-        uid: correction_content(users[uid], period=period, delta=delta)
+        uid: correction_content(period=period, delta=delta)
         for uid, delta in deltas.items()
         if delta != 0 and uid in users
     }
@@ -243,19 +217,14 @@ def notify_missing_readings(*, session: Session, period: str) -> int:
         return 0
     admins = session.exec(select(User).where(User.is_admin, User.is_active)).all()
     content = {
-        a.id: missing_readings_content(a, period=period, names=names) for a in admins
+        a.id: missing_readings_content(period=period, names=names) for a in admins
     }
     return notify_users(
         session=session, period=period, variant="missingReadings", content_for=content
     )
 
 
-def bank_queue_content(user: User) -> Content:
-    if _lang(user) == LanguageCode.EN:
-        return {
-            "title": "Bank payments to review",
-            "body": "A new statement has payments waiting for review.",
-        }
+def bank_queue_content() -> Content:
     return {
         "title": "Платежі банку на розгляд",
         "body": "Нова виписка містить платежі, що чекають на розгляд.",
@@ -269,17 +238,11 @@ def notify_bank_queue(*, session: Session, file_id: int) -> int:
         session=session,
         period=f"bank-file-{file_id}",
         variant="bankQueue",
-        content_for={a.id: bank_queue_content(a) for a in admins},
+        content_for={a.id: bank_queue_content() for a in admins},
     )
 
 
-def bank_inbox_rejected_content(user: User, *, count: int) -> Content:
-    if _lang(user) == LanguageCode.EN:
-        return {
-            "title": "Bank statement email rejected",
-            "body": f"{count} emailed statement(s) could not be imported. "
-            "Open the Bank tab to see why.",
-        }
+def bank_inbox_rejected_content(*, count: int) -> Content:
     return {
         "title": "Лист із випискою відхилено",
         "body": f"{count} виписок з пошти не вдалося імпортувати. "
@@ -298,32 +261,20 @@ def notify_bank_inbox_rejected(*, session: Session, fetch_ids: Sequence[int]) ->
         period=f"bank-mail-{max(fetch_ids)}",
         variant="bankInboxRejected",
         content_for={
-            a.id: bank_inbox_rejected_content(a, count=len(fetch_ids)) for a in admins
+            a.id: bank_inbox_rejected_content(count=len(fetch_ids)) for a in admins
         },
     )
 
 
-def shortfall_content(user: User, *, period: str, owed: Decimal) -> Content:
-    if _lang(user) == LanguageCode.EN:
-        return {
-            "title": "Payment due",
-            "body": f"Your {period} bill is past due. You still owe {owed:.2f} ₴.",
-        }
+def shortfall_content(*, period: str, owed: Decimal) -> Content:
     return {
         "title": "Час сплатити",
         "body": f"Термін оплати за {period} минув. Ви ще винні {owed:.2f} ₴.",
     }
 
 
-def ownerless_shortfall_content(
-    user: User, *, period: str, names: Sequence[str]
-) -> Content:
+def ownerless_shortfall_content(*, period: str, names: Sequence[str]) -> Content:
     listed = ", ".join(names)
-    if _lang(user) == LanguageCode.EN:
-        return {
-            "title": "Unpaid households without an owner",
-            "body": f"{len(names)} households owe for {period} but have no owner: {listed}",
-        }
     return {
         "title": "Борг ділянок без власника",
         "body": f"{len(names)} ділянок мають борг за {period}, але не мають власника: {listed}",
@@ -361,7 +312,7 @@ def notify_shortfall(*, session: Session) -> int:
         period=window.period,
         variant="shortfall",
         content_for={
-            uid: shortfall_content(users[uid], period=window.period, owed=owed)
+            uid: shortfall_content(period=window.period, owed=owed)
             for uid, owed in owed_by_user.items()
             if uid in users
         },
@@ -373,9 +324,7 @@ def notify_shortfall(*, session: Session) -> int:
             period=window.period,
             variant="shortfallOwnerless",
             content_for={
-                a.id: ownerless_shortfall_content(
-                    a, period=window.period, names=ownerless
-                )
+                a.id: ownerless_shortfall_content(period=window.period, names=ownerless)
                 for a in admins
             },
         )
