@@ -17,9 +17,10 @@ depends_on: Union[str, Sequence[str], None] = None
 
 def upgrade() -> None:
     # contract: drops users.language and the languagecode enum. The previous
-    # release's User model still selects the column, so rolling the app back to
-    # it after this migration fails every query on users; restore the release
-    # dump (docs/operations.md#failed-release) instead of redeploying the old tag.
+    # release's User model still selects the column, so (1) until the new app is
+    # deployed the old one fails every query on users, so release outside the
+    # submission window (days 1-5), and (2) rolling back to the old tag afterwards
+    # is impossible: restore the release dump (docs/operations.md#failed-release).
     op.drop_column("users", "language")
     op.execute("DROP TYPE languagecode")
 

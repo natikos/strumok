@@ -173,3 +173,12 @@ class TestInvite:
     def test_non_admin_cannot_invite(self, client, session: Session) -> None:
         authenticate(client, make_user(session))
         assert client.post("/admin/users", json=INVITE).status_code == 403
+
+
+def test_invite_ignores_a_legacy_language_field(client, session: Session) -> None:
+    admin = make_user(session, is_admin=True)
+    authenticate(client, admin)
+
+    response = client.post("/admin/users", json={**INVITE, "language": "ua"})
+
+    assert response.status_code == 201
