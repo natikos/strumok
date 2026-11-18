@@ -97,6 +97,12 @@
       @retry="loadReadings"
     />
 
+    <div v-else-if="status === 'loading'" class="usage-history__skeleton" aria-busy="true">
+      <Skeleton height="4.5rem" class="usage-history__skeleton-block" />
+      <Skeleton height="1.5rem" width="30%" />
+      <Skeleton v-for="n in 4" :key="n" height="4rem" class="usage-history__skeleton-block" />
+    </div>
+
     <template v-else>
       <div v-if="status === 'ready' && !summary" class="usage-history__empty">
         <Inbox class="usage-history__empty-icon" aria-hidden="true" />
@@ -590,6 +596,14 @@
     font-size: 1.6rem;
     font-weight: 700;
     margin: 0;
+  }
+
+  .usage-history__skeleton {
+    @include layout.stack(var(--s-app-space-3));
+  }
+
+  .usage-history__skeleton-block {
+    border-radius: var(--s-app-radius-md);
   }
 
   .usage-history__summary {
