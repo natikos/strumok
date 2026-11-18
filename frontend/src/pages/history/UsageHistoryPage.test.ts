@@ -2,8 +2,10 @@ import { flushPromises, mount } from "@vue/test-utils";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { useCurrentHousehold } from "@/features/households/useCurrentHousehold";
-import { appPlugins } from "@/shared/testing/mount";
+import { appPlugins, tUa } from "@/shared/testing/mount";
 import type { MeterReadingOut } from "@shared/api/meter-readings";
+import { formatPeriodMonth } from "@shared/utils/billing-period";
+import { APP_LOCALE, formatUah } from "@shared/utils/format";
 
 import UsageHistoryPage from "./UsageHistoryPage.vue";
 
@@ -279,10 +281,10 @@ describe("UsageHistoryPage load error handling", () => {
 
     const alert = wrapper.find('[role="alert"]');
     expect(alert.exists()).toBe(true);
-    expect(alert.text()).toContain("Something went wrong. Please try again");
+    expect(alert.text()).toContain("Щось пішло не так. Спробуйте ще раз");
 
     // A failed load must never be mistaken for a household with no history.
-    expect(wrapper.text()).not.toContain("No readings yet");
+    expect(wrapper.text()).not.toContain("Ще немає показників");
 
     const retryButton = wrapper.find('[role="alert"] button');
     expect(retryButton.exists()).toBe(true);
@@ -308,7 +310,7 @@ describe("UsageHistoryPage load error handling", () => {
 
     const wrapper = await mountPage();
     expect(wrapper.find('[role="alert"]').exists()).toBe(true);
-    expect(wrapper.text()).not.toContain("No readings yet");
+    expect(wrapper.text()).not.toContain("Ще немає показників");
 
     listMyMeterReadings.mockResolvedValueOnce([
       makeReading({ id: 1, period: "2026-06", submitted_at: "2026-07-02T09:00:00.000Z" }),
@@ -317,7 +319,7 @@ describe("UsageHistoryPage load error handling", () => {
     await flushPromises();
 
     expect(wrapper.find('[role="alert"]').exists()).toBe(false);
-    expect(wrapper.text()).not.toContain("No readings yet");
+    expect(wrapper.text()).not.toContain("Ще немає показників");
     // The successful retry's data actually renders: the June entry's day
     // usage from the readings we just resolved.
     expect(wrapper.text()).toContain("10");
@@ -333,7 +335,9 @@ describe("UsageHistoryPage load error handling", () => {
 
     const wrapper = await mountPage();
 
-    expect(wrapper.text()).toContain("Corrected by the administrator on 2026-07-05: typo in the day value");
+    expect(wrapper.text()).toContain(
+      tUa("usageHistory.correctedByHead", { date: "2026-07-05", reason: "typo in the day value" })
+    );
   });
 
   it("notes a period in which the meter was replaced", async () => {
@@ -341,7 +345,9 @@ describe("UsageHistoryPage load error handling", () => {
 
     const wrapper = await mountPage();
 
-    expect(wrapper.text()).toContain("Meter replaced in");
+    expect(wrapper.text()).toContain(
+      tUa("usageHistory.meterReplaced", { month: formatPeriodMonth("2026-06", APP_LOCALE) })
+    );
   });
 
   it("labels an estimated period as Estimated and never as a normal charge", async () => {
@@ -349,7 +355,7 @@ describe("UsageHistoryPage load error handling", () => {
 
     const wrapper = await mountPage();
 
-    expect(wrapper.find(".usage-history__estimated-tag").text()).toContain("Estimated");
+    expect(wrapper.find(".usage-history__estimated-tag").text()).toContain(tUa("statuses.meterReading.estimated"));
     expect(wrapper.find(".usage-history__charge").exists()).toBe(false);
   });
 
@@ -380,13 +386,18 @@ describe("UsageHistoryPage load error handling", () => {
 
     const wrapper = await mountPage();
 
-    expect(wrapper.find(".usage-history__payment").text()).toContain("Partly paid");
+    expect(wrapper.find(".usage-history__payment").text()).toContain(
+      tUa("balance.partial", {
+        paid: formatUah("50.00", APP_LOCALE),
+        due: formatUah("100.00", APP_LOCALE),
+      })
+    );
   });
 
   it.each([
     ["is hidden for a tariff-only month", { loss_share_uah: "0.00" }, false],
     ["is shown when the month has a shared-loss share", { loss_share_uah: "5.00" }, true],
-  ])("the 'What is included' toggle %s", async (_name, overrides, expected) => {
+  ])("the 'Що входить у суму' toggle %s", async (_name, overrides, expected) => {
     listMyMeterReadings.mockResolvedValue([makeReading()]);
     listStatements.mockResolvedValue([
       {
@@ -406,6 +417,6 @@ describe("UsageHistoryPage load error handling", () => {
     const wrapper = await mountPage();
 
     // Button is stubbed here, so the label survives as an attribute.
-    expect(wrapper.find('[label="What is included"]').exists()).toBe(expected);
+    expect(wrapper.find('[label="Що входить у суму"]').exists()).toBe(expected);
   });
 });

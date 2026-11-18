@@ -2,7 +2,7 @@ import { flushPromises, mount } from "@vue/test-utils";
 import Button from "primevue/button";
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { appPlugins } from "@/shared/testing/mount";
+import { appPlugins, tUa } from "@/shared/testing/mount";
 import type { Component } from "vue";
 
 const api = vi.hoisted(() => ({
@@ -68,14 +68,14 @@ describe("BankQueuePanel", () => {
     const wrapper = mountPanel();
     await flushPromises();
 
-    expect(wrapper.text()).toContain("No credits to review");
+    expect(wrapper.text()).toContain("Немає надходжень для перегляду");
   });
 
   it("asks for confirmation and creates nothing until accepted", async () => {
     const wrapper = mountPanel();
     await flushPromises();
 
-    await buttonByText(wrapper, "Confirm")?.trigger("click");
+    await buttonByText(wrapper, "Підтвердити")?.trigger("click");
 
     expect(api.confirmBankTransaction).not.toHaveBeenCalled();
     expect(confirmRequire).toHaveBeenCalledOnce();
@@ -92,7 +92,7 @@ describe("BankQueuePanel", () => {
     const wrapper = mountPanel();
     await flushPromises();
 
-    await buttonByText(wrapper, "Not a resident payment")?.trigger("click");
+    await buttonByText(wrapper, "Не платіж мешканця")?.trigger("click");
     expect(api.dismissBankTransaction).not.toHaveBeenCalled();
 
     confirmRequire.mock.calls[0]?.[0].accept();
@@ -105,7 +105,7 @@ describe("BankQueuePanel", () => {
     const wrapper = mountPanel();
     await flushPromises();
 
-    await buttonByText(wrapper, "Link to Plot 1")?.trigger("click");
+    await buttonByText(wrapper, tUa("admin.bank.link", { name: "Plot 1", date: "2026-10-08" }))?.trigger("click");
     expect(api.linkBankTransaction).not.toHaveBeenCalled();
 
     confirmRequire.mock.calls[0]?.[0].accept();

@@ -9,7 +9,7 @@ import type {
   SeasonComparison,
 } from "@/features/dashboard/composables/useUsageInsights";
 import { expectLoaded, expectLoading } from "@/shared/testing/loading";
-import { mountWithPlugins } from "@/shared/testing/mount";
+import { mountWithPlugins, tUa } from "@/shared/testing/mount";
 import { APP_LOCALE, formatMeterValue } from "@shared/utils/format";
 
 import StatTilesCard from "./StatTilesCard.vue";
@@ -94,7 +94,7 @@ describe("StatTilesCard", () => {
       const wrapper = mountCard({ missedPeriods: 2 });
 
       const comparisonTile = wrapper.findAll(".stat-tile")[1]!;
-      expect(comparisonTile.text()).toContain("Missed periods");
+      expect(comparisonTile.text()).toContain("Пропущені періоди");
       expect(comparisonTile.text()).toContain("2");
       expect(comparisonTile.text()).not.toContain("vs ");
     });
@@ -130,8 +130,8 @@ describe("StatTilesCard", () => {
       const wrapper = mountCard({ seasonComparison: null });
 
       const tile = wrapper.findAll(".stat-tile")[2]!;
-      expect(tile.text()).toContain("Summer");
-      expect(tile.text()).not.toContain("Needs 2 periods");
+      expect(tile.text()).toContain("Літо");
+      expect(tile.text()).not.toContain("Потрібно 2 періоди");
     });
   });
 
@@ -141,10 +141,10 @@ describe("StatTilesCard", () => {
 
       const tile = wrapper.findAll(".stat-tile")[2]!;
       expect(tile.text()).toContain("19.7%");
-      expect(tile.text()).toContain("Summer");
-      expect(tile.text()).toContain("last year");
+      expect(tile.text()).toContain("Літо");
+      expect(tile.text()).toContain(tUa("dashboard.seasonPreviousYearValue", { value: "" }).trim());
       expect(tile.text()).toContain(formatMeterValue(150.4, APP_LOCALE));
-      expect(tile.text()).toContain("June–July");
+      expect(tile.text()).toContain(`${tUa("months.long.5")}–${tUa("months.long.6")}`);
       expect(tile.findComponent(ArrowUp).exists()).toBe(true);
       expect(tile.find(".stat-tile__value--up").exists()).toBe(true);
     });
@@ -200,10 +200,10 @@ describe("StatTilesCard", () => {
 
       const units = wrapper.findAll(".stat-tile__unit").map((el) => el.text());
       expect(units.length).toBeGreaterThan(0);
-      units.forEach((unit) => expect(unit).toBe("kWh"));
+      units.forEach((unit) => expect(unit).toBe(tUa("units.kwh")));
 
       // Last-period sub line and comparison sub line both carry raw kWh figures too.
-      expect(wrapper.text()).toContain("kWh");
+      expect(wrapper.text()).toContain(tUa("units.kwh"));
     });
   });
 

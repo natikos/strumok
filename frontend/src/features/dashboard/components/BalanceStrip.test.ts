@@ -3,7 +3,8 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vites
 import { nextTick } from "vue";
 
 import { deferred, expectLoaded, expectLoading } from "@/shared/testing/loading";
-import { appPlugins } from "@/shared/testing/mount";
+import { appPlugins, tUa } from "@/shared/testing/mount";
+import { APP_LOCALE, formatUah } from "@shared/utils/format";
 import type { Component } from "vue";
 
 const { getBalance, getPaymentDetails, listMyStatements, listStatements } = vi.hoisted(() => ({
@@ -81,8 +82,7 @@ describe("BalanceStrip", () => {
       await flushPromises();
 
       expect(getBalance).not.toHaveBeenCalled();
-      expect(wrapper.text()).toContain("You owe");
-      expect(wrapper.text()).toContain("212");
+      expect(wrapper.text()).toContain(tUa("balance.owe", { amount: formatUah("212.40", APP_LOCALE) }));
     });
 
     it("pays only for the gave-up plots that owe, referencing exactly those plots", async () => {
@@ -105,8 +105,7 @@ describe("BalanceStrip", () => {
       const wrapper = mountStrip();
       await flushPromises();
 
-      expect(wrapper.text()).toContain("You owe");
-      expect(wrapper.text()).toContain("300");
+      expect(wrapper.text()).toContain(tUa("balance.owe", { amount: formatUah("300.00", APP_LOCALE) }));
       const props = wrapper.findComponent({ name: "PaySheet" }).props();
       expect(props.amount).toBe("500.00");
       expect(props.comment).toContain("STR-21");
@@ -128,9 +127,8 @@ describe("BalanceStrip", () => {
     const wrapper = mountStrip();
     await flushPromises();
 
-    expect(wrapper.text()).toContain("You owe");
-    expect(wrapper.text()).toContain("250");
-    expect(wrapper.text()).toContain("2 unpaid month(s)");
+    expect(wrapper.text()).toContain(tUa("balance.owe", { amount: formatUah("250.00", APP_LOCALE) }));
+    expect(wrapper.text()).toContain(tUa("balance.unpaidMonths", { count: 2 }));
   });
 
   it("still counts what is owed on a plot the user gave up", async () => {
@@ -141,8 +139,7 @@ describe("BalanceStrip", () => {
     const wrapper = mountStrip();
     await flushPromises();
 
-    expect(wrapper.text()).toContain("You owe");
-    expect(wrapper.text()).toContain("312");
+    expect(wrapper.text()).toContain(tUa("balance.owe", { amount: formatUah("312.00", APP_LOCALE) }));
   });
 
   it("shows a positive all-paid-up state, not an absent element", async () => {
@@ -150,7 +147,7 @@ describe("BalanceStrip", () => {
     const wrapper = mountStrip();
     await flushPromises();
 
-    expect(wrapper.text()).toContain("You're all paid up");
+    expect(wrapper.text()).toContain("Усе сплачено");
   });
 
   it("shows a credit when the household has overpaid", async () => {
@@ -158,8 +155,7 @@ describe("BalanceStrip", () => {
     const wrapper = mountStrip();
     await flushPromises();
 
-    expect(wrapper.text()).toContain("Credit:");
-    expect(wrapper.text()).toContain("40");
+    expect(wrapper.text()).toContain(tUa("balance.credit", { amount: formatUah("40.00", APP_LOCALE) }));
   });
 
   it("never claims everything is paid when the balance failed to load", async () => {
@@ -167,7 +163,7 @@ describe("BalanceStrip", () => {
     const wrapper = mountStrip();
     await flushPromises();
 
-    expect(wrapper.text()).not.toContain("all paid up");
+    expect(wrapper.text()).not.toContain(tUa("balance.paidUp"));
     expect(wrapper.findComponent({ name: "ErrorState" }).exists()).toBe(true);
   });
 
@@ -203,7 +199,7 @@ describe("BalanceStrip", () => {
         iban: details.iban,
         recipient: "Strumok Co-op",
         edrpou: "12345678",
-        comment: "Electricity STR-1",
+        comment: `${tUa("balance.payPurposeLabel")} STR-1`,
       });
     });
 
@@ -266,7 +262,7 @@ describe("BalanceStrip", () => {
       const wrapper = mountStrip();
       await flushPromises();
 
-      expect(wrapper.text()).toContain("You owe");
+      expect(wrapper.text()).toContain(tUa("balance.owe", { amount: formatUah("250.00", APP_LOCALE) }));
       expect(wrapper.find(".balance-strip__pay").exists()).toBe(false);
     });
   });

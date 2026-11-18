@@ -22,7 +22,10 @@ describe("frontend test harness", () => {
   });
 
   it("honours the requested locale", () => {
-    const en = mountWithPlugins(DeadlineBadge, { props: { reading: null } }).text();
+    const en = mountWithPlugins(DeadlineBadge, {
+      props: { reading: null },
+      locale: "en",
+    }).text();
     const ua = mountWithPlugins(DeadlineBadge, {
       props: { reading: null },
       locale: "ua",

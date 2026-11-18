@@ -79,7 +79,7 @@ describe("NoHouseholdScreen", () => {
     getMe.mockResolvedValue(updatedMe);
 
     const wrapper = mountScreen();
-    const checkAgain = findButton(wrapper, "Check again");
+    const checkAgain = findButton(wrapper, "Перевірити ще раз");
     await checkAgain?.trigger("click");
     await flushPromises();
 
@@ -92,7 +92,7 @@ describe("NoHouseholdScreen", () => {
     getMe.mockResolvedValue(updatedMe);
 
     const wrapper = mountScreen();
-    await findButton(wrapper, "Check again")?.trigger("click");
+    await findButton(wrapper, "Перевірити ще раз")?.trigger("click");
     await flushPromises();
 
     expect(wrapper.emitted("unblocked")).toEqual([[updatedMe]]);
@@ -102,7 +102,7 @@ describe("NoHouseholdScreen", () => {
     getMe.mockResolvedValue(makeMe({ households: [] }));
 
     const wrapper = mountScreen();
-    const checkAgain = findButton(wrapper, "Check again");
+    const checkAgain = findButton(wrapper, "Перевірити ще раз");
     await checkAgain?.trigger("click");
     await flushPromises();
 
@@ -119,24 +119,24 @@ describe("NoHouseholdScreen", () => {
     );
 
     const wrapper = mountScreen();
-    const checkAgain = findButton(wrapper, "Check again");
+    const checkAgain = findButton(wrapper, "Перевірити ще раз");
     const clickPromise = checkAgain?.trigger("click");
     await flushPromises();
 
-    expect(findButton(wrapper, "Check again")?.attributes("disabled")).toBeDefined();
+    expect(findButton(wrapper, "Перевірити ще раз")?.attributes("disabled")).toBeDefined();
 
     resolveGetMe(makeMe({ households: [] }));
     await clickPromise;
     await flushPromises();
 
-    expect(findButton(wrapper, "Check again")?.attributes("disabled")).toBeUndefined();
+    expect(findButton(wrapper, "Перевірити ще раз")?.attributes("disabled")).toBeUndefined();
   });
 
   it("logs out and navigates to the auth route when the resident gives up", async () => {
     logoutUser.mockResolvedValue(undefined);
 
     const wrapper = mountScreen();
-    const logout = findButton(wrapper, "Logout");
+    const logout = findButton(wrapper, "Вихід");
     await logout?.trigger("click");
     await flushPromises();
 
@@ -153,11 +153,11 @@ describe("NoHouseholdScreen", () => {
     );
 
     const wrapper = mountScreen();
-    const logout = findButton(wrapper, "Logout");
+    const logout = findButton(wrapper, "Вихід");
     const clickPromise = logout?.trigger("click");
     await flushPromises();
 
-    expect(findButton(wrapper, "Logout")?.attributes("disabled")).toBeDefined();
+    expect(findButton(wrapper, "Вихід")?.attributes("disabled")).toBeDefined();
 
     resolveLogout();
     await clickPromise;

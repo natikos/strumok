@@ -1,7 +1,7 @@
 import { flushPromises, mount } from "@vue/test-utils";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { appPlugins } from "@/shared/testing/mount";
+import { appPlugins, tUa } from "@/shared/testing/mount";
 import type { AdminDashboardOut } from "@shared/api/admin";
 import { APP_LOCALE, formatKwh, formatUah } from "@shared/utils/format";
 
@@ -78,14 +78,14 @@ describe("AdminPage submission overview", () => {
     await flushPromises();
 
     expect(getAdminDashboard).toHaveBeenCalledTimes(1);
-    expect(wrapper.text()).toContain("Current period: 2026-09");
+    expect(wrapper.text()).toContain(tUa("admin.currentPeriod", { period: "2026-09" }));
     expect(wrapper.text()).toContain("Plot 10");
     expect(wrapper.text()).toContain("Ada Owner");
-    expect(wrapper.text()).toContain("Submitted");
+    expect(wrapper.text()).toContain(tUa("admin.submitted"));
     expect(wrapper.text()).toContain(formatKwh(1234.5, APP_LOCALE, "kWh"));
     expect(wrapper.text()).toContain(formatUah(1234.5, APP_LOCALE));
     expect(wrapper.text()).toContain("Plot 20");
-    expect(wrapper.text()).toContain("Missing");
+    expect(wrapper.text()).toContain(tUa("admin.missing"));
     expect(wrapper.text()).toContain("— kWh");
     expect(wrapper.text()).toContain("—");
     expect(wrapper.text()).toContain("—");
@@ -103,7 +103,7 @@ describe("AdminPage submission overview", () => {
 
     await flushPromises();
 
-    expect(wrapper.text()).toContain("Something went wrong. Please try again");
+    expect(wrapper.text()).toContain("Щось пішло не так. Спробуйте ще раз");
     expect(wrapper.find("button").exists()).toBe(true);
   });
 });

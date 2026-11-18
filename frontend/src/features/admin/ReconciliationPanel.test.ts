@@ -4,7 +4,8 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vites
 import { nextTick } from "vue";
 
 import { deferred, expectLoaded, expectLoading } from "@/shared/testing/loading";
-import { appPlugins } from "@/shared/testing/mount";
+import { appPlugins, tUa } from "@/shared/testing/mount";
+import { APP_LOCALE, formatUah } from "@shared/utils/format";
 import type { Component } from "vue";
 
 
@@ -85,8 +86,10 @@ describe("ReconciliationPanel", () => {
     const wrapper = mountPanel();
     await flushPromises();
 
-    expect(wrapper.find(".reconciliation__result").text()).toContain("Shares add up to the bill");
-    expect(wrapper.text()).toContain("Rounding remainder (kopecks) went to: Plot 1");
+    expect(wrapper.find(".reconciliation__result").text()).toContain(
+      tUa("admin.reconciliation.matches", { total: formatUah("500.00", APP_LOCALE) })
+    );
+    expect(wrapper.text()).toContain(tUa("admin.reconciliation.remainder", { names: "Plot 1" }));
     expect(wrapper.text()).toContain("Plot 1");
   });
 
@@ -95,7 +98,9 @@ describe("ReconciliationPanel", () => {
     const wrapper = mountPanel();
     await flushPromises();
 
-    expect(wrapper.find(".reconciliation__result").text()).toContain("(shortfall)");
+    expect(wrapper.find(".reconciliation__result").text()).toContain(
+      tUa("admin.reconciliation.shortfall", { amount: formatUah("5.00", APP_LOCALE) })
+    );
   });
 
   it("shows a prompt and dashes when the bill is missing", async () => {
@@ -110,7 +115,7 @@ describe("ReconciliationPanel", () => {
     const wrapper = mountPanel();
     await flushPromises();
 
-    expect(wrapper.find(".reconciliation__result").text()).toContain("Bill not entered yet");
+    expect(wrapper.find(".reconciliation__result").text()).toContain(tUa("admin.reconciliation.noBill"));
     expect(wrapper.find("tbody tr").text()).toContain("—");
   });
 
@@ -131,7 +136,7 @@ describe("ReconciliationPanel", () => {
     const wrapper = mountPanel();
     await flushPromises();
 
-    expect(wrapper.text()).toContain("This period is closed");
+    expect(wrapper.text()).toContain(tUa("admin.reconciliation.closedNote"));
     expect(wrapper.find(".reconciliation__card button").attributes("disabled")).toBeDefined();
 
     wrapper.findAllComponents(InputNumber)[2]!.vm.$emit("update:modelValue", 600);

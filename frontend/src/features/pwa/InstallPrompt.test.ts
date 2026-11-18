@@ -1,7 +1,7 @@
 import { flushPromises, mount } from "@vue/test-utils";
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { appPlugins } from "@/shared/testing/mount";
+import { appPlugins, tUa } from "@/shared/testing/mount";
 import type { Component } from "vue";
 
 // The suite runs with isolate: false and the prompt state is module-level, so
@@ -92,7 +92,7 @@ describe("InstallPrompt", () => {
 
     const wrapper = mountPrompt();
 
-    expect(wrapper.text()).toContain("Add to Home Screen");
+    expect(wrapper.text()).toContain(tUa("install.ios"));
     expect(wrapper.findAll("button")).toHaveLength(1);
   });
 });

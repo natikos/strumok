@@ -1,7 +1,7 @@
 import { flushPromises, mount } from "@vue/test-utils";
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { appPlugins } from "@/shared/testing/mount";
+import { appPlugins, tUa } from "@/shared/testing/mount";
 import type { Component } from "vue";
 
 const { closeAdminPeriod, confirmRequire, listAdminPeriods } = vi.hoisted(() => ({
@@ -58,7 +58,9 @@ describe("PeriodCloseCard", () => {
 
     expect(closeAdminPeriod).not.toHaveBeenCalled();
     const options = confirmRequire.mock.calls[0]![0] as { accept: () => void; message: string };
-    expect(options.message).toContain("28 household(s) will be charged and 2 have no reading");
+    expect(options.message).toContain(
+      tUa("admin.period.confirmBody", { charged: 28, missing: 2, period: "2026-09" })
+    );
 
     closeAdminPeriod.mockResolvedValue({
       ...open,
@@ -69,7 +71,7 @@ describe("PeriodCloseCard", () => {
     await flushPromises();
 
     expect(closeAdminPeriod).toHaveBeenCalledWith("2026-09", false);
-    expect(wrapper.text()).toContain("Closed");
+    expect(wrapper.text()).toContain("Закритий");
     expect(wrapper.emitted("closed")).toHaveLength(1);
   });
 
@@ -79,7 +81,9 @@ describe("PeriodCloseCard", () => {
     await flushPromises();
 
     expect(wrapper.find("button").attributes("disabled")).toBeDefined();
-    expect(wrapper.text()).toContain("No electricity rate for 2026-09");
+    expect(wrapper.text()).toContain(
+      tUa("admin.period.blockers.noRateConfigured", { period: "2026-09" })
+    );
   });
 
   it("shows who closed it once closed", async () => {
@@ -94,7 +98,7 @@ describe("PeriodCloseCard", () => {
     const wrapper = mountCard();
     await flushPromises();
 
-    expect(wrapper.text()).toContain("by Head Admin");
+    expect(wrapper.text()).toContain("(Head Admin)");
     expect(wrapper.find("button").exists()).toBe(false);
   });
 

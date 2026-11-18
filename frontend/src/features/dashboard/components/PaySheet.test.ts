@@ -41,7 +41,7 @@ describe("PaySheet", () => {
     const wrapper = mountSheet({ edrpou: "12345678" });
 
     expect(wrapper.text()).toContain("12345678");
-    const index = wrapper.findAll("dt").findIndex((dt) => dt.text() === "EDRPOU");
+    const index = wrapper.findAll("dt").findIndex((dt) => dt.text() === "ЄДРПОУ");
     await wrapper.findAll(".pay-sheet__row button")[index]!.trigger("click");
     await flushPromises();
 
@@ -50,7 +50,7 @@ describe("PaySheet", () => {
 
   it("omits the EDRPOU row when it is not set", () => {
     expect(mountSheet({ edrpou: null }).findAll("dt").map((dt) => dt.text())).not.toContain(
-      "EDRPOU"
+      "ЄДРПОУ"
     );
   });
 

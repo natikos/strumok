@@ -1,7 +1,7 @@
 import { flushPromises, mount } from "@vue/test-utils";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { appPlugins } from "@/shared/testing/mount";
+import { appPlugins, tUa } from "@/shared/testing/mount";
 import type * as AuthApi from "@shared/api/auth";
 import type * as VueRouter from "vue-router";
 
@@ -85,7 +85,7 @@ describe("VerifyEmailPage", () => {
 
     expect(unhandledRejections).toEqual([]);
     expect(getMe).toHaveBeenCalledOnce();
-    expect(wrapper.text()).toContain("expired");
+    expect(wrapper.text()).toContain(tUa("verifyEmail.errorExpired"));
     expect(replace).not.toHaveBeenCalled();
   });
 });

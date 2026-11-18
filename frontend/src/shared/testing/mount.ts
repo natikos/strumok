@@ -19,7 +19,7 @@ const PRIMEVUE_OPTIONS = {
  * The app-level singleton in `@features/i18n` reads the stored language at import
  * time, so sharing it across tests leaks locale state between them.
  */
-export function createTestI18n(locale: Locale = "en") {
+export function createTestI18n(locale: Locale = "ua") {
   return createI18n({
     fallbackLocale: "en",
     legacy: false,
@@ -55,7 +55,7 @@ const routerLinkStubPlugin: Plugin = {
  * Prefer this over `mountWithPlugins` when a spec needs full prop type inference
  * or custom `global` options — it keeps `mount`'s own typing intact.
  */
-export function appPlugins(locale: Locale = "en") {
+export function appPlugins(locale: Locale = "ua") {
   return [
     createTestI18n(locale),
     [PrimeVue, PRIMEVUE_OPTIONS] as [typeof PrimeVue, object],
@@ -74,7 +74,7 @@ export function mountWithPlugins(
   component: Parameters<typeof mount>[0],
   options: (Parameters<typeof mount>[1] & { locale?: Locale }) | undefined = {}
 ) {
-  const { locale = "en", global: globalOptions, ...rest } = options ?? {};
+  const { locale = "ua", global: globalOptions, ...rest } = options ?? {};
 
   return mount(component, {
     ...rest,
@@ -83,4 +83,14 @@ export function mountWithPlugins(
       plugins: [...appPlugins(locale), ...(globalOptions?.plugins ?? [])],
     },
   });
+}
+
+const uaI18n = createTestI18n("ua");
+
+/** Translate a key with the real Ukrainian copy, so assertions follow copy edits. */
+export function tUa(key: string, params?: Record<string, unknown>, plural?: number): string {
+  if (plural !== undefined) {
+    return uaI18n.global.t(key, params ?? {}, plural);
+  }
+  return params ? uaI18n.global.t(key, params) : uaI18n.global.t(key);
 }

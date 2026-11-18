@@ -98,8 +98,8 @@ describe("ResidentsPanel", () => {
     await flushPromises();
 
     expect(wrapper.findAll("tbody tr")[0]!.text()).toContain("2");
-    expect(wrapper.text()).toContain("Active");
-    expect(wrapper.text()).toContain("Resident");
+    expect(wrapper.text()).toContain("Активний");
+    expect(wrapper.text()).toContain("Мешканець");
   });
 
   it("invites a resident and offers the link to copy when the email didn't go out", async () => {
@@ -126,6 +126,6 @@ describe("ResidentsPanel", () => {
       language: "ua",
       last_name: "Kovalenko",
     });
-    expect(wrapper.text()).toContain("Copy invite link");
+    expect(wrapper.text()).toContain("Копіювати посилання");
   });
 });

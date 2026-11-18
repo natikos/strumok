@@ -1,7 +1,8 @@
 import { flushPromises, mount } from "@vue/test-utils";
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { appPlugins } from "@/shared/testing/mount";
+import { appPlugins, tUa } from "@/shared/testing/mount";
+import { APP_LOCALE, formatKyivDate, formatUah } from "@shared/utils/format";
 import type { Component } from "vue";
 
 const { listMyStatements } = vi.hoisted(() => ({ listMyStatements: vi.fn() }));
@@ -46,7 +47,12 @@ describe("past households", () => {
     const wrapper = mountIt(PastHouseholdNotice);
     await flushPromises();
 
-    expect(wrapper.text()).toContain("You no longer own Plot 7 as of");
+    expect(wrapper.text()).toContain(
+      tUa("ownership.noLongerOwner", {
+        name: "Plot 7",
+        date: formatKyivDate("2024-02-10T10:00:00Z", APP_LOCALE),
+      })
+    );
     expect(wrapper.text()).toContain("2024");
   });
 
@@ -55,9 +61,9 @@ describe("past households", () => {
     const wrapper = mountIt(PastHouseholds);
     await flushPromises();
 
-    expect(wrapper.text()).toContain("Past households");
+    expect(wrapper.text()).toContain("Колишні ділянки");
     expect(wrapper.text()).toContain("Plot 7");
-    expect(wrapper.text()).toContain("You owe");
+    expect(wrapper.text()).toContain(tUa("balance.owe", { amount: formatUah("212.00", APP_LOCALE) }));
     expect(wrapper.text()).toContain("212");
     expect(wrapper.text()).toContain("300");
     expect(wrapper.find("button").exists()).toBe(false);

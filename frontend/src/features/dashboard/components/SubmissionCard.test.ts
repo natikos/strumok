@@ -6,7 +6,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { PeriodUsage } from "@/features/dashboard/composables/useUsageInsights";
 import type { FieldErrors } from "@/features/dashboard/types";
-import { mountWithPlugins } from "@/shared/testing/mount";
+import { mountWithPlugins, tUa } from "@/shared/testing/mount";
 import type { DeadlineStatus } from "@shared/utils/deadline";
 import { APP_LOCALE, formatMeterValue } from "@shared/utils/format";
 
@@ -32,7 +32,7 @@ interface MountOverrides {
 }
 
 function mountCard(overrides: MountOverrides = {}) {
-  const { locale = "en", ...props } = overrides;
+  const { locale = "ua", ...props } = overrides;
 
   return mountWithPlugins(SubmissionCard, {
     props: {
@@ -61,8 +61,10 @@ describe("SubmissionCard", () => {
       vi.setSystemTime(new Date(2026, 5, 2));
       const wrapper = mountCard({ status: "due", daysLeft: 3 });
 
-      expect(wrapper.find(".submission__headline").text()).toContain("3 days left");
-      expect(wrapper.find(".submission__subline").text()).toContain("Window closes");
+      expect(wrapper.find(".submission__headline").text()).toContain(tUa("deadlineStatus.daysLeft", { count: 3 }, 3));
+      expect(wrapper.find(".submission__subline").text()).toContain(
+        tUa("deadlineStatus.windowClosesAt", { day: 5, month: tUa("months.genitive.5") })
+      );
       expect(wrapper.findAllComponents(InputNumber)).toHaveLength(2);
       expect(wrapper.find(".submission__values").exists()).toBe(false);
     });
@@ -71,9 +73,9 @@ describe("SubmissionCard", () => {
       vi.setSystemTime(new Date(2026, 5, 2));
       const wrapper = mountCard({ status: "due" });
 
-      expect(wrapper.findComponent(Button).props("label")).toBe("Submit reading");
+      expect(wrapper.findComponent(Button).props("label")).toBe(tUa("meterReadings.submit"));
       expect(wrapper.findComponent(Button).props("severity")).toBeFalsy();
-      expect(wrapper.text()).toContain("Enter the numbers shown on your electricity meter");
+      expect(wrapper.text()).toContain(tUa("meterReadings.hintText"));
       expect(wrapper.find(".submission__note").exists()).toBe(false);
     });
   });
@@ -83,16 +85,18 @@ describe("SubmissionCard", () => {
       vi.setSystemTime(new Date(2026, 8, 17));
       const wrapper = mountCard({ status: "overdue", billingMonthIndex: 7 });
 
-      expect(wrapper.find(".submission__period").text()).toBe("AUGUST");
-      expect(wrapper.find(".submission__subline").text()).toContain("September");
+      expect(wrapper.find(".submission__period").text()).toBe(tUa("months.long.7").toUpperCase());
+      expect(wrapper.find(".submission__subline").text()).toContain(tUa("months.genitive.8"));
     });
 
     it("keeps the two months distinct while the window is open", () => {
       vi.setSystemTime(new Date(2026, 8, 3));
       const wrapper = mountCard({ status: "due", billingMonthIndex: 7 });
 
-      expect(wrapper.find(".submission__period").text()).toBe("AUGUST");
-      expect(wrapper.find(".submission__subline").text()).toContain("Window closes 5 September");
+      expect(wrapper.find(".submission__period").text()).toBe(tUa("months.long.7").toUpperCase());
+      expect(wrapper.find(".submission__subline").text()).toContain(
+        tUa("deadlineStatus.windowClosesAt", { day: 5, month: tUa("months.genitive.8") })
+      );
     });
 
     it("uses the Ukrainian genitive month form after the deadline day", () => {
@@ -119,7 +123,7 @@ describe("SubmissionCard", () => {
       vi.setSystemTime(new Date(2026, 5, 20));
       const wrapper = mountCard({ status: "overdue", daysLeft: 0 });
 
-      expect(wrapper.find(".submission__headline").text()).toContain("Submission deadline passed");
+      expect(wrapper.find(".submission__headline").text()).toContain(tUa("deadlineStatus.overdueHeadline"));
       expect(wrapper.findAllComponents(InputNumber)).toHaveLength(2);
       expect(wrapper.find(".submission__values").exists()).toBe(false);
     });
@@ -129,7 +133,7 @@ describe("SubmissionCard", () => {
       const wrapper = mountCard({ status: "overdue" });
 
       const button = wrapper.findComponent(Button);
-      expect(button.props("label")).toBe("Submit late reading");
+      expect(button.props("label")).toBe("Надіслати запізнілі показники");
       expect(button.props("severity")).toBe("danger");
     });
 
@@ -139,7 +143,7 @@ describe("SubmissionCard", () => {
 
       expect(wrapper.find(".submission__note").exists()).toBe(true);
       expect(wrapper.text()).toContain(
-        "Late submissions are recorded for information only and won't change this period's charge"
+        "Запізнілі подання фіксуються лише для інформації і не змінюють нарахування за цей період"
       );
       expect(wrapper.find(".submission__caption").exists()).toBe(false);
     });
@@ -168,7 +172,7 @@ describe("SubmissionCard", () => {
         submittedAt: new Date(2026, 5, 3, 9, 0).toISOString(),
       });
 
-      expect(wrapper.find(".submission__headline").text()).toContain("Reading submitted");
+      expect(wrapper.find(".submission__headline").text()).toContain("Показники надіслано");
       expect(wrapper.findComponent(CheckCircle).exists()).toBe(true);
     });
   });
@@ -183,8 +187,8 @@ describe("SubmissionCard", () => {
         submittedNightValue: 60,
       });
 
-      expect(wrapper.find(".submission__headline").text()).toContain("Reading submitted");
-      expect(wrapper.find(".submission__subline").text()).toContain("Submitted late");
+      expect(wrapper.find(".submission__headline").text()).toContain("Показники надіслано");
+      expect(wrapper.find(".submission__subline").text()).toContain(tUa("deadlineStatus.submittedLateDetail"));
       expect(wrapper.find(".submission__values").exists()).toBe(true);
       expect(wrapper.findAllComponents(InputNumber)).toHaveLength(0);
     });
@@ -195,18 +199,16 @@ describe("SubmissionCard", () => {
       vi.setSystemTime(new Date(2026, 5, 2));
       const wrapper = mountCard({ status: "due", isFirstPeriod: true });
 
-      expect(wrapper.find(".submission__headline").text()).toContain("First reading");
-      expect(wrapper.find(".submission__headline").text()).not.toContain("left");
-      expect(wrapper.find(".submission__subline").text()).toContain(
-        "Submit readings from day 1 to 5"
-      );
+      expect(wrapper.find(".submission__headline").text()).toContain(tUa("deadlineStatus.firstPeriodHeadline"));
+      expect(wrapper.find(".submission__headline").text()).not.toContain(tUa("deadlineStatus.daysLeft", { count: 3 }, 3));
+      expect(wrapper.find(".submission__subline").text()).toContain(tUa("deadlineStatus.firstPeriodExplainer"));
     });
 
     it("uses the first-submission button label", () => {
       vi.setSystemTime(new Date(2026, 5, 2));
       const wrapper = mountCard({ status: "due", isFirstPeriod: true });
 
-      expect(wrapper.findComponent(Button).props("label")).toBe("Submit first reading");
+      expect(wrapper.findComponent(Button).props("label")).toBe("Надіслати перші показники");
     });
   });
 
@@ -220,7 +222,7 @@ describe("SubmissionCard", () => {
       const alert = wrapper.find('[role="alert"]');
       expect(alert.exists()).toBe(true);
       expect(alert.attributes("id")).toBe("submission-day-error");
-      expect(alert.text()).toBe("Enter the day reading");
+      expect(alert.text()).toBe("Введіть денний показник");
 
       const dayInput = wrapper.findAllComponents(InputNumber)[0]!;
       expect(dayInput.props("invalid")).toBe(true);
@@ -239,7 +241,7 @@ describe("SubmissionCard", () => {
       const alert = wrapper.find('[role="alert"]');
       expect(alert.exists()).toBe(true);
       expect(alert.attributes("id")).toBe("submission-night-error");
-      expect(alert.text()).toBe("Enter the night reading");
+      expect(alert.text()).toBe("Введіть нічний показник");
 
       const nightInput = wrapper.findAllComponents(InputNumber)[1]!;
       expect(nightInput.props("invalid")).toBe(true);
@@ -256,7 +258,7 @@ describe("SubmissionCard", () => {
       const alert = wrapper.find(".submission__form-error");
       expect(alert.exists()).toBe(true);
       expect(alert.attributes("role")).toBe("alert");
-      expect(alert.text()).toContain("already been submitted");
+      expect(alert.text()).toContain(tUa("errors.periodAlreadySubmitted"));
     });
   });
 
@@ -314,9 +316,9 @@ describe("SubmissionCard", () => {
       });
 
       const hints = wrapper.findAll(".submission__field-hint").map((el) => el.text());
-      expect(hints.some((text) => /kWh/.test(text))).toBe(true);
+      expect(hints.some((text) => text.includes(tUa("units.kwh")))).toBe(true);
       expect(hints).toHaveLength(2);
-      hints.forEach((text) => expect(text).toContain("kWh"));
+      hints.forEach((text) => expect(text).toContain(tUa("units.kwh")));
     });
 
     it("shows a unit on every usage line inside the submitted value tiles", () => {
@@ -341,7 +343,7 @@ describe("SubmissionCard", () => {
 
       const usageLines = wrapper.findAll(".submission__value-usage").map((el) => el.text());
       expect(usageLines).toHaveLength(2);
-      usageLines.forEach((text) => expect(text).toContain("kWh"));
+      usageLines.forEach((text) => expect(text).toContain(tUa("units.kwh")));
     });
   });
 });

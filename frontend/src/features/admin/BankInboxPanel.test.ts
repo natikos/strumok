@@ -46,8 +46,8 @@ describe("BankInboxPanel", () => {
     const wrapper = mountPanel();
     await flushPromises();
 
-    expect(wrapper.text()).toContain("Rejected");
-    expect(wrapper.text()).toContain("Sender isn't on the allowed list");
+    expect(wrapper.text()).toContain("Відхилено");
+    expect(wrapper.text()).toContain("Відправника немає в списку дозволених");
   });
 
   it("shows an empty state when nothing was fetched", async () => {
@@ -55,7 +55,7 @@ describe("BankInboxPanel", () => {
     const wrapper = mountPanel();
     await flushPromises();
 
-    expect(wrapper.text()).toContain("No emails looked at yet");
+    expect(wrapper.text()).toContain("Листів ще не перевірялося");
   });
 
   it("checks the inbox on demand, warns about rejections and reloads the list", async () => {

@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 
 import type { DayNightSplit } from "@/features/dashboard/composables/useUsageInsights";
 import { expectLoaded, expectLoading } from "@/shared/testing/loading";
-import { mountWithPlugins } from "@/shared/testing/mount";
+import { mountWithPlugins, tUa } from "@/shared/testing/mount";
 import { APP_LOCALE, formatKwh } from "@shared/utils/format";
 
 import DayNightSplitCard from "./DayNightSplitCard.vue";
@@ -52,8 +52,8 @@ describe("DayNightSplitCard", () => {
     });
 
     const label = wrapper.find('[role="img"]').attributes("aria-label");
-    expect(label).toContain(formatKwh(82.5, APP_LOCALE, "kWh"));
-    expect(label).toContain(formatKwh(27.5, APP_LOCALE, "kWh"));
+    expect(label).toContain(formatKwh(82.5, APP_LOCALE, tUa("units.kwh")));
+    expect(label).toContain(formatKwh(27.5, APP_LOCALE, tUa("units.kwh")));
   });
 
   it("shows a unit on the day and night row values", () => {
@@ -63,7 +63,7 @@ describe("DayNightSplitCard", () => {
 
     const values = wrapper.findAll(".split-card__value").map((el) => el.text());
     expect(values).toHaveLength(2);
-    values.forEach((text) => expect(text).toContain("kWh"));
+    values.forEach((text) => expect(text).toContain(tUa("units.kwh")));
   });
 
   it("emits view-history when the history link is clicked", async () => {

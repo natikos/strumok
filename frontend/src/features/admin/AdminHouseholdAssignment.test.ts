@@ -3,7 +3,7 @@ import InputNumber from "primevue/inputnumber";
 import Select from "primevue/select";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { appPlugins } from "@/shared/testing/mount";
+import { appPlugins, tUa } from "@/shared/testing/mount";
 import type { AdminHouseholdOut, AdminUserSummaryOut } from "@shared/api/admin";
 import { ApiError } from "@shared/api/client";
 
@@ -132,7 +132,7 @@ describe("AdminHouseholdAssignment", () => {
     await flushPromises();
 
     expect(confirmRequire).not.toHaveBeenCalled();
-    expect(wrapper.text()).toContain("Enter both meter values at the handover");
+    expect(wrapper.text()).toContain("Введіть обидва показники лічильників при передачі");
   });
 
   it("sends the handover values and asks again when the previous owner owes money", async () => {
@@ -218,12 +218,12 @@ describe("AdminHouseholdAssignment", () => {
 
     await wrapper.find(".admin-assignment__submit").trigger("click");
     await flushPromises();
-    expect(wrapper.text()).toContain("Enter both meter values at the handover");
+    expect(wrapper.text()).toContain("Введіть обидва показники лічильників при передачі");
 
     fillHandover(wrapper);
     await wrapper.find(".admin-assignment__submit").trigger("click");
     await flushPromises();
-    expect(confirmRequire.mock.calls[0]![0].message).toContain("The previous owner still owes");
+    expect(confirmRequire.mock.calls[0]![0].message).toContain(tUa("admin.balanceConfirmBodyPrevious"));
     confirmRequire.mock.calls[0]![0].accept();
     await flushPromises();
 
@@ -288,7 +288,7 @@ describe("AdminHouseholdAssignment", () => {
     await flushPromises();
 
     expect(createAdminHousehold).toHaveBeenCalledWith({ name: "Free plot" });
-    expect(wrapper.find(".admin-assignment__submit").text()).toBe("Create household");
+    expect(wrapper.find(".admin-assignment__submit").text()).toBe("Створити господарство");
   });
 
   it("still requires a resident when assigning an existing household", async () => {

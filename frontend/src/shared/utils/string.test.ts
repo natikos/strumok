@@ -30,11 +30,11 @@ describe("toCamelCase", () => {
 
 describe("capitalize", () => {
   it("uppercases the first letter of a lowercase word", () => {
-    expect(capitalize("household")).toBe("Household");
+    expect(capitalize("ділянка")).toBe("Ділянка");
   });
 
   it("leaves an already-capitalized word unchanged", () => {
-    expect(capitalize("Household")).toBe("Household");
+    expect(capitalize("Ділянка")).toBe("Ділянка");
   });
 
   it("returns an empty string unchanged rather than throwing", () => {
