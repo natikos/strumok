@@ -82,11 +82,11 @@ describe("AdminPage submission overview", () => {
     expect(wrapper.text()).toContain("Plot 10");
     expect(wrapper.text()).toContain("Ada Owner");
     expect(wrapper.text()).toContain(tUa("admin.submitted"));
-    expect(wrapper.text()).toContain(formatKwh(1234.5, APP_LOCALE, "kWh"));
+    expect(wrapper.text()).toContain(formatKwh(1234.5, APP_LOCALE, tUa("units.kwh")));
     expect(wrapper.text()).toContain(formatUah(1234.5, APP_LOCALE));
     expect(wrapper.text()).toContain("Plot 20");
     expect(wrapper.text()).toContain(tUa("admin.missing"));
-    expect(wrapper.text()).toContain("— kWh");
+    expect(wrapper.text()).toContain(`— ${tUa("units.kwh")}`);
     expect(wrapper.text()).toContain("—");
     expect(wrapper.text()).toContain("—");
   });

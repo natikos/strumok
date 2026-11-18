@@ -212,6 +212,7 @@
 <script setup lang="ts">
   import { ExclamationTriangle } from "@primeicons/vue";
   import { computed, onMounted, ref } from "vue";
+import { useI18n } from "vue-i18n";
 
   import BankCoverageNotice from "@/features/dashboard/components/BankCoverageNotice.vue";
   import AdminHouseholdAssignment from "@features/admin/AdminHouseholdAssignment.vue";
@@ -228,6 +229,7 @@
   import { type AdminDashboardOut, getAdminDashboard, reviewAdminReading } from "@shared/api/admin";
   import { APP_LOCALE, formatKwh, formatUah } from "@shared/utils/format";
 
+  const { t } = useI18n();
   const dashboard = ref<AdminDashboardOut | null>(null);
   const dashboardError = ref<string | null>(null);
   const activeTab = ref("households");
@@ -274,7 +276,7 @@
   }
 
   function formatUsage(value: string | null | undefined): string {
-    return formatKwh(value, locale, "kWh");
+    return formatKwh(value, locale, t("units.kwh"));
   }
 
   function formatCharge(value: string | null | undefined): string {
