@@ -104,7 +104,6 @@
       "inviteFirstName": "Ім'я",
       "inviteLastName": "Прізвище",
       "inviteEmail": "Пошта",
-      "inviteLanguage": "Мова",
       "inviteHousehold": "Ділянка (необов'язково)",
       "inviteSend": "Надіслати запрошення",
       "inviteSent": "Запрошення надіслано на {email}",
@@ -607,8 +606,6 @@
     "switched": "{removed} більше не активна; переключено на {next}"
   },
   "layout": {
-    "switchToEnglish": "Перемкнути мову на англійську",
-    "switchToUkrainian": "Перемкнути мову на українську",
     "switchToLightTheme": "Увімкнути світлу тему",
     "switchToDarkTheme": "Увімкнути темну тему"
   },
@@ -728,7 +725,6 @@
     "theme": "Тема",
     "themeLight": "Світла",
     "themeDark": "Темна",
-    "language": "Мова",
     "notifications": {
       "title": "Сповіщення",
       "label": "Нагадувати про подання показників",

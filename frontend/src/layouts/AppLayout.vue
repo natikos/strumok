@@ -134,7 +134,6 @@
     type HouseholdSwitch,
     useCurrentHousehold,
   } from "@features/households/useCurrentHousehold";
-  import { useLocale } from "@features/i18n/composables/useLocale";
   import { useTheme } from "@features/theme/composables/useTheme";
   import { getMe, logoutUser } from "@shared/api/auth";
   import { setAuthSessionState } from "@shared/api/auth-session";
@@ -146,7 +145,6 @@
 
   const router = useRouter();
   const route = useRoute();
-  const { setLocale, currentLocale } = useLocale();
   const { setTheme, theme } = useTheme();
   const { households, currentId, setHouseholds, setPastOnly, setCurrent } = useCurrentHousehold();
 
@@ -197,7 +195,6 @@
   onMounted(loadMe);
 
   async function loadMe(): Promise<void> {
-    const localLanguage = currentLocale.value;
     const localTheme = theme.value;
 
     try {
@@ -214,12 +211,8 @@
     }
 
     isUnreachable.value = false;
-    // The request may resolve after the user already switched language or theme
-    // (e.g. on a cold backend); their newer choice must not be overwritten.
-    if (currentLocale.value === localLanguage) {
-      setLocale(me.value.language);
-    }
-
+    // The request may resolve after the user already switched theme (e.g. on a
+    // cold backend); their newer choice must not be overwritten.
     if (theme.value === localTheme) {
       setTheme(me.value.theme);
     }

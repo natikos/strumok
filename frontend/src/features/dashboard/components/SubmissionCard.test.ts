@@ -13,7 +13,6 @@ import { APP_LOCALE, formatMeterValue } from "@shared/utils/format";
 import SubmissionCard from "./SubmissionCard.vue";
 
 interface MountOverrides {
-  locale?: "en" | "ua";
   status?: DeadlineStatus;
   daysLeft?: number;
   billingMonthIndex?: number;
@@ -32,8 +31,6 @@ interface MountOverrides {
 }
 
 function mountCard(overrides: MountOverrides = {}) {
-  const { locale = "ua", ...props } = overrides;
-
   return mountWithPlugins(SubmissionCard, {
     props: {
       status: "due",
@@ -44,9 +41,8 @@ function mountCard(overrides: MountOverrides = {}) {
       nightMeterValue: null,
       isSubmitting: false,
       isLoading: false,
-      ...props,
+      ...overrides,
     },
-    locale,
     global: {
     },
   });
@@ -101,7 +97,7 @@ describe("SubmissionCard", () => {
 
     it("uses the Ukrainian genitive month form after the deadline day", () => {
       vi.setSystemTime(new Date(2026, 8, 3));
-      const wrapper = mountCard({ locale: "ua", status: "due", billingMonthIndex: 8 });
+      const wrapper = mountCard({ status: "due", billingMonthIndex: 8 });
 
       expect(wrapper.find(".submission__subline").text()).toContain("Вікно закривається 5 вересня");
     });

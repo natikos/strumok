@@ -42,8 +42,7 @@
     SEASON_BY_MONTH,
     type SeasonComparison,
   } from "@/features/dashboard/composables/useUsageInsights";
-  import { useLocale } from "@/features/i18n/composables/useLocale";
-  import { formatMeterValue, formatUah } from "@shared/utils/format";
+  import { APP_LOCALE, formatMeterValue, formatUah } from "@shared/utils/format";
 
   interface Props {
     lastPeriod: PeriodUsage | null;
@@ -61,7 +60,6 @@
   });
 
   const { t } = useI18n();
-  const { intlLocale } = useLocale();
 
   interface Tile {
     key: string;
@@ -79,7 +77,7 @@
   const kwh = computed(() => t("units.kwh"));
 
   function num(value: number): string {
-    return formatMeterValue(value, intlLocale.value);
+    return formatMeterValue(value, APP_LOCALE);
   }
 
   function monthName(index: number): string {
@@ -108,7 +106,7 @@
       detail:
         last.chargedUah === null
           ? undefined
-          : `${t("usageHistory.charged")} ${formatUah(last.chargedUah, intlLocale.value)}`,
+          : `${t("usageHistory.charged")} ${formatUah(last.chargedUah, APP_LOCALE)}`,
       isEmpty: false,
     };
   });
@@ -152,7 +150,7 @@
       mom.deltaUah == null || mom.deltaUah === 0
         ? undefined
         : t(mom.deltaUah < 0 ? "dashboard.uahLess" : "dashboard.uahMore", {
-            value: formatUah(Math.abs(mom.deltaUah), intlLocale.value),
+            value: formatUah(Math.abs(mom.deltaUah), APP_LOCALE),
           });
 
     return {

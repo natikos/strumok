@@ -51,7 +51,8 @@ export default defineConfig({
       manifest: {
         name: "Strumok",
         short_name: "Strumok",
-        description: "Electricity reporting for the cooperative",
+        description: "Облік електроенергії для кооперативу",
+        lang: "uk",
         theme_color: "#1d4ed8",
         background_color: "#dbeafe",
         display: "standalone",

@@ -20,13 +20,13 @@
 
   const props = defineProps<{ path: string }>();
 
-  const { t, locale } = useI18n();
+  const { t } = useI18n();
 
   // A plain link lets mobile Safari and Chrome handle the download natively;
   // the auth cookie rides along. Ukrainian Excel wants `;` and decimal commas.
   const href = computed(
     () =>
-      `${API_BASE_URL}/admin/export/${props.path}${props.path.includes("?") ? "&" : "?"}format=${locale.value === "ua" ? "ua" : "standard"}`
+      `${API_BASE_URL}/admin/export/${props.path}${props.path.includes("?") ? "&" : "?"}format=ua`
   );
 </script>
 

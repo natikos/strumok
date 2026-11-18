@@ -135,7 +135,6 @@ export async function inviteAdminUser(payload: {
   email: string;
   first_name: string;
   household_id?: number;
-  language: "en" | "ua";
   last_name: string;
 }): Promise<AdminInviteOut> {
   const { data, error, response } = await appApiClient.POST("/admin/users", { body: payload });

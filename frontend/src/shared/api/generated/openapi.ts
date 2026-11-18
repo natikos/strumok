@@ -1199,8 +1199,6 @@ export interface components {
             first_name: string;
             /** Last Name */
             last_name: string;
-            /** @default ua */
-            language: components["schemas"]["LanguageCode"];
             /** Household Id */
             household_id?: number | null;
         };
@@ -1677,11 +1675,6 @@ export interface components {
             /** Fetched At */
             fetched_at: string;
         };
-        /**
-         * LanguageCode
-         * @enum {string}
-         */
-        LanguageCode: "en" | "ua";
         /** LinkCandidateOut */
         LinkCandidateOut: {
             /** Payment Id */
@@ -2341,14 +2334,12 @@ export interface components {
             /** Verification Email Retry After Seconds */
             verification_email_retry_after_seconds: number;
             theme: components["schemas"]["ThemeMode"];
-            language: components["schemas"]["LanguageCode"];
             /** Reminder Hour */
             reminder_hour: number;
         };
         /** UserPreferencesIn */
         UserPreferencesIn: {
             theme?: components["schemas"]["ThemeMode"] | null;
-            language?: components["schemas"]["LanguageCode"] | null;
             /**
              * Reminder Hour
              * @description Hour of day, Europe/Kyiv
@@ -2374,7 +2365,6 @@ export interface components {
             /** Verification Email Retry After Seconds */
             verification_email_retry_after_seconds: number;
             theme: components["schemas"]["ThemeMode"];
-            language: components["schemas"]["LanguageCode"];
             /** Reminder Hour */
             reminder_hour: number;
             /** Households */

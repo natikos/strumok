@@ -27,8 +27,7 @@
   import { useI18n } from "vue-i18n";
 
   import type { PeriodUsage } from "@/features/dashboard/composables/useUsageInsights";
-  import { useLocale } from "@/features/i18n/composables/useLocale";
-  import { formatKwh, formatMeterValue, formatUah } from "@shared/utils/format";
+  import { APP_LOCALE, formatKwh, formatMeterValue, formatUah } from "@shared/utils/format";
 
   interface Props {
     dayValue: number | string | null | undefined;
@@ -39,12 +38,11 @@
   const props = defineProps<Props>();
 
   const { t } = useI18n();
-  const { intlLocale } = useLocale();
 
   const kwh = computed(() => t("units.kwh"));
 
   function meter(value: number | string | null | undefined): string {
-    return formatMeterValue(value, intlLocale.value);
+    return formatMeterValue(value, APP_LOCALE);
   }
 
   const tiles = computed(() => [
@@ -55,7 +53,7 @@
       meterValue: meter(props.dayValue),
       usage: props.usage
         ? t("dashboard.usedThisPeriod", {
-            value: formatKwh(props.usage.dayKwh, intlLocale.value, kwh.value),
+            value: formatKwh(props.usage.dayKwh, APP_LOCALE, kwh.value),
           })
         : "",
     },
@@ -66,7 +64,7 @@
       meterValue: meter(props.nightValue),
       usage: props.usage
         ? t("dashboard.usedThisPeriod", {
-            value: formatKwh(props.usage.nightKwh, intlLocale.value, kwh.value),
+            value: formatKwh(props.usage.nightKwh, APP_LOCALE, kwh.value),
           })
         : "",
     },
@@ -74,7 +72,7 @@
 
   const chargedThisPeriod = computed(() => {
     const charged = props.usage?.chargedUah;
-    return charged == null ? "" : formatUah(charged, intlLocale.value);
+    return charged == null ? "" : formatUah(charged, APP_LOCALE);
   });
 </script>
 

@@ -66,7 +66,6 @@
   import { useSubmissionCopy } from "@/features/dashboard/composables/useSubmissionCopy";
   import type { PeriodUsage } from "@/features/dashboard/composables/useUsageInsights";
   import type { FieldErrors } from "@/features/dashboard/types";
-  import { useLocale } from "@/features/i18n/composables/useLocale";
   import { type DeadlineStatus, getDeadlineMonthIndex } from "@shared/utils/deadline";
   import type { ReadingWarning } from "@shared/utils/reading-plausibility";
 
@@ -168,7 +167,6 @@
   }>();
 
   const { t } = useI18n();
-  const { intlLocale } = useLocale();
 
   const headlineId = "submission-headline";
 
@@ -247,7 +245,6 @@
     deadlineMonthIndex: normalizedDeadline.value.deadlineMonthIndex,
     isFirstPeriod: props.isFirstPeriod ?? false,
     submittedAt: normalizedSubmission.value?.submittedAt,
-    intlLocale: intlLocale.value,
   }));
 
   const { headline, subline, submitLabel } = useSubmissionCopy(copyInput);

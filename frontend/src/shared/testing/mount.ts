@@ -4,10 +4,7 @@ import { defineComponent, h, type Plugin } from "vue";
 import { createI18n } from "vue-i18n";
 
 import AppPreset from "@/preset";
-import en from "@features/i18n/locales/en.json";
 import ua from "@features/i18n/locales/ua.json";
-
-type Locale = "en" | "ua";
 
 const PRIMEVUE_OPTIONS = {
   theme: { options: { darkModeSelector: ".dark", prefix: "s" }, preset: AppPreset },
@@ -16,15 +13,15 @@ const PRIMEVUE_OPTIONS = {
 /**
  * Build a fresh i18n instance per mount.
  *
- * The app-level singleton in `@features/i18n` reads the stored language at import
- * time, so sharing it across tests leaks locale state between them.
+ * Sharing the app-level singleton in `@features/i18n` across tests would leak
+ * state between them.
  */
-export function createTestI18n(locale: Locale = "ua") {
+export function createTestI18n() {
   return createI18n({
-    fallbackLocale: "en",
+    fallbackLocale: "ua",
     legacy: false,
-    locale,
-    messages: { en, ua },
+    locale: "ua",
+    messages: { ua },
   });
 }
 
@@ -55,9 +52,9 @@ const routerLinkStubPlugin: Plugin = {
  * Prefer this over `mountWithPlugins` when a spec needs full prop type inference
  * or custom `global` options — it keeps `mount`'s own typing intact.
  */
-export function appPlugins(locale: Locale = "ua") {
+export function appPlugins() {
   return [
-    createTestI18n(locale),
+    createTestI18n(),
     [PrimeVue, PRIMEVUE_OPTIONS] as [typeof PrimeVue, object],
     routerLinkStubPlugin,
   ];
@@ -72,20 +69,20 @@ export function appPlugins(locale: Locale = "ua") {
  */
 export function mountWithPlugins(
   component: Parameters<typeof mount>[0],
-  options: (Parameters<typeof mount>[1] & { locale?: Locale }) | undefined = {}
+  options: Parameters<typeof mount>[1] | undefined = {}
 ) {
-  const { locale = "ua", global: globalOptions, ...rest } = options ?? {};
+  const { global: globalOptions, ...rest } = options ?? {};
 
   return mount(component, {
     ...rest,
     global: {
       ...globalOptions,
-      plugins: [...appPlugins(locale), ...(globalOptions?.plugins ?? [])],
+      plugins: [...appPlugins(), ...(globalOptions?.plugins ?? [])],
     },
   });
 }
 
-const uaI18n = createTestI18n("ua");
+const uaI18n = createTestI18n();
 
 /** Translate a key with the real Ukrainian copy, so assertions follow copy edits. */
 export function tUa(key: string, params?: Record<string, unknown>, plural?: number): string {

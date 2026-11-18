@@ -2,6 +2,7 @@ import { computed, type ComputedRef } from "vue";
 import { useI18n } from "vue-i18n";
 
 import { DEADLINE_DAY, type DeadlineStatus } from "@shared/utils/deadline";
+import { APP_LOCALE } from "@shared/utils/format";
 
 export interface SubmissionCopyInput {
   status: DeadlineStatus;
@@ -9,7 +10,6 @@ export interface SubmissionCopyInput {
   deadlineMonthIndex: number;
   isFirstPeriod: boolean;
   submittedAt: string | null | undefined;
-  intlLocale: string;
 }
 
 /**
@@ -17,10 +17,10 @@ export interface SubmissionCopyInput {
  * place so a new status can't update one switch and miss another.
  */
 export function useSubmissionCopy(props: ComputedRef<SubmissionCopyInput>) {
-  const { locale, t } = useI18n();
+  const { t } = useI18n();
 
   const deadlineMonth = computed(() =>
-    t(`months.${locale.value === "ua" ? "genitive" : "long"}.${props.value.deadlineMonthIndex}`)
+    t(`months.genitive.${props.value.deadlineMonthIndex}`)
   );
 
   const formattedSubmittedAt = computed(() => {
@@ -28,7 +28,7 @@ export function useSubmissionCopy(props: ComputedRef<SubmissionCopyInput>) {
     if (!submittedAt) {
       return "";
     }
-    return new Date(submittedAt).toLocaleString(props.value.intlLocale, {
+    return new Date(submittedAt).toLocaleString(APP_LOCALE, {
       day: "numeric",
       month: "long",
       hour: "2-digit",

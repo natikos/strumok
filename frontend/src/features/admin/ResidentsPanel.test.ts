@@ -123,7 +123,6 @@ describe("ResidentsPanel", () => {
     expect(inviteAdminUser).toHaveBeenCalledWith({
       email: "new@example.com",
       first_name: "Nina",
-      language: "ua",
       last_name: "Kovalenko",
     });
     expect(wrapper.text()).toContain("Копіювати посилання");

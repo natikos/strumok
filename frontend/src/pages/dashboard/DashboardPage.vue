@@ -104,13 +104,11 @@
   import PastHouseholdNotice from "@/features/households/components/PastHouseholdNotice.vue";
   import PastHouseholds from "@/features/households/components/PastHouseholds.vue";
   import { useCurrentHousehold } from "@/features/households/useCurrentHousehold";
-  import { useLocale } from "@/features/i18n/composables/useLocale";
   import { ROUTES } from "@shared/routing/routes";
   import { periodToDate } from "@shared/utils/billing-period";
-  import { formatKwh, formatUah } from "@shared/utils/format";
+  import { APP_LOCALE, formatKwh, formatUah } from "@shared/utils/format";
 
   const { currentId, isPastOnly } = useCurrentHousehold();
-  const { intlLocale } = useLocale();
   const router = useRouter();
   const { t } = useI18n();
 
@@ -160,8 +158,8 @@
     if (periodState.isEstimated.value && periodState.estimate.value) {
       return t("meterReadings.periodEstimated", {
         month,
-        total: formatUah(periodState.estimate.value.totalUah, intlLocale.value),
-        usage: formatKwh(periodState.estimate.value.usageKwh, intlLocale.value, t("units.kwh")),
+        total: formatUah(periodState.estimate.value.totalUah, APP_LOCALE),
+        usage: formatKwh(periodState.estimate.value.usageKwh, APP_LOCALE, t("units.kwh")),
       });
     }
 

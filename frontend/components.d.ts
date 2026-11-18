@@ -48,7 +48,6 @@ declare module 'vue' {
     InputNumber: typeof import('primevue/inputnumber')['default']
     InputText: typeof import('primevue/inputtext')['default']
     InstallPrompt: typeof import('./src/features/pwa/InstallPrompt.vue')['default']
-    LanguageToggleButton: typeof import('./src/shared/components/i18n/LanguageToggleButton.vue')['default']
     Menu: typeof import('primevue/menu')['default']
     Message: typeof import('primevue/message')['default']
     MeterChangeForm: typeof import('./src/features/admin/MeterChangeForm.vue')['default']

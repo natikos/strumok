@@ -14,6 +14,7 @@ import {
   setAuthSessionState,
 } from "@shared/api/auth-session";
 import { registerSessionExpiredHandler } from "@shared/api/client";
+import { primeVueLocale } from "@shared/primevue-locale";
 import { ROUTES } from "@shared/routing/routes";
 
 import App from "./App.vue";
@@ -134,6 +135,7 @@ app
   .use(i18n)
   .use(router)
   .use(PrimeVue, {
+    locale: primeVueLocale,
     theme: {
       options: {
         darkModeSelector: ".dark",

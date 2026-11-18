@@ -39,7 +39,6 @@ function makeMe(overrides: Partial<UserWithHouseholdsOut> = {}): UserWithHouseho
     email_verified: true,
     verification_email_retry_after_seconds: 0,
     theme: "light",
-    language: "en",
     reminder_hour: 9,
     households: [],
     ...overrides,
@@ -51,7 +50,7 @@ function mountScreen() {
     global: {
       plugins: appPlugins(),
       stubs: {
-        // Real AuthLayout pulls in language/theme toggle components that are
+        // Real AuthLayout pulls in the theme toggle component, which is
         // irrelevant here; render its default slot only.
         AuthLayout: { template: "<div><slot /></div>" },
       },

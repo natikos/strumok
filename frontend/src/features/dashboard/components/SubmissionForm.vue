@@ -70,8 +70,7 @@
   import { useI18n } from "vue-i18n";
 
   import type { FieldErrors } from "@/features/dashboard/types";
-  import { useLocale } from "@/features/i18n/composables/useLocale";
-  import { formatKwh } from "@shared/utils/format";
+  import { APP_LOCALE, formatKwh } from "@shared/utils/format";
   import type { ReadingWarning } from "@shared/utils/reading-plausibility";
 
   import MeterValueField from "./MeterValueField.vue";
@@ -99,7 +98,6 @@
   }>();
 
   const { t } = useI18n();
-  const { intlLocale } = useLocale();
 
   const kwh = t("units.kwh");
 
@@ -115,8 +113,8 @@
     }
 
     return t("meterReadings.warnSpike", {
-      typical: formatKwh(warning.typicalKwh, intlLocale.value, kwh),
-      usage: formatKwh(warning.usageKwh, intlLocale.value, kwh),
+      typical: formatKwh(warning.typicalKwh, APP_LOCALE, kwh),
+      usage: formatKwh(warning.usageKwh, APP_LOCALE, kwh),
     });
   });
 
@@ -125,7 +123,7 @@
 
   function hint(value: number | string): string {
     return t("dashboard.lastSubmittedValue", {
-      value: formatKwh(value, intlLocale.value, kwh),
+      value: formatKwh(value, APP_LOCALE, kwh),
     });
   }
 </script>

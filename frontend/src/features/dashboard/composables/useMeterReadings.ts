@@ -11,7 +11,6 @@ import {
 import { useUsageInsights } from "@/features/dashboard/composables/useUsageInsights";
 import type { FieldErrors } from "@/features/dashboard/types";
 import { useCurrentHousehold } from "@/features/households/useCurrentHousehold";
-import { useLocale } from "@/features/i18n/composables/useLocale";
 import { useAsyncData } from "@/shared/composables/useAsyncData";
 import { useOnlineStatus } from "@/shared/composables/useOnlineStatus";
 import {
@@ -32,7 +31,7 @@ import {
   NO_RATE_CONFIGURED_ERROR_CODE,
   submitMyMeterReading,
 } from "@shared/api/meter-readings";
-import { toDecimal } from "@shared/utils/format";
+import { APP_LOCALE, toDecimal } from "@shared/utils/format";
 import { detectReadingWarning } from "@shared/utils/reading-plausibility";
 
 export interface MeterPeriod {
@@ -73,7 +72,6 @@ export function useMeterReadings() {
   });
 
   const { currentId } = useCurrentHousehold();
-  const { intlLocale } = useLocale();
 
   const {
     data: readings,
@@ -123,8 +121,8 @@ export function useMeterReadings() {
       result.push({
         period,
         date,
-        monthLabel: capitalize(formatPeriodMonth(period, intlLocale.value, { month: "short" })),
-        monthLong: capitalize(formatPeriodMonth(period, intlLocale.value)),
+        monthLabel: capitalize(formatPeriodMonth(period, APP_LOCALE, { month: "short" })),
+        monthLong: capitalize(formatPeriodMonth(period, APP_LOCALE)),
         isCurrent: period === currentBillingPeriod,
         reading: readingsByPeriod.value.get(period),
         statement: statementsByPeriod.value.get(period),

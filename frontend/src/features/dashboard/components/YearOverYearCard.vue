@@ -36,7 +36,7 @@
       <footer class="yoy-card__footer">
         <span class="yoy-card__pill" :class="`yoy-card__pill--${comparison.direction}`">
           <component :is="deltaIcon" aria-hidden="true" />
-          {{ formatKwh(Math.abs(comparison.deltaKwh), intlLocale, t("units.kwh")) }}
+          {{ formatKwh(Math.abs(comparison.deltaKwh), APP_LOCALE, t("units.kwh")) }}
         </span>
 
         <!-- Only when both years were actually billed; see chargeDelta. -->
@@ -59,8 +59,7 @@
   import { useI18n } from "vue-i18n";
 
   import type { YearOverYear } from "@/features/dashboard/composables/useUsageInsights";
-  import { useLocale } from "@/features/i18n/composables/useLocale";
-  import { formatKwh, formatUah } from "@shared/utils/format";
+  import { APP_LOCALE, formatKwh, formatUah } from "@shared/utils/format";
 
   interface Props {
     comparison: YearOverYear | null;
@@ -73,7 +72,6 @@
   const props = withDefaults(defineProps<Props>(), { isLoading: false });
 
   const { t } = useI18n();
-  const { intlLocale } = useLocale();
 
   const currentYear = computed(() => new Date().getFullYear());
 
@@ -91,13 +89,13 @@
         year: currentYear.value,
         isCurrent: true,
         widthPct: widthOf(data.current),
-        formatted: formatKwh(data.current, intlLocale.value, t("units.kwh")),
+        formatted: formatKwh(data.current, APP_LOCALE, t("units.kwh")),
       },
       {
         year: currentYear.value - 1,
         isCurrent: false,
         widthPct: widthOf(data.previous),
-        formatted: formatKwh(data.previous, intlLocale.value, t("units.kwh")),
+        formatted: formatKwh(data.previous, APP_LOCALE, t("units.kwh")),
       },
     ];
   });
@@ -110,7 +108,7 @@
       return "";
     }
 
-    const value = formatUah(Math.abs(delta), intlLocale.value);
+    const value = formatUah(Math.abs(delta), APP_LOCALE);
     return t(delta < 0 ? "dashboard.uahLess" : "dashboard.uahMore", { value });
   });
 </script>

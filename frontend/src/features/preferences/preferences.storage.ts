@@ -3,17 +3,14 @@ import type { components } from "@shared/api/generated/openapi";
 type UserPreferencesIn = components["schemas"]["UserPreferencesIn"];
 
 export type ThemeMode = NonNullable<UserPreferencesIn["theme"]>;
-export type LanguageCode = NonNullable<UserPreferencesIn["language"]>;
 
 const STORAGE_KEY = "strumok:user-preferences";
 
 interface StoredPreferences {
-  language?: LanguageCode;
   theme?: ThemeMode;
 }
 
 const DEFAULT_PREFERENCES: Required<StoredPreferences> = {
-  language: "ua",
   theme: "light",
 };
 
@@ -46,21 +43,6 @@ export function getStoredTheme(): ThemeMode {
   return DEFAULT_PREFERENCES.theme;
 }
 
-export function getStoredLanguage(): LanguageCode {
-  const { language } = readStoredPreferences();
-
-  if (language === "ua" || language === "en") {
-    return language;
-  }
-
-  writeStoredPreferences({ language: DEFAULT_PREFERENCES.language });
-  return DEFAULT_PREFERENCES.language;
-}
-
 export function storeTheme(theme: ThemeMode): void {
   writeStoredPreferences({ theme });
-}
-
-export function storeLanguage(language: LanguageCode): void {
-  writeStoredPreferences({ language });
 }

@@ -21,19 +21,6 @@
             </div>
             <ThemeToggleButton @toggle="handlePreferenceToggle({ theme: $event })" />
           </div>
-
-          <div class="settings-row">
-            <div class="settings-row__info">
-              <Language class="settings-row__icon" />
-              <div>
-                <span class="settings-row__label">{{ t("settings.language") }}</span>
-                <span class="settings-row__hint">{{
-                  currentLocale === "ua" ? "Українська" : "English"
-                }}</span>
-              </div>
-            </div>
-            <LanguageToggleButton @toggle="handlePreferenceToggle({ language: $event })" />
-          </div>
         </div>
       </section>
 
@@ -107,21 +94,18 @@
 </template>
 
 <script setup lang="ts">
-  import { Bell, Clock, Language, Palette, Spinner } from "@primeicons/vue";
+  import { Bell, Clock, Palette, Spinner } from "@primeicons/vue";
   import { format, setHours, startOfDay } from "date-fns";
   import { computed, onMounted, ref } from "vue";
   import { useI18n } from "vue-i18n";
 
-  import { useLocale } from "@features/i18n/composables/useLocale";
-  import type { LanguageCode, ThemeMode } from "@features/preferences/preferences.storage";
+  import type { ThemeMode } from "@features/preferences/preferences.storage";
   import { usePushNotifications } from "@features/push-notifications/usePushNotifications";
   import { useTheme } from "@features/theme/composables/useTheme";
   import { getMe, updateMyPreferences, type UserWithHouseholdsOut } from "@shared/api/auth";
-  import LanguageToggleButton from "@shared/components/i18n/LanguageToggleButton.vue";
   import ThemeToggleButton from "@shared/components/theme/ThemeToggleButton.vue";
   import { ROUTES } from "@shared/routing/routes";
 
-  const { setLocale, currentLocale } = useLocale();
   const { setTheme, isDarkTheme } = useTheme();
   const { state: pushState, enable: enablePush, disable: disablePush } = usePushNotifications();
   const { t } = useI18n();
@@ -134,14 +118,12 @@
   const notificationIcon = computed(() => (pushState.value === "requesting" ? Spinner : Bell));
 
   async function handlePreferenceToggle(payload: {
-    language?: LanguageCode;
     theme?: ThemeMode;
   }): Promise<void> {
     try {
       await updateMyPreferences(payload);
     } catch (error) {
       // The toggle already applied the new value locally; undo it if the save failed.
-      if (payload.language) setLocale(payload.language === "ua" ? "en" : "ua");
       if (payload.theme) setTheme(payload.theme === "dark" ? "light" : "dark");
       throw error;
     }

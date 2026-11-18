@@ -11,13 +11,11 @@
   import { useI18n } from "vue-i18n";
   import { RouterView, useRouter } from "vue-router";
 
-  import { useLocale } from "@features/i18n/composables/useLocale";
   import { useTheme } from "@features/theme/composables/useTheme";
   import { registerToastPresenter } from "@shared/api/error-toast";
   import AppLoader from "@shared/components/AppLoader.vue";
 
   const router = useRouter();
-  const { initializeLocale } = useLocale();
   const { initializeTheme } = useTheme();
   const i18n = useI18n();
   const toast = useToast();
@@ -29,7 +27,6 @@
 
   let unregisterToastPresenter: VoidFunction | null = null;
 
-  initializeLocale();
   initializeTheme();
 
   onMounted(() => {
