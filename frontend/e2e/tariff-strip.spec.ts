@@ -21,7 +21,7 @@ test("dashboard shows the co-op rate and does not overflow at 360px", async ({
   await page.goto("/");
 
   // At 360px the strip collapses to a day/night pill that opens a popover.
-  const pill = page.getByRole("button", { name: /Co-op rate/ });
+  const pill = page.getByRole("button", { name: /Тариф кооперативу/ });
   await expect(pill).toBeVisible();
   await expect(pill).toHaveText(/^\s*4[.,]32\s+2[.,]16\s*$/);
   await pill.click();
@@ -29,7 +29,7 @@ test("dashboard shows the co-op rate and does not overflow at 360px", async ({
   await expect(strip).toBeVisible();
   await expect(strip).toContainText(/4[.,]32/);
   await expect(strip).toContainText(/2[.,]16/);
-  await expect(strip).toContainText("from 01.06");
+  await expect(strip).toContainText("з 01.06");
 
   const overflow = await page.evaluate(
     () => document.documentElement.scrollWidth - document.documentElement.clientWidth
@@ -53,6 +53,6 @@ test("dashboard shows no rate strip when no rate is configured", async ({
   await loginAs(resident);
   await page.goto("/");
 
-  await expect(page.getByLabel("Day", { exact: true })).toBeVisible();
-  await expect(page.getByText("Co-op rate")).toHaveCount(0);
+  await expect(page.getByLabel("День", { exact: true })).toBeVisible();
+  await expect(page.getByText("Тариф кооперативу")).toHaveCount(0);
 });

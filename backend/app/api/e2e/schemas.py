@@ -24,7 +24,7 @@ class E2eUserIn(BaseModel):
     first_name: str = "E2e"
     last_name: str = "User"
     is_admin: bool = False
-    language: LanguageCode = LanguageCode.EN
+    language: LanguageCode = LanguageCode.UA
 
 
 class E2eUserOut(BaseModel):

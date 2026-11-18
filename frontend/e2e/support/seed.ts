@@ -94,7 +94,6 @@ export async function inviteResident(
       email: input.email,
       first_name: input.firstName,
       last_name: input.lastName,
-      language: "en",
       household_id: input.householdId,
     },
   });
