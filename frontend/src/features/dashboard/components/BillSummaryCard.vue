@@ -5,7 +5,7 @@
     <ul v-if="rows.length" class="bill-summary__rows">
       <li v-for="row in rows" :key="row.period" class="bill-summary__row">
         <span class="bill-summary__period">
-          {{ row.period }}
+          {{ monthName(row.period) }}
           <span v-if="row.isProvisional" class="bill-summary__tag">{{ t("bill.provisional") }}</span>
         </span>
         <span class="bill-summary__sum">{{ money(row.kopecks) }}</span>
@@ -27,6 +27,7 @@
 
   import { useCurrentHousehold } from "@/features/households/useCurrentHousehold";
   import { getBalance, listStatements } from "@shared/api/billing";
+  import { formatPeriodMonth } from "@shared/utils/billing-period";
   import { APP_LOCALE, formatUah, toDecimal } from "@shared/utils/format";
 
   defineEmits<{ "open-history": [] }>();
@@ -48,6 +49,9 @@
   function money(kopecks: number): string {
     return formatUah(kopecks / 100, locale);
   }
+
+  const monthName = (period: string): string =>
+    formatPeriodMonth(period, locale, { month: "long", year: "numeric" });
 
   const toKopecks = (value: string): number => Math.round(toDecimal(value) * 100);
 
@@ -112,12 +116,21 @@
     }
 
     &__row {
-      @include layout.row(var(--s-app-space-3), center, space-between);
+      @include layout.row(var(--s-app-space-3), baseline, space-between);
       color: color-mix(in srgb, var(--s-content-color), transparent 20%);
+
+      @include layout.respond-to("sm") {
+        justify-content: flex-start;
+        max-width: 22rem;
+      }
     }
 
     &__period {
       min-width: 0;
+
+      @include layout.respond-to("sm") {
+        flex: 1 1 auto;
+      }
     }
 
     &__tag {

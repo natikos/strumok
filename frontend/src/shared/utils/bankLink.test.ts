@@ -30,7 +30,7 @@ describe("bankPaymentLink", () => {
   });
 
   it("uses URL-safe base64 without padding", () => {
-    const link = bankPaymentLink({ recipient: "a", iban: "UA1", amount: "1.00", purpose: "p" });
+    const link = bankPaymentLink({ recipient: "a", iban: "UA1", edrpou: "12345678", amount: "1.00", purpose: "p" });
 
     expect(link.slice("https://bank.gov.ua/qr/".length)).toMatch(/^[A-Za-z0-9_-]+$/);
   });

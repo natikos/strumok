@@ -78,10 +78,10 @@ describe("BillSummaryCard", () => {
 
     const rows = wrapper.findAll(".bill-summary__row");
     expect(rows).toHaveLength(3);
-    expect(rows[0]!.text()).toContain("2026-10");
-    expect(rows[1]!.text()).toContain("2026-09");
+    expect(rows[0]!.text()).toContain("жовтень 2026");
+    expect(rows[1]!.text()).toContain("вересень 2026");
     expect(rows[1]!.text()).toContain("600");
-    expect(rows[2]!.text()).toContain("2026-08");
+    expect(rows[2]!.text()).toContain("серпень 2026");
     expect(wrapper.find(".balance-strip-stub").exists()).toBe(true);
   });
 

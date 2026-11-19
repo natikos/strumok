@@ -147,10 +147,10 @@ through `app.core.ownership.set_owner`**.
   before it stop counting, and only later months stay payable. The latest `as_of`
   wins; corrections written before the cutover are superseded. Bank credits dated
   on or before the opening balance or cutover are rejected (`settled_through`).
-- **Payment details:** the co-op's IBAN, recipient and optional 8-digit EDRPOU
+- **Payment details:** the co-op's IBAN, recipient and required EDRPOU (8 digits) or ІПН (10)
   (`payment_details`, one row) are set by the administrator via `PUT /admin/payment-details`
   (audited, UA IBAN checksum validated) and read by residents at
-  `GET /billing/payment-details`. The dashboard's Pay sheet shows them with copy
+  `GET /billing/payment-details` (a legacy row without the code reads as unset). The dashboard's Pay sheet shows them with copy
   buttons next to the current plot's balance.
 - There are no bank deep links yet (unverified), and payment status stays manual.
 

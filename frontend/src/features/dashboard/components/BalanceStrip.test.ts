@@ -64,7 +64,11 @@ describe("BalanceStrip", () => {
   });
 
   describe("past-only (no plot left)", () => {
-    const details = { iban: "UA213223130000026007233566001", recipient_name: "Strumok Co-op" };
+    const details = {
+      iban: "UA213223130000026007233566001",
+      recipient_name: "Strumok Co-op",
+      edrpou: "12345678",
+    };
     const past = (id: number, amount: string) => ({
       household_id: id,
       is_current_owner: false,

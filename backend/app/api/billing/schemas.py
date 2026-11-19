@@ -86,6 +86,7 @@ class PaymentDetailsOut(BaseModel):
 
     iban: str = Field(examples=["UA213223130000026007233566001"])
     recipient_name: str
+    # Null only on a row saved before the code became required.
     edrpou: str | None = Field(default=None, examples=["12345678"])
 
 
@@ -113,7 +114,7 @@ class PaymentDetailsIn(BaseModel):
 
     iban: str = Field(max_length=40)
     recipient_name: str = Field(min_length=1, max_length=120)
-    edrpou: str | None = Field(default=None, max_length=20)
+    edrpou: str = Field(max_length=20)
 
 
 class CurrentRateOut(BaseModel):

@@ -11,10 +11,11 @@ const props = {
   iban: "UA213223130000026007233566001",
   recipient: "Strumok Co-op",
   comment: "Plot 1",
+  edrpou: "3663505269",
   visible: true,
 };
 
-function mountSheet(extra: { edrpou?: string | null } = {}) {
+function mountSheet(extra: { edrpou?: string } = {}) {
   return mount(PaySheet, {
     props: { ...props, ...extra },
     global: {
@@ -35,23 +36,17 @@ describe("PaySheet", () => {
     }
   });
 
-  it("shows and copies the EDRPOU when set", async () => {
+  it("shows and copies the EDRPOU", async () => {
     const writeText = vi.fn().mockResolvedValue(undefined);
     vi.stubGlobal("navigator", { clipboard: { writeText } });
     const wrapper = mountSheet({ edrpou: "12345678" });
 
     expect(wrapper.text()).toContain("12345678");
-    const index = wrapper.findAll("dt").findIndex((dt) => dt.text() === "ЄДРПОУ");
+    const index = wrapper.findAll("dt").findIndex((dt) => dt.text() === "ІПН/ЄДРПОУ");
     await wrapper.findAll(".pay-sheet__row button")[index]!.trigger("click");
     await flushPromises();
 
     expect(writeText).toHaveBeenCalledWith("12345678");
-  });
-
-  it("omits the EDRPOU row when it is not set", () => {
-    expect(mountSheet({ edrpou: null }).findAll("dt").map((dt) => dt.text())).not.toContain(
-      "ЄДРПОУ"
-    );
   });
 
   it("copies a field to the clipboard", async () => {
@@ -86,13 +81,14 @@ describe("PaySheet bank link", () => {
       bankPaymentLink({
         recipient: props.recipient,
         iban: props.iban,
+        edrpou: props.edrpou,
         amount: props.amount,
         purpose: props.comment,
       })
     );
   });
 
-  it("copies the details as readable text, not a link", async () => {
+  it("copies a payment instruction a bank app can parse", async () => {
     const writeText = vi.fn().mockResolvedValue(undefined);
     vi.stubGlobal("navigator", { clipboard: { writeText } });
     const wrapper = mountSheet();
@@ -102,7 +98,14 @@ describe("PaySheet bank link", () => {
 
     const text = writeText.mock.calls[0]![0] as string;
     expect(text).not.toContain("https://");
-    expect(text).toContain(`IBAN: ${props.iban}`);
-    expect(text.split("\n").length).toBeGreaterThan(3);
+    expect(text).toBe(
+      [
+        `Отримувач: ${props.recipient}`,
+        `IBAN: ${props.iban}`,
+        `ІПН/ЄДРПОУ: ${props.edrpou}`,
+        "Сума: 250,50 грн",
+        `Призначення платежу: ${props.comment}`,
+      ].join("\n")
+    );
   });
 });

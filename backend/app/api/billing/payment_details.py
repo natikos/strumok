@@ -7,7 +7,8 @@ from app.db.models import PaymentDetails
 IBAN_LENGTH = 29
 
 
-EDRPOU_LENGTH = 8
+# 8 digits for a legal entity's EDRPOU, 10 for an individual's tax number (ІПН).
+EDRPOU_LENGTHS = (8, 10)
 
 
 class InvalidIbanError(Exception):
@@ -18,14 +19,11 @@ class InvalidEdrpouError(Exception):
     pass
 
 
-def normalize_edrpou(raw: str | None) -> str | None:
-    """A blank value clears the code; otherwise it must be the 8 digits of a
-    legal entity's EDRPOU, since a typo would make residents' bank apps reject
-    or misroute the transfer."""
-    code = "".join((raw or "").split())
-    if not code:
-        return None
-    if len(code) != EDRPOU_LENGTH or not (code.isascii() and code.isdigit()):
+def normalize_edrpou(raw: str) -> str:
+    """Required: a typo would make residents' bank apps reject or misroute
+    the transfer."""
+    code = "".join(raw.split())
+    if len(code) not in EDRPOU_LENGTHS or not (code.isascii() and code.isdigit()):
         raise InvalidEdrpouError
     return code
 
@@ -54,7 +52,7 @@ def set_payment_details(
     actor_id: int,
     iban: str,
     recipient_name: str,
-    edrpou: str | None = None,
+    edrpou: str,
 ) -> PaymentDetails:
     normalized = normalize_iban(iban)
     code = normalize_edrpou(edrpou)

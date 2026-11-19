@@ -5,7 +5,7 @@ const BASE_URL = "https://bank.gov.ua/qr/";
 export interface BankLinkInput {
   recipient: string;
   iban: string;
-  edrpou?: string | null | undefined;
+  edrpou: string;
   amount: string;
   purpose: string;
 }
@@ -20,7 +20,7 @@ export function bankPaymentLink(input: BankLinkInput): string {
     input.recipient.slice(0, 70),
     input.iban,
     `UAH${input.amount}`,
-    input.edrpou ?? "",
+    input.edrpou,
     "",
     "",
     input.purpose.slice(0, 140),

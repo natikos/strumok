@@ -1886,7 +1886,7 @@ export interface components {
             /** Recipient Name */
             recipient_name: string;
             /** Edrpou */
-            edrpou?: string | null;
+            edrpou: string;
         };
         /** PaymentDetailsOut */
         PaymentDetailsOut: {
@@ -3780,7 +3780,7 @@ export interface operations {
                     "application/json": components["schemas"]["PaymentDetailsOut"];
                 };
             };
-            /** @description IBAN is malformed or fails its checksum, or EDRPOU is not 8 digits */
+            /** @description IBAN is malformed or fails its checksum, or EDRPOU/ІПН is not 8 or 10 digits */
             422: {
                 headers: {
                     [name: string]: unknown;
