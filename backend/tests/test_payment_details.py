@@ -4,7 +4,7 @@ from sqlmodel import Session, select
 
 from app.api.billing.payment_details import InvalidIbanError, normalize_iban
 from app.core.ownership import set_owner
-from app.db.models import AuditLog
+from app.db.models import AuditLog, PaymentDetails
 from tests.factories import authenticate, make_household, make_user
 
 # Valid UA IBAN (passes mod-97) and a copy with one digit changed.
@@ -13,7 +13,12 @@ BAD_IBAN = "UA213223130000026007233566002"
 
 
 def _put(client, **overrides):
-    body = {"iban": IBAN, "recipient_name": "Strumok Co-op", **overrides}
+    body = {
+        "iban": IBAN,
+        "recipient_name": "Strumok Co-op",
+        "edrpou": "12345678",
+        **overrides,
+    }
     return client.put("/admin/payment-details", json=body)
 
 
@@ -47,7 +52,7 @@ class TestAdminWrite:
         assert res.json() == {
             "iban": IBAN,
             "recipient_name": "Strumok Co-op",
-            "edrpou": None,
+            "edrpou": "12345678",
         }
         assert client.get("/admin/payment-details").json()["iban"] == IBAN
 
@@ -101,7 +106,7 @@ class TestResidentRead:
         assert res.json() == {
             "iban": IBAN,
             "recipient_name": "Strumok Co-op",
-            "edrpou": None,
+            "edrpou": "12345678",
         }
 
     def test_requires_a_household(self, client, session: Session) -> None:
@@ -129,7 +134,7 @@ class TestResidentRead:
         assert res.json() == {
             "iban": IBAN,
             "recipient_name": "Strumok Co-op",
-            "edrpou": None,
+            "edrpou": "12345678",
         }
 
     def test_user_who_never_owned_anything_gets_404_even_if_others_have_plots(
@@ -158,16 +163,39 @@ class TestEdrpou:
         authenticate(client, resident)
         assert client.get("/billing/payment-details").json()["edrpou"] == "12345678"
 
-    def test_blank_clears_it(self, client, session: Session) -> None:
+    def test_accepts_a_ten_digit_tax_number(self, client, session: Session) -> None:
         authenticate(client, make_user(session, is_admin=True))
-        _put(client, edrpou="12345678")
-        assert _put(client, edrpou="  ").json()["edrpou"] is None
+        assert _put(client, edrpou="3663505269").json()["edrpou"] == "3663505269"
+
+    def test_blank_or_missing_is_rejected(self, client, session: Session) -> None:
+        authenticate(client, make_user(session, is_admin=True))
+        for blank in ("", "  "):
+            res = _put(client, edrpou=blank)
+            assert res.status_code == 422
+            assert res.json()["detail"] == "invalidEdrpou"
+        body = {"iban": IBAN, "recipient_name": "Strumok Co-op"}
+        assert client.put("/admin/payment-details", json=body).status_code == 422
+
+    def test_legacy_row_without_it_is_hidden_from_residents(
+        self, client, session: Session
+    ) -> None:
+        authenticate(client, make_user(session, is_admin=True))
+        _put(client)
+        row = session.get(PaymentDetails, 1)
+        row.edrpou = None
+        session.add(row)
+        session.commit()
+        assert client.get("/admin/payment-details").json()["edrpou"] is None
+        resident = make_user(session)
+        make_household(session, user_id=resident.id)
+        authenticate(client, resident)
+        assert client.get("/billing/payment-details").json() is None
 
     def test_rejects_wrong_length_and_non_digits(
         self, client, session: Session
     ) -> None:
         authenticate(client, make_user(session, is_admin=True))
-        for bad in ("1234567", "123456789", "1234567a"):
+        for bad in ("1234567", "123456789", "12345678901", "1234567a"):
             res = _put(client, edrpou=bad)
             assert res.status_code == 422
             assert res.json()["detail"] == "invalidEdrpou"

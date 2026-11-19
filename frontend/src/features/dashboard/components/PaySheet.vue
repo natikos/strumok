@@ -51,7 +51,7 @@
     amount: string;
     iban: string;
     recipient: string;
-    edrpou?: string | null | undefined;
+    edrpou: string;
     comment: string;
   }>();
 
@@ -69,23 +69,36 @@
     })
   );
 
-  // Labelled plain text: pasted into a bank app (e.g. monobank) it can pick the
-  // IBAN and other details out, unlike a bare link.
+  // One "label: value" line per requisite: readable by a person, and a bank app
+  // pasted into picks the recipient, IBAN, tax ID and purpose out of the text.
+  const COPY_ORDER = ["recipient", "iban", "edrpou", "amount", "comment"];
+
   const detailsText = computed(() =>
-    fields.value.map((field) => `${field.label}: ${field.value}`).join("\n")
+    COPY_ORDER.map((key) => fields.value.find((field) => field.key === key)!)
+      .map((field) => `${field.copyLabel ?? field.label}: ${field.copyValue ?? field.value}`)
+      .join("\n")
   );
 
   const copied = ref<string | null>(null);
   const copyFailed = ref(false);
 
+  // `copyLabel` / `copyValue` override the visible text in the copied block only.
   const fields = computed(() => [
-    { key: "amount", label: t("balance.payAmount"), value: props.amount },
+    {
+      key: "amount",
+      label: t("balance.payAmount"),
+      value: props.amount,
+      copyValue: t("balance.payAmountValue", { amount: props.amount.replace(".", ",") }),
+    },
     { key: "iban", label: t("balance.payIban"), value: props.iban },
     { key: "recipient", label: t("balance.payRecipient"), value: props.recipient },
-    ...(props.edrpou
-      ? [{ key: "edrpou", label: t("balance.payEdrpou"), value: props.edrpou }]
-      : []),
-    { key: "comment", label: t("balance.payComment"), value: props.comment },
+    { key: "edrpou", label: t("balance.payEdrpou"), value: props.edrpou },
+    {
+      key: "comment",
+      label: t("balance.payComment"),
+      value: props.comment,
+      copyLabel: t("balance.payPurposeFull"),
+    },
   ]);
 
   async function copy(key: string, value: string): Promise<void> {

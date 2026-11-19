@@ -127,7 +127,11 @@ def get_my_payment_details(
             status_code=status.HTTP_404_NOT_FOUND, detail="noHouseholdMembership"
         )
     row = get_payment_details(session)
-    return PaymentDetailsOut.model_validate(row) if row else None
+    # A row saved before the code was required is incomplete: residents get no
+    # requisites rather than ones their bank would reject.
+    if row is None or row.edrpou is None:
+        return None
+    return PaymentDetailsOut.model_validate(row)
 
 
 @router.get("/current-rate", response_model=CurrentRateOut | None)

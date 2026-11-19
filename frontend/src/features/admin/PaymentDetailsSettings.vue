@@ -33,7 +33,7 @@
       type="submit"
       :label="t('admin.paymentDetails.save')"
       :loading="isBusy"
-      :disabled="!iban.trim() || !recipient.trim()"
+      :disabled="!iban.trim() || !recipient.trim() || !edrpou.trim()"
     />
     <p v-if="isSaved" class="payment-details__saved" role="status">
       {{ t("admin.paymentDetails.saved") }}
@@ -71,7 +71,7 @@
       const saved = await putAdminPaymentDetails({
         iban: iban.value,
         recipient_name: recipient.value,
-        edrpou: edrpou.value.trim() || null,
+        edrpou: edrpou.value,
       });
       iban.value = saved.iban;
       recipient.value = saved.recipient_name;

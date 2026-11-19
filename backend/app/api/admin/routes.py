@@ -396,7 +396,7 @@ def get_admin_payment_details(
     response_model=PaymentDetailsOut,
     responses={
         422: {
-            "description": "IBAN is malformed or fails its checksum, or EDRPOU is not 8 digits",
+            "description": "IBAN is malformed or fails its checksum, or EDRPOU/ІПН is not 8 or 10 digits",
             "model": ErrorOut,
             "content": {"application/json": {"example": {"detail": "invalidIban"}}},
         }

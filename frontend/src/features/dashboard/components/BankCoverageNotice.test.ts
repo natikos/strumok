@@ -47,7 +47,7 @@ describe("BankCoverageNotice", () => {
       last_imported_at: null,
     });
     const wrapper = await render();
-    expect(wrapper.classes()).toContain("bank-coverage--awaiting");
+    expect(wrapper.text()).toContain("Очікуємо банківську виписку");
   });
 
   it("shows the last import time for the administrator", async () => {

@@ -27,7 +27,7 @@
       <span v-if="householdName" class="balance-strip__household">{{ householdName }}</span>
     </button>
 
-    <template v-if="payable">
+    <template v-if="payDetails">
       <Button
         type="button"
         class="balance-strip__pay"
@@ -37,9 +37,9 @@
       <PaySheet
         v-model:visible="isPayOpen"
         :amount="payAmount"
-        :iban="paymentDetails!.iban"
-        :recipient="paymentDetails!.recipient_name"
-        :edrpou="paymentDetails!.edrpou"
+        :iban="payDetails.iban"
+        :recipient="payDetails.recipient"
+        :edrpou="payDetails.edrpou"
         :comment="payComment"
       />
     </template>
@@ -102,7 +102,13 @@
       ? Math.max(toDecimal(balance.value?.balance_uah), 0) + provisional.value
       : owingPast.value.reduce((sum, p) => sum + toDecimal(p.balance.balance_uah), 0)
   );
-  const payable = computed(() => ownBalance.value > 0 && paymentDetails.value !== null);
+  // Set only when there is something to pay and complete requisites to pay it to.
+  const payDetails = computed(() => {
+    const details = paymentDetails.value;
+    return ownBalance.value > 0 && details?.edrpou
+      ? { iban: details.iban, recipient: details.recipient_name, edrpou: details.edrpou }
+      : null;
+  });
   const payAmount = computed(() => ownBalance.value.toFixed(2));
   const payComment = computed(() =>
     paymentPurpose(
@@ -206,12 +212,31 @@
       color: var(--s-amber-500);
     }
 
+    &--embedded {
+      @include layout.respond-to("sm") {
+        align-items: center;
+        display: flex;
+        gap: var(--s-app-space-4);
+        justify-content: space-between;
+      }
+    }
+
+    &--embedded &__body {
+      @include layout.respond-to("sm") {
+        flex: 1 1 auto;
+        min-width: 0;
+        width: auto;
+      }
+    }
+
     &__pay {
       margin-top: var(--s-app-space-3);
       min-height: 44px;
       width: 100%;
 
       @include layout.respond-to("sm") {
+        flex: none;
+        margin-top: 0;
         width: auto;
       }
     }
