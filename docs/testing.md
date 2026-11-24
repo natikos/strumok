@@ -193,7 +193,7 @@ never run against production. In this mode only:
 - the test-only router `/__e2e` is mounted (absent from `/openapi.json`):
   `POST /reset`, `PUT|DELETE /clock`, `POST /users`, `GET /outbox`;
 - `send_email` appends to an in-memory outbox instead of calling Brevo;
-- the reminder/inbox scheduler doesn't start (its jobs would fire mid-test);
+- the `/internal/cron/tick` route isn't mounted (its jobs would fire mid-test);
 - a schema behind head fails startup, as in production.
 
 **Isolation.** One database per run; before every test the fixture calls

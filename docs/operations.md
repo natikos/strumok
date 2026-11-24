@@ -45,14 +45,19 @@ its admin through the test-only `POST /__e2e/users` instead, which exists only u
 
 ## Uptime monitor
 
-UptimeRobot (free plan) monitor `Strumok /health`, created by hand in the
-UptimeRobot dashboard:
+There is none on purpose. The Hobby plan allows 180 compute hours a month, and a
+monitor pinging every few minutes kept the app awake all month (719.5 h). The app
+scales to zero when idle and wakes on the next request. Do not add a monitor
+without checking the compute allowance first.
 
-- Type HTTP(s), URL `https://strumok.fastapicloud.dev/health`, interval 5 minutes.
-- Alert contact: the administrator's email, after 2 consecutive failures.
+## Scheduled jobs (Cron tick)
 
-It also keeps Supabase awake. It lives in the monitoring service, not in this
-repo.
+Push reminders and the bank inbox check run when `.github/workflows/cron-tick.yml`
+calls `POST /internal/cron/tick` every hour (minute 7 UTC). The request wakes the
+app and does the work inside it. If a run failed or was missed, re-run it from
+Actions → Cron tick → *Run workflow*: sends are claimed in `NotificationLog`, so
+repeating is safe. `CRON_SECRET` must be the same in the FastAPI Cloud app env
+and the GitHub repository secret. Without it the route returns 404.
 
 ## Database backups
 

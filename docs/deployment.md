@@ -93,6 +93,9 @@ older tag as-is, skipping backup and migrations.
 | `FASTAPI_CLOUD_APP_ID` | FastAPI Cloud app identifier |
 | `PROD_DATABASE_URL` | Production connection string, the one database secret. Used by the preflight check, the backup, and the `migrate` job. Use the Supabase *session* pooler string (Alembic needs session semantics; the direct host is IPv6-only and runners are IPv4). Prefer storing it in the `production` GitHub environment, restricted to `v*` tags |
 
+The `Cron tick` workflow also needs a **repository** secret `CRON_SECRET` (not
+the `production` environment, which is limited to `v*` tags).
+
 ### Required GitHub variable and environment
 
 - **Variable `APP_ORIGIN`** (Settings → Secrets and variables → Actions →
@@ -112,26 +115,29 @@ the quarterly drill are in [operations.md](operations.md#database-backups).
 
 ## Push Reminders
 
-Deadline push reminders run on an in-process APScheduler
-(`backend/app/api/push/scheduler.py`), started from the app's lifespan. An
-hourly job (minute 0 UTC) sends the `opening` variant on Kyiv day 1 and the
-`final` variant on day 5 to each user whose chosen hour (`users.reminder_hour`,
-Kyiv time, default 09:00) has arrived. The instance must be awake on those
-days; if it is put to sleep after the 10th, wake it before the 1st. Users are
-claimed in `NotificationLog` before sending, so overlapping runs or multiple
-instances notify each `(user, period, variant)` at most once.
+The app scales to zero, so nothing inside it runs on a timer. The
+`.github/workflows/cron-tick.yml` workflow calls `POST /internal/cron/tick`
+(header `X-Cron-Secret`) at minute 7 UTC every hour. The request wakes the
+instance and runs the jobs inside it. It sends the `opening` variant on Kyiv day
+1 and the `final` variant on day 5 to each user whose chosen hour
+(`users.reminder_hour`, Kyiv time, default 09:00) has arrived, so a late GitHub
+run still catches up within the same Kyiv day. Users are claimed in
+`NotificationLog` before sending, so repeated or overlapping calls notify each
+`(user, period, variant)` at most once. A Postgres advisory lock per job also
+reports `busy` instead of running twice at once. Re-run the workflow by hand
+(Actions → Cron tick) if a run was missed.
 
 ## Bank Statement Inbox
 
-When the `IMAP_*` variables are set, the same scheduler runs an hourly check
-(minute 30 UTC) of the mailbox, read-only, for messages from the allow-listed
+The same tick runs the inbox check when the `IMAP_*` variables are set. It reads
+the mailbox read-only for messages from the allow-listed
 senders in the last 45 days. A message is imported only if the receiving
 server's top `Authentication-Results` (authserv-id `IMAP_AUTHSERV_ID`) shows
 `dmarc=pass` for the sender's domain (or a `dkim=pass` aligned with it) and it carries a `.csv` attachment under
 1 MB. Imported credits go to the review queue like an upload. Each message is
 recorded once in `bank_mail_fetches` (`received`, `imported` or `rejected` with
-a reason code). Admins can run `POST /admin/bank-statements/check-inbox` if the
-instance was asleep. Gmail needs 2-step verification to issue the app password.
+a reason code). Admins can also run `POST /admin/bank-statements/check-inbox`.
+Gmail needs 2-step verification to issue the app password.
 
 ## Environment Variables
 
@@ -143,6 +149,7 @@ instance was asleep. Gmail needs 2-step verification to issue the app password.
 | `AUTH_ACCESS_TOKEN_EXPIRATION` | Access token lifetime in minutes (default: `60`); refreshed via `/auth/refresh` |
 | `CORS_ORIGINS`           | Comma-separated list of allowed origins                                           |
 | `ENVIRONMENT`            | **Required.** `development` or `production` — no default, startup fails otherwise. `e2e` exists only for the Playwright suite (shifted clock, test-only routes) and refuses any non-local database; never set it here |
+| `CRON_SECRET`            | Shared secret for `POST /internal/cron/tick`. Must equal the GitHub repository secret of the same name; unset hides the route (404) |
 | `BREVO_API_KEY`          | Brevo transactional email API key                                                 |
 | `BREVO_SENDER_EMAIL`     | Verified Brevo sender address                                                     |
 | `BREVO_APP_BASE_URL`     | Public app origin used to build verification links                                |
