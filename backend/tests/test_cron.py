@@ -417,6 +417,107 @@ class TestConcurrentRuns:
         inbox.assert_not_called()
 
 
+class TestInboxOnly:
+    """`POST /internal/cron/inbox` (issue #358): the bank-inbox check alone."""
+
+    INBOX_URL = "/internal/cron/inbox"
+
+    def test_route_is_hidden_when_secret_is_unset(
+        self, http, monkeypatch, inbox
+    ) -> None:
+        monkeypatch.setattr(settings, "cron_secret", None)
+
+        res = http.post(self.INBOX_URL, headers=_auth())
+
+        assert res.status_code == 404
+        inbox.assert_not_called()
+
+    @pytest.mark.parametrize(
+        "header",
+        [
+            pytest.param(None, id="missing"),
+            pytest.param("wrong-secret-of-another-length", id="wrong"),
+            pytest.param(SECRET + "x", id="secret-plus-suffix"),
+        ],
+    )
+    def test_rejects_anything_but_the_exact_secret_and_runs_nothing(
+        self, http, secret, inbox, header
+    ) -> None:
+        headers = dict(CSRF)
+        if header is not None:
+            headers["X-Cron-Secret"] = header
+
+        res = http.post(self.INBOX_URL, headers=headers)
+
+        assert res.status_code == 401
+        assert res.json() == {"detail": "invalidCronSecret"}
+        inbox.assert_not_called()
+
+    def test_reports_inbox_counts_when_the_check_succeeds(
+        self, http, secret, inbox
+    ) -> None:
+        inbox.side_effect = None
+        inbox.return_value = MagicMock(received=7, imported=4, rejected=3)
+
+        res = http.post(self.INBOX_URL, headers=_auth())
+
+        assert res.status_code == 200
+        body = res.json()
+        assert body["inbox_status"] == "ok"
+        assert body["inbox"] == {"received": 7, "imported": 4, "rejected": 3}
+
+    def test_unconfigured_inbox_is_reported_as_not_configured(
+        self, http, secret, inbox
+    ) -> None:
+        res = http.post(self.INBOX_URL, headers=_auth())
+
+        assert res.status_code == 200
+        assert res.json()["inbox_status"] == "notConfigured"
+
+    def test_unreachable_mailbox_is_200_unavailable(self, http, secret, inbox) -> None:
+        inbox.side_effect = InboxUnavailableError()
+
+        res = http.post(self.INBOX_URL, headers=_auth())
+
+        assert res.status_code == 200
+        assert res.json()["inbox_status"] == "unavailable"
+
+    def test_reports_busy_and_skips_the_check_while_another_run_holds_the_lock(
+        self, http, secret, inbox
+    ) -> None:
+        conn = TestConcurrentRuns()._hold(cron_service._INBOX_LOCK)
+        try:
+            res = http.post(self.INBOX_URL, headers=_auth())
+        finally:
+            TestConcurrentRuns()._release(conn, cron_service._INBOX_LOCK)
+
+        assert res.status_code == 200
+        assert res.json()["inbox_status"] == "busy"
+        inbox.assert_not_called()
+
+    def test_does_not_send_reminders_even_when_one_is_due(
+        self, http, secret, monkeypatch, pushes, inbox
+    ) -> None:
+        # Jan 1, 12:00 Kyiv: a tick would remind this resident.
+        _freeze(monkeypatch, _kyiv(2027, 1, 1, 12))
+        _resident(9, "a@example.com")
+
+        res = http.post(self.INBOX_URL, headers=_auth())
+
+        assert res.status_code == 200
+        pushes.assert_not_called()
+        assert _logs() == []
+
+    def test_unexpected_inbox_crash_returns_500_so_the_caller_sees_it(
+        self, http, secret, inbox
+    ) -> None:
+        inbox.side_effect = RuntimeError("imap parser bug")
+
+        res = http.post(self.INBOX_URL, headers=_auth())
+
+        assert res.status_code == 500
+
+
 class TestSecretHygiene:
     def test_secret_never_appears_in_logs_on_success_failure_or_rejection(
         self, http, secret, monkeypatch, pushes, inbox, caplog

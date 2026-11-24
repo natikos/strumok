@@ -139,6 +139,13 @@ server's top `Authentication-Results` (authserv-id `IMAP_AUTHSERV_ID`) shows
 1 MB. Imported credits go to the review queue like an upload. Each message is
 recorded once in `bank_mail_fetches` (`received`, `imported` or `rejected` with
 a reason code). Admins can also run `POST /admin/bank-statements/check-inbox`.
+
+**Gmail trigger.** `scripts/gmail-inbox-trigger.gs` runs in Google Apps Script on
+the co-op mailbox (time trigger every 5–15 min). When an allow-listed sender's
+`.csv` email is waiting, it calls `POST /internal/cron/inbox` with `X-Cron-Secret`,
+then labels the thread `strumok-notified`; a failed call is retried next run.
+Set `APP_ORIGIN`, `CRON_SECRET` and `ALLOWED_SENDERS` as Script Properties. The
+tick still checks the inbox as a fallback on its days.
 Gmail needs 2-step verification to issue the app password.
 
 ## Environment Variables

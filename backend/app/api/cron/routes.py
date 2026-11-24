@@ -5,7 +5,7 @@ from fastapi import APIRouter, Depends, Header, HTTPException
 
 from app.api.auth.schemas import ErrorOut
 from app.api.cron.schemas import CronTickOut
-from app.api.cron.service import run_tick
+from app.api.cron.service import run_inbox_only, run_tick
 from app.core.config import settings
 
 router = APIRouter(prefix="/internal/cron", tags=["cron"], include_in_schema=False)
@@ -41,3 +41,23 @@ def tick() -> CronTickOut:
     """Runs the reminder and bank-inbox jobs. Called hourly by GitHub Actions
     so the app can scale to zero between calls."""
     return run_tick()
+
+
+@router.post(
+    "/inbox",
+    response_model=CronTickOut,
+    dependencies=[Depends(require_cron_secret)],
+    responses={
+        401: {
+            "model": ErrorOut,
+            "description": "Missing or wrong cron secret",
+            "content": {
+                "application/json": {"example": {"detail": "invalidCronSecret"}}
+            },
+        },
+    },
+)
+def inbox() -> CronTickOut:
+    """Runs only the bank-inbox check. Called by the Gmail Apps Script when a
+    statement email arrives."""
+    return run_inbox_only()

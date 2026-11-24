@@ -97,3 +97,14 @@ def run_tick() -> CronTickOut:
     if reminders_error is not None:
         raise reminders_error
     return out
+
+
+def run_inbox_only() -> CronTickOut:
+    """Only the bank inbox check, for the Gmail Apps Script trigger."""
+    out = CronTickOut(reminders_status="ok", inbox_status="failed")
+    try:
+        run_inbox_check(out)
+    except Exception:
+        logger.exception("Cron bank inbox check failed")
+        raise
+    return out
