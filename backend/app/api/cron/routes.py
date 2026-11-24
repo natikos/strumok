@@ -38,7 +38,7 @@ def require_cron_secret(
     },
 )
 def tick() -> CronTickOut:
-    """Runs the reminder and bank-inbox jobs. Called hourly by GitHub Actions
+    """Runs the reminder and bank-inbox jobs. Called hourly by GitHub Actions on the days jobs are due
     so the app can scale to zero between calls."""
     return run_tick()
 

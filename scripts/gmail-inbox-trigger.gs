@@ -8,7 +8,7 @@
  *   ALLOWED_SENDERS  comma-separated, same as IMAP_ALLOWED_SENDERS
  *
  * The app only wakes when a matching email is waiting. A thread is labeled
- * only after the app answered 200, so a failed call is retried on the next run.
+ * only after the app reported inbox_status "ok", so a failed call is retried on the next run.
  */
 const LABEL = "strumok-notified";
 
@@ -42,6 +42,12 @@ function checkInbox() {
   });
   if (response.getResponseCode() !== 200) {
     throw new Error("App answered " + response.getResponseCode());
+  }
+  // 200 also covers "busy", "unavailable" and "notConfigured": nothing was
+  // read, so leave the threads unlabeled and retry on the next run.
+  const status = JSON.parse(response.getContentText()).inbox_status;
+  if (status !== "ok") {
+    throw new Error("Inbox check did not run: " + status);
   }
 
   const label = GmailApp.getUserLabelByName(LABEL) || GmailApp.createLabel(LABEL);

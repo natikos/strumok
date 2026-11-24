@@ -2,7 +2,7 @@ from typing import Literal
 
 from pydantic import BaseModel
 
-JobStatus = Literal["ok", "notConfigured", "unavailable", "busy", "failed"]
+JobStatus = Literal["ok", "notConfigured", "unavailable", "busy", "failed", "skipped"]
 
 
 class InboxOut(BaseModel):
