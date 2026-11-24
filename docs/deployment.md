@@ -117,7 +117,9 @@ the quarterly drill are in [operations.md](operations.md#database-backups).
 
 The app scales to zero, so nothing inside it runs on a timer. The
 `.github/workflows/cron-tick.yml` workflow calls `POST /internal/cron/tick`
-(header `X-Cron-Secret`) at minute 7 UTC every hour. The request wakes the
+(header `X-Cron-Secret`) at minute 7 UTC every hour, but only on UTC days 28-31, 1, 4-6
+and 15-18 (Kyiv days 1, 5, 6 and 16-18 plus the evening before), to spare the
+Hobby compute allowance. The request wakes the
 instance and runs the jobs inside it. It sends the `opening` variant on Kyiv day
 1 and the `final` variant on day 5 to each user whose chosen hour
 (`users.reminder_hour`, Kyiv time, default 09:00) has arrived, so a late GitHub

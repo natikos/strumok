@@ -53,7 +53,7 @@ without checking the compute allowance first.
 ## Scheduled jobs (Cron tick)
 
 Push reminders and the bank inbox check run when `.github/workflows/cron-tick.yml`
-calls `POST /internal/cron/tick` every hour (minute 7 UTC). The request wakes the
+calls `POST /internal/cron/tick` every hour (minute 7 UTC) on the days anything is due: Kyiv days 1, 5, 6 and 16-18 (UTC days 28-31, 1, 4-6, 15-18). The request wakes the
 app and does the work inside it. If a run failed or was missed, re-run it from
 Actions → Cron tick → *Run workflow*: sends are claimed in `NotificationLog`, so
 repeating is safe. `CRON_SECRET` must be the same in the FastAPI Cloud app env
