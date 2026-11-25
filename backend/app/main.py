@@ -13,12 +13,12 @@ from app.api import (
     auth_router,
     bank_router,
     billing_router,
+    cron_router,
     electricity_rates_router,
     meter_readings_router,
     push_router,
 )
 from app.api.billing.routes import me_router as me_billing_router
-from app.api.push.scheduler import start_reminder_scheduler
 from app.core.config import settings
 from app.core.body_limit import UploadSizeMiddleware
 from app.core.csrf import CsrfMiddleware
@@ -32,11 +32,7 @@ DIST_DIR = Path(__file__).resolve().parent.parent / "dist"
 @asynccontextmanager
 async def lifespan(_: FastAPI):
     init_db()
-    # Under e2e the jobs would read the shifted clock and fire mid-test.
-    scheduler = start_reminder_scheduler() if settings.environment != "e2e" else None
     yield
-    if scheduler is not None:
-        scheduler.shutdown(wait=False)
 
 
 app = FastAPI(title=settings.app_name, lifespan=lifespan)
@@ -57,6 +53,9 @@ app.include_router(admin_router)
 app.include_router(bank_router)
 app.include_router(electricity_rates_router)
 app.include_router(push_router)
+# Under e2e the jobs would read the shifted clock and fire mid-test.
+if settings.environment != "e2e":
+    app.include_router(cron_router)
 
 if settings.environment == "e2e":
     from app.api.e2e.routes import router as e2e_router
@@ -70,7 +69,7 @@ async def unhandled_exception_handler(_: Request, exc: Exception) -> JSONRespons
     return JSONResponse(status_code=500, content={"detail": "internalServerError"})
 
 
-@app.get("/health", include_in_schema=False)
+@app.api_route("/health", methods=["GET", "HEAD"], include_in_schema=False)
 def health() -> JSONResponse:
     if not is_db_reachable():
         return JSONResponse(

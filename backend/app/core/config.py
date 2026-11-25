@@ -153,6 +153,8 @@ class Settings(BaseSettings):
     brevo: BrevoSettings = BrevoSettings()
     push: PushSettings = PushSettings()  # type: ignore
     imap: ImapSettings = ImapSettings()
+    # Shared with the GitHub "Cron tick" workflow. Unset: the route is hidden.
+    cron_secret: SecretStr | None = None
 
     @model_validator(mode="after")
     def guard_e2e(self) -> "Settings":

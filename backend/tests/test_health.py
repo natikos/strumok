@@ -10,6 +10,10 @@ def test_health_ok(client):
     assert response.json() == {"status": "ok"}
 
 
+def test_health_allows_head(client):
+    assert client.head("/health").status_code == 200
+
+
 def test_health_503_when_db_unreachable(monkeypatch):
     monkeypatch.setattr(
         engine_module,

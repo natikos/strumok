@@ -2,6 +2,7 @@ from app.api.admin import router as admin_router
 from app.api.bank import router as bank_router
 from app.api.auth import router as auth_router
 from app.api.billing import router as billing_router
+from app.api.cron import router as cron_router
 from app.api.electricity_rates.routes import router as electricity_rates_router
 from app.api.meter_readings import router as meter_readings_router
 from app.api.push import router as push_router
@@ -11,6 +12,7 @@ __all__ = [
     "auth_router",
     "bank_router",
     "billing_router",
+    "cron_router",
     "electricity_rates_router",
     "meter_readings_router",
     "push_router",
