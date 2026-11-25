@@ -45,6 +45,35 @@ describe("JoinPage", () => {
     push.mockReset();
   });
 
+  it("renders the form at once and shows a skeleton only in place of the plot list", () => {
+    getJoinableHouseholds.mockReturnValue(new Promise(() => {}));
+    const wrapper = mountPage();
+
+    expect(wrapper.find("form").exists()).toBe(true);
+    expect(wrapper.findAll("input").length).toBeGreaterThanOrEqual(4);
+    expect(wrapper.find(".join-card__plot .p-skeleton").exists()).toBe(true);
+  });
+
+  it("keeps the submit button disabled until the required fields are valid", async () => {
+    getJoinableHouseholds.mockResolvedValue([{ id: 1, name: "Ділянка 1" }]);
+    const wrapper = mountPage();
+    await flushPromises();
+
+    const submit = () => wrapper.find<HTMLButtonElement>("button[type=submit]");
+    expect(submit().element.disabled).toBe(true);
+
+    const inputs = wrapper.findAll<HTMLInputElement>("input");
+    const values = ["Ніна", "Коваленко", "nina@example.com", "long-enough-pass"];
+    for (const [i, value] of values.entries()) {
+      inputs[i]!.element.value = value;
+      await inputs[i]!.trigger("input");
+    }
+    await flushPromises();
+
+    // The plot is still unchosen.
+    expect(submit().element.disabled).toBe(true);
+  });
+
   it("shows the sign-up form when free plots exist", async () => {
     getJoinableHouseholds.mockResolvedValue([{ id: 1, name: "Ділянка 1" }]);
     const wrapper = mountPage();
@@ -59,8 +88,8 @@ describe("JoinPage", () => {
     const wrapper = mountPage();
     await flushPromises();
 
-    expect(wrapper.find("form").exists()).toBe(false);
     expect(wrapper.text()).toContain(tUa("auth.joinNoPlots"));
+    expect(wrapper.find<HTMLButtonElement>("button[type=submit]").element.disabled).toBe(true);
   });
 
   it("offers a retry when the plot list fails to load", async () => {

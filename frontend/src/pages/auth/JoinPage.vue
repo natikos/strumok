@@ -10,19 +10,7 @@
 
       <template #content>
         <div class="join-card__content">
-          <Skeleton v-if="isLoading" height="12rem" />
-
-          <Message v-else-if="loadFailed" severity="error" role="alert">
-            {{ $t("auth.joinLoadFailed") }}
-            <Button text :label="$t('errors.retry')" @click="loadHouseholds" />
-          </Message>
-
-          <Message v-else-if="households.length === 0" severity="warn" role="status">
-            {{ $t("auth.joinNoPlots") }}
-          </Message>
-
           <Form
-            v-else
             v-slot="$form"
             class="join-card__form"
             :resolver="resolver"
@@ -67,28 +55,42 @@
               <Typography variant="label" for="join-household">
                 {{ $t("auth.joinPlot") }}
               </Typography>
-              <Select
-                input-id="join-household"
-                name="household_id"
-                fluid
-                filter
-                option-label="name"
-                option-value="id"
-                :options="households"
-                :placeholder="$t('auth.joinPlotPlaceholder')"
-                :disabled="isSubmitting"
-                :invalid="$field.invalid"
-              />
-              <Typography v-if="$field.invalid && $field.error?.message" variant="caption">
-                {{ $t($field.error.message) }}
-              </Typography>
+
+              <Skeleton v-if="isLoading" class="join-card__plot-skeleton" height="2.75rem" />
+
+              <Message v-else-if="loadFailed" severity="error" role="alert">
+                {{ $t("auth.joinLoadFailed") }}
+                <Button text :label="$t('errors.retry')" @click="loadHouseholds" />
+              </Message>
+
+              <Message v-else-if="households.length === 0" severity="warn" role="status">
+                {{ $t("auth.joinNoPlots") }}
+              </Message>
+
+              <template v-else>
+                <Select
+                  input-id="join-household"
+                  name="household_id"
+                  fluid
+                  filter
+                  option-label="name"
+                  option-value="id"
+                  :options="households"
+                  :placeholder="$t('auth.joinPlotPlaceholder')"
+                  :disabled="isSubmitting"
+                  :invalid="$field.invalid"
+                />
+                <Typography v-if="$field.invalid && $field.error?.message" variant="caption">
+                  {{ $t($field.error.message) }}
+                </Typography>
+              </template>
             </FormField>
 
             <Button
               fluid
               type="submit"
               :label="$t('auth.joinSubmit')"
-              :disabled="isSubmitting || !$form.valid"
+              :disabled="isSubmitting || isLoading || !isComplete($form)"
               :loading="isSubmitting"
             />
           </Form>
@@ -126,13 +128,22 @@
   const text = () => z.string({ error: "auth.requiredField" }).trim();
 
   const schema = z.object({
-    first_name: text().min(1, "auth.requiredField"),
-    last_name: text().min(1, "auth.requiredField"),
+    first_name: text().min(2, "auth.nameMinLength"),
+    last_name: text().min(2, "auth.nameMinLength"),
     email: text().pipe(z.email("auth.invalidEmail")),
     password: z.string({ error: "auth.requiredField" }).min(8, "auth.passwordMinLength"),
     household_id: z.number({ error: "auth.joinPlotRequired" }),
   });
   const resolver = zodResolver(schema);
+
+  // A fresh form reports `valid` until something is touched, so the submit
+  // button checks the current values against the schema instead.
+  function isComplete($form: Record<string, { value?: unknown } | undefined>): boolean {
+    const values = Object.fromEntries(
+      Object.keys(schema.shape).map((name) => [name, $form[name]?.value])
+    );
+    return schema.safeParse(values).success;
+  }
 
   async function loadHouseholds(): Promise<void> {
     isLoading.value = true;
