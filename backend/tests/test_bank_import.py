@@ -90,6 +90,37 @@ def test_overlapping_files_add_no_duplicates(client, session: Session) -> None:
     assert _tx_count(session) == 3
 
 
+def test_same_day_same_amount_same_payer_stay_separate(
+    client, session: Session
+) -> None:
+    """Two payments that look identical but carry different bank document
+    numbers are two payments: the document number is part of the dedupe key."""
+    _admin(client, session)
+    res = _upload(client, _csv(_row("10."), _row("11."), _row("10.")))
+    assert res.json()["credits_new"] == 2
+    assert res.json()["credits_duplicate"] == 1
+    assert _tx_count(session) == 2
+
+
+def test_statements_spanning_months_merge_in_any_order(
+    client, session: Session
+) -> None:
+    """Later statements repeat earlier months; the union is the same whichever
+    order they arrive in, and nothing is added twice."""
+    april = [_row("1.", "10.04.2025"), _row("2.", "20.04.2025")]
+    may = [_row("2.", "20.04.2025"), _row("3.", "05.05.2025")]
+    june = [_row("3.", "05.05.2025"), _row("4.", "02.06.2025")]
+    _admin(client, session)
+    for order in ([april, may, june], [june, may, april]):
+        session.exec(delete(BankTransaction))
+        session.exec(delete(BankStatementFile))
+        session.commit()
+        for index, rows in enumerate(order):
+            res = _upload(client, _csv(*rows), f"s{index}.csv")
+            assert res.status_code == 200
+        assert _tx_count(session) == 4
+
+
 def test_rejects_non_csv_oversize_and_bad_content(client, session: Session) -> None:
     _admin(client, session)
     assert (
