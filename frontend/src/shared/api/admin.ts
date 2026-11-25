@@ -453,6 +453,28 @@ export async function checkBankInbox(): Promise<InboxCheckOut> {
   return data;
 }
 
+export type StatementFileOut = components["schemas"]["StatementFileOut"];
+export type StatementOutcomeOut = components["schemas"]["StatementOutcomeOut"];
+
+export async function listStatementFiles(): Promise<StatementFileOut[]> {
+  const { data } = await appApiClient.GET("/admin/bank-statements");
+
+  return data ?? [];
+}
+
+export async function getStatementOutcome(fileId: number): Promise<StatementOutcomeOut> {
+  const { data, error, response } = await appApiClient.GET(
+    "/admin/bank-statements/{file_id}/outcome",
+    { params: { path: { file_id: fileId } } },
+  );
+
+  if (!data) {
+    throw buildApiError(response.status, error);
+  }
+
+  return data;
+}
+
 export type BankTransactionOut = components["schemas"]["BankTransactionOut"];
 export type ConfirmedPaymentOut = components["schemas"]["ConfirmedPaymentOut"];
 

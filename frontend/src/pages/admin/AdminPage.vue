@@ -193,6 +193,7 @@
               <h2 class="admin-section__title">{{ $t("admin.bank.title") }}</h2>
               <BankCoverageNotice v-if="activeTab === 'bank'" />
               <BankInboxPanel v-if="activeTab === 'bank'" @imported="bankQueueKey += 1" />
+              <BankOutcomePanel v-if="activeTab === 'bank'" :key="bankQueueKey" />
               <BankQueuePanel v-if="activeTab === 'bank'" :key="bankQueueKey" />
             </section>
           </TabPanel>
@@ -219,6 +220,7 @@ import { useI18n } from "vue-i18n";
   import AuditLogPanel from "@features/admin/AuditLogPanel.vue";
   import BalancesPanel from "@features/admin/BalancesPanel.vue";
   import BankInboxPanel from "@features/admin/BankInboxPanel.vue";
+  import BankOutcomePanel from "@features/admin/BankOutcomePanel.vue";
   import BankQueuePanel from "@features/admin/BankQueuePanel.vue";
   import ElectricityRatesSettings from "@features/admin/ElectricityRatesSettings.vue";
   import PaymentDetailsSettings from "@features/admin/PaymentDetailsSettings.vue";

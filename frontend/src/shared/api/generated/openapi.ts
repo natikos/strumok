@@ -895,7 +895,11 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get?: never;
+        /**
+         * List Statement Files
+         * @description The newest imported statements, for choosing which outcome to look at.
+         */
+        get: operations["list_statement_files_admin_bank_statements_get"];
         put?: never;
         /** Upload Statement */
         post: operations["upload_statement_admin_bank_statements_post"];
@@ -916,6 +920,26 @@ export interface paths {
         put?: never;
         /** Check Inbox */
         post: operations["check_inbox_admin_bank_statements_check_inbox_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/bank-statements/{file_id}/outcome": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Statement Outcome
+         * @description What became of each credit first imported by this statement.
+         */
+        get: operations["statement_outcome_admin_bank_statements__file_id__outcome_get"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -1366,6 +1390,31 @@ export interface components {
             items: components["schemas"]["AuditLogEntryOut"][];
             /** Next Cursor */
             next_cursor: number | null;
+        };
+        /** AutoConfirmedOut */
+        AutoConfirmedOut: {
+            /** Id */
+            id: number;
+            /**
+             * Operation Date
+             * Format: date
+             */
+            operation_date: string;
+            /** Amount Uah */
+            amount_uah: string;
+            /** Payer Name */
+            payer_name: string;
+            /** Purpose */
+            purpose: string;
+            /** Payments */
+            payments: components["schemas"]["AutoConfirmedPaymentOut"][];
+        };
+        /** AutoConfirmedPaymentOut */
+        AutoConfirmedPaymentOut: {
+            /** Household Id */
+            household_id: number;
+            /** Amount Uah */
+            amount_uah: string;
         };
         /**
          * BalanceOut
@@ -2247,6 +2296,24 @@ export interface components {
             /** Amount Uah */
             amount_uah: number | string;
         };
+        /** StatementFileOut */
+        StatementFileOut: {
+            /** Id */
+            id: number;
+            /** Original Filename */
+            original_filename: string;
+            /** Uploaded At */
+            uploaded_at: string;
+            /** Credits New */
+            credits_new: number;
+            /** Credits Duplicate */
+            credits_duplicate: number;
+            /**
+             * Covered Through
+             * Format: date
+             */
+            covered_through: string;
+        };
         /** StatementImportOut */
         StatementImportOut: {
             /** Already Imported */
@@ -2295,6 +2362,18 @@ export interface components {
             penalty_credit_uah: string;
             /** Total Uah */
             total_uah: string;
+        };
+        /** StatementOutcomeOut */
+        StatementOutcomeOut: {
+            file: components["schemas"]["StatementFileOut"];
+            /** Auto Confirmed */
+            auto_confirmed: components["schemas"]["AutoConfirmedOut"][];
+            /** Needs Attention */
+            needs_attention: components["schemas"]["BankTransactionOut"][];
+            /** Unmatched */
+            unmatched: components["schemas"]["BankTransactionOut"][];
+            /** Handled Count */
+            handled_count: number;
         };
         /** SuggestionOut */
         SuggestionOut: {
@@ -4850,6 +4929,26 @@ export interface operations {
             };
         };
     };
+    list_statement_files_admin_bank_statements_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StatementFileOut"][];
+                };
+            };
+        };
+    };
     upload_statement_admin_bank_statements_post: {
         parameters: {
             query?: never;
@@ -4938,6 +5037,46 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+        };
+    };
+    statement_outcome_admin_bank_statements__file_id__outcome_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                file_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StatementOutcomeOut"];
+                };
+            };
+            /** @description bankStatementFileNotFound */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };

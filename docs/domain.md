@@ -213,6 +213,16 @@ purpose carries only the `STR-<id>` of the plot being paid, i.e. the current
 plot (or, with no plot left, the gave-up plots that owe), so the amount and the
 reference agree (`frontend/src/shared/utils/paymentPurpose.ts` mirrors `household_reference`).
 
+**Import outcome** (`backend/app/api/bank/outcome.py`, admin Bank tab). For one
+statement file (`GET /admin/bank-statements`, `.../{file_id}/outcome`) every credit
+it first imported (`first_file_id`) falls in one group: *auto-confirmed* (a live
+payment and a `bankTransactionConfirmed` audit row with no actor; a null
+`recorded_by_user_id` alone is not enough, since linking an old payment could leave
+it), *needs attention* (queued with a reference or name suggestion), *unmatched*
+(queued, no suggestion), or a count of those an admin already confirmed or
+dismissed. Derived on read; a voided auto payment returns its credit to the queue.
+Read-only: actions stay in the queue below.
+
 **Coverage.** `GET /billing/bank-coverage` reports the max `covered_through` over
 imported files and `awaiting_statement` (true when none was ever imported or the
 newest is more than 21 days old, since statements arrive about days 1–6 and ~17).
