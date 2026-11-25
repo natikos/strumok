@@ -102,6 +102,13 @@ Ownership is history: `household_ownerships` (`valid_from`/`valid_to`, one open 
 per household). `households.user_id` mirrors the open row, so **change owners only
 through `app.core.ownership.set_owner`**.
 
+- **Self-registration** (`/join`, `POST /auth/join`): a resident who has the
+  link signs up and picks a plot from `GET /auth/join/households` (public:
+  active plots with no owner, so a taken plot drops out of the list). The plot
+  row is locked, then `set_owner` assigns it at once, with no approval and no
+  handover reading. The plot's debt is not transferred. Rate-limited per IP; the
+  join is audited as `residentSelfRegistered`. The admin can still invite and
+  can detach an owner through the reassign flow.
 - A plot can be created with no owner (`POST /admin/households` without `user_id`): no
   ownership row is written, so a resident invited onto it later is its only owner, with
   no previous owner shown. Create it that way rather than under the administrator.

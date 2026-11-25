@@ -4,7 +4,27 @@
  */
 
 export interface paths {
-    "/auth/register": {
+    "/auth/join/households": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Joinable Households
+         * @description Public: the plots a new resident can still pick (active, no owner).
+         */
+        get: operations["joinable_households_auth_join_households_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/auth/join": {
         parameters: {
             query?: never;
             header?: never;
@@ -13,8 +33,8 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Register */
-        post: operations["register_auth_register_post"];
+        /** Join */
+        post: operations["join_auth_join_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1724,6 +1744,22 @@ export interface components {
             /** Fetched At */
             fetched_at: string;
         };
+        /** JoinIn */
+        JoinIn: {
+            /**
+             * Email
+             * Format: email
+             */
+            email: string;
+            /** First Name */
+            first_name: string;
+            /** Last Name */
+            last_name: string;
+            /** Password */
+            password: string;
+            /** Household Id */
+            household_id: number;
+        };
         /** LinkCandidateOut */
         LinkCandidateOut: {
             /** Payment Id */
@@ -2486,7 +2522,7 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
-    register_auth_register_post: {
+    joinable_households_auth_join_households_get: {
         parameters: {
             query?: never;
             header?: never;
@@ -2495,15 +2531,82 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Self-registration is closed; the administrator invites residents */
-            403: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HouseholdSummary"][];
+                };
+            };
+        };
+    };
+    join_auth_join_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["JoinIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UserOut"];
+                };
+            };
+            /** @description The plot does not exist or is not active */
+            404: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
                     /**
                      * @example {
-                     *       "detail": "registrationClosed"
+                     *       "detail": "householdNotFound"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Email already registered, or the plot was just taken */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+            /** @description Too many sign-ups from this address; see Retry-After */
+            429: {
+                headers: {
+                    /** @description Seconds until the next attempt is allowed */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "detail": "tooManyAttempts"
                      *     }
                      */
                     "application/json": components["schemas"]["ErrorOut"];

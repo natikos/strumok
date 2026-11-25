@@ -49,6 +49,11 @@ const routes: RouteRecordRaw[] = [
     path: ROUTES.forgotPassword,
   },
   {
+    component: () => import("@pages/auth/JoinPage.vue"),
+    meta: { guestOnly: true },
+    path: ROUTES.join,
+  },
+  {
     component: () => import("@pages/auth/PrivacyPage.vue"),
     path: ROUTES.privacy,
   },

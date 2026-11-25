@@ -9,6 +9,8 @@ from app.api.auth.schemas import (
     ChangeEmailIn,
     ChangePasswordIn,
     ErrorOut,
+    HouseholdSummary,
+    JoinIn,
     LoginIn,
     PasswordResetConfirmIn,
     PasswordResetRequestIn,
@@ -21,6 +23,8 @@ from app.api.auth.service import (
     EmailAlreadyRegisteredError,
     InvalidCredentialsError,
     InvalidOrExpiredTokenError,
+    JoinHouseholdNotFoundError,
+    JoinHouseholdTakenError,
     VerificationEmailRateLimitError,
     VerificationEmailSendFailedError,
     authenticate_user,
@@ -32,14 +36,17 @@ from app.api.auth.service import (
     create_access_token,
     get_user_id_and_version_for_logout,
     has_past_households,
+    list_joinable_households,
     list_user_households,
     refresh_access_token,
     request_email_change,
     request_email_verification_link,
+    register_resident,
     request_password_reset,
 )
 from app.api.auth.throttle import (
     ACCOUNT_CHANGE_LIMIT,
+    JOIN_IP_LIMIT,
     LOGIN_EMAIL_LIMIT,
     LOGIN_IP_LIMIT,
     RESET_EMAIL_LIMIT,
@@ -171,23 +178,105 @@ def clear_auth_cookie(response: Response) -> None:
     )
 
 
-@router.post(
-    "/register",
-    status_code=status.HTTP_403_FORBIDDEN,
-    responses={
-        status.HTTP_403_FORBIDDEN: {
-            "description": "Self-registration is closed; the administrator invites residents",
-            "model": ErrorOut,
-            "content": {
-                "application/json": {"example": {"detail": "registrationClosed"}}
-            },
-        }
+JOIN_RESPONSES: dict[int | str, dict[str, Any]] = {
+    status.HTTP_404_NOT_FOUND: {
+        "description": "The plot does not exist or is not active",
+        "model": ErrorOut,
+        "content": {"application/json": {"example": {"detail": "householdNotFound"}}},
     },
+    status.HTTP_409_CONFLICT: {
+        "description": "Email already registered, or the plot was just taken",
+        "model": ErrorOut,
+        "content": {
+            "application/json": {
+                "examples": {
+                    "emailAlreadyRegistered": {
+                        "value": {"detail": "emailAlreadyRegistered"}
+                    },
+                    "householdAlreadyAssigned": {
+                        "value": {"detail": "householdAlreadyAssigned"}
+                    },
+                }
+            }
+        },
+    },
+    status.HTTP_429_TOO_MANY_REQUESTS: {
+        "description": "Too many sign-ups from this address; see Retry-After",
+        "model": ErrorOut,
+        "headers": {
+            "Retry-After": {
+                "description": "Seconds until the next attempt is allowed",
+                "schema": {"type": "integer"},
+            }
+        },
+        "content": {"application/json": {"example": {"detail": "tooManyAttempts"}}},
+    },
+}
+
+
+@router.get("/join/households", response_model=list[HouseholdSummary])
+def joinable_households(
+    session: Session = Depends(get_session),
+) -> list[HouseholdSummary]:
+    """Public: the plots a new resident can still pick (active, no owner)."""
+    return [
+        HouseholdSummary.model_validate(h)
+        for h in list_joinable_households(session=session)
+    ]
+
+
+@router.post(
+    "/join",
+    response_model=UserOut,
+    status_code=status.HTTP_201_CREATED,
+    responses=JOIN_RESPONSES,
 )
-def register() -> None:
-    raise HTTPException(
-        status_code=status.HTTP_403_FORBIDDEN, detail="registrationClosed"
-    )
+def join(
+    payload: JoinIn,
+    request: Request,
+    response: Response,
+    session: Session = Depends(get_session),
+) -> UserOut:
+    ip_key = f"join:ip:{request.client.host if request.client else 'unknown'}"
+    try:
+        check_not_throttled(session=session, key=ip_key, limit=JOIN_IP_LIMIT)
+    except TooManyAttemptsError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail="tooManyAttempts",
+            headers={"Retry-After": str(exc.retry_after_seconds)},
+        ) from exc
+    record_failure(session=session, key=ip_key, limit=JOIN_IP_LIMIT)
+
+    try:
+        user = register_resident(
+            session=session,
+            email=payload.email,
+            first_name=payload.first_name,
+            last_name=payload.last_name,
+            password=payload.password,
+            household_id=payload.household_id,
+        )
+    except EmailAlreadyRegisteredError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT, detail="emailAlreadyRegistered"
+        ) from exc
+    except JoinHouseholdNotFoundError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="householdNotFound"
+        ) from exc
+    except JoinHouseholdTakenError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT, detail="householdAlreadyAssigned"
+        ) from exc
+
+    try:
+        request_email_verification_link(session=session, user=user)
+    except VerificationEmailRateLimitError, VerificationEmailSendFailedError:
+        logger.warning("Verification email not sent after sign-up for user %s", user.id)
+
+    set_auth_cookie(response, token=create_access_token(user))
+    return UserOut.from_user(user)
 
 
 @router.post("/login", response_model=UserOut, responses=LOGIN_RESPONSES)

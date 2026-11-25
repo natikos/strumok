@@ -35,14 +35,6 @@ def _register_payload(**overrides) -> dict:
     return payload
 
 
-class TestRegistrationClosed:
-    def test_register_is_closed(self, client: TestClient) -> None:
-        response = client.post("/auth/register", json=_register_payload())
-
-        assert response.status_code == 403
-        assert response.json()["detail"] == "registrationClosed"
-
-
 class TestLogin:
     def test_login_with_correct_credentials_sets_auth_cookie(
         self, client: TestClient, session
