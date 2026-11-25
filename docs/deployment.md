@@ -16,6 +16,12 @@ through `.github/workflows/deployment.yml`, which is the only supported path
 | **Manual run** | Actions → Deployment → *Run workflow*, `tag` = an existing `v*` tag reachable from `main` | yes | re-run a release whose tag already exists |
 | **Rollback** | Same manual run with `rollback` ticked and an older tag | skipped | the new release is broken and the schema is still compatible with the old code (see [operations.md](operations.md#failed-release)) |
 
+**Versions.** The tag is the release version. Before tagging, `version` in
+`frontend/package.json` and `backend/pyproject.toml` (and the `strumok` entry in
+`backend/uv.lock`) must equal it without the `v`. Land that as a
+`chore(deps): set package versions to X.Y.Z` PR first; `/deploy` stops if they
+differ. The major version moves only when the head declares a new major release.
+
 Not deploy paths: `ci.yml` (runs on PRs and `main`, deploys nothing),
 `db-backup.yml` (backups only), `keep-alive.yml`. Running locally is covered in
 [development.md](development.md).

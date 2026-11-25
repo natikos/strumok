@@ -42,11 +42,9 @@ If no tag exists yet, this is the first release — start at `v0.1.0`.
 - `git log <latest-tag>..HEAD --format='%s%n%b'` to see every commit shipping
   in this release, subject and body.
 
-Major stays pinned at `0` — the project isn't at a stable/real release yet
-(billing is live, but the head hasn't declared v1.0). It only moves to
-`1` when the user explicitly declares the v1.0 release; never infer that bump
-from commits. Until then, classify only between minor and patch, from
-Conventional Commits types (per `docs/contributing.md`):
+The major segment only moves when the user explicitly declares a new major
+release; never infer that bump from commits. Otherwise classify only between
+minor and patch, from Conventional Commits types (per `docs/contributing.md`):
 
 - **minor** — at least one `feat` commit since the last tag.
 - **patch** — everything else (`fix`, `chore`, `refactor`, `docs`, `test`,
@@ -57,6 +55,18 @@ Compute the new version by bumping the appropriate segment of the latest tag
 
 State the version you've picked and which commits drove the classification
 before proceeding.
+
+### Package versions must match
+
+The tag is the release version, and the manifests must carry the same one:
+`version` in `frontend/package.json` and in `backend/pyproject.toml` (plus the
+`strumok` entry in `backend/uv.lock`, refreshed by `cd backend && uv lock`).
+Read both and compare them to the new version without the leading `v`.
+
+If either differs, stop. `main` is protected and the tag must point at a
+commit CI has passed, so the bump has to land first: tell the user to ship a
+`chore(deps): set package versions to <X.Y.Z>` change through `commit-work` and
+`/shipit`, then re-run `/deploy`. This command never commits.
 
 ## 3. Confirm
 
