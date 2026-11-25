@@ -200,9 +200,11 @@ read, no LLM. The main signal is the `STR-<household id>` reference in the
 purpose (several for a split); tax IDs and IBANs are never used,
 since every resident pays through the Pay sheet, which fills the reference in.
 **Temporary name fallback:** a credit with no `STR-` reference is suggested (source
-`name`) the one active household whose `name` appears in the purpose, else in the
-payer name (Latin `i`/`I` folded to `і`, endings tolerated; purpose wins because the
-payer is often not the plot holder). Zero or several matches suggest nothing. It is
+`name`) the one active household whose surname (the first word of its `name`)
+appears in the purpose, else in the payer name (Latin `i`/`I` folded to `і`, endings
+tolerated; purpose wins because the payer is often not the plot holder). Words in
+brackets are only aliases, used when no plot has that surname, and a first initial
+separates plots sharing a surname. Zero or several matches suggest nothing. It is
 never auto-confirmed, and the admin must check it. Remove it once residents pay via
 the Pay sheet.
 

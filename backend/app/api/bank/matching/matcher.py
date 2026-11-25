@@ -34,27 +34,82 @@ def household_reference(household_id: int) -> str:
 _FOLD = str.maketrans({"i": "і", "I": "і", "ї": "і", "'": "", "’": "", "ʼ": ""})
 _WORD_RE = re.compile(r"[^\W\d_]+")
 _MIN_STEM = 4
+_SHORT = 4
+_ENDINGS = "аеиіоуюя"
 
 
 def _words(text: str) -> list[str]:
     return _WORD_RE.findall(text.translate(_FOLD).lower().translate(_FOLD))
 
 
-def _stems(name: str) -> list[str]:
-    # Drop up to two trailing letters so declensions and -ий/-а endings agree.
-    return [
-        w[: max(_MIN_STEM, len(w) - 2)] for w in _words(name) if len(w) >= _MIN_STEM
-    ]
+def _is_form_of(word: str, surname: str) -> bool:
+    """Whether `word` is the surname in some case. Long surnames lose up to two
+    trailing letters so -ий/-а endings agree; short ones ("Бук", "Дуб") must match
+    exactly or take one vowel, so "Дуб" never matches "дубль"."""
+    if len(surname) <= _SHORT:
+        return word == surname or (
+            len(word) == len(surname) + 1
+            and word.startswith(surname)
+            and word[-1] in _ENDINGS
+        )
+    return word.startswith(surname[: max(_MIN_STEM, len(surname) - 2)])
+
+
+@dataclass(frozen=True)
+class _PlotName:
+    surname: str
+    initials: tuple[str, ...]
+    aliases: tuple[str, ...]
+
+
+def _plot_name(name: str) -> _PlotName | None:
+    """ "Гончаренко І.(1)" is surname Гончаренко, initial і; the names in
+    brackets ("Савчук (Гончаренко)", the previous holder, a relative) are
+    only aliases."""
+    head, _, rest = name.partition("(")
+    words = _words(head)
+    if not words:
+        return None
+    surname = next((w for w in words if len(w) > 1), None)
+    if surname is None:
+        return None
+    initials = tuple(w for w in words if len(w) == 1)
+    aliases = tuple(w for w in _words(rest) if len(w) >= _SHORT - 1)
+    return _PlotName(surname, initials, aliases)
+
+
+def _narrow(found: list[tuple[int, _PlotName]], words: list[str]) -> list[int]:
+    """Several plots share the surname: keep those whose first initial starts
+    some other word of the text ("Мельник Андрій" is А. Д., not В. Д.)."""
+    if len(found) > 1:
+        initialed = [
+            h
+            for h, plot in found
+            if plot.initials
+            and any(
+                w[0] == plot.initials[0]
+                for w in words
+                if not _is_form_of(w, plot.surname)
+            )
+        ]
+        if initialed:
+            return initialed
+    return [h for h, _ in found]
 
 
 def _by_name(text: str, households: list[Household]) -> list[int]:
     words = _words(text)
-    found = [
-        h.id
-        for h in households
-        if any(w.startswith(stem) for stem in _stems(h.name) for w in words)
+    plots = [(h.id, p) for h in households if (p := _plot_name(h.name))]
+    primary = [
+        (h, p) for h, p in plots if any(_is_form_of(w, p.surname) for w in words)
     ]
-    return found if len(found) == 1 else []
+    if primary:
+        narrowed = _narrow(primary, words)
+        return narrowed if len(narrowed) == 1 else []
+    alias = [
+        h for h, p in plots if any(_is_form_of(w, a) for a in p.aliases for w in words)
+    ]
+    return alias if len(alias) == 1 else []
 
 
 def match(
