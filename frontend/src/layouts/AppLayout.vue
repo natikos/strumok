@@ -52,6 +52,7 @@
     </aside>
 
     <div class="app-main">
+      <TestModeBanner />
       <header class="app-topbar">
         <img class="app-topbar__brand" src="/logo.svg" alt="Strumok" />
         <TariffStrip class="app-topbar__rate" />
@@ -380,7 +381,7 @@
 
   .app-main {
     display: grid;
-    grid-template-rows: auto 1fr;
+    grid-template-rows: auto auto 1fr;
     min-height: 0;
     min-width: 0;
   }

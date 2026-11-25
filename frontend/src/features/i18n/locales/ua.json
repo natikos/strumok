@@ -389,6 +389,9 @@
       "correctionLine": "{amount} · {reason}"
     }
   },
+  "testMode": {
+    "banner": "Тестовий режим. Дані все одно подавайте через Google-форму з Viber-чату «Струмок. Світло»."
+  },
   "auth": {
     "login": "Вхід",
     "loginSubmit": "Увійти",
