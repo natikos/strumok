@@ -142,6 +142,27 @@ def test_voided_auto_payment_returns_credit_to_the_queue(
     assert out["handled_count"] == 0
 
 
+def test_admin_reconfirming_a_voided_auto_payment_takes_it_over(
+    client, session: Session
+) -> None:
+    _admin(client, session)
+    house = make_household(session, name="Plot 1")
+    fid = _upload_ok(client, _row("1.", f"STR-{house.id}"))
+    payment = session.exec(select(Payment)).one()
+    client.post(f"/admin/payments/{payment.id}/void", json={"reason": "wrong"})
+    tx = _tx_by_doc(session, "1.")
+
+    res = client.post(
+        f"/admin/bank-transactions/{tx.id}/confirm",
+        json={"lines": [{"household_id": house.id, "amount_uah": str(tx.amount_uah)}]},
+    )
+    assert res.status_code == 200, res.text
+
+    out = _outcome(client, fid)
+    assert out["auto_confirmed"] == []
+    assert out["handled_count"] == 1
+
+
 def test_credit_belongs_only_to_the_file_that_first_imported_it(
     client, session: Session
 ) -> None:

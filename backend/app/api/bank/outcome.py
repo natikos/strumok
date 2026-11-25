@@ -48,19 +48,25 @@ def recent_files(session: Session) -> list[BankStatementFile]:
 
 
 def _automatic_ids(session: Session, transaction_ids: list[int]) -> set[int]:
-    """Credits whose confirmation was written without an actor. The audit log is
-    append-only, so unlike a null `recorded_by_user_id` (which linking an old
-    payment could also leave) it says who really booked the credit."""
+    """Credits whose latest confirmation was written without an actor. The audit
+    log is append-only, so unlike a null `recorded_by_user_id` (which linking an
+    old payment could also leave) it says who really booked the credit. Only the
+    latest row counts: an admin who voids an automatic payment and confirms the
+    credit again has taken it over."""
     if not transaction_ids:
         return set()
+    latest: dict[int, int | None] = {}
     rows = session.exec(
-        select(AuditLog.entity_id)
+        select(AuditLog.entity_id, AuditLog.actor_user_id)
         .where(AuditLog.action == "bankTransactionConfirmed")
         .where(AuditLog.entity_type == "bank_transaction")
-        .where(col(AuditLog.actor_user_id).is_(None))
         .where(col(AuditLog.entity_id).in_(transaction_ids))
+        .order_by(col(AuditLog.id).desc())
     )
-    return {r for r in rows if r is not None}
+    for entity_id, actor_id in rows:
+        if entity_id is not None:
+            latest.setdefault(entity_id, actor_id)
+    return {entity_id for entity_id, actor_id in latest.items() if actor_id is None}
 
 
 def file_outcome(session: Session, file_id: int) -> Outcome:
