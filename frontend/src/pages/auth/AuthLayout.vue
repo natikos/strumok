@@ -1,5 +1,6 @@
 <template>
   <div class="auth-layout">
+    <TestModeBanner />
     <header class="auth-layout__header">
       <img class="auth-layout__logo" src="/logo.svg" alt="Strumok Logo" />
 
