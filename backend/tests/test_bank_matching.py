@@ -124,3 +124,18 @@ def test_alias_used_when_no_plot_has_that_surname():
 def test_short_surname_is_not_a_prefix_of_another_word():
     assert _ids("Дубль про оплату") == []
     assert _ids("Свiтло Дубу I.") == [9]
+
+
+def test_ordinary_purpose_words_do_not_pick_between_same_surname_plots():
+    plots = [_h(1, "Мельник О."), _h(2, "Мельник Б.")]
+    assert [s.household_id for s in match("Мельник оплата за е/е", plots)] == []
+    assert [s.household_id for s in match("Мельник Б.Д. за світло", plots)] == [2]
+    assert [s.household_id for s in match("Iгор. Мельник", [_h(1, "Мельник І.")])] == [
+        1
+    ]
+
+
+def test_longer_surname_with_same_stem_is_suggested_when_only_one_is_a_plot():
+    """Known limit of stem matching: Ковальчук's payment suggests Коваль. The
+    admin confirms every name suggestion, so this is only a hint."""
+    assert [s.household_id for s in match("Свiтло Ковальчук", [_h(1, "Коваль")])] == [1]

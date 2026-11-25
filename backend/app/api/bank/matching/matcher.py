@@ -1,6 +1,6 @@
 """Find the households a bank credit pays from the `STR-<id>` references in its
 purpose. A credit with no reference gets a temporary fallback: a household whose
-name appears in the purpose, else in the payer name. Tax IDs and IBANs are never
+surname appears in the purpose, else in the payer name. Tax IDs and IBANs are never
 read."""
 
 import re
@@ -31,7 +31,7 @@ def household_reference(household_id: int) -> str:
 
 
 # Banks write the Ukrainian "і" as a Latin "i"/"I" in these statements.
-_FOLD = str.maketrans({"i": "і", "I": "і", "ї": "і", "'": "", "’": "", "ʼ": ""})
+_FOLD = str.maketrans({"i": "і", "I": "І", "ї": "і", "'": "", "’": "", "ʼ": ""})
 _WORD_RE = re.compile(r"[^\W\d_]+")
 _MIN_STEM = 4
 _SHORT = 4
@@ -78,18 +78,40 @@ def _plot_name(name: str) -> _PlotName | None:
     return _PlotName(surname, initials, aliases)
 
 
-def _narrow(found: list[tuple[int, _PlotName]], words: list[str]) -> list[int]:
+def _capitalized(text: str) -> list[tuple[str, bool]]:
+    """Each word lowercased, with whether it was written with a capital: only
+    those can be a first name or initial next to a surname."""
+    return [
+        (w.lower(), w[0].isupper()) for w in _WORD_RE.findall(text.translate(_FOLD))
+    ]
+
+
+def _next_to_surname(text: str, surname: str) -> list[str]:
+    """Capitalised words right before or after the surname."""
+    tokens = _capitalized(text)
+    near: list[str] = []
+    for index, (word, _) in enumerate(tokens):
+        if not _is_form_of(word, surname):
+            continue
+        for other in (index - 1, index + 1):
+            if 0 <= other < len(tokens):
+                neighbour, capital = tokens[other]
+                if capital and not _is_form_of(neighbour, surname):
+                    near.append(neighbour)
+    return near
+
+
+def _narrow(found: list[tuple[int, _PlotName]], text: str) -> list[int]:
     """Several plots share the surname: keep those whose first initial starts
-    some other word of the text ("Мельник Андрій" is А. Д., not В. Д.)."""
+    the capitalised word next to it ("Мельник Андрій" is А. Д., not В. Д.).
+    Ordinary words such as "оплата" never decide."""
     if len(found) > 1:
         initialed = [
             h
             for h, plot in found
             if plot.initials
             and any(
-                w[0] == plot.initials[0]
-                for w in words
-                if not _is_form_of(w, plot.surname)
+                w[0] == plot.initials[0] for w in _next_to_surname(text, plot.surname)
             )
         ]
         if initialed:
@@ -104,7 +126,7 @@ def _by_name(text: str, households: list[Household]) -> list[int]:
         (h, p) for h, p in plots if any(_is_form_of(w, p.surname) for w in words)
     ]
     if primary:
-        narrowed = _narrow(primary, words)
+        narrowed = _narrow(primary, text)
         return narrowed if len(narrowed) == 1 else []
     alias = [
         h for h, p in plots if any(_is_form_of(w, a) for a in p.aliases for w in words)

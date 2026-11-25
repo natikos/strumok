@@ -204,13 +204,14 @@ since every resident pays through the Pay sheet, which fills the reference in.
 appears in the purpose, else in the payer name (Latin `i`/`I` folded to `і`, endings
 tolerated; purpose wins because the payer is often not the plot holder). Words in
 brackets are only aliases, used when no plot has that surname, and a first initial
-separates plots sharing a surname. Zero or several matches suggest nothing. It is
+separates plots sharing a surname, but only when the capitalised word next to the
+surname starts with it (never an ordinary word like "оплата"). Zero or several matches suggest nothing. It is
 never auto-confirmed, and the admin must check it. Remove it once residents pay via
 the Pay sheet.
 
 A lone reference is booked by the automatic confirmation above; several
-references only pre-fill the confirm dialog for the admin; a credit with none
-waits in the queue unmatched. The Pay sheet's
+references only pre-fill the confirm dialog for the admin; a credit with no reference
+and no name match waits in the queue unmatched. The Pay sheet's
 purpose carries only the `STR-<id>` of the plot being paid, i.e. the current
 plot (or, with no plot left, the gave-up plots that owe), so the amount and the
 reference agree (`frontend/src/shared/utils/paymentPurpose.ts` mirrors `household_reference`).
@@ -218,7 +219,8 @@ reference agree (`frontend/src/shared/utils/paymentPurpose.ts` mirrors `househol
 **Import outcome** (`backend/app/api/bank/outcome.py`, admin Bank tab). For one
 statement file (`GET /admin/bank-statements`, `.../{file_id}/outcome`) every credit
 it first imported (`first_file_id`) falls in one group: *auto-confirmed* (a live
-payment and a `bankTransactionConfirmed` audit row with no actor; a null
+payment and its latest `bankTransactionConfirmed` audit row has no actor, so an admin who
+voids and re-confirms takes it over; a null
 `recorded_by_user_id` alone is not enough, since linking an old payment could leave
 it), *needs attention* (queued with a reference or name suggestion), *unmatched*
 (queued, no suggestion), or a count of those an admin already confirmed or
