@@ -8,8 +8,10 @@ from passlib.context import CryptContext
 from sqlalchemy.exc import IntegrityError
 from sqlmodel import Session, asc, col, select
 
+from app.core import audit
 from app.core.config import settings
 from app.core.email import EmailSendError, send_email
+from app.core.ownership import set_owner
 from app.core.time import now_utc_aware, utc_now
 from app.db.models import Household, HouseholdOwnership, User
 
@@ -618,3 +620,75 @@ def send_invite_email(*, user: User, link: str) -> bool:
         logger.exception("Invite email failed to send")
         return False
     return True
+
+
+class JoinHouseholdNotFoundError(Exception):
+    pass
+
+
+class JoinHouseholdTakenError(Exception):
+    pass
+
+
+def list_joinable_households(*, session: Session) -> list[Household]:
+    """Active plots nobody owns: what a new resident may pick from."""
+    return list(
+        session.exec(
+            select(Household)
+            .where(col(Household.is_active).is_(True))
+            .where(col(Household.user_id).is_(None))
+            .order_by(asc(Household.name), asc(Household.id))
+        ).all()
+    )
+
+
+def register_resident(
+    *,
+    session: Session,
+    email: str,
+    first_name: str,
+    last_name: str,
+    password: str,
+    household_id: int,
+) -> User:
+    """Creates the account and makes it the owner of the chosen plot in one
+    transaction. The plot row is locked, so two people picking the same plot
+    cannot both win."""
+    email = email.strip().lower()
+    if _email_taken(session=session, email=email):
+        raise EmailAlreadyRegisteredError
+
+    household = session.exec(
+        select(Household).where(Household.id == household_id).with_for_update()
+    ).first()
+    if household is None or not household.is_active:
+        raise JoinHouseholdNotFoundError
+    if household.user_id is not None:
+        raise JoinHouseholdTakenError
+
+    user = User(
+        email=email,
+        first_name=first_name.strip(),
+        last_name=last_name.strip(),
+        password_hash=pwd_context.hash(password),
+    )
+    session.add(user)
+    try:
+        session.flush()
+    except IntegrityError as exc:
+        session.rollback()
+        raise EmailAlreadyRegisteredError from exc
+
+    set_owner(session, household, user.id)
+    audit.record(
+        session,
+        actor_user_id=user.id,
+        action="residentSelfRegistered",
+        entity_type="user",
+        entity_id=user.id,
+        household_id=household.id,
+        after={"email": user.email, "household_id": household.id},
+    )
+    session.commit()
+    session.refresh(user)
+    return user

@@ -36,6 +36,14 @@ class PasswordResetConfirmIn(BaseModel):
     password: str = Field(min_length=8, max_length=128)
 
 
+class JoinIn(BaseModel):
+    email: EmailStr
+    first_name: str = Field(min_length=1, max_length=100)
+    last_name: str = Field(min_length=1, max_length=100)
+    password: str = Field(min_length=8, max_length=128)
+    household_id: int
+
+
 class HouseholdSummary(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
