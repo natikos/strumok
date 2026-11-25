@@ -196,9 +196,16 @@ voids its siblings, so the credit returns to the queue. Payer name and purpose n
 reach `Payment.note` or the audit log.
 
 **Matching** (`backend/app/api/bank/matching`) is deterministic, computed on
-read, no LLM. The only signal is the `STR-<household id>` reference in the
-purpose (several for a split); payer names, tax IDs and IBANs are never used,
+read, no LLM. The main signal is the `STR-<household id>` reference in the
+purpose (several for a split); tax IDs and IBANs are never used,
 since every resident pays through the Pay sheet, which fills the reference in.
+**Temporary name fallback:** a credit with no `STR-` reference is suggested (source
+`name`) the one active household whose `name` appears in the purpose, else in the
+payer name (Latin `i`/`I` folded to `і`, endings tolerated; purpose wins because the
+payer is often not the plot holder). Zero or several matches suggest nothing. It is
+never auto-confirmed, and the admin must check it. Remove it once residents pay via
+the Pay sheet.
+
 A lone reference is booked by the automatic confirmation above; several
 references only pre-fill the confirm dialog for the admin; a credit with none
 waits in the queue unmatched. The Pay sheet's

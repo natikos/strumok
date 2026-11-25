@@ -27,8 +27,34 @@ def test_reference_is_not_a_substring_match():
     assert match("MYSTR-1", HOUSEHOLDS) == []
 
 
-def test_surname_in_purpose_is_not_a_match():
-    assert match("за світло Іваненко", HOUSEHOLDS) == []
+def test_surname_in_purpose_suggests_by_name():
+    found = match("за світло Іваненко", HOUSEHOLDS)
+    assert [(s.household_id, s.source) for s in found] == [(1, "name")]
+
+
+def test_name_match_tolerates_latin_i_and_declension():
+    found = match("Свiтло, Iваненка", HOUSEHOLDS)
+    assert [s.household_id for s in found] == [1]
+
+
+def test_purpose_outranks_payer_name():
+    found = match("Свiтло Петренко", HOUSEHOLDS, payer_name="ІВАНЕНКО ІГОР")
+    assert [s.household_id for s in found] == [2]
+
+
+def test_payer_name_used_when_purpose_has_none():
+    found = match("оплата", HOUSEHOLDS, payer_name="Іваненко Ігор")
+    assert [s.household_id for s in found] == [1]
+
+
+def test_ambiguous_name_suggests_nothing():
+    twins = [_h(1, "Коваль"), _h(2, "Коваль Іван")]
+    assert match("Коваль", twins) == []
+
+
+def test_reference_beats_name():
+    found = match("Іваненко STR-2", HOUSEHOLDS)
+    assert [(s.household_id, s.source) for s in found] == [(2, "reference")]
 
 
 def test_unmatched():

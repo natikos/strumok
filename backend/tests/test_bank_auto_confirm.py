@@ -104,3 +104,21 @@ def test_real_statements_parse_and_never_auto_match(path: Path) -> None:
         assert [
             s for s in match(credit.purpose, houses) if s.source == "reference"
         ] == []
+
+
+def test_name_match_is_never_auto_confirmed(session) -> None:
+    from sqlmodel import select
+
+    from app.api.bank.auto_confirm import auto_confirm_new_credits
+    from app.db.models import Payment
+    from tests.factories import make_household
+    from tests.test_bank_review import _tx
+
+    make_household(session, name="Іваненко")
+    tx = _tx(session)
+    tx.purpose = "Свiтло Іваненко"
+    session.add(tx)
+    session.commit()
+
+    assert auto_confirm_new_credits(session, file_id=tx.first_file_id) == 0
+    assert session.exec(select(Payment)).first() is None

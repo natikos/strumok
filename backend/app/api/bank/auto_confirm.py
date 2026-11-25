@@ -30,7 +30,9 @@ def auto_confirm_new_credits(session: Session, *, file_id: int) -> int:
 
     booked = 0
     for transaction in queued:
-        suggestions = match(transaction.purpose, households)
+        suggestions = [
+            s for s in match(transaction.purpose, households) if s.source == "reference"
+        ]
         if len(suggestions) != 1 or transaction.amount_uah <= Decimal("0"):
             continue
         try:
