@@ -25,6 +25,7 @@ declare module 'vue' {
     BalanceStrip: typeof import('./src/features/dashboard/components/BalanceStrip.vue')['default']
     BankCoverageNotice: typeof import('./src/features/dashboard/components/BankCoverageNotice.vue')['default']
     BankInboxPanel: typeof import('./src/features/admin/BankInboxPanel.vue')['default']
+    BankOutcomePanel: typeof import('./src/features/admin/BankOutcomePanel.vue')['default']
     BankQueuePanel: typeof import('./src/features/admin/BankQueuePanel.vue')['default']
     BillBreakdown: typeof import('./src/features/dashboard/components/BillBreakdown.vue')['default']
     BillSummaryCard: typeof import('./src/features/dashboard/components/BillSummaryCard.vue')['default']

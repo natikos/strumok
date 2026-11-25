@@ -196,15 +196,36 @@ voids its siblings, so the credit returns to the queue. Payer name and purpose n
 reach `Payment.note` or the audit log.
 
 **Matching** (`backend/app/api/bank/matching`) is deterministic, computed on
-read, no LLM. The only signal is the `STR-<household id>` reference in the
-purpose (several for a split); payer names, tax IDs and IBANs are never used,
+read, no LLM. The main signal is the `STR-<household id>` reference in the
+purpose (several for a split); tax IDs and IBANs are never used,
 since every resident pays through the Pay sheet, which fills the reference in.
+**Temporary name fallback:** a credit with no `STR-` reference is suggested (source
+`name`) the one active household whose surname (the first word of its `name`)
+appears in the purpose, else in the payer name (Latin `i`/`I` folded to `і`, endings
+tolerated; purpose wins because the payer is often not the plot holder). Words in
+brackets are only aliases, used when no plot has that surname, and a first initial
+separates plots sharing a surname, but only when the capitalised word next to the
+surname starts with it (never an ordinary word like "оплата"). Zero or several matches suggest nothing. It is
+never auto-confirmed, and the admin must check it. Remove it once residents pay via
+the Pay sheet.
+
 A lone reference is booked by the automatic confirmation above; several
-references only pre-fill the confirm dialog for the admin; a credit with none
-waits in the queue unmatched. The Pay sheet's
+references only pre-fill the confirm dialog for the admin; a credit with no reference
+and no name match waits in the queue unmatched. The Pay sheet's
 purpose carries only the `STR-<id>` of the plot being paid, i.e. the current
 plot (or, with no plot left, the gave-up plots that owe), so the amount and the
 reference agree (`frontend/src/shared/utils/paymentPurpose.ts` mirrors `household_reference`).
+
+**Import outcome** (`backend/app/api/bank/outcome.py`, admin Bank tab). For one
+statement file (`GET /admin/bank-statements`, `.../{file_id}/outcome`) every credit
+it first imported (`first_file_id`) falls in one group: *auto-confirmed* (a live
+payment and its latest `bankTransactionConfirmed` audit row has no actor, so an admin who
+voids and re-confirms takes it over; a null
+`recorded_by_user_id` alone is not enough, since linking an old payment could leave
+it), *needs attention* (queued with a reference or name suggestion), *unmatched*
+(queued, no suggestion), or a count of those an admin already confirmed or
+dismissed. Derived on read; a voided auto payment returns its credit to the queue.
+Read-only: actions stay in the queue below.
 
 **Coverage.** `GET /billing/bank-coverage` reports the max `covered_through` over
 imported files and `awaiting_statement` (true when none was ever imported or the
