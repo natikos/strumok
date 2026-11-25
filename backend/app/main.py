@@ -14,6 +14,7 @@ from app.api import (
     bank_router,
     billing_router,
     cron_router,
+    inbox_trigger_router,
     electricity_rates_router,
     meter_readings_router,
     push_router,
@@ -56,6 +57,7 @@ app.include_router(push_router)
 # Under e2e the jobs would read the shifted clock and fire mid-test.
 if settings.environment != "e2e":
     app.include_router(cron_router)
+    app.include_router(inbox_trigger_router)
 
 if settings.environment == "e2e":
     from app.api.e2e.routes import router as e2e_router
