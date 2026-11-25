@@ -80,3 +80,35 @@ class InboxFetchOut(BaseModel):
     status: str
     reason: str | None
     fetched_at: UtcDatetime
+
+
+class StatementFileOut(BaseModel):
+    id: int
+    original_filename: str
+    uploaded_at: UtcDatetime
+    credits_new: int
+    credits_duplicate: int
+    covered_through: date
+
+
+class AutoConfirmedPaymentOut(BaseModel):
+    household_id: int
+    amount_uah: Decimal
+
+
+class AutoConfirmedOut(BaseModel):
+    id: int
+    operation_date: date
+    amount_uah: Decimal
+    payer_name: str
+    purpose: str
+    payments: list[AutoConfirmedPaymentOut]
+
+
+class StatementOutcomeOut(BaseModel):
+    file: StatementFileOut
+    auto_confirmed: list[AutoConfirmedOut]
+    needs_attention: list[BankTransactionOut]
+    unmatched: list[BankTransactionOut]
+    # Confirmed by an admin or dismissed: already dealt with, not listed.
+    handled_count: int

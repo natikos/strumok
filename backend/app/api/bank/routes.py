@@ -14,9 +14,11 @@ from fastapi.responses import JSONResponse
 from sqlmodel import Session, col, select
 
 from app.api.auth.schemas import ErrorOut
-from app.api.bank import inbox, review
-from app.api.bank.matching import suggest_households
+from app.api.bank import inbox, outcome, review
+from app.api.bank.matching import Suggestion, suggest_households
 from app.api.bank.schemas import (
+    AutoConfirmedOut,
+    AutoConfirmedPaymentOut,
     BankStatementErrorOut,
     BankTransactionOut,
     ConfirmedPaymentOut,
@@ -25,7 +27,9 @@ from app.api.bank.schemas import (
     InboxCheckOut,
     InboxFetchOut,
     LinkIn,
+    StatementFileOut,
     StatementImportOut,
+    StatementOutcomeOut,
     SuggestionOut,
 )
 from app.api.bank.service import (
@@ -39,7 +43,7 @@ from app.api.bank.service import (
 from app.api.deps import require_admin
 from app.api.push.billing_notifications import notify_bank_queue, notify_shortfall
 from app.db import get_session
-from app.db.models import BankMailFetch, User
+from app.db.models import BankMailFetch, BankStatementFile, User
 
 logger = logging.getLogger(__name__)
 
@@ -163,6 +167,51 @@ def check_inbox(session: Session = Depends(get_session)) -> InboxCheckOut:
 INBOX_FETCH_LIMIT = 20
 
 
+@router.get("", response_model=list[StatementFileOut])
+def list_statement_files(
+    session: Session = Depends(get_session),
+) -> list[BankStatementFile]:
+    """The newest imported statements, for choosing which outcome to look at."""
+    return outcome.recent_files(session)
+
+
+@router.get(
+    "/{file_id}/outcome",
+    response_model=StatementOutcomeOut,
+    responses={404: _error(404, "bankStatementFileNotFound")},
+)
+def statement_outcome(
+    file_id: int, session: Session = Depends(get_session)
+) -> StatementOutcomeOut:
+    """What became of each credit first imported by this statement."""
+    try:
+        result = outcome.file_outcome(session, file_id)
+    except outcome.StatementFileNotFoundError:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "bankStatementFileNotFound")
+    return StatementOutcomeOut(
+        file=StatementFileOut.model_validate(result.file, from_attributes=True),
+        auto_confirmed=[
+            AutoConfirmedOut(
+                id=a.transaction.id,
+                operation_date=a.transaction.operation_date,
+                amount_uah=a.transaction.amount_uah,
+                payer_name=a.transaction.payer_name,
+                purpose=a.transaction.purpose,
+                payments=[
+                    AutoConfirmedPaymentOut(
+                        household_id=p.household_id, amount_uah=p.amount_uah
+                    )
+                    for p in a.payments
+                ],
+            )
+            for a in result.auto_confirmed
+        ],
+        needs_attention=[_queue_row(i, f) for i, f in result.needs_attention],
+        unmatched=[_queue_row(i, f) for i, f in result.unmatched],
+        handled_count=result.handled_count,
+    )
+
+
 @router.get("/inbox-fetches", response_model=list[InboxFetchOut])
 def list_inbox_fetches(
     session: Session = Depends(get_session),
@@ -201,32 +250,32 @@ _RESOLVE_RESPONSES: dict[int | str, dict[str, Any]] = {
 }
 
 
+def _queue_row(item: review.QueueItem, found: list[Suggestion]) -> BankTransactionOut:
+    return BankTransactionOut(
+        id=item.transaction.id,
+        operation_date=item.transaction.operation_date,
+        amount_uah=item.transaction.amount_uah,
+        payer_name=item.transaction.payer_name,
+        purpose=item.transaction.purpose,
+        suggested_household_id=found[0].household_id if found else None,
+        suggestion_source=found[0].source if found else None,
+        suggestions=[
+            SuggestionOut(household_id=s.household_id, source=s.source) for s in found
+        ],
+        link_candidates=[
+            LinkCandidateOut(
+                payment_id=p.id, household_id=p.household_id, paid_on=p.paid_on
+            )
+            for p in item.link_candidates
+        ],
+    )
+
+
 @review_router.get("", response_model=list[BankTransactionOut])
 def list_queue(session: Session = Depends(get_session)) -> list[BankTransactionOut]:
     items = review.list_queue(session)
     suggestions = suggest_households(session, [i.transaction for i in items])
-    return [
-        BankTransactionOut(
-            id=item.transaction.id,
-            operation_date=item.transaction.operation_date,
-            amount_uah=item.transaction.amount_uah,
-            payer_name=item.transaction.payer_name,
-            purpose=item.transaction.purpose,
-            suggested_household_id=found[0].household_id if found else None,
-            suggestion_source=found[0].source if found else None,
-            suggestions=[
-                SuggestionOut(household_id=s.household_id, source=s.source)
-                for s in found
-            ],
-            link_candidates=[
-                LinkCandidateOut(
-                    payment_id=p.id, household_id=p.household_id, paid_on=p.paid_on
-                )
-                for p in item.link_candidates
-            ],
-        )
-        for item, found in zip(items, suggestions)
-    ]
+    return [_queue_row(item, found) for item, found in zip(items, suggestions)]
 
 
 @review_router.post(
