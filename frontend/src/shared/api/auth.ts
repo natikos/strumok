@@ -4,6 +4,8 @@ import { markPendingLogout, setAuthSessionState } from "./auth-session";
 import { appApiClient, buildApiError } from "./client";
 
 type LoginIn = components["schemas"]["LoginIn"];
+export type JoinIn = components["schemas"]["JoinIn"];
+export type HouseholdSummary = components["schemas"]["HouseholdSummary"];
 export type UserOut = components["schemas"]["UserOut"];
 export type UserWithHouseholdsOut = components["schemas"]["UserWithHouseholdsOut"];
 type UserPreferencesIn = components["schemas"]["UserPreferencesIn"];
@@ -12,6 +14,29 @@ export { ApiError } from "./client";
 
 export async function loginUser(payload: LoginIn): Promise<UserOut> {
   const { data, error, response } = await appApiClient.POST("/auth/login", {
+    body: payload,
+  });
+
+  if (error) {
+    throw buildApiError(response.status, error, response.headers);
+  }
+
+  setAuthSessionState(true, data.email_verified);
+  return data;
+}
+
+export async function getJoinableHouseholds(): Promise<HouseholdSummary[]> {
+  const { data, response } = await appApiClient.GET("/auth/join/households");
+
+  if (data === undefined) {
+    throw buildApiError(response.status, undefined);
+  }
+
+  return data;
+}
+
+export async function joinAsResident(payload: JoinIn): Promise<UserOut> {
+  const { data, error, response } = await appApiClient.POST("/auth/join", {
     body: payload,
   });
 
