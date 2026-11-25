@@ -161,6 +161,10 @@ jobs:
 
   smoke:
     needs: deploy
+    # A skipped migrate (nothing to apply) is a skipped ancestor, which makes
+    # the implicit success() false and would skip this check, so test deploy
+    # directly.
+    if: ${{ !cancelled() && needs.deploy.result == 'success' }}
     runs-on: ubuntu-latest
     steps:
       # Only proves the app is up and reaches Postgres; /health does not report
@@ -169,14 +173,17 @@ jobs:
         env:
           APP_ORIGIN: ${{ vars.APP_ORIGIN }}
         run: |
+          # The variable may be saved with a trailing slash; "//health" would
+          # fall through to the SPA instead of the API.
+          origin="${APP_ORIGIN%/}"
           for i in $(seq 1 18); do
-            if curl -fsS --max-time 10 "$APP_ORIGIN/health" > /dev/null; then
+            if curl -fsS --max-time 10 "$origin/health" > /dev/null; then
               echo "Healthy after attempt $i"
               exit 0
             fi
             sleep 10
           done
-          echo "::error::$APP_ORIGIN/health not healthy 3 minutes after deploy"
+          echo "::error::$origin/health not healthy 3 minutes after deploy"
           exit 1
 
   release-failed:
