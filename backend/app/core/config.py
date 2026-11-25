@@ -155,6 +155,8 @@ class Settings(BaseSettings):
     imap: ImapSettings = ImapSettings()
     # Shared with the GitHub "Cron tick" workflow. Unset: the route is hidden.
     cron_secret: SecretStr | None = None
+    # Held by the Gmail Apps Script only; opens /internal/inbox/check and nothing else.
+    inbox_trigger_secret: SecretStr | None = None
 
     @model_validator(mode="after")
     def guard_e2e(self) -> "Settings":

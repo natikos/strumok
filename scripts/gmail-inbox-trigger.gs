@@ -4,7 +4,7 @@
  *
  * Script Properties (Project Settings):
  *   APP_ORIGIN       https://<app origin>, no trailing slash
- *   CRON_SECRET      same value as the app's CRON_SECRET
+ *   INBOX_TRIGGER_SECRET  same value as the app's INBOX_TRIGGER_SECRET
  *   ALLOWED_SENDERS  comma-separated, same as IMAP_ALLOWED_SENDERS
  *
  * The app only wakes when a matching email is waiting. A thread is labeled
@@ -15,13 +15,13 @@ const LABEL = "strumok-notified";
 function checkInbox() {
   const props = PropertiesService.getScriptProperties();
   const origin = props.getProperty("APP_ORIGIN");
-  const secret = props.getProperty("CRON_SECRET");
+  const secret = props.getProperty("INBOX_TRIGGER_SECRET");
   const senders = (props.getProperty("ALLOWED_SENDERS") || "")
     .split(",")
     .map((s) => s.trim())
     .filter(Boolean);
   if (!origin || !secret || senders.length === 0) {
-    throw new Error("Set APP_ORIGIN, CRON_SECRET and ALLOWED_SENDERS");
+    throw new Error("Set APP_ORIGIN, INBOX_TRIGGER_SECRET and ALLOWED_SENDERS");
   }
 
   const query =
@@ -33,7 +33,7 @@ function checkInbox() {
   const threads = GmailApp.search(query, 0, 20);
   if (threads.length === 0) return;
 
-  const response = UrlFetchApp.fetch(origin + "/internal/cron/inbox", {
+  const response = UrlFetchApp.fetch(origin + "/internal/inbox/check", {
     method: "post",
     contentType: "application/json",
     payload: "{}",

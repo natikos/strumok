@@ -33,6 +33,7 @@ from starlette.testclient import TestClient
 from tests.factories import make_household, make_push_subscription, make_user
 
 SECRET = "s3cret-cron-value-0123456789"
+INBOX_SECRET = "inbox-trigger-value-9876543210"
 KYIV = ZoneInfo("Europe/Kyiv")
 URL = "/internal/cron/tick"
 CSRF = {"X-Requested-With": "cron-tick"}
@@ -85,6 +86,7 @@ def inbox(monkeypatch: pytest.MonkeyPatch) -> MagicMock:
 @pytest.fixture
 def secret(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(settings, "cron_secret", SecretStr(SECRET))
+    monkeypatch.setattr(settings, "inbox_trigger_secret", SecretStr(INBOX_SECRET))
 
 
 @pytest.fixture
@@ -418,18 +420,26 @@ class TestConcurrentRuns:
 
 
 class TestInboxOnly:
-    """`POST /internal/cron/inbox` (issue #358): the bank-inbox check alone."""
+    """`POST /internal/inbox/check` (issue #358): the bank-inbox check alone."""
 
-    INBOX_URL = "/internal/cron/inbox"
+    INBOX_URL = "/internal/inbox/check"
 
     def test_route_is_hidden_when_secret_is_unset(
         self, http, monkeypatch, inbox
     ) -> None:
-        monkeypatch.setattr(settings, "cron_secret", None)
+        monkeypatch.setattr(settings, "inbox_trigger_secret", None)
 
-        res = http.post(self.INBOX_URL, headers=_auth())
+        res = http.post(self.INBOX_URL, headers=_auth(INBOX_SECRET))
 
         assert res.status_code == 404
+        inbox.assert_not_called()
+
+    def test_the_tick_secret_does_not_open_the_inbox_route(
+        self, http, secret, inbox
+    ) -> None:
+        res = http.post(self.INBOX_URL, headers=_auth(SECRET))
+
+        assert res.status_code == 401
         inbox.assert_not_called()
 
     @pytest.mark.parametrize(
@@ -437,7 +447,7 @@ class TestInboxOnly:
         [
             pytest.param(None, id="missing"),
             pytest.param("wrong-secret-of-another-length", id="wrong"),
-            pytest.param(SECRET + "x", id="secret-plus-suffix"),
+            pytest.param(INBOX_SECRET + "x", id="secret-plus-suffix"),
         ],
     )
     def test_rejects_anything_but_the_exact_secret_and_runs_nothing(
@@ -459,7 +469,7 @@ class TestInboxOnly:
         inbox.side_effect = None
         inbox.return_value = MagicMock(received=7, imported=4, rejected=3)
 
-        res = http.post(self.INBOX_URL, headers=_auth())
+        res = http.post(self.INBOX_URL, headers=_auth(INBOX_SECRET))
 
         assert res.status_code == 200
         body = res.json()
@@ -469,7 +479,7 @@ class TestInboxOnly:
     def test_unconfigured_inbox_is_reported_as_not_configured(
         self, http, secret, inbox
     ) -> None:
-        res = http.post(self.INBOX_URL, headers=_auth())
+        res = http.post(self.INBOX_URL, headers=_auth(INBOX_SECRET))
 
         assert res.status_code == 200
         assert res.json()["inbox_status"] == "notConfigured"
@@ -477,7 +487,7 @@ class TestInboxOnly:
     def test_unreachable_mailbox_is_200_unavailable(self, http, secret, inbox) -> None:
         inbox.side_effect = InboxUnavailableError()
 
-        res = http.post(self.INBOX_URL, headers=_auth())
+        res = http.post(self.INBOX_URL, headers=_auth(INBOX_SECRET))
 
         assert res.status_code == 200
         assert res.json()["inbox_status"] == "unavailable"
@@ -487,7 +497,7 @@ class TestInboxOnly:
     ) -> None:
         conn = TestConcurrentRuns()._hold(cron_service._INBOX_LOCK)
         try:
-            res = http.post(self.INBOX_URL, headers=_auth())
+            res = http.post(self.INBOX_URL, headers=_auth(INBOX_SECRET))
         finally:
             TestConcurrentRuns()._release(conn, cron_service._INBOX_LOCK)
 
@@ -502,7 +512,7 @@ class TestInboxOnly:
         _freeze(monkeypatch, _kyiv(2027, 1, 1, 12))
         _resident(9, "a@example.com")
 
-        res = http.post(self.INBOX_URL, headers=_auth())
+        res = http.post(self.INBOX_URL, headers=_auth(INBOX_SECRET))
 
         assert res.status_code == 200
         pushes.assert_not_called()
@@ -513,7 +523,7 @@ class TestInboxOnly:
     ) -> None:
         inbox.side_effect = RuntimeError("imap parser bug")
 
-        res = http.post(self.INBOX_URL, headers=_auth())
+        res = http.post(self.INBOX_URL, headers=_auth(INBOX_SECRET))
 
         assert res.status_code == 500
 

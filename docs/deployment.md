@@ -142,9 +142,9 @@ a reason code). Admins can also run `POST /admin/bank-statements/check-inbox`.
 
 **Gmail trigger.** `scripts/gmail-inbox-trigger.gs` runs in Google Apps Script on
 the co-op mailbox (time trigger every 5–15 min). When an allow-listed sender's
-`.csv` email is waiting, it calls `POST /internal/cron/inbox` with `X-Cron-Secret`,
+`.csv` email is waiting, it calls `POST /internal/inbox/check` with `X-Cron-Secret` (its own `INBOX_TRIGGER_SECRET`),
 then labels the thread `strumok-notified`; a failed call is retried next run.
-Set `APP_ORIGIN`, `CRON_SECRET` and `ALLOWED_SENDERS` as Script Properties. Without
+Set `APP_ORIGIN`, `INBOX_TRIGGER_SECRET` and `ALLOWED_SENDERS` as Script Properties. Without
 this script mail that arrives between cron days waits up to about a week, so
 treat it as part of the release checklist. The
 hourly tick still checks the inbox as a fallback on its days.
@@ -160,7 +160,8 @@ Gmail needs 2-step verification to issue the app password.
 | `AUTH_ACCESS_TOKEN_EXPIRATION` | Access token lifetime in minutes (default: `60`); refreshed via `/auth/refresh` |
 | `CORS_ORIGINS`           | Comma-separated list of allowed origins                                           |
 | `ENVIRONMENT`            | **Required.** `development` or `production` — no default, startup fails otherwise. `e2e` exists only for the Playwright suite (shifted clock, test-only routes) and refuses any non-local database; never set it here |
-| `CRON_SECRET`            | Shared secret for `POST /internal/cron/tick` and `/internal/cron/inbox`. Must equal the GitHub repository secret of the same name; unset hides the route (404) |
+| `CRON_SECRET`            | Shared secret for `POST /internal/cron/tick`. Must equal the GitHub repository secret of the same name; unset hides the route (404) |
+| `INBOX_TRIGGER_SECRET`   | Secret for `POST /internal/inbox/check`, held only by the Gmail Apps Script. Must equal its Script Property of the same name; unset hides the route (404) |
 | `BREVO_API_KEY`          | Brevo transactional email API key                                                 |
 | `BREVO_SENDER_EMAIL`     | Verified Brevo sender address                                                     |
 | `BREVO_APP_BASE_URL`     | Public app origin used to build verification links                                |
