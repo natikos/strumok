@@ -100,7 +100,10 @@ def test_queued_credits_are_bucketed_by_whether_a_suggestion_exists(
 
     assert out["auto_confirmed"] == []
     attention = {r["id"]: r for r in out["needs_attention"]}
-    assert set(attention) == {_tx_by_doc(session, "1.").id, _tx_by_doc(session, "2.").id}
+    assert set(attention) == {
+        _tx_by_doc(session, "1.").id,
+        _tx_by_doc(session, "2.").id,
+    }
     assert _ids(out["unmatched"]) == {_tx_by_doc(session, "3.").id}
     several = attention[_tx_by_doc(session, "1.").id]
     assert {s["household_id"] for s in several["suggestions"]} == {a.id, b.id}
