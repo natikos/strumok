@@ -171,7 +171,7 @@ new/duplicate/skipped counts and `covered_through`.
 
 **Email inbox.** With the `IMAP_*` env set, `backend/app/api/bank/inbox.py` fetches
 the accountant's emailed `.csv` from allow-listed, DMARC/DKIM-authenticated senders
-when a statement email arrives (Gmail Apps Script trigger), on the hourly cron tick
+when a statement email arrives (Gmail Apps Script trigger), on the cron tick
 that runs on due days, and on `POST /admin/bank-statements/check-inbox`, through the same
 `import_statement` (system actor, no uploader). Each message is recorded once in
 `bank_mail_fetches` as received/imported/rejected with a reason code. Each import is
@@ -259,9 +259,12 @@ Code: `backend/app/api/billing/shortfall.py`.
 
 ## Reminders
 
-Deadline push reminders go out on days 1 and 5 at each user's chosen Kyiv hour
-(`User.reminder_hour`, default 9, set via `PATCH /auth/preferences`). Users with no
-push subscription, or only expired ones, get the reminder by email (Brevo) instead. The trigger is a GitHub Actions call, hourly on the days anything is due, see [deployment.md](deployment.md#push-reminders).
+Deadline push reminders go out on days 1 and 5 from 08:30 Kyiv, the same for every
+user (there is no per-user time; `users.reminder_hour` was dropped by migration `0023`).
+Users with no push subscription, or only expired ones, get the reminder by email
+(Brevo) instead. The trigger is a GitHub Actions call at 05:30 and 06:30 UTC on the days
+anything is due, one of which is past 08:30 Kyiv in either DST regime; see
+[deployment.md](deployment.md#push-reminders).
 
 ## Install prompt
 
