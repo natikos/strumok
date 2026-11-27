@@ -1,5 +1,4 @@
 import { flushPromises, mount } from "@vue/test-utils";
-import Select from "primevue/select";
 import ToggleSwitch from "primevue/toggleswitch";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { ref } from "vue";
@@ -7,7 +6,6 @@ import { ref } from "vue";
 import { appPlugins } from "@/shared/testing/mount";
 import type { PushToggleState } from "@features/push-notifications/usePushNotifications";
 import type * as AuthApi from "@shared/api/auth";
-import { updateMyPreferences } from "@shared/api/auth";
 
 import SettingsPage from "./SettingsPage.vue";
 
@@ -29,8 +27,8 @@ vi.mock("@shared/api/auth", async (importOriginal) => {
   const actual = await importOriginal<typeof AuthApi>();
   return {
     ...actual,
-    getMe: vi.fn().mockResolvedValue({ email: "resident@example.com", reminder_hour: 9 }),
-    updateMyPreferences: vi.fn().mockResolvedValue({ reminder_hour: 18 }),
+    getMe: vi.fn().mockResolvedValue({ email: "resident@example.com" }),
+    updateMyPreferences: vi.fn().mockResolvedValue({}),
   };
 });
 
@@ -54,7 +52,6 @@ async function mountSettingsPage() {
         ThemeToggleButton: true,
         LanguageToggleButton: true,
         AccountSettings: true,
-        Select: true,
       },
     },
   });
@@ -72,8 +69,8 @@ describe("SettingsPage notifications section", () => {
   });
 
   it.each([
-    ["off", "Сповіщення надійде 1 та 5 числа місяця"],
-    ["on", "Увімкнено · нагадування 1 та 5 числа"],
+    ["off", "Сповіщення надійде 1 та 5 числа о 08:30"],
+    ["on", "Увімкнено · нагадування 1 та 5 числа о 08:30"],
     ["requesting", "Запит дозволу…"],
     [
       "denied",
@@ -166,34 +163,5 @@ describe("SettingsPage notifications section", () => {
 
     expect(enable).not.toHaveBeenCalled();
     expect(disable).not.toHaveBeenCalled();
-  });
-});
-
-describe("SettingsPage reminder hour", () => {
-  beforeEach(() => {
-    usePushNotifications.mockReset();
-  });
-
-  it("shows the reminder hour selector only while push is on", async () => {
-    mockPushState("on");
-    const on = await mountSettingsPage();
-    await flushPromises();
-    expect(on.findComponent(Select).exists()).toBe(true);
-
-    mockPushState("off");
-    const off = await mountSettingsPage();
-    await flushPromises();
-    expect(off.findComponent(Select).exists()).toBe(false);
-  });
-
-  it("saves the chosen hour as a preference", async () => {
-    mockPushState("on");
-    const wrapper = await mountSettingsPage();
-    await flushPromises();
-
-    wrapper.findComponent(Select).vm.$emit("update:modelValue", 18);
-    await flushPromises();
-
-    expect(updateMyPreferences).toHaveBeenCalledWith({ reminder_hour: 18 });
   });
 });
