@@ -12,7 +12,7 @@ from app.api.bank.inbox import (
 )
 from app.api.cron.schemas import CronTickOut, InboxOut
 from app.api.push.billing_notifications import notify_missing_readings
-from app.api.push.service import send_reminders
+from app.api.push.service import REMINDER_TIME, send_reminders
 from app.core.domain import SUBMISSION_DEADLINE_DAY, current_billing_period
 from app.core.domain.billing import kyiv_now
 from app.db.engine import engine
@@ -49,7 +49,7 @@ def run_reminders(out: CronTickOut) -> None:
             return
         with Session(engine) as session:
             now = kyiv_now()
-            if now.day == MISSING_READINGS_DAY and now.hour >= 9:
+            if now.day == MISSING_READINGS_DAY and now.time() >= REMINDER_TIME:
                 notify_missing_readings(
                     session=session, period=current_billing_period(now)
                 )

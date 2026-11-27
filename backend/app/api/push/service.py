@@ -1,7 +1,7 @@
 import html
 import json
 import logging
-from datetime import datetime
+from datetime import datetime, time
 from concurrent.futures import ThreadPoolExecutor
 from enum import StrEnum
 from http import HTTPStatus
@@ -36,6 +36,12 @@ logger = logging.getLogger(__name__)
 e2e_push_outbox: list[dict[str, str]] = []
 
 ReminderVariant = Literal["opening", "final"]
+
+# Kyiv wall-clock time from which the day's reminders go out. The cron fires
+# at two UTC times so one of them is past this in both DST regimes (GitHub
+# cron is UTC only); sends before it are skipped, and NotificationLog stops
+# the later run from repeating them.
+REMINDER_TIME = time(8, 30)
 
 # Kept apart from the frontend's vue-i18n JSON: the service worker renders the
 # payload as-is, with no client-side lookup.
@@ -181,9 +187,7 @@ def send_one(
 
 
 def reminder_variant_for(now: datetime) -> ReminderVariant | None:
-    """Which reminder (if any) is sent on the Kyiv calendar day of `now`.
-    Days 1 and 5 never contain a DST shift (those fall on days 25-31), so
-    every Kyiv hour occurs exactly once on them."""
+    """Which reminder (if any) is sent on the Kyiv calendar day of `now`."""
     if now.day == SUBMISSION_OPEN_DAY:
         return "opening"
     if now.day == SUBMISSION_DEADLINE_DAY:
@@ -192,11 +196,10 @@ def reminder_variant_for(now: datetime) -> ReminderVariant | None:
 
 
 def _due_households(
-    *, session: Session, period: str, variant: ReminderVariant, hour: int
+    *, session: Session, period: str, variant: ReminderVariant
 ) -> dict[int, list[str]]:
-    """Names of the unsubmitted households of each active user whose chosen
-    hour has arrived and who haven't been sent this variant. `<=` rather
-    than `==` so a missed tick is caught up on the next one."""
+    """Names of the unsubmitted households of each active user who hasn't
+    been sent this variant."""
     query = (
         select(User.id, Household.name)
         .join(Household, col(Household.user_id) == User.id)
@@ -217,7 +220,6 @@ def _due_households(
         )
         .where(
             User.is_active,
-            col(User.reminder_hour) <= hour,
             Household.is_active,
             col(MeterReading.household_id).is_(None),
             col(NotificationLog.user_id).is_(None),
@@ -260,19 +262,17 @@ def _claim_users(
 
 def send_reminders(*, session: Session, now: datetime) -> tuple[int, int]:
     """Push a reminder to each subscribed, active user with an unsubmitted
-    household reading whose chosen Kyiv hour has arrived; users with no
-    subscription get an email instead. `now` is Kyiv time.
+    household reading once Kyiv time reaches `REMINDER_TIME` on a reminder
+    day; users with no subscription get an email instead. `now` is Kyiv time.
     At most one push per (user, period, variant): users are claimed in
     NotificationLog before sending, and the claim is released only if every
-    send to that user failed, so the next hourly run retries. Returns
+    send to that user failed, so the next cron run retries. Returns
     (sent, removed) counts."""
     variant = reminder_variant_for(now)
-    if variant is None:
+    if variant is None or now.time() < REMINDER_TIME:
         return 0, 0
     period = current_billing_period(now)
-    due = _due_households(
-        session=session, period=period, variant=variant, hour=now.hour
-    )
+    due = _due_households(session=session, period=period, variant=variant)
     claimed = _claim_users(
         session=session, user_ids=set(due), period=period, variant=variant
     )

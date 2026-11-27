@@ -394,9 +394,6 @@ def update_preferences(
     if payload.theme is not None:
         current_user.theme = payload.theme
 
-    if payload.reminder_hour is not None:
-        current_user.reminder_hour = payload.reminder_hour
-
     session.add(current_user)
     session.commit()
     session.refresh(current_user)

@@ -1,4 +1,4 @@
-"""The hourly cron tick (issue #357): `POST /internal/cron/tick`.
+"""The cron tick (issue #357): `POST /internal/cron/tick`.
 
 The tick opens its own sessions on the real engine and takes Postgres advisory
 locks on separate connections, so the per-test rollback `session` fixture can't
@@ -43,8 +43,8 @@ def _auth(secret: str = SECRET) -> dict[str, str]:
     return {**CSRF, "X-Cron-Secret": secret}
 
 
-def _kyiv(year: int, month: int, day: int, hour: int) -> datetime:
-    return datetime(year, month, day, hour, 0, tzinfo=KYIV)
+def _kyiv(year: int, month: int, day: int, hour: int, minute: int = 0) -> datetime:
+    return datetime(year, month, day, hour, minute, tzinfo=KYIV)
 
 
 @pytest.fixture(autouse=True)
@@ -98,11 +98,10 @@ def _freeze(monkeypatch: pytest.MonkeyPatch, now: datetime) -> None:
     monkeypatch.setattr(cron_service, "kyiv_now", lambda: now)
 
 
-def _resident(hour: int, email: str) -> int:
-    """A subscribed resident with one unsubmitted plot and the given reminder hour."""
+def _resident(email: str) -> int:
+    """A subscribed resident with one unsubmitted plot."""
     with Session(engine) as s:
         user = make_user(s, email=email)
-        user.reminder_hour = hour
         make_household(s, name=f"Plot {email}", user_id=user.id)
         make_push_subscription(s, user_id=user.id)
         s.commit()
@@ -121,7 +120,7 @@ class TestAuthentication:
     ) -> None:
         monkeypatch.setattr(settings, "cron_secret", None)
         _freeze(monkeypatch, _kyiv(2027, 1, 1, 12))
-        _resident(9, "a@example.com")
+        _resident("a@example.com")
 
         res = http.post(URL, headers=_auth())
 
@@ -152,7 +151,7 @@ class TestAuthentication:
         self, http, secret, monkeypatch, pushes, inbox, header
     ) -> None:
         _freeze(monkeypatch, _kyiv(2027, 1, 1, 12))
-        _resident(9, "a@example.com")
+        _resident("a@example.com")
         headers = dict(CSRF)
         if header is not None:
             headers["X-Cron-Secret"] = header
@@ -166,43 +165,28 @@ class TestAuthentication:
 
 
 class TestReminders:
-    def test_sends_only_to_users_whose_reminder_hour_has_arrived(
+    def test_sends_once_kyiv_time_reaches_08_30(
         self, http, secret, monkeypatch, pushes, inbox
     ) -> None:
-        # Jan 1 2027 (year rollover: period is 2026-12), 10:00 Kyiv.
-        _freeze(monkeypatch, _kyiv(2027, 1, 1, 10))
-        early = _resident(9, "early@example.com")
-        exact = _resident(10, "exact@example.com")
-        late = _resident(11, "late@example.com")
+        # Jan 1 2027 (year rollover: period is 2026-12).
+        user = _resident("a@example.com")
 
-        body = http.post(URL, headers=_auth()).json()
+        _freeze(monkeypatch, _kyiv(2027, 1, 1, 7, 30))
+        early = http.post(URL, headers=_auth()).json()
+        _freeze(monkeypatch, _kyiv(2027, 1, 1, 8, 30))
+        due = http.post(URL, headers=_auth()).json()
 
-        assert body["reminders_status"] == "ok"
-        assert body["reminders_sent"] == 2
-        assert {r.user_id for r in _logs("opening")} == {early, exact}
-        assert late not in {r.user_id for r in _logs()}
-        assert {r.period for r in _logs("opening")} == {"2026-12"}
+        assert early["reminders_sent"] == 0
+        assert due["reminders_status"] == "ok"
+        assert due["reminders_sent"] == 1
+        assert {(r.user_id, r.period) for r in _logs("opening")} == {(user, "2026-12")}
 
-    def test_later_tick_the_same_day_catches_up_users_not_yet_due(
-        self, http, secret, monkeypatch, pushes, inbox
-    ) -> None:
-        early = _resident(9, "early@example.com")
-        late = _resident(15, "late@example.com")
-
-        _freeze(monkeypatch, _kyiv(2027, 1, 1, 10))
-        assert http.post(URL, headers=_auth()).json()["reminders_sent"] == 1
-        _freeze(monkeypatch, _kyiv(2027, 1, 1, 16))
-        second = http.post(URL, headers=_auth()).json()
-
-        assert second["reminders_sent"] == 1
-        assert {r.user_id for r in _logs("opening")} == {early, late}
-
-    def test_second_call_in_the_same_hour_sends_nothing(
+    def test_second_call_on_the_same_day_sends_nothing(
         self, http, secret, monkeypatch, pushes, inbox
     ) -> None:
         _freeze(monkeypatch, _kyiv(2027, 1, 1, 12))
-        _resident(9, "a@example.com")
-        _resident(10, "b@example.com")
+        _resident("a@example.com")
+        _resident("b@example.com")
 
         first = http.post(URL, headers=_auth()).json()
         second = http.post(URL, headers=_auth()).json()
@@ -216,8 +200,8 @@ class TestReminders:
         self, http, secret, monkeypatch, pushes, inbox
     ) -> None:
         _freeze(monkeypatch, _kyiv(2027, 1, 1, 12))
-        done = _resident(9, "done@example.com")
-        pending = _resident(9, "pending@example.com")
+        done = _resident("done@example.com")
+        pending = _resident("pending@example.com")
         with Session(engine) as s:
             hh = s.exec(select(Household).where(Household.user_id == done)).one()
             s.add(
@@ -239,7 +223,7 @@ class TestReminders:
         self, http, secret, monkeypatch, pushes, inbox
     ) -> None:
         _freeze(monkeypatch, _kyiv(2027, 1, 2, 12))
-        _resident(9, "a@example.com")
+        _resident("a@example.com")
 
         body = http.post(URL, headers=_auth()).json()
 
@@ -251,7 +235,7 @@ class TestReminders:
         self, http, secret, monkeypatch, pushes, inbox
     ) -> None:
         _freeze(monkeypatch, _kyiv(2027, 1, 5, 12))
-        user = _resident(9, "a@example.com")
+        user = _resident("a@example.com")
 
         http.post(URL, headers=_auth())
 
@@ -270,7 +254,7 @@ class TestMissingReadingsAdminNotice:
         self, http, secret, monkeypatch, pushes, inbox
     ) -> None:
         admin = self._admin()
-        _resident(9, "silent@example.com")
+        _resident("silent@example.com")
         _freeze(monkeypatch, _kyiv(2027, 1, 6, 9))
 
         http.post(URL, headers=_auth())
@@ -280,11 +264,11 @@ class TestMissingReadingsAdminNotice:
         assert [(r.user_id, r.period) for r in rows] == [(admin, "2026-12")]
         assert pushes.call_count == 1
 
-    def test_admin_is_not_told_on_day_six_before_nine(
+    def test_admin_is_not_told_on_day_six_before_08_30(
         self, http, secret, monkeypatch, pushes, inbox
     ) -> None:
         self._admin()
-        _resident(9, "silent@example.com")
+        _resident("silent@example.com")
         _freeze(monkeypatch, _kyiv(2027, 1, 6, 8))
 
         res = http.post(URL, headers=_auth())
@@ -297,7 +281,7 @@ class TestMissingReadingsAdminNotice:
     ) -> None:
         # The window is still open on day 5; telling the admin who is "missing" is premature.
         admin = self._admin()
-        _resident(23, "silent@example.com")
+        _resident("silent@example.com")
         _freeze(monkeypatch, _kyiv(2027, 1, 5, 12))
 
         http.post(URL, headers=_auth())
@@ -310,7 +294,7 @@ class TestInbox:
         self, http, secret, monkeypatch, pushes, inbox
     ) -> None:
         _freeze(monkeypatch, _kyiv(2027, 1, 1, 12))
-        _resident(9, "a@example.com")
+        _resident("a@example.com")
 
         res = http.post(URL, headers=_auth())
 
@@ -363,7 +347,7 @@ class TestFailureIsolation:
     ) -> None:
         inbox.side_effect = RuntimeError("imap parser bug")
         _freeze(monkeypatch, _kyiv(2027, 1, 1, 12))
-        _resident(9, "a@example.com")
+        _resident("a@example.com")
 
         res = http.post(URL, headers=_auth())
 
@@ -390,7 +374,7 @@ class TestConcurrentRuns:
         self, http, secret, monkeypatch, pushes, inbox
     ) -> None:
         _freeze(monkeypatch, _kyiv(2027, 1, 1, 12))
-        _resident(9, "a@example.com")
+        _resident("a@example.com")
         conn = self._hold(cron_service._REMINDERS_LOCK)
         try:
             body = http.post(URL, headers=_auth()).json()
@@ -510,7 +494,7 @@ class TestInboxOnly:
     ) -> None:
         # Jan 1, 12:00 Kyiv: a tick would remind this resident.
         _freeze(monkeypatch, _kyiv(2027, 1, 1, 12))
-        _resident(9, "a@example.com")
+        _resident("a@example.com")
 
         res = http.post(self.INBOX_URL, headers=_auth(INBOX_SECRET))
 
