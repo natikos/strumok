@@ -13,6 +13,8 @@
     color: var(--s-amber-950);
     font-weight: 600;
     font-size: 0.875rem;
+    flex: none;
+    min-height: 1.75rem;
     overflow: hidden;
     padding: var(--s-app-space-1) 0;
     width: 100%;
