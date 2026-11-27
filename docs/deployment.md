@@ -123,13 +123,14 @@ the quarterly drill are in [operations.md](operations.md#database-backups).
 
 The app scales to zero, so nothing inside it runs on a timer. The
 `.github/workflows/cron-tick.yml` workflow calls `POST /internal/cron/tick`
-(header `X-Cron-Secret`) at minute 7 UTC every hour, but only on UTC days 28-31, 1, 4-6
-and 15-18 (Kyiv days 1, 5, 6 and 16-18 plus the evening before), to spare the
-Hobby compute allowance. The request wakes the
-instance and runs the jobs inside it. It sends the `opening` variant on Kyiv day
-1 and the `final` variant on day 5 to each user whose chosen hour
-(`users.reminder_hour`, Kyiv time, default 09:00) has arrived, so a late GitHub
-run still catches up within the same Kyiv day. Users are claimed in
+(header `X-Cron-Secret`) at 05:30 and 06:30 UTC, but only on Kyiv days 1, 5, 6
+and 16-18, to spare the Hobby compute allowance. Those two times are 08:30 Kyiv
+in summer and winter, so one run lands on or after 08:30 whatever the DST
+regime (GitHub cron is UTC only); the other is a no-op. The request wakes the
+instance and runs the jobs inside it. From 08:30 Kyiv it sends the `opening`
+variant on day 1 and the `final` variant on day 5 to every user with an
+unsubmitted plot; a run before 08:30 sends nothing, and a late GitHub run still
+catches up within the same Kyiv day. Users are claimed in
 `NotificationLog` before sending, so repeated or overlapping calls notify each
 `(user, period, variant)` at most once. A Postgres advisory lock per job also
 reports `busy` instead of running twice at once. Re-run the workflow by hand
@@ -153,7 +154,7 @@ then labels the thread `strumok-notified`; a failed call is retried next run.
 Set `APP_ORIGIN`, `INBOX_TRIGGER_SECRET` and `ALLOWED_SENDERS` as Script Properties. Without
 this script mail that arrives between cron days waits up to about a week, so
 treat it as part of the release checklist. The
-hourly tick still checks the inbox as a fallback on its days.
+tick still checks the inbox as a fallback on its days.
 Gmail needs 2-step verification to issue the app password.
 
 ## Environment Variables

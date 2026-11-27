@@ -3,10 +3,12 @@ name: Cron tick
 # so this request wakes it and does the work inside the request.
 on:
   schedule:
-    # Kyiv days 1, 5, 6 and 16-18, plus the UTC day before each (Kyiv days
-    # start 21:00-22:00 UTC the evening before). Other days nothing is due,
-    # and each call costs compute hours on the Hobby plan.
-    - cron: "7 * 28-31,1,4-6,15-18 * *"
+    # Kyiv days 1, 5, 6 and 16-18. 05:30 and 06:30 UTC are 08:30 Kyiv in
+    # summer and winter respectively, so one run lands on or after 08:30
+    # whatever the DST regime; the app skips a run before 08:30 and sends
+    # each reminder once. Other days nothing is due, and each call costs
+    # compute hours on the Hobby plan.
+    - cron: "30 5,6 1,5,6,16-18 * *"
   workflow_dispatch:
 permissions: {}
 concurrency:

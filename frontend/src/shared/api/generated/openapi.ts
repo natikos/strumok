@@ -2449,17 +2449,10 @@ export interface components {
             /** Verification Email Retry After Seconds */
             verification_email_retry_after_seconds: number;
             theme: components["schemas"]["ThemeMode"];
-            /** Reminder Hour */
-            reminder_hour: number;
         };
         /** UserPreferencesIn */
         UserPreferencesIn: {
             theme?: components["schemas"]["ThemeMode"] | null;
-            /**
-             * Reminder Hour
-             * @description Hour of day, Europe/Kyiv
-             */
-            reminder_hour?: number | null;
         };
         /** UserWithHouseholdsOut */
         UserWithHouseholdsOut: {
@@ -2480,8 +2473,6 @@ export interface components {
             /** Verification Email Retry After Seconds */
             verification_email_retry_after_seconds: number;
             theme: components["schemas"]["ThemeMode"];
-            /** Reminder Hour */
-            reminder_hour: number;
             /** Households */
             households: components["schemas"]["HouseholdSummary"][];
             /**

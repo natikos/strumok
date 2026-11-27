@@ -561,8 +561,8 @@ class TestUnsubscribeRoute:
         )
 
 
-class TestReminderHour:
-    """Issue #200: each user is reminded at their own Kyiv hour."""
+class TestReminderTime:
+    """Reminders go out from 08:30 Kyiv on days 1 and 5."""
 
     def test_variant_is_chosen_by_the_kyiv_day(self) -> None:
         assert reminder_variant_for(_kyiv_at(1)) == "opening"
@@ -581,27 +581,27 @@ class TestReminderHour:
         assert result == (0, 0)
         mock_webpush.assert_not_called()
 
-    def test_waits_until_the_users_hour_then_sends_once(self, session: Session) -> None:
+    def test_waits_until_08_30_then_sends_once(self, session: Session) -> None:
         user = make_user(session)
-        user.reminder_hour = 14
-        session.add(user)
-        session.flush()
         make_household(session, user_id=user.id)
         make_push_subscription(session, user_id=user.id)
+        day = 1
+        before = _kyiv_at(day, 8).replace(minute=29)
+        at = _kyiv_at(day, 8).replace(minute=30)
+        later = _kyiv_at(day, 15)
 
         with patch("app.api.push.service.webpush") as mock_webpush:
-            early = _send(session, "opening", hour=13)
-            on_time = _send(session, "opening", hour=14)
-            later = _send(session, "opening", hour=15)
+            results = [
+                send_reminders(session=session, now=now) for now in (before, at, later)
+            ]
 
-        assert (early, on_time, later) == ((0, 0), (1, 0), (0, 0))
+        assert results == [(0, 0), (1, 0), (0, 0)]
         assert mock_webpush.call_count == 1
 
-    def test_a_missed_tick_is_caught_up_on_the_next_one(self, session: Session) -> None:
+    def test_a_missed_run_is_caught_up_later_the_same_day(
+        self, session: Session
+    ) -> None:
         user = make_user(session)
-        user.reminder_hour = 8
-        session.add(user)
-        session.flush()
         make_household(session, user_id=user.id)
         make_push_subscription(session, user_id=user.id)
 
